@@ -28,8 +28,9 @@ Documentation
 
 .. toctree::
     :maxdepth: 2
+    :numbered:	
 
-    User Guide<user/index.rst>   
+    User Guide<user/manual.rst>   
     Reference Guide<user/autosum.rst>
 
 - A `PDF <../latex/echap.pdf>`_ version of |echap| documentation is 

@@ -1,3 +1,5 @@
-Use RST format for the change log or put a link to the wiki
+**Echap Project**
 
-* 08/07 : add this package layout
+* 02/02/2011 : Initial version of Alinea.Echap
+* 02/02/2011: First documentation layout
+* 02/02/2011: Modelling sprint

@@ -1,4 +1,16 @@
-User guide
-##########
+.. _echap_user:
 
-Put whaterver you want here
+Alinea.Echap User Guide
+#######################################
+
+:Version: |version|
+:Release: |release|
+:Date: |today|
+
+.. toctree::
+    
+    archi.rst
+    cycle.rst
+    dispersion.rst
+    pesticide.rst
+    scenarii.rst
