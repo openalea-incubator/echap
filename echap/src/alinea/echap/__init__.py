@@ -1,0 +1,1 @@
+# Add the license file here"""The Alinea.Echap package provides a set of modules developped during the Echap project:* Simulation / Reconstruction of a wheat canopy* Septoriose cycle* Dispersion"""

@@ -4,7 +4,7 @@
 from openalea.core import *
 
 
-__name__ = 'Echap'
+__name__ = 'Alinea.Echap'
 
 __editable__ = True
 __description__ = ''
