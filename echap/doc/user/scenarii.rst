@@ -27,6 +27,10 @@ For this we may think to associate a positive or negative value to each variable
 
 An alternative way is to identify questions than can be answered unequivocally for instance “create a subset of the database according to one column, rank lines according to a column” an example is “amongst all scenariis with yield more than 90% of the maximum, which is the one with lower pesticide leach ?”
 - 
+Proposal for the input
+
+The meteorological database that will be that for Grignon or other in Paris region
+Treatment strategies : the same than tested in Boigneville
 
 
 First proposal for the output table to be analysed
@@ -39,7 +43,7 @@ genotype definition : identifier + variables describing the genotype (height, st
 (Choice of descriptive variables will impact the type of analysis
 one year climate (identifier + variables describing globally the climate - cumulated rain, mean temperature...)
 
-Variables describing the results
+Variables describing the results 
 Yield (or yield loss ?)
 quantity of spores
 quantity of fungicide emitted in the atmosphere
@@ -56,7 +60,7 @@ pesticide efficiency erosion resulting from this year
 first lines for data analysis
 
 the table with yearly variables will be used for exploratory analysis and for building a table with variable integrated over 5? years that will serve for ranking genotytpe + fungicide application strategies
-
+------------------------
 
 
 
@@ -65,13 +69,13 @@ Define explicitely the list of input data that have to be given for running one 
 Are there some input depending on output of previous year ? ( at least : erosion of pesticide efficiency)
 
 Define explicitely the list of output data that have to be stored as output of a one year simulation. 
+
+Validate by expert procedure of ranking and 5 years aggregation
  
 The consortium must decide whether the whole model will be validated against experimental data (eg from Boigneville experiment) 
 
 Define the time step  at which climatic data must be provided for “big model” simulations (daily ? hourly ?). Define the method for estimating data at this time step from the data existing in meteorological databases.
 
-Define the meteorological database that will be used in the scenaris (what should be the range of conditions that are represented ? eg only grignon, multiple sites ?)
-Get some examples of these meteorological database 
 
 :MISCEALLENOUS:
 Will it be necessary for the project to store daily output data ? 
