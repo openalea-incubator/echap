@@ -1,4 +1,4 @@
-.. _echap_scenarii:
+. _echap_scenarii:
 
 .. ..test
 WP6 : Scenarii
@@ -20,15 +20,19 @@ Run *Big model* on a range of combination of genotypes and fungicide application
 
 
 Analyse the data base to 
--	identify general trends exploratory statistics such as ACP and regression analysis
--	identify appropriate genotypes * application strategies that lead to the best compromises between productivity and environmental impact
+-	identify general trends by exploratory statistics such as ACP and regression analysis
+-	identify appropriate genotypes * application strategies that lead to the best compromises between productivity and environmental impact. This will rise the difficulty of ranking according to several criteria. For this we may think to associate a positive or negative value to each variable (impact, yield, erosion of pesticide efficiency) and rank according to the cumulated value but we do not know if this is valuable
 
 First proposal for the output table to be analysed
+
+One line per year of simulation. Each line consists in
+
 Variables describing the conditions
-scenario definition : identifier + other variables (type of fungicide, total dose...)
-genotype definition : identifier + other variables (height,stature,..)
+scenario definition : identifier + variables describing the scenario (type of fungicide, total dose...)
+genotype definition : identifier + variables describing the genotype (height, stature,..)
 (Choice of descriptive variables will impact the type of analysis
-one year climate (variables describing the global climate - cumulated rain, mean temperature...)
+one year climate (identifier + variables describing globally the climate - cumulated rain, mean temperature...)
+
 Variables describing the results
 Yield (or yield loss ?)
 quantity of spores
@@ -39,12 +43,20 @@ quantity of fungicide in the soil
 		if secondary products : same (stored and wash off)
 quantity of fungicide absorbed by the plant
 quantity of fungicide photodegradated
+pesticide efficiency erosion resulting from this year
+
+
+
+first lines for data analysis
+
+the table with yearly variables will be used for exploratory analysis and for building a table with variable integrated over 5? years that will serve for ranking genotytpe + fungicide application strategies
+
 
 
 
 :TODO: 
-Define explicitely the list of input data that have to be given for running one year simulation
-Are there some input depending on output of previous year ?
+Define explicitely the list of input data that have to be given for running one year simulation with Big Model
+Are there some input depending on output of previous year ? ( at least : erosion of pesticide efficiency)
 
 Define explicitely the list of output data that have to be stored as output of a one year simulation. 
  
@@ -69,3 +81,4 @@ Scenario
 ..    :width: 50%
 ..
 ..	Conceptual dataflow simulating one year experiment.
+
