@@ -12,6 +12,7 @@ Alinea.Echap User Guide
     archi.rst
     cycle.rst
     dispersion.rst
+    interception.rst
     pesticide.rst
     scenarii.rst
     pearl.rst

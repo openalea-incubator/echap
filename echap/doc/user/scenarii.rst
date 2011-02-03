@@ -97,7 +97,7 @@ Will it be necessary for the project to store daily output data ?
 Scenario
 =======================
 
-.. .. image:: annual_loop.png
+.. image:: annual_loop.png
 
 
 .. .. dataflow:: Alinea.Echap.Concept - Annual loop

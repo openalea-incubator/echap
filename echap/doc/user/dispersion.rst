@@ -8,7 +8,7 @@ WP XXX: Dispersion
 :Release: |release|
 :Date: |today|
 
-#.. seealso:: :ref:`echap_dispersion_reference`.
+.. .. seealso:: :ref:`echap_dispersion_reference`.
 
 
 Description
@@ -24,7 +24,7 @@ Tutorials and Examples
 Dataflow
 ==========
 
-.. dataflow:: Alinea.Echap.Concept - Annual loop
-    :width: 50%
+.. .. dataflow:: Alinea.Echap.Concept - Annual loop
+..    :width: 50%
 
-	Conceptual dataflow simulating one year experiment.
+..	Conceptual dataflow simulating one year experiment.

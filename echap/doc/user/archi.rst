@@ -24,7 +24,7 @@ Tutorials and Examples
 Dataflow
 ==========
 
-.. dataflow:: alinea.echap.Concept_-_Annual_loop
-    :width: 50%
+.. .. dataflow:: alinea.echap.Concept_-_Annual_loop
+..    :width: 50%
 
-    Conceptual dataflow simulating one year experiment.
+..    Conceptual dataflow simulating one year experiment.
