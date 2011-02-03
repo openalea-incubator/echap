@@ -38,29 +38,29 @@ First proposal for the output table to be analysed
 One line per year of simulation. Each line consists in
 
 Variables describing the conditions
-scenario definition : identifier + variables describing the scenario (type of fungicide, total dose...)
-genotype definition : identifier + variables describing the genotype (height, stature,..)
+- scenario definition : identifier + variables describing the scenario (type of fungicide, total dose...)
+- genotype definition : identifier + variables describing the genotype (height, stature,..)
 (Choice of descriptive variables will impact the type of analysis
 one year climate (identifier + variables describing globally the climate - cumulated rain, mean temperature...)
 
 Variables describing the results 
-Yield (or yield loss ?)
-quantity of spores
-quantity of fungicide emitted in the atmosphere
-quantity of fungicide in the soil
+- Yield (or yield loss ?)
+- quantity of spores
+- quantity of fungicide emitted in the atmosphere
+- quantity of fungicide in the soil
 		qt stored in the soil
 		wash off 
 		if secondary products : same (stored and wash off)
-quantity of fungicide absorbed by the plant
-quantity of fungicide photodegradated
-pesticide efficiency erosion resulting from this year
+- quantity of fungicide absorbed by the plant
+- quantity of fungicide photodegradated
+- pesticide efficiency erosion resulting from this year
 
 
 
 first lines for data analysis
 
-the table with yearly variables will be used for exploratory analysis and for building a table with variable integrated over 5? years that will serve for ranking genotytpe + fungicide application strategies
-------------------------
+The table with yearly variables will be used for exploratory analysis and for building a table with variable integrated over 5? years that will serve for ranking genotytpe + fungicide application strategies
+
 
 
 
