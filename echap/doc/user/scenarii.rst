@@ -19,9 +19,15 @@ Run *Big model* for validation against experimental data ? This is a question.
 Run *Big model* on a range of combination of genotypes and fungicide applications strategies, each time for a sequence  of climatic conditions representing 5 (?) years  to generate a database that will be used to analyse the environmental impact and productivity impacts of genotypes* fungicides stratrégies
 
 
-Analyse the data base to 
+Analyse the output data base to 
 -	identify general trends by exploratory statistics such as ACP and regression analysis
--	identify appropriate genotypes * application strategies that lead to the best compromises between productivity and environmental impact. This will rise the difficulty of ranking according to several criteria. For this we may think to associate a positive or negative value to each variable (impact, yield, erosion of pesticide efficiency) and rank according to the cumulated value but we do not know if this is valuable
+-	identify appropriate genotypes * application strategies that lead to the best compromises between productivity and environmental impact. This will rise the difficulty of ranking according to several criteria. 
+
+For this we may think to associate a positive or negative value to each variable (impact, yield, erosion of pesticide efficiency) and rank according to the cumulated value but we do not know if this is valuable.
+
+An alternative way is to identify questions than can be answered unequivocally for instance “create a subset of the database according to one column, rank lines according to a column” an example is “amongst all scenariis with yield more than 90% of the maximum, which is the one with lower pesticide leach ?”
+- 
+
 
 First proposal for the output table to be analysed
 
