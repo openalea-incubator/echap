@@ -22,7 +22,7 @@ Scenario
 .. image:: annual_loop.png
 
 
-.. dataflow:: Alinea.Echap.Concept - Annual loop
-    :width: 50%
+.. .. dataflow:: Alinea.Echap.Concept - Annual loop
+..    :width: 50%
 
-	Conceptual dataflow simulating one year experiment.
+..	Conceptual dataflow simulating one year experiment.
