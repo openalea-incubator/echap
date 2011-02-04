@@ -54,7 +54,7 @@ The model can be called with the following function:
       - 'photodegraded' (float) - Mass of product photodegraded (g)
             
 
-:TODO:: 
+.. TODO:: 
     - PlantOnly.prl, configured 
 	* to run one day  with date application == date debut
         * Calculated OptDspCrp_CompoundId
@@ -117,9 +117,26 @@ The other echap module may be used to parameterise :
 - CropGrowth parameters...
 
 
+Links with other Modules
+========================
+
+
+The output of pearl are to be checke for consistency with the input of environmental impact
+
+.. note:: In the case Pearl will be used to compute decay of compounds at leaf scale, it should be note taht the decay will only concern the product deposited at the leaf surface. All thepenetrated product will remian stable. To be check if this is constent with the hypothesis of Milne et al (see WP2) of a global decay of the dose (penetrated and surfacic ?) with time 
+
+
+RoadMap
+=======
+
+- Feb-June 2011 : complete inclusion of pearl (call/return from python) / test of model at leaf scale. extract/depose input from/to mtg
+- check run time in a scenario with 5000 ? leaf element
+- check consistency with WP2 decay function
+- Plan calibration of decay fuinction from data
+
 
 
 Tutorials and Examples
 =======================
 
-
+Dataflow illustrating the different way of coupling are:
