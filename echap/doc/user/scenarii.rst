@@ -15,11 +15,13 @@ Description
 What we do in this WP6 ?
 
 Run *Big model* for validation against experimental data ? This is a question. 
+(expert validation for certains parts (Pearl)/comparison decay curve : particular scenarii needed to be defined, who runs ?)
 
 Run *Big model* on a range of combination of genotypes and fungicide applications strategies, each time for a sequence  of climatic conditions representing 5 (?) years  to generate a database that will be used to analyse the environmental impact and productivity impacts of genotypes* fungicides stratrégies
 
 
 Analyse the output data base to 
+
 -	identify general trends by exploratory statistics such as ACP and regression analysis
 -	identify appropriate genotypes * application strategies that lead to the best compromises between productivity and environmental impact. This will rise the difficulty of ranking according to several criteria. 
 
@@ -97,7 +99,8 @@ Will it be necessary for the project to store daily output data ?
 Scenario
 =======================
 
-.. image:: annual_loop.png
+.. image:: FlowScenarii.jpg
+
 
 
 .. .. dataflow:: Alinea.Echap.Concept - Annual loop
