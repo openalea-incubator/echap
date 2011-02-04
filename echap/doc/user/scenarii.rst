@@ -14,7 +14,7 @@ Description
 =============
 What we do in this WP6 ?
 
-Run *Big model* for validation against experimental data ? This is a question. 
+Run *Big model* for validation against experimental data ? This is a good question. 
 (expert validation for certains parts (Pearl)/comparison decay curve : particular scenarii needed to be defined, who runs ?)
 
 Run *Big model* on a range of combination of genotypes and fungicide applications strategies, each time for a sequence  of climatic conditions representing 5 (?) years  to generate a database that will be used to analyse the environmental impact and productivity impacts of genotypes* fungicides stratrégies
