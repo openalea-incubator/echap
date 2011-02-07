@@ -8,12 +8,14 @@ Alinea.Echap User Guide
 :Date: |today|
 
 .. toctree::
-    
+
+    howto.rst
     presentation.rst
     archi.rst
     cycle.rst
-    dispersion.rst
+    efficacy.rst
     interception.rst
+    dispersion.rst
     pesticide.rst
-    scenarii.rst
     pearl.rst
+    scenarii.rst

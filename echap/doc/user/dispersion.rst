@@ -1,7 +1,7 @@
 .. _echap_dispersion:
 
 
-WP XXX: Dispersion
+WP 3: Dispersion
 ############################
 
 :Version: |version|
@@ -20,11 +20,3 @@ Description
 Tutorials and Examples
 =======================
 
-
-Dataflow
-==========
-
-.. .. dataflow:: Alinea.Echap.Concept - Annual loop
-..    :width: 50%
-
-..	Conceptual dataflow simulating one year experiment.

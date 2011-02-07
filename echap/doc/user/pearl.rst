@@ -33,7 +33,7 @@ One model run is needed per product.
 .. note:: One important question will be to determine if we need the 'reduction factor' for exposure or if we are able to drive te reduction of exposure with microclimatic variables directly (light, rain interception, wind speed) .
 
 
-The model can be called with the following function: 
+The model can then be called with the following function: 
 
 
 .. function:: pearl_leaf(dose,substance_parameters,local_meteo, TransportResistance)

@@ -40,11 +40,3 @@ Tutorials and Examples
 
 :Example: colorant de saucisses
 
-Dataflow
-==========
-
-
-.. .. dataflow:: Alinea.Echap.Concept - Annual loop
-..    :width: 50%
-
-..	Conceptual dataflow simulating one year experiment.

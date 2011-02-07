@@ -110,10 +110,3 @@ Scenario
 
 .. image:: FlowScenarii.jpg
 
-
-
-.. .. dataflow:: Alinea.Echap.Concept - Annual loop
-..    :width: 50%
-..
-..	Conceptual dataflow simulating one year experiment.
-
