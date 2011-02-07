@@ -89,34 +89,34 @@ Pesticide amount on leaf sector
 
 .. math::
 
-    A(t) =A0-(A_PEN + A_DEG + A_VOL + A_WAS)
+    A(t) =A_0-(A_{PEN} + A_{DEG} + A_{VOL} + A_{WAS})
 
-.. math::
+.. .. math::
     
-    A0 initial amount on MTG
+    :math:`A0` initial amount on MTG
 
 
 Pesticide penetration
 
 .. math::
 
-    A_PEN (t) =A0 exp (-k_PEN.t)
+    A_{PEN} (t) =A_0 exp (-k_{PEN} . t)
 
 Pesticide photodegradation
 
 .. math::
 
-    A_DEG (t) =A0 exp (-k_DEG.t)
+    A_{DEG} (t) =A_0 exp (-k_{DEG}.t)
 
 Pesticide volatilization
 
-.. math::
+.. .. math::
 
     Volat Flux ref PEARL
 
 Pesticide wash off
 
-.. math::
+.. .. math::
 
     Wash off ref PEARL
 
