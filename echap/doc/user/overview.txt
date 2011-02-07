@@ -1,1 +1,3 @@
-Alinea.Echap is a package to evaluate agronomical, environmental impact and efficiency erosion of pesticides application strategy.
+Alinea.Echap is a package for supporting the Echap project on the evaluation of the agronomical, environmental impact and efficiency erosion of pesticides application strategy.
+It gathers different models from different teams in the form of python/visualea modules, and offers interfaces between them. The modules can then be combined into dataflow to simulate day by day desease development and fate of pesticide, or to simulate middle term virtual experiment (10's of year).
+Modules also come with pre and post processing tool to allows parameterisation and construction of indices and statistics.

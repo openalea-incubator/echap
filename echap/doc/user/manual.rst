@@ -9,6 +9,7 @@ Alinea.Echap User Guide
 
 .. toctree::
     
+    presentation.rst
     archi.rst
     cycle.rst
     dispersion.rst
