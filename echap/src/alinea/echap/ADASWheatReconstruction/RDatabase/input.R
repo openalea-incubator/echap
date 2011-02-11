@@ -9,7 +9,7 @@ source("FunCalage.R")
 #
 fich <- list(RM99="RM 1999",RM00="RM 2000",HM99="HMo 1999",HM00="HMo 2000")
 #
-narestore <- function(x) {
+narestore <- function(x, nacode=-1) {
     res=x
     if (class(x)[1]=="numeric") {
         res=as.numeric(ifelse(x == -1,NA,x))
@@ -186,35 +186,134 @@ for (g in c("RM00","RM99"))
 lhr <- lapply(lhr,corflag)
 lhd <- c(lapply(lhr,meflhr),list(HM99=lhda))
 
-
 #
-#               HMo 1999 disease data.xls
+#                 disease data
 #
 
+# funtion to read HMo 1999 disease data.xls and rearrange the data
 readDisease <- function(what,dir="../XLData/",end=" disease data.xls",ong=NULL) {
+    print(what)    
+    file <- paste(dir,what,end,sep="") # concate input parameters
+    require(RODBC)
+    if (is.null(ong)) {
+        # detect table names automatically
+        ch <- odbcConnectExcel(file)
+        ong <- sqlTables(ch)$TABLE_NAME
+        odbcClose(ch)
+    }
+    # select the interesting tables
+    ongi <- grep("^(ASS|ass)[0-9]{1,2}.$",ong)
+    # read the first table to fixe which columns have to be filled
+    disease <- readExcell(file, ong[1],asis=TRUE)
+    # read all the other tables
+    for (i in ongi) {
+        print(paste("read onglet",ong[i]))
+        # put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked 
+        disease <- rbind(disease,readExcell(file, ong[i],asis=TRUE)[,1:ncol(disease)])
+    }
+    # replace "-1" by "NA"
+    disease = data.frame(lapply(disease,narestore))
+    # keep only the set data (i.e. those which are not nan)
+    disease[!is.na(disease[,1]),]
+   
+}
+
+# launch readDisease for all files and store the results list in diseasedb
+diseasedb <- lapply(fich, readDisease)
+
+
+#
+#                 meteo data
+#
+
+
+# funtion to read HMo met data.xls and rearrange the data
+readHMoMeteo <- function(what="HMo",dir="../XLData/",end=" met data.xls",ong=NULL) {
     print(what)    
     file <- paste(dir,what,end,sep="")
     require(RODBC)
+    # detect table names automatically
     if (is.null(ong)) {
         ch <- odbcConnectExcel(file)
         ong <- sqlTables(ch)$TABLE_NAME
         odbcClose(ch)
     }
-    ongi <- grep("^(ASS|ass)[0-9]{1,2}.$",ong)
-    disease <- readExcell(file, ong[1],asis=TRUE)
-    for (i in ongi) {
-        print(paste("read onglet",ong[i]))
-        disease <- rbind(disease,readExcell(file, ong[i],asis=TRUE)[,1:ncol(disease)])
+    print(paste("read onglet",ong))
+    meteo <- readExcell(file, ong, asis=TRUE)
+    # find the indexes of the "Date" columns
+    dateColsIndex <- grep("Date", colnames(meteo))
+    # find the indexes of the "Wind" columns
+    windColsIndex <- grep("Wind", colnames(meteo))
+    res <- NULL
+    # for each element in dateColsIndex...
+    for (i in seq(dateColsIndex)) {
+      # get the value for each column between dateColsIndex[i] and windColsIndex[i] and for each line except the 2 first one)
+      newdat <- meteo[-1:-2,dateColsIndex[i]:windColsIndex[i]]
+      if (i > 1)
+        # keep the column names read at the first loop pass
+        colnames(newdat) <- colnames(res)
+      # put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked 
+      res <- rbind(res,newdat)
     }
-    disease = data.frame(lapply(disease,narestore))   
-    disease[!is.na(disease[,1]),]
+    # replace "-9999" by "NA"
+    res = data.frame(lapply(res,narestore,nacode=-9999))
+    # replace "6999" by "NA"
+    res = data.frame(lapply(res,narestore,nacode=6999))
+    # keep only the set data (i.e. those which are not nan)
+    res[!is.na(res[,1]),]
    
 }
 
-diseasedb <- lapply(fich, readDisease)
+metHMj <- readHMoMeteo()
 
 #
-#               HMo 1999 disease data.xls
+#               RM met data.xls
 #
 
+# funtion to read "New logger hourly" table from "RM met data.xls" and rearrange the data
+readRMhMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL) {
+    print(what)
+    file <- paste(dir,what,end,sep="")
+    require(RODBC)
+    # detect table names automatically
+    if (is.null(ong)) {
+        ch <- odbcConnectExcel(file)
+        ong <- sqlTables(ch)$TABLE_NAME
+        odbcClose(ch)
+    }
+    # select the interesting table
+    ongi <- grep("^New logger hourly$",ong)
+    print(paste("read onglet",ongi))
+    meteo <- readExcell(file, ongi, asis=TRUE)
+    # find the indexes of the "Date" columns
+    dateColsIndex <- grep("Date", colnames(meteo))
+    # find the indexes of the "Wind" columns
+    windColsIndex <- grep("Wind", colnames(meteo))
+    res <- NULL
+    # for each element in dateColsIndex...
+    for (i in seq(dateColsIndex)) {
+      # get the value for each column between dateColsIndex[i] and windColsIndex[i] and for each line except the 2 first one)
+      newdat <- meteo[-1:-2,dateColsIndex[i]:windColsIndex[i]]
+      if (i > 1)
+        # keep the column names read at the first loop pass
+        colnames(newdat) <- colnames(res)
+      # put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked 
+      res <- rbind(res,newdat)
+    }
+    # replace "-9999" by "NA"
+    res = data.frame(lapply(res,narestore,nacode=-9999))
+    # replace "6999" by "NA"
+    res = data.frame(lapply(res,narestore,nacode=6999))
+    # keep only the set data (i.e. those which are not nan)
+    res[!is.na(res[,1]),]
+   
+}
+# new logger hourly table
+metRMh <- readRMhMeteo()
 
+# funtion to read "Old logger" table from "RM met data.xls" and rearrange the data
+metRMj
+
+
+# merge "RM met data" and "HMo met data"
+meteodb <- list(HMj=metHMj, RMh=metRMh, RMj=metRMj)
