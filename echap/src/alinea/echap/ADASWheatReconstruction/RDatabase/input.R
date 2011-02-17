@@ -280,11 +280,11 @@ readRMhMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL
         odbcClose(ch)
     }
     # select 'New logger hourly' table
-	ongi <- grep("'New logger hourly\\$'",ong, value=TRUE)
+    ongi <- grep("'New logger hourly\\$'",ong, value=TRUE)
     print(paste("read onglet",ongi))
     meteo <- readExcell(file, ongi, asis=TRUE)
-	
-	res <- meteo[-1,-grep("^F[0-9]{2}", colnames(meteo))]
+    
+    res <- meteo[-1,-grep("^F[0-9]{2}", colnames(meteo))]
 
     # replace "6999" by "NA"
     res = data.frame(lapply(res,narestore,nacode=6999))
@@ -297,27 +297,27 @@ metRMh <- readRMhMeteo()
 
 # funtion to read "Old logger" table from "RM met data.xls" and correct the syntax
 readRMjMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL) {
-	print(what)
-	file <- paste(dir,what,end,sep="")
-	require(RODBC)
-	# detect table names automatically
-	if (is.null(ong)) {
-		ch <- odbcConnectExcel(file)
-		ong <- sqlTables(ch)$TABLE_NAME
-		odbcClose(ch)
-	}
-	# select 'Old logger' table
-	ongi <- grep("'Old logger\\$'",ong, value=TRUE)
-	print(paste("read onglet",ongi))
-	meteo <- readExcell(file, ongi, asis=TRUE)
-	
-	res <- meteo[-1,]
-	
-	# replace "-9999" by "NA"
-	res = data.frame(lapply(res,narestore,nacode=-9999))
-	# keep only the set data (i.e. those which are not nan)
-	res[!is.na(res[,1]),]
-	
+    print(what)
+    file <- paste(dir,what,end,sep="")
+    require(RODBC)
+    # detect table names automatically
+    if (is.null(ong)) {
+        ch <- odbcConnectExcel(file)
+        ong <- sqlTables(ch)$TABLE_NAME
+        odbcClose(ch)
+    }
+    # select 'Old logger' table
+    ongi <- grep("'Old logger\\$'",ong, value=TRUE)
+    print(paste("read onglet",ongi))
+    meteo <- readExcell(file, ongi, asis=TRUE)
+    
+    res <- meteo[-1,]
+    
+    # replace "-9999" by "NA"
+    res = data.frame(lapply(res,narestore,nacode=-9999))
+    # keep only the set data (i.e. those which are not nan)
+    res[!is.na(res[,1]),]
+    
 }
 metRMj <- readRMjMeteo()
 
