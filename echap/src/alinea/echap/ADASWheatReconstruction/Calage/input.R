@@ -10,12 +10,13 @@ source("FunConvMeteo.R")
 #
 #import db
 #
-rm(gsdb,dimdb,lhd,diseasedb)
+rm(gsdb,dimdb,lhd,diseasedb,meteodb)
 attach("../RDatabase/.RData")
 gsdb <- get("gsdb")
 dimdb <- get("dimdb")
 lhd <- get("lhd")
 diseasedb <- get("diseasedb")
+meteodb <- get("meteodb")
 detach()
 #
 # Ajout donnees manuelles
