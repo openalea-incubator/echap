@@ -12,7 +12,7 @@ fich <- list(RM99="RM 1999",RM00="RM 2000",HM99="HMo 1999",HM00="HMo 2000")
 narestore <- function(x, nacode=-1) {
     res=x
     if (class(x)[1]=="numeric") {
-        res=as.numeric(ifelse(x == -1,NA,x))
+        res=as.numeric(ifelse(x == nacode,NA,x))
     }
     res
 }
@@ -227,7 +227,7 @@ diseasedb <- lapply(fich, readDisease)
 #
 
 
-# funtion to read HMo met data.xls and rearrange the data
+# function to read "HMo met data.xls" and correct the syntax
 readHMoMeteo <- function(what="HMo",dir="../XLData/",end=" met data.xls",ong=NULL) {
     print(what)    
     file <- paste(dir,what,end,sep="")
@@ -247,19 +247,17 @@ readHMoMeteo <- function(what="HMo",dir="../XLData/",end=" met data.xls",ong=NUL
     res <- NULL
     # for each element in dateColsIndex...
     for (i in seq(dateColsIndex)) {
-      # get the value for each column between dateColsIndex[i] and windColsIndex[i] and for each line except the 2 first one)
-      newdat <- meteo[-1:-2,dateColsIndex[i]:windColsIndex[i]]
+      # ... get the value for each column between dateColsIndex[i] and windColsIndex[i] and for each line except the 2 first ones...
+      newdat <- meteo[-1,dateColsIndex[i]:windColsIndex[i]]
       if (i > 1)
-        # keep the column names read at the first loop pass
+        # ... conserve the column names read at the first loop pass...
         colnames(newdat) <- colnames(res)
-      # put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked 
+      # ... and put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked. 
       res <- rbind(res,newdat)
     }
     # replace "-9999" by "NA"
     res = data.frame(lapply(res,narestore,nacode=-9999))
-    # replace "6999" by "NA"
-    res = data.frame(lapply(res,narestore,nacode=6999))
-    # keep only the set data (i.e. those which are not nan)
+    # conserve only the set data (i.e. those which are not nan)
     res[!is.na(res[,1]),]
    
 }
@@ -270,7 +268,7 @@ metHMj <- readHMoMeteo()
 #               RM met data.xls
 #
 
-# funtion to read "New logger hourly" table from "RM met data.xls" and rearrange the data
+# function to read "New logger hourly" table from "RM met data.xls" and correct the syntax
 readRMhMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL) {
     print(what)
     file <- paste(dir,what,end,sep="")
@@ -281,39 +279,47 @@ readRMhMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL
         ong <- sqlTables(ch)$TABLE_NAME
         odbcClose(ch)
     }
-    # select the interesting table
-    ongi <- grep("^New logger hourly$",ong)
+    # select 'New logger hourly' table
+	ongi <- grep("'New logger hourly\\$'",ong, value=TRUE)
     print(paste("read onglet",ongi))
     meteo <- readExcell(file, ongi, asis=TRUE)
-    # find the indexes of the "Date" columns
-    dateColsIndex <- grep("Date", colnames(meteo))
-    # find the indexes of the "Wind" columns
-    windColsIndex <- grep("Wind", colnames(meteo))
-    res <- NULL
-    # for each element in dateColsIndex...
-    for (i in seq(dateColsIndex)) {
-      # get the value for each column between dateColsIndex[i] and windColsIndex[i] and for each line except the 2 first one)
-      newdat <- meteo[-1:-2,dateColsIndex[i]:windColsIndex[i]]
-      if (i > 1)
-        # keep the column names read at the first loop pass
-        colnames(newdat) <- colnames(res)
-      # put each table at the end of the precedent one ; the coherence between column names and colum numbers is also checked 
-      res <- rbind(res,newdat)
-    }
-    # replace "-9999" by "NA"
-    res = data.frame(lapply(res,narestore,nacode=-9999))
+	
+	res <- meteo[-1,-grep("^F[0-9]{2}", colnames(meteo))]
+
     # replace "6999" by "NA"
     res = data.frame(lapply(res,narestore,nacode=6999))
     # keep only the set data (i.e. those which are not nan)
     res[!is.na(res[,1]),]
    
 }
-# new logger hourly table
+
 metRMh <- readRMhMeteo()
 
-# funtion to read "Old logger" table from "RM met data.xls" and rearrange the data
-metRMj
-
+# funtion to read "Old logger" table from "RM met data.xls" and correct the syntax
+readRMjMeteo <- function(what="RM",dir="../XLData/",end=" met data.xls",ong=NULL) {
+	print(what)
+	file <- paste(dir,what,end,sep="")
+	require(RODBC)
+	# detect table names automatically
+	if (is.null(ong)) {
+		ch <- odbcConnectExcel(file)
+		ong <- sqlTables(ch)$TABLE_NAME
+		odbcClose(ch)
+	}
+	# select 'Old logger' table
+	ongi <- grep("'Old logger\\$'",ong, value=TRUE)
+	print(paste("read onglet",ongi))
+	meteo <- readExcell(file, ongi, asis=TRUE)
+	
+	res <- meteo[-1,]
+	
+	# replace "-9999" by "NA"
+	res = data.frame(lapply(res,narestore,nacode=-9999))
+	# keep only the set data (i.e. those which are not nan)
+	res[!is.na(res[,1]),]
+	
+}
+metRMj <- readRMjMeteo()
 
 # merge "RM met data" and "HMo met data"
 meteodb <- list(HMj=metHMj, RMh=metRMh, RMj=metRMj)
