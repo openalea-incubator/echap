@@ -18,12 +18,13 @@ General introduction
 
 Pesticide leaf is designed to simulate amounts of fungicide residues on the aerial parts (leaves) of wheat plants as a function of time. It describes elementary processes of phodegradtion, penetration, volatilization and wash off. Output is a concentration/amount as a function of time for each plant element.
 
-The model is coupled : 
+The model will be used in the annual loop, where it is coupled : 
 with a light model adapted to field conditions (Caribu model), in order to be able to calculate accurately the
 light interception and the photodegradation on phytoelements during the crop cycle
 with an interception module 
 with a infection cycle module
 
+.. note:: This module may re-use the framework of the pearl model (see WP3 Use of Pearl)
 
 
 Description of Pesticide leaf's inputs

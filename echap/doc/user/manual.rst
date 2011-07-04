@@ -17,5 +17,7 @@ Alinea.Echap User Guide
     interception.rst
     dispersion.rst
     pesticide.rst
+    environment.rst
     pearl.rst
+    przm.rst
     scenarii.rst

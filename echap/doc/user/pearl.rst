@@ -17,9 +17,9 @@ In the context of the project, it could be used in three cases :
 - case 1 : to compute localy (on small leaf parts) the fate of products at a daily (or hourly) time step. In this case the model is run with micrometeorological data computed at leaf level and becomes an alternative to other pesticide decay functions in the within day loop.
 
 
-- case 2 : to use outputs of case 1 to complete a pearl run (soil+vegetation) for getting outputs in the the soil (missing in run of case 1). In this case the outputs of case 1 are used to compute a DT50 of dissipation in the crop (option Lumped in pearl)that will force the decay in the vegetation as computed with th local model.
+- case 2 : to compute the fate of pesticide in the whole system, taking into account the outputs of the detailed simulation to compute a DT50 of dissipation in the crop (option Lumped in pearl)
 
-- case 3 (alternative to case 1+2) : to run pearl independantly of other module, in one run, and get directly the fate of pesticide at the canopy scale level + soil. Vegetation is in mode 'Calculated'
+- case 3 : to run pearl independantly of other module, in one run, and get directly the fate of pesticide at the canopy scale level + soil. Vegetation is in mode 'Calculated'
 
 Use in case 1
 =============
@@ -117,14 +117,6 @@ The other echap module may be used to parameterise :
 - CropGrowth parameters...
 
 
-Links with other Modules
-========================
-
-
-The output of pearl are to be checke for consistency with the input of environmental impact
-
-.. note:: In the case Pearl will be used to compute decay of compounds at leaf scale, it should be note taht the decay will only concern the product deposited at the leaf surface. All thepenetrated product will remian stable. To be check if this is constent with the hypothesis of Milne et al (see WP2) of a global decay of the dose (penetrated and surfacic ?) with time 
-
 
 RoadMap
 =======
@@ -135,8 +127,3 @@ RoadMap
 - Plan calibration of decay fuinction from data
 
 
-
-Tutorials and Examples
-=======================
-
-Dataflow illustrating the different way of coupling are:
