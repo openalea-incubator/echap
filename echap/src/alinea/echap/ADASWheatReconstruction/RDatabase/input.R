@@ -120,7 +120,7 @@ readlhr <- function(what,ong,dir="../XLData/",end=" leaf height.xls") {
 #
 onglhr <- list(HM00=paste("ASS",1:14,"$",sep=""),RM99=paste("ASS",1:23,"$",sep=""),RM00=paste("ASS",1:20,"$",sep=""))
 lhrb <- onglhr
-for (g in names(lhr))
+for (g in names(lhrb))
   lhrb[[g]] <- readlhr(fich[[g]],onglhr[[g]])
 #
 #Transformation tag -> numero depuis le haut (ramene RM99 et RM00 au cas HM00)
