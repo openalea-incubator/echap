@@ -102,32 +102,9 @@ constrRM99Meteo <- function(RMj) {
 }
 
 
-constrRM00Meteo <- function(RMh) {
+constrRM00Meteo <- function(RMhSelect) {
     
     RM00 <- NULL
-    
-    RMhSelect <- subset(RMh,
-                        date >= as.POSIXct(strptime("1999-09-01","%Y-%m-%d")) & date <= as.POSIXct(strptime("2000-08-31","%Y-%m-%d")),
-                        c(date,time,max.hourly.temp,min.hourly.temp))
-    
-    erroneousDates <- paste(RMhSelect$date, RMhSelect$time/100) # contains duplicates
-    incompleteDates <- unique(erroneousDates) # after removing duplicates, 2 dates are missing
-    
-    elementsToRemove <- grep(2,table(erroneousDates))
-    
-    RMhSelect <- RMhSelect[-c(elementsToRemove),]
-       
-    # construct a complete dates sequence
-    completeDates <- seq(as.POSIXct("1999-09-01 00:00:00", "GMT"), as.POSIXct("2000-08-31 23:00:00", "GMT"), by="1 hour")
-    completeHours <- as.character(format(completeDates,"%H"))
-    completeHours <- as.character(as.numeric(completeHours)+1)
-    completeDates <- as.character(format(completeDates,"%Y-%m-%d"))
-    completeDates <- paste(completeDates, completeHours)    
-    
-    elementToInsert <- grep(FALSE, is.element(completeDates, incompleteDates)) # it lacks "2000-08-25 1" data
-   
-    RMhSelect <- RMhSelect[c(1:8616, 8616, 8617:nrow(RMhSelect)),]
-    RMhSelect[8617,] <- list(as.POSIXct("2000-08-25"),as.numeric("100"),as.numeric("14.1"),as.numeric("12.865"))
                   
     annee <- as.numeric(format(RMhSelect$date,"%Y"))
     jour <- as.numeric(format(RMhSelect$date,"%j"))
