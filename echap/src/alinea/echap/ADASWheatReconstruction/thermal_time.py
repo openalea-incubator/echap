@@ -29,7 +29,7 @@ def parton_logan(dailyMinMaxTemp, latitude=55, param="air150cm"):
         - `param` : dictionary
   
     :return: the air temperature at hourly time steps.
-    :rtype: pandas.core.series.TimeSeries
+    :rtype: pandas.DataFrame
     
     '''
 
