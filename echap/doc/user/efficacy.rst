@@ -50,11 +50,12 @@ The module comes with 3 functions
   - allows infectious cycle (WP1) to respond to efficacy
   - `erosion_factor` (list of float) - Scaling factor for efficacy of compounds linked to erosion of efficacy due to evolution of resistance of strains
 
-.. function:: erode_products(erosion_factor, compound_parameters)
+.. function:: erode_products(erosion_rates, compound_parameters)
 
     :Parameters:
-      - `erosion_factor` (float, [0,1]) - Scaling factor for efficacy of compounds linked to erosion of efficacy due to evolution of resistance of strains
-      - `coumpound_parameters` : A dict of ('compound' : (parameters)) items. Parameters are :
+      - `erosion_rates` (dict) - A dict of ('compound': erosion_rate) where:
+          - `erosion_rate` (float, [0,1]) - Rate of loss of efficacy of compounds due to evolution of resistance of strains
+      - `coumpound_parameters` (dict) : A dict of ('compound' : (parameters)) items. Parameters are :
           - `dose_max`(float) - Maximum recommended dose of coumpounds for a single dose application (g.ha-1)
           - `action_mode_class` (int) - Code for the mode of action of coumpounds
           - `Ap` and `Kp` (floats) - Parameters for dose/protectant response curve of compounds
