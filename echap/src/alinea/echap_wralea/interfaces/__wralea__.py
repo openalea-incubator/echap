@@ -17,11 +17,11 @@ __institutes__ = None
 __icon__ = ''
 
 
-__all__ = ['pesticide_surfacic_decay_pesticide_surfacic_decay']
+__all__ = []
 
 
 
-pesticide_surfacic_decay_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
+interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
                 authors=' (wralea authors)',
                 description='Interface between g and the Pearl decay model',
                 category='Interfaces',
@@ -32,6 +32,7 @@ pesticide_surfacic_decay_pesticide_surfacic_decay = Factory(name='pesticide_surf
                 widgetmodule=None,
                 widgetclass=None,
                )
+__all__.append('interfaces_nodes_pesticide_surfacic_decay')
 
 
 
