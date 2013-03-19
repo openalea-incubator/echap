@@ -6,14 +6,12 @@
 def pesticide_surfacic_decay(g, 
              decay_model,
              label="LeafElement"):
-    """ Disperse spores of the lesions of fungus identified by fungus_name.
+    """ Interface between g and the decay model of Pearl
 
-    :Parameters:
+    Parameters:
       - `g` : MTG representing the canopy (and the soil).
-      - `decay_model` : model that allows positioning each DU in stock on g.
+      - `decay_model` : Pearl model that allows compute the fate of pesticides on plant leaves and loss to the environment.
 
-    :Example:
-      >>> 
     doses is a dict compound_name:ammount
     """
     doses = g.property('surfacic_doses') 
