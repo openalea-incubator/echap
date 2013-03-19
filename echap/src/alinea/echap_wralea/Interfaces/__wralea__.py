@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Mar 18 16:27:57 2013
+# This file has been generated at Tue Mar 19 10:07:59 2013
 
 from openalea.core import *
 
@@ -21,14 +21,14 @@ __all__ = []
 
 
 
-intefaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
+interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
                 authors=' (wralea authors)',
-                description='Interface between g and the Pearl decay model',
+                description='Interface between g and the decay model of Pearl',
                 category='Unclassified',
-                nodemodule='pesticide_surfacic_decay',
+                nodemodule='interfaces_nodes',
                 nodeclass='pesticide_surfacic_decay',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'PearlLeafDecayModel'}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': 'MTG element'}],
-                outputs=[{'interface': None, 'name': 'g', 'desc': 'new MTG with pesticide dose'}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Pearl decay model'}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': 'Leaf element of MTG'}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': 'New MTG with pesticide dose on leaf'}],
                 widgetmodule=None,
                 widgetclass=None,
                )
