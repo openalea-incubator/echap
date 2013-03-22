@@ -1,6 +1,6 @@
 """defines interfaces between g and the different models of echap project
 """
-from alinea.pearl.pearl_leaf import *
+from alinea.pearl_wralea.pearl_leaf import *
 
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
