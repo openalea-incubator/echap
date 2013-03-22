@@ -1,5 +1,5 @@
 
-# This file has been generated at Thu Mar 21 14:57:16 2013
+# This file has been generated at Fri Mar 22 13:47:11 2013
 
 from openalea.core import *
 
@@ -13,11 +13,11 @@ __url__ = 'http://openalea.gforge.inria.fr'
 __alias__ = []
 __version__ = '0.8.0'
 __authors__ = ''
-__institutes__ = None
+__institutes__ = ''
 __icon__ = ''
 
 
-__all__ = []
+__all__ = ['interfaces_nodes_decay_leaf', 'interfaces_nodes_pesticide_surfacic_decay']
 
 
 
@@ -32,7 +32,7 @@ interfaces_nodes_decay_leaf = Factory(name='decay_leaf',
                 widgetmodule=None,
                 widgetclass=None,
                )
-__all__.append('interfaces_nodes_decay_leaf')
+
 
 
 
@@ -47,7 +47,7 @@ interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_dec
                 widgetmodule=None,
                 widgetclass=None,
                )
-__all__.append('interfaces_nodes_pesticide_surfacic_decay')
+
 
 
 
