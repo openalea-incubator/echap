@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri Mar 22 13:47:11 2013
+# This file has been generated at Mon Mar 25 16:35:42 2013
 
 from openalea.core import *
 
@@ -27,7 +27,7 @@ interfaces_nodes_decay_leaf = Factory(name='decay_leaf',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='decay_leaf',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'Update MTG with decay of the penetrated doses'}],
                 widgetmodule=None,
                 widgetclass=None,
