@@ -29,10 +29,9 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
     return g
 
     
-def decay_leaf(g, decay_model, label='LeafElement'):
+def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
 
     """ Update the decay of penetrated doses of pesticide on the MTG.
-    
     Parameters
     ----------
     g: MTG
@@ -40,13 +39,11 @@ def decay_leaf(g, decay_model, label='LeafElement'):
         doses are stored in the MTG as a property
     dt: int
         Time step of the simulation
-    
     Returns
     -------
     g: MTG
         Updated MTG representing the canopy (and the soil)
     """
-
     vids = [vid for vid in g if g.label(vid).startswith(label)]
     for v in vids : 
         n = g.node(v)
