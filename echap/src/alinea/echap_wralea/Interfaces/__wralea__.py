@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Mar 25 16:35:42 2013
+# This file has been generated at Mon Mar 25 17:08:11 2013
 
 from openalea.core import *
 
@@ -21,13 +21,13 @@ __all__ = ['interfaces_nodes_decay_leaf', 'interfaces_nodes_pesticide_surfacic_d
 
 
 
-interfaces_nodes_decay_leaf = Factory(name='decay_leaf',
+interfaces_nodes_decay_leaf = Factory(name='pesticide_penetrated_decay',
                 authors=' (wralea authors)',
                 description='Update the decay of penetrated doses of pesticide on the MTG',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='decay_leaf',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'Update MTG with decay of the penetrated doses'}],
                 widgetmodule=None,
                 widgetclass=None,
