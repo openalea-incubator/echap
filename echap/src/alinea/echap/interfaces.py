@@ -29,7 +29,7 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
     return g
 
     
-def decay_leaf(g, label='LeafElement'):
+def decay_leaf(g, decay_model, label='LeafElement'):
 
     """ Update the decay of penetrated doses of pesticide on the MTG.
     
@@ -51,5 +51,5 @@ def decay_leaf(g, label='LeafElement'):
     for v in vids : 
         n = g.node(v)
         n.penetrated_doses_deg = n.penetrated_doses.copy()
-        n.penetrated_active_doses = decay(g.property('penetrated_doses')[v], 1, products_parameters)
+        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], 1, products_parameters)
     return g
