@@ -17,16 +17,16 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['interfaces_nodes_decay_leaf', 'interfaces_nodes_pesticide_surfacic_decay']
+__all__ = ['interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_pesticide_surfacic_decay']
 
 
 
-interfaces_nodes_decay_leaf = Factory(name='pesticide_penetrated_decay',
+interfaces_nodes_pesticide_penetrated_decay = Factory(name='pesticide_penetrated_decay',
                 authors=' (wralea authors)',
                 description='Update the decay of penetrated doses of pesticide on the MTG',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
-                nodeclass='decay_leaf',
+                nodeclass='pesticide_penetrated_decay',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'Update MTG with decay of the penetrated doses'}],
                 widgetmodule=None,
