@@ -1,16 +1,16 @@
 """defines interfaces between g and the different models of echap project
 """
-from alinea.pearl_wralea.pearl_leaf import *
-
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
     """ Interface between g and the decay model of Pearl
-
     Parameters:
-      - `g` : MTG representing the canopy (and the soil).
-      - `decay_model` : Pearl model that allows compute the fate of pesticides on plant leaves and loss to the environment.
-
-    doses is a dict compound_name: ammount
+    ----------
+    - `g` : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
+    - `decay_model` : Pearl model that allows compute the fate of pesticides on plant leaves and loss to the environment.
+    -  doses is a dict compound_name: ammount    
+    Returns    
+    ----------
+    g : Updated MTG representing the canopy (and the soil)
     """
     surfacic_doses = g.property('surfacic_doses') 
     penetrated_doses = g.property('penetrated_doses') 
@@ -30,23 +30,18 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
 
     
 def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
-
-    """ Update the decay of penetrated doses of pesticide on the MTG.
+    """ Interface between g and the decay model of penetrated doses of pesticide
     Parameters
     ----------
-    g: MTG
-        MTG representing the canopy (and the soil)
-        doses are stored in the MTG as a property
-    dt: int
-        Time step of the simulation
+    - 'g' : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
+    - `decay_model` : Model of penetrated pesticide decay (see simcycle.pesticide)
     Returns
     -------
-    g: MTG
-        Updated MTG representing the canopy (and the soil)
+    g : Updated MTG representing the canopy (and the soil)
     """
     vids = [vid for vid in g if g.label(vid).startswith(label)]
     for v in vids : 
         n = g.node(v)
         n.penetrated_doses_deg = n.penetrated_doses.copy()
-        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], 1, products_parameters)
+        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v])
     return g
