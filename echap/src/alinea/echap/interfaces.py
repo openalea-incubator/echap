@@ -45,3 +45,49 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
         n.penetrated_doses_deg = n.penetrated_doses.copy()
         n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v])
     return g
+
+
+def update_surf(g, dt, label="LeafElement"):
+    """ Update the surfacic doses of pesticide on the MTG.
+    
+    Parameters
+    ----------
+    g: MTG
+        MTG representing the canopy (and the soil)
+        'doses' are stored in the MTG as a property
+    dt: int
+        Time step of the simulation
+
+    Returns
+    -------
+    g: MTG
+        Updated MTG representing the canopy (and the soil)
+    
+    Example
+    -------
+      >>> g = MTG()
+      >>> dose = 1
+      >>> coumpound = 
+      >>> initiate(g, dose, compound)
+      >>> dt = 1
+      >>> nb_steps = 1000
+      >>> for i in range(nb_steps):
+      >>>     update_climate(g)
+      >>>     infect(g, dt)
+      >>>     update(g,dt)
+      >>> return g
+    
+    """   
+    doses = g.property('surfacic_doses')
+    labels = g.property('label') 
+    
+    for vid, d in doses.iteritems():
+        d = [dos for dos in d if dos.active]
+        doses[vid] = d
+        for doses in d:
+            # proposition 1 on fait ici une correspondance nom attendus dans g <-> noms caracterisant un environnement de lesion (classe a faire ??)
+            leaf=g.node(vid)
+            #proposition 2 : les conventions de nommage noms sont definies ailleurs (ou???) et on passe juste une leaf qui repond a cette convention
+            doses.update(dt, leaf)
+          
+    return g,
