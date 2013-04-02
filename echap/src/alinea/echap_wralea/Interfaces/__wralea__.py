@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Mar 25 17:08:11 2013
+# This file has been generated at Tue Apr 02 17:57:47 2013
 
 from openalea.core import *
 
@@ -17,7 +17,22 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_pesticide_surfacic_decay']
+__all__ = ['pesticide_interception_pesticide_interception', 'interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_pesticide_surfacic_decay']
+
+
+
+pesticide_interception_pesticide_interception = Factory(name='pesticide_interception',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='interfaces_nodes',
+                nodeclass='pesticide_interception',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
 
 
 
