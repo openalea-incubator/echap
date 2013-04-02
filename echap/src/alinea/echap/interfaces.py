@@ -47,6 +47,27 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
     return g
 
 
+def pesticide_interception(g, interception_model, label='LeafElement'):
+    """ Interface between g and the interception model of Caribu
+    Parameters:
+    ----------
+    - `g` : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
+    - `interception_model` : Caribu model
+    Returns    
+    ----------
+    g : Updated MTG representing the canopy (and the soil)
+    """
+    surfacic_doses = g.property('surfacic_doses') 
+    for vid, d in surfacic_doses.iteritems():
+        if g.label(vid).startswith(label):
+            for compound_name, compound_dose in d.iteritems():
+                try:
+                    surfacic_doses[vid][compound_name] = interception_model()[vid] + surfacic_doses[vid][compound_name]
+                except:
+                    surfacic_doses[vid][compound_name] = 0
+    return g
+
+
 def update_surf(g, dt, label="LeafElement"):
     """ Update the surfacic doses of pesticide on the MTG.
     
@@ -91,3 +112,18 @@ def update_surf(g, dt, label="LeafElement"):
             doses.update(dt, leaf)
           
     return g,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
