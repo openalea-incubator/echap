@@ -1,35 +1,34 @@
 """defines interfaces between g and the different models of echap project
 """
 
-def pesticide_surfacic_decay(g, decay_model, label='LeafElement'):
+def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
     """ Interface between g and the decay model of Pearl
     Parameters:
     ----------
     - `g` : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
-    - `decay_model` : Pearl model that allows compute the fate of pesticides on plant leaves and loss to the environment.
+    - `decay_model` :  model that compute for one compound the decayed surfacic dose (g.m2-1), the penetrated amount and the loss to the environment.
     -  doses is a dict compound_name: ammount    
     Returns    
     ----------
     g : Updated MTG representing the canopy (and the soil)
     """
     surfacic_doses = g.property('surfacic_doses') 
-    penetrated_doses = g.property('penetrated_doses') 
+    penetrated_doses = g.property('penetrated_doses')
+    temperature = g.property('temp')
     for vid, d in surfacic_doses.iteritems():
         if g.label(vid).startswith(label):
             for compound_name,compound_dose in d.iteritems():
-                leaf = g.node(vid)
-                microclimate = {'Tair':leaf.temp}
-                surfacic_doses[vid][compound_name] = decay_model.decay(compound_name,compound_dose,microclimate)[0]
-    for vid, d in penetrated_doses.iteritems():
-        if g.label(vid).startswith(label):
-            for compound_name,compound_dose in d.iteritems():
-                leaf = g.node(vid)
-                microclimate = {'Tair':leaf.temp}
-                penetrated_doses[vid][compound_name] = decay_model.decay(compound_name,compound_dose,microclimate)[3]
+                microclimate = {'Tair':temperature[vid]}
+                new_dose,penetrated_amount,loss = decay_model.decay(compound_name,compound_dose,microclimate,timestep)
+                surfacic_doses[vid][compound_name] = new_dose
+                if vid in penetrated_doses:
+                    penetrated_doses[vid][compound_name] += penetrated_amount
+                else : 
+                    penetrated_doses[vid] = {compound_name : penetrated_amount}
     return g
 
     
-def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
+def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=24):
     """ Interface between g and the decay model of penetrated doses of pesticide
     Parameters
     ----------
@@ -43,7 +42,7 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement'):
     for v in vids : 
         n = g.node(v)
         n.penetrated_doses_deg = n.penetrated_doses.copy()
-        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v])
+        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], timestep)
     return g
 
 
@@ -62,7 +61,7 @@ def pesticide_interception(g, interception_model, label='LeafElement'):
         if g.label(vid).startswith(label):
             for compound_name, compound_dose in d.iteritems():
                 try:
-                    surfacic_doses[vid][compound_name] = interception_model()[vid] + surfacic_doses[vid][compound_name]
+                    surfacic_doses[vid][compound_name] = interception_model(compound_name,compound_dose) + surfacic_doses[vid][compound_name]
                 except:
                     surfacic_doses[vid][compound_name] = 0
     return g
