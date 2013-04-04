@@ -8,7 +8,7 @@ Created on Mon Mar 25 16:59:54 2013
 from alinea.pearl.pearl import *
 from alinea.pearl.pearl_leaf import *
 from alinea.echap.interfaces import pesticide_surfacic_decay
-from alinea.simcycle.decay_model import *
+from alinea.simcycle.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
 
 from alinea.adel.newmtg import *
@@ -89,6 +89,19 @@ def update_on_leaves(g, label = 'LeafElement'):
     return g
 
 
+def update_no_doses(g, label = 'LeafElement'):
+    """ Read weather data for a step of simulation and apply it to each leaf.
+    """        
+    vids = [vid for vid in g if g.label(vid).startswith(label)]
+    for v in vids : 
+        n = g.node(v)
+        n.temp = 12
+        n.rain_intensity = 0
+        n.relative_humidity = 100 
+        n.wetness = True
+    return g
+
+
 ########################## tests
 
 def test_surfacic():
@@ -105,6 +118,27 @@ def test_penetrated():
     decay_model = PenetratedDecayModel()
     g = pesticide_penetrated_decay(g, decay_model)
     return g
+
+def test_decay():
+    g = adel_mtg()
+    g = update_on_leaves(g)
+    decay_model = PearLeafDecayModel()
+    g = pesticide_surfacic_decay(g, decay_model)
+    decay_model = PenetratedDecayModel()
+    g = pesticide_penetrated_decay(g, decay_model)
+    return g
+
+def test_no_doses():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    decay_model = PearLeafDecayModel()
+    g = pesticide_surfacic_decay(g, decay_model)
+    decay_model = PenetratedDecayModel()
+    g = pesticide_penetrated_decay(g, decay_model)
+    return g
+
+
+
 
 
 
