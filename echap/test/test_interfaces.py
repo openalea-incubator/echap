@@ -107,7 +107,7 @@ def update_no_doses(g, label = 'LeafElement'):
 def test_surfacic():
     g = adel_mtg()
     g = update_on_leaves(g)
-    decay_model = PearLeafDecayModel()
+    decay_model = PearLeafDecayModel({'Chlorothalonil':{},'Epoxiconazole':{},'Metconazole':{}})
     g = pesticide_surfacic_decay(g, decay_model)
     return g
 
