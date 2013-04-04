@@ -10,7 +10,7 @@ from alinea.pearl.pearl_leaf import *
 from alinea.echap.interfaces import pesticide_surfacic_decay
 from alinea.simcycle.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
-from alinea.caribu.interception_leaf import *
+from alinea.echap.interception_leaf import *
 from alinea.echap.interfaces import pesticide_interception
 
 from alinea.adel.newmtg import *
@@ -104,7 +104,7 @@ def update_no_doses(g, label = 'LeafElement'):
     return g
 
 
-########################## tests
+########################## tests decays
 
 def test_surfacic():
     g = adel_mtg()
@@ -121,7 +121,7 @@ def test_penetrated():
     g = pesticide_penetrated_decay(g, decay_model)
     return g
 
-def test_decay():
+def test_all_decay():
     g = adel_mtg()
     g = update_on_leaves(g)
     decay_model = PearLeafDecayModel()
@@ -139,12 +139,34 @@ def test_no_doses():
     g = pesticide_penetrated_decay(g, decay_model)
     return g
 
+###################################### tests interception
+
 def test_intercept():
     g = adel_mtg()
-    g = update_no_doses(g)
+    g = update_on_leaves(g)
+    g = mtg_interpreter(g) 
+    scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, interception_model)
     return g
+
+def test_intercept_no_dose():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    g = mtg_interpreter(g)
+    scene = plot3d(g) 
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, interception_model)
+    return g
+
+
+#product_name = 'Caramba'
+#dose = 200000
+#productsDB = {'Ignite':{'Epoxiconazole':83}, 'Nevo':{'Chlorothalonil':375}, 'Caramba':{'Metconazole':60}}
+#elevation = 90
+#azimuth = 0
+
+
 
 
 
