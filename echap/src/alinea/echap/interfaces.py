@@ -39,20 +39,19 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=24)
     g : Updated MTG representing the canopy (and the soil)
     """
     penetrated_doses = g.property('penetrated_doses')
-    for vid, d in surfacic_doses.iteritems():
+    for vid, d in penetrated_doses.iteritems():
         if g.label(vid).startswith(label):
-            for compound_name,compound_dose in d.iteritems():
-    
-    
-    
-    
-    vids = [vid for vid in g if g.label(vid).startswith(label)]
-    for v in vids : 
-        n = g.node(v)
-        n.penetrated_doses_deg = n.penetrated_doses.copy()
-        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], timestep)
+            penetrated_act_dose,penetrated_deg_dose = decay_model.decay(vid,timestep)
     return g
-
+    
+    
+#    vids = [vid for vid in g if g.label(vid).startswith(label)]
+#    for v in vids : 
+#        n = g.node(v)
+#        n.penetrated_doses_deg = n.penetrated_doses.copy()
+#        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], timestep)
+#    return g
+#
 
 def pesticide_interception(g, interception_model, label='LeafElement'):
     """ Interface between g and the interception model of Caribu
