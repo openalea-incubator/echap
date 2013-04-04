@@ -10,6 +10,8 @@ from alinea.pearl.pearl_leaf import *
 from alinea.echap.interfaces import pesticide_surfacic_decay
 from alinea.simcycle.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
+from alinea.caribu.interception_leaf import *
+from alinea.echap.interfaces import pesticide_interception
 
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
@@ -107,7 +109,7 @@ def update_no_doses(g, label = 'LeafElement'):
 def test_surfacic():
     g = adel_mtg()
     g = update_on_leaves(g)
-    decay_model = PearLeafDecayModel({'Chlorothalonil':{},'Epoxiconazole':{},'Metconazole':{}})
+    decay_model = PearLeafDecayModel()
     g = pesticide_surfacic_decay(g, decay_model)
     return g
 
@@ -135,6 +137,13 @@ def test_no_doses():
     g = pesticide_surfacic_decay(g, decay_model)
     decay_model = PenetratedDecayModel()
     g = pesticide_penetrated_decay(g, decay_model)
+    return g
+
+def test_intercept():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, interception_model)
     return g
 
 
