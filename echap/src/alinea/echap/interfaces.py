@@ -38,6 +38,14 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=24)
     -------
     g : Updated MTG representing the canopy (and the soil)
     """
+    penetrated_doses = g.property('penetrated_doses')
+    for vid, d in surfacic_doses.iteritems():
+        if g.label(vid).startswith(label):
+            for compound_name,compound_dose in d.iteritems():
+    
+    
+    
+    
     vids = [vid for vid in g if g.label(vid).startswith(label)]
     for v in vids : 
         n = g.node(v)
