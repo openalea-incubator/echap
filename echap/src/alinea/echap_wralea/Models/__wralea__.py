@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri Apr 05 14:36:30 2013
+# This file has been generated at Fri Apr 05 15:53:06 2013
 
 from openalea.core import *
 
@@ -17,16 +17,16 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['models_nodes_milne_leaf', 'models_nodes_interception_leaf']
+__all__ = ['models_nodes_PenetratedDecayModel', 'models_nodes_CaribuInterceptModel']
 
 
 
-models_nodes_milne_leaf = Factory(name='Milne_leaf',
+models_nodes_PenetratedDecayModel = Factory(name='Milne_leaf',
                 authors=' (wralea authors)',
                 description='Milne model for penetrated pesticide decay',
                 category='model',
                 nodemodule='models_nodes',
-                nodeclass='milne_leaf',
+                nodeclass='PenetratedDecayModel',
                 inputs=[{'interface': IDict, 'name': 'compound_parameters', 'value': None, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'active_dose', 'desc': ''}],
                 widgetmodule=None,
@@ -36,13 +36,13 @@ models_nodes_milne_leaf = Factory(name='Milne_leaf',
 
 
 
-models_nodes_interception_leaf = Factory(name='Interception_leaf',
+models_nodes_CaribuInterceptModel = Factory(name='Interception_leaf',
                 authors=' (wralea authors)',
                 description='Caribu adaptor for pesticide interception',
                 category='model',
                 nodemodule='models_nodes',
-                nodeclass='interception_leaf',
-                inputs=[{'interface': IStr, 'name': 'product_name', 'value': None, 'desc': 'Commercial product name '}, {'interface': IFloat, 'name': 'dose', 'value': None, 'desc': 'Dose of product in l/ha'}, {'interface': IDict, 'name': 'productsDB', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}],
+                nodeclass='CaribuInterceptModel',
+                inputs=[{'interface': IStr, 'name': 'product_name', 'value': None, 'desc': 'Commercial product name '}, {'interface': IFloat, 'name': 'dose', 'value': None, 'desc': 'Dose of product in l/ha'}, {'interface': IDict, 'name': 'productsDB', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'doses', 'desc': 'doses of active compound in g/m'}],
                 widgetmodule=None,
                 widgetclass=None,
