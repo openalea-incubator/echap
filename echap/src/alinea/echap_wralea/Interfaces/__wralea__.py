@@ -1,5 +1,5 @@
 
-# This file has been generated at Wed Apr 03 16:29:32 2013
+# This file has been generated at Fri Apr 05 16:11:39 2013
 
 from openalea.core import *
 
@@ -27,7 +27,7 @@ interfaces_nodes_pesticide_penetrated_decay = Factory(name='pesticide_penetrated
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='pesticide_penetrated_decay',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': ''}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'timestep', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'Update MTG with decay of the penetrated doses'}],
                 widgetmodule=None,
                 widgetclass=None,
@@ -42,7 +42,7 @@ interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_dec
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='pesticide_surfacic_decay',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Pearl decay model'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': 'Leaf element of MTG'}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Pearl decay model'}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': 'Leaf element of MTG'}, {'interface': IFloat, 'name': 'timestep', 'value': 24, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'New MTG with pesticide dose on leaf'}],
                 widgetmodule=None,
                 widgetclass=None,
@@ -57,7 +57,7 @@ interfaces_nodes_pesticide_interception = Factory(name='pesticide_interception',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='pesticide_interception',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
