@@ -10,15 +10,16 @@ from numpy import recfromcsv
 from numpy import exp
 from math import radians, degrees, sin , cos
 
-def products_from_csv(csvname, delimiter = ';') :
-    """ 
-    Read a csv of products names and import them in a dict.
-    """
-    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = [dict(zip(tab.dtype.names, data)) for data in tab]
-    return d
+# def products_from_csv(csvname, delimiter = ';') :
+    # """ 
+    # Read a csv of products names and import them in a dict.
+    # """
+    # tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
+    # d = [dict(zip(tab.dtype.names, data)) for data in tab]
+    # b = dict([(k,{d:v}) for k,v in b.iteritems()])
+    # return b
 
-productsDB = products_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_names.csv')
+# productsDB = products_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_names.csv')
 
 
 def product_dose(product_name, dose, productsDB):

@@ -19,7 +19,7 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
         if g.label(vid).startswith(label):
             for compound_name,compound_dose in d.iteritems():
                 microclimate = {'Tair':temperature[vid]}
-                new_dose,penetrated_amount,loss = decay_model.decay(compound_name,compound_dose,microclimate,timestep)
+                new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate,timestep)
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
                     penetrated_doses[vid][compound_name] += penetrated_amount

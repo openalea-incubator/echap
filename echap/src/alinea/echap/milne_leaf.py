@@ -17,7 +17,7 @@ def compounds_from_csv(csvname, delimiter = ';') :
     return d
 
 
-products_parameters = compounds_from_csv('E:/openaleapkg/simcycle/src/alinea/simcycle_wralea/pesticide/products_parameters.csv')
+products_parameters = compounds_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_parameters.csv')
 
 
 def _dose_decay(decay_rate, initial_dose, days):
@@ -46,3 +46,10 @@ class PenetratedDecayModel(object):
     def decay(self, initial_dose, dt):
         active_dose = milne_leaf(initial_dose, self.compound_parameters, dt)
         return active_dose
+    def decay_and_penetrate(self, name, dose, microclimate, dt):
+        """ make all the product penetrates to simulate fully the model of Milne"""
+        newdose = 0
+        loss = 0
+        penetrated = dose
+        return newdose,penetrated,loss
+
