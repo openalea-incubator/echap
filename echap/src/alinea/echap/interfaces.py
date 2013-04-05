@@ -23,12 +23,12 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
                     penetrated_doses[vid][compound_name] += penetrated_amount
-                else : 
+                else :
                     penetrated_doses[vid] = {compound_name : penetrated_amount}
     return g
 
     
-def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=24):
+def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     """ Interface between g and the decay model of penetrated doses of pesticide
     Parameters
     ----------
@@ -41,19 +41,11 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=24)
     penetrated_doses = g.property('penetrated_doses')
     for vid, d in penetrated_doses.iteritems():
         if g.label(vid).startswith(label):
-            penetrated_act_dose,penetrated_deg_dose = decay_model.decay(vid,timestep)
+            penetrated_doses = decay_model.decay(d,timestep)
     return g
-    
-    
-#    vids = [vid for vid in g if g.label(vid).startswith(label)]
-#    for v in vids : 
-#        n = g.node(v)
-#        n.penetrated_doses_deg = n.penetrated_doses.copy()
-#        n.penetrated_active_doses = decay_model.decay(g.property('penetrated_doses')[v], timestep)
-#    return g
-#
 
-def pesticide_interception(g, interception_model, label='LeafElement', timestep=24):
+
+def pesticide_interception(g, scene, interception_model, label='LeafElement'):
     """ Interface between g and the interception model of Caribu
     Parameters:
     ----------
@@ -63,7 +55,7 @@ def pesticide_interception(g, interception_model, label='LeafElement', timestep=
     ----------
     g : Updated MTG representing the canopy (and the soil)
     """
-    surf_dose = interception_model.intercept()
+    surf_dose = interception_model.intercept(scene)
     if not 'surfacic_doses' in g.properties():
         g.add_property('surfacic_doses')
         g.property('surfacic_doses').update(surf_dose)
@@ -72,11 +64,11 @@ def pesticide_interception(g, interception_model, label='LeafElement', timestep=
         for vid, nd in surf_dose.iteritems():
             if g.label(vid).startswith(label):
                 for name, dose in nd.iteritems():
-                    if name in surfacic_doses:
+                    if name in surfacic_doses[vid]:
                         surfacic_doses[vid][name] += dose
                     else:
                         g.add_property('surfacic_doses')
-                        g.property('surfacic_doses')[vid][name].update(nd)
+                        g.property('surfacic_doses')[vid].update(nd)
     return g
 
 
@@ -128,18 +120,4 @@ def update_surf(g, dt, label="LeafElement"):
             doses.update(dt, leaf)
           
     return g,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

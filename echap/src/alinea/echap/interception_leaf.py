@@ -50,7 +50,7 @@ def _emission_inv(elevation, product_name, dose, productsDB):
     receive_dose = dose * abs(cos(theta))
     return name, receive_dose
 
-def interception_dose(product_name, dose, productsDB, elevation, azimuth):
+def interception_dose(product_name, dose, productsDB, elevation, azimuth, scene):
     name, receive_dose = _emission_inv(elevation, product_name, dose, productsDB)
     source = (receive_dose,(_vecteur_direction(elevation,azimuth))) # Quantité reçue
     c_scene = CaribuScene()    
@@ -70,7 +70,7 @@ class CaribuInterceptModel(object):
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth
-    def intercept(self, dt):
-        compound_name, Einc = interception_dose(self.product_name, self.dose, self.productsDB, self.elevation, self.azimuth)
+    def intercept(self, scene):
+        compound_name, Einc = interception_dose(self.product_name, self.dose, self.productsDB, self.elevation, self.azimuth, scene)
         doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
         return doses
