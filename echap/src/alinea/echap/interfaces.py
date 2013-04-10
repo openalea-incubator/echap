@@ -35,8 +35,7 @@ def pesticide_interception(g, scene, interception_model, label='LeafElement'):
                         g.add_property('surfacic_doses')
                         g.property('surfacic_doses')[vid].update(nd)
     return g
-    
-# todo: hauteur de crop à récuperer pour faire tourner pearl
+
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
     """ Interface between g and the decay model of Pearl
