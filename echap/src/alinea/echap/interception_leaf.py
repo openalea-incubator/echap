@@ -28,12 +28,12 @@ def product_dose(product_name, dose, productsDB):
             dose: Application dose in l/ha
             productsDB: Dict of products name and concentration of active compounds
         Outputs:
-            active_dose: Dose of active compound in g/cm²
+            active_dose: Dose of active compound in g/m²
     '''
     for prod, sub in dict(productsDB).iteritems():
         if prod == product_name:
             for compound_name, compound_dose in sub.iteritems():
-                active_dose = (compound_dose * dose) * 10**-8
+                active_dose = (compound_dose * dose) * 10**-4
     return compound_name, active_dose
 
 """ Implement pesticide interception_model using Caribu model
