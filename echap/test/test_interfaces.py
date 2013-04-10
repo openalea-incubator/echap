@@ -5,6 +5,11 @@ Created on Mon Mar 25 16:59:54 2013
 @author: lepse
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+from pandas import *
+import pylab
+
 from alinea.pearl.pearl import *
 from alinea.pearl.pearl_leaf import *
 from alinea.echap.interfaces import pesticide_surfacic_decay
@@ -104,6 +109,36 @@ def update_no_doses(g, label = 'LeafElement'):
     return g
 
 
+########################## extraction d'un data frame des doses de pesticide sur le mtg
+
+def get_df_out(time,g):
+    sd = g.property('surfacic_doses')
+    lab = g.property('label')
+    sp = g.property('penetrated_doses')            
+    recs = [(id,lab[id],comp,dose) for id,v in sd.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
+    ids,labs,compounds,surfdose = zip(*recs)
+    dfs = DataFrame({'time':[time]*len(ids), 'id' : ids, 'label': labs,'compound' : compounds, 'surfacic_doses' : surfdose})
+    if not 'penetrated_doses' in g.property_names():
+        df=dfs        
+        #dfp = DataFrame(columns=('time', 'id', 'label','compound', 'penetrated_dose'))
+    else:
+        recp = [(id,lab[id],comp,dose) for id,v in sp.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
+        idp,labp,compoundp,pendose = zip(*recp)
+        dfp = DataFrame({'time':[time]*len(idp), 'id' : idp, 'label': labp,'compound' : compoundp, 'penetrated_doses' : pendose})
+        df = merge(dfs, dfp, left_on=('compound', 'id', 'label', 'time'), right_on=('compound', 'id', 'label', 'time'), how='outer')    
+    return df
+
+
+########################## display
+
+def plot_decay(leaf=12):
+    #from pylab import *
+    df = test_decay_doses()[test_decay_doses()['id']==leaf]
+    plt.plot(df['time'], df['surfacic_doses'])
+    plt.plot(df['time'], df['penetrated_doses'])
+    plt.show()
+
+
 ########################## tests decays
 
 def test_surfacic():
@@ -161,33 +196,15 @@ def test_intercept_no_dose():
     g = pesticide_interception(g, scene, interception_model)
     return g
 
+
 ##################################### loop test
-
-
-def get_df_out(time,g):
-    sd = g.property('surfacic_doses')
-    lab = g.property('label')
-    sp = g.property('penetrated_doses')            
-    recs = [(id,lab[id],comp,dose) for id,v in sd.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
-    ids,labs,compounds,surfdose = zip(*recs)
-    dfs = DataFrame({'time':[time]*len(ids), 'id' : ids, 'label': labs,'compound' : compounds, 'surfacic_doses' : surfdose})
-    if not 'penetrated_doses' in g.property_names():
-        df=dfs        
-        #dfp = DataFrame(columns=('time', 'id', 'label','compound', 'penetrated_dose'))
-    else:
-        recp = [(id,lab[id],comp,dose) for id,v in sp.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
-        idp,labp,compoundp,pendose = zip(*recp)
-        dfp = DataFrame({'time':[time]*len(idp), 'id' : idp, 'label': labp,'compound' : compoundp, 'penetrated_doses' : pendose})
-        df = merge(dfs, dfp, left_on=('compound', 'id', 'label', 'time'), right_on=('compound', 'id', 'label', 'time'), how='outer')    
-    return df
-
 
 def test_decay_doses():
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
     # Loop
     t = 0
     dt = 1
-    nbiter = 25
+    nb_steps = 25
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -202,7 +219,8 @@ def test_decay_doses():
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
-    for i in range(nbiter):
+    for i in range(nb_steps):
+        print('time step %d' % i)
         t += dt        
         # Surfacic decay
         g = pesticide_surfacic_decay(g, Pearl_decay_model, timestep=dt)
@@ -212,14 +230,6 @@ def test_decay_doses():
         out = out.append(df)
     return out
 
-
-
-def plot_decay(leaf=12):
-    #from pylab import *
-    df = test_decay_doses()[test_decay_doses()['id']==leaf]
-    plt.plot(df['time'], df['surfacic_doses'])
-    plt.plot(df['time'], df['penetrated_doses'])
-    plt.show()
 
 
 
