@@ -1,26 +1,33 @@
-"""defines interfaces between g and the different models of echap project
+"""Defines interfaces between g and the different models of echap project
 """
 
-def pesticide_interception(g, scene, interception_model, label='LeafElement'):
-    """ Interface between g and the interception model of Caribu
+def pesticide_interception(g, scene, interception_model, product_name, dose, label='LeafElement'):
+    """ 
+    Interface between g and the interception model
+
     :Parameters:
     ----------
-    - `g` : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
-    - `interception_model` : Caribu model
-
+    - 'g' : MTG representing the canopy (and the soil)
+    - 'scene'
+    - 'interception_model' : A class embending the interception model and provide the following methods:    
+        - 'interception_model.intercept(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
+        See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
+    - 'product_name' : Commercial name of the product 
+    - 'dose' : Dose of product use in field (l.ha)
+    
     :Returns:  
     --------
-    - `g` : Updated MTG representing the canopy (and the soil)
+    - 'g' : Updated MTG representing the canopy (and the soil). 'surfacic_doses' property is added to g or updated if present.
     
-    Example
+    :Example:
     -------
       >>> g = MTG()
       >>> scene = plot3d(g)  
       >>> interception_model = CaribuInterceptModel()
-      >>> pesticide_interception(g, scene, interception_model)
+      >>> pesticide_interception(g, scene, interception_model, product_name, dose)
       >>> return g
     """
-    surf_dose = interception_model.intercept(scene)
+    surf_dose = interception_model.intercept(scene, product_name, dose)
     if not 'surfacic_doses' in g.properties():
         g.add_property('surfacic_doses')
         g.property('surfacic_doses').update(surf_dose)
@@ -38,30 +45,30 @@ def pesticide_interception(g, scene, interception_model, label='LeafElement'):
 
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
-    """ Interface between g and the decay model of Pearl
+    """ 
+    Interface between g and the decay model of Pearl
+
     :Parameters:
     ----------
-    - `g` : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
-    - `decay_model` :  model that compute for one compound the decayed surfacic dose (g.m2-1), the penetrated amount and the loss to the environment.
-    -  doses is a dict compound_name: ammount    
+    - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
+    - 'decay_model' : A class embending the decay model and provide the following methods:    
+        - 'decay_model.decay_and_penetrate(compound_name, compound_dose, microclimate, timestep)': Return for one compound the decayed surfacic dose (g.m-2), the penetrated amount and the loss to the environment.
+        See :func:`~alinea.pearl.pearl_leaf.PearLeafDecayModel`
+
     :Returns:    
     ----------
-    g : Updated MTG representing the canopy (and the soil)
-    
-    Example
+    - 'g' : Updated MTG representing the canopy (and the soil). 'surfacic_doses' and 'penetrated_doses' properties are added to g or updated if present.
+
+    :Example:
     -------
       >>> g = MTG()
-      >>> dose = 1
-      >>> coumpound = 
-      >>> initiate(g, dose, compound)
-      >>> dt = 1
-      >>> nb_steps = 1000
-      >>> for i in range(nb_steps):
-      >>>     update_climate(g)
-      >>>     infect(g, dt)
-      >>>     update(g,dt)
+      >>> scene = plot3d(g)  
+      >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
+      >>> interception_model = CaribuInterceptModel()
+      >>> pesticide_interception(g, scene, interception_model, product_name, dose)
+      >>> decay_model = PearLeafDecayModel(g, db)
+      >>> g = pesticide_surfacic_decay(g, decay_model)
       >>> return g
-    
     """
     surfacic_doses = g.property('surfacic_doses') 
     temperature = g.property('temp')
@@ -85,18 +92,32 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
 
 
 def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
-    """ Interface between g and the decay model of penetrated doses of pesticide
+    """ 
+    Interface between g and the decay model of penetrated doses of pesticide
+
     :Parameters:
     ----------
-    - 'g' : MTG representing the canopy (and the soil) doses are stored in the MTG as a property
-    - `decay_model` : Model of penetrated pesticide decay (see simcycle.pesticide)
-    
+    - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
+    - 'decay_model' : : A class embending the penetrated doses decay model and provide the following methods:    
+        - 'decay_model.decay(d,timestep)' : Model of penetrated pesticide decay . Return for one compound the dictionnary of compound name of the productof and the decayed penetrated dose (g.m-2).
+        See :func:`~alinea.echap.milne_leaf.PenetratedDecayModel`, `~alinea.echap.simcycle.pesticide`
+
     :Returns:
     -------
-    g : Updated MTG representing the canopy (and the soil)
-    
-    Example
-    -------    
+    - 'g' : Updated MTG representing the canopy (and the soil). 'penetrated_doses' property is updated to g.
+
+    :Example:
+    -------   
+      >>> g = MTG()
+      >>> scene = plot3d(g)  
+      >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
+      >>> interception_model = CaribuInterceptModel()
+      >>> pesticide_interception(g, scene, interception_model, product_name, dose)
+      >>> decay_model = PearLeafDecayModel(db)
+      >>> g = pesticide_surfacic_decay(g, decay_model)
+      >>> decay_model = PenetratedDecayModel()
+      >>> g = pesticide_penetrated_decay(g, decay_model)
+      >>> return g      
     """
     penetrated_doses = g.property('penetrated_doses')
     for vid, d in penetrated_doses.iteritems():

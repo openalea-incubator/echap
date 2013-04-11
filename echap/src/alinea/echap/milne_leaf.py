@@ -39,7 +39,7 @@ def milne_leaf(initial_dose, compound_parameters, days):
 
 
 class PenetratedDecayModel(object):
-    """ Adaptor for DecayLeaf model
+    """ Adaptor for Milne decay model
     """
     def __init__(self,compound_parameters={}):
         self.compound_parameters = products_parameters
