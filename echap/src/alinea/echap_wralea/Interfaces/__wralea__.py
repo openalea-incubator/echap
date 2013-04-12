@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri Apr 05 16:11:39 2013
+# This file has been generated at Thu Apr 11 17:43:35 2013
 
 from openalea.core import *
 
@@ -57,7 +57,7 @@ interfaces_nodes_pesticide_interception = Factory(name='pesticide_interception',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='pesticide_interception',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'product_name', 'value': None, 'desc': 'Commercial name of the product'}, {'interface': IFloat, 'name': 'dose', 'value': None, 'desc': 'Dose in l.ha-1'}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,

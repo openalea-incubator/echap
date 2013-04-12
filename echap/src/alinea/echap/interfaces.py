@@ -100,7 +100,7 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
     - 'decay_model' : : A class embending the penetrated doses decay model and provide the following methods:    
         - 'decay_model.decay(d,timestep)' : Model of penetrated pesticide decay . Return for one compound the dictionnary of compound name of the productof and the decayed penetrated dose (g.m-2).
-        See :func:`~alinea.echap.milne_leaf.PenetratedDecayModel`, `~alinea.echap.simcycle.pesticide`
+        See :func:`~alinea.echap.milne_leaf.PenetratedDecayModel`, :func:`~alinea.echap.simcycle.pesticide`
 
     :Returns:
     -------
