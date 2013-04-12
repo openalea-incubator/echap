@@ -23,11 +23,14 @@ from math import radians, degrees, sin , cos
 
 
 def product_dose(product_name, dose, productsDB):
-    ''' :Parameters:
+    ''' 
+    :Parameters:
+    ----------
             product_name: Commercial name of the product
             dose: Application dose in l/ha
             productsDB: Dict of products name and concentration of active compounds
-        :Returns:
+    :Returns:
+    ----------
             active_dose: Dose of active compound in g/m²
     '''
     for prod, sub in dict(productsDB).iteritems():
@@ -69,7 +72,7 @@ class CaribuInterceptModel(object):
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth
-    def intercept(self, scene):
+    def intercept(self, product_name, dose, scene):
         compound_name, Einc = interception_dose(product_name, dose, self.productsDB, self.elevation, self.azimuth, scene)
         doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
         return doses

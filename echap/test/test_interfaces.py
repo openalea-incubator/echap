@@ -4,6 +4,7 @@ Created on Mon Mar 25 16:59:54 2013
 
 @author: lepse
 """
+from openalea.color import colormap
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -131,12 +132,29 @@ def get_df_out(time,g):
 
 ########################## display
 
-def plot_decay(leaf=12):
+def plot_decay(leaf=12, out):
     #from pylab import *
-    df = test_decay_doses()[test_decay_doses()['id']==leaf]
+    df = out[out['id']==leaf]
     plt.plot(df['time'], df['surfacic_doses'])
     plt.plot(df['time'], df['penetrated_doses'])
     plt.show()
+
+
+def plot_pesticide(g, compound_name='Epoxiconazole', colmap='Oranges'):
+    """ plot the plant with pesticide doses """
+    from matplotlib import mpl
+    cmap = mpl.cm.get_cmap(colmap)
+    green = (0,180,0)
+    for v in g.vertices(scale=g.max_scale()) : 
+        n = g.node(v)
+        if 'surfacic_doses' in n.properties():
+            r,gg,b,s= cmap(n.surfacic_doses[compound_name])
+            n.color = (int(r*255),int(gg*255),int(b*255))           
+        else : 
+            n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
+    return g
 
 
 ########################## tests decays
@@ -200,7 +218,10 @@ def test_intercept_no_dose():
 ##################################### loop test
 
 def test_decay_doses():
+    radiations = range(501)
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
+    product_name='Ignite'
+    dose=200
     # Loop
     t = 0
     dt = 1
@@ -215,7 +236,7 @@ def test_decay_doses():
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
     # Interception
-    g = pesticide_interception(g, scene, interception_model)
+    g = pesticide_interception(g, scene, interception_model, product_name, dose)
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
@@ -228,6 +249,7 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
+        plot_pesticide(g, compound_name='Epoxiconazole', colmap='Oranges')
     return out
 
 

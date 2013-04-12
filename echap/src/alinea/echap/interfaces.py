@@ -27,7 +27,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
       >>> pesticide_interception(g, scene, interception_model, product_name, dose)
       >>> return g
     """
-    surf_dose = interception_model.intercept(scene, product_name, dose)
+    surf_dose = interception_model.intercept(product_name, dose, scene)
     if not 'surfacic_doses' in g.properties():
         g.add_property('surfacic_doses')
         g.property('surfacic_doses').update(surf_dose)
@@ -66,19 +66,18 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
       >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, scene, interception_model, product_name, dose)
-      >>> decay_model = PearLeafDecayModel(g, db)
+      >>> decay_model = PearLeafDecayModel(g, db)'Tair':temperature[vid]    temperature = g.property('temp')
       >>> g = pesticide_surfacic_decay(g, decay_model)
       >>> return g
     """
     surfacic_doses = g.property('surfacic_doses') 
-    temperature = g.property('temp')
     if not 'penetrated_doses' in g.property_names():
         g.add_property('penetrated_doses')
     penetrated_doses = g.property('penetrated_doses')
     for vid, d in surfacic_doses.iteritems():
         if g.label(vid).startswith(label):
             for compound_name,compound_dose in d.iteritems():
-                microclimate = {'Tair':temperature[vid]}
+                microclimate = {}
                 new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate,timestep)
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
