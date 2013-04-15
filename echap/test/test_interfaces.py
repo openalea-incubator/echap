@@ -18,6 +18,8 @@ from alinea.echap.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
 from alinea.echap.interception_leaf import *
 from alinea.echap.interfaces import pesticide_interception
+from alinea.echap.microclimate_leaf import *
+from alinea.echap.interfaces import local_microclimate
 
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
@@ -107,6 +109,7 @@ def update_no_doses(g, label = 'LeafElement'):
         n.rain_intensity = 0
         n.relative_humidity = 100 
         n.wetness = True
+        n.microclimate = {}
     return g
 
 
@@ -132,7 +135,7 @@ def get_df_out(time,g):
 
 ########################## display
 
-def plot_decay(leaf=12, out):
+def plot_decay(out, leaf=12):
     #from pylab import *
     df = out[out['id']==leaf]
     plt.plot(df['time'], df['surfacic_doses'])
@@ -202,7 +205,7 @@ def test_intercept():
     g = mtg_interpreter(g) 
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model)
+    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
     return g
 
 def test_intercept_no_dose():
@@ -211,7 +214,21 @@ def test_intercept_no_dose():
     g = mtg_interpreter(g)
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model)
+    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    return g
+
+
+###################################### test microclimate
+
+def test_microclimate():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    g = mtg_interpreter(g)
+    scene = plot3d(g) 
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    climate_model = CaribuMicroclimModel()
+    g = microclimate(g, scene, climate_model, rain=50)
     return g
 
 
@@ -220,8 +237,6 @@ def test_intercept_no_dose():
 def test_decay_doses():
     radiations = range(501)
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
-    product_name='Ignite'
-    dose=200
     # Loop
     t = 0
     dt = 1
@@ -233,10 +248,13 @@ def test_decay_doses():
     scene = plot3d(g) 
     # models
     interception_model = CaribuInterceptModel()
+    climate_model = CaribuMicroclimModel()
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
     # Interception
-    g = pesticide_interception(g, scene, interception_model, product_name, dose)
+    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    # Microclimate
+    g = microclimate(g, scene, climate_model, rain=50)
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
