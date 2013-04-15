@@ -44,6 +44,38 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
+def local_microclimate(g, scene, climate_model, rain, label='LeafElement'):
+    """ 
+    Interface between g and the microclimate model
+
+    :Parameters:
+    ----------
+    - 'g' : MTG representing the canopy (and the soil)
+    - 'scene'
+    - 'climate_model' : A class embending the interception model and provide the following methods:    
+        - 'interception_model.intercept(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
+        See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
+    - 'energy' : 
+    
+    :Returns:  
+    --------
+    - 'g' : Updated MTG representing the canopy (and the soil). 'microclimate' property is added to g or updated if present.
+    
+    :Example:
+    -------
+      >>> g = MTG()
+      >>> scene = plot3d(g)  
+      >>> climate_model = CaribuMicroclimModel()
+      >>> microclimate(g, scene, climate_model, rain)
+      >>> return g
+    """
+    microclimate = {}
+    local_meteo = climate_model.microclim(microclimate, rain, scene)
+    g.add_property('microclimate')
+    g.property('microclimate').update(local_meteo)
+    return g
+
+
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
     """ 
     Interface between g and the decay model of Pearl
@@ -71,14 +103,14 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
       >>> return g
     """
     surfacic_doses = g.property('surfacic_doses') 
+    microclimate = g.property('microclimate') 
     if not 'penetrated_doses' in g.property_names():
         g.add_property('penetrated_doses')
     penetrated_doses = g.property('penetrated_doses')
     for vid, d in surfacic_doses.iteritems():
         if g.label(vid).startswith(label):
             for compound_name,compound_dose in d.iteritems():
-                microclimate = {}
-                new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate,timestep)
+                new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
                     if compound_name in penetrated_doses:
