@@ -96,6 +96,7 @@ def update_on_leaves(g, label = 'LeafElement'):
         n.rain_intensity = 0
         n.relative_humidity = 100 
         n.wetness = True
+        n.microclimate = {}
     return g
 
 
@@ -143,7 +144,7 @@ def plot_decay(out, leaf=12):
     plt.show()
 
 
-def plot_pesticide(g, compound_name='Epoxiconazole', colmap='Oranges'):
+def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     """ plot the plant with pesticide doses """
     from matplotlib import mpl
     cmap = mpl.cm.get_cmap(colmap)
@@ -228,14 +229,13 @@ def test_microclimate():
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
     climate_model = CaribuMicroclimModel()
-    g = microclimate(g, scene, climate_model, rain=50)
+    g = local_microclimate(g, scene, climate_model, rain=50)
     return g
 
 
 ##################################### loop test
 
 def test_decay_doses():
-    radiations = range(501)
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
     # Loop
     t = 0
@@ -254,7 +254,7 @@ def test_decay_doses():
     # Interception
     g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
     # Microclimate
-    g = microclimate(g, scene, climate_model, rain=50)
+    g = local_microclimate(g, scene, climate_model, rain=50)
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
@@ -267,9 +267,8 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        plot_pesticide(g, compound_name='Epoxiconazole', colmap='Oranges')
+        plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r)
     return out
-
 
 
 
