@@ -29,8 +29,9 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     """
     surf_dose = interception_model.intercept(product_name, dose, scene)
     if not 'surfacic_doses' in g.properties():
+        vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
         g.add_property('surfacic_doses')
-        g.property('surfacic_doses').update(surf_dose)
+        g.property('surfacic_doses').update(dict((v, surf_dose[v]) for v in vi))
     else:
         surfacic_doses = g.property('surfacic_doses')
         for vid, nd in surf_dose.iteritems():
@@ -98,7 +99,7 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
       >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, scene, interception_model, product_name, dose)
-      >>> decay_model = PearLeafDecayModel(g, db)'Tair':temperature[vid]    temperature = g.property('temp')
+      >>> decay_model = PearLeafDecayModel(db)'Tair':temperature[vid]    temperature = g.property('temp')
       >>> g = pesticide_surfacic_decay(g, decay_model)
       >>> return g
     """
