@@ -32,7 +32,7 @@ def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
             n.color = green
     scene = plot3d(g)
     Viewer.display(scene)
-    return g
+    return scene
 
 
 
