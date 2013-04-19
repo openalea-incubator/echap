@@ -20,6 +20,8 @@ from alinea.echap.interception_leaf import *
 from alinea.echap.interfaces import pesticide_interception
 from alinea.echap.microclimate_leaf import *
 from alinea.echap.interfaces import local_microclimate
+from alinea.pesticide_efficacy.pesticide_efficacy import *
+from alinea.echap.interfaces import pesticide_efficacy
 
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
@@ -230,6 +232,20 @@ def test_microclimate():
     g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
     climate_model = CaribuMicroclimModel()
     g = local_microclimate(g, scene, climate_model, rain=50)
+    return g
+
+
+###################################### test efficacy
+
+def test_efficacy():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    g = mtg_interpreter(g)
+    scene = plot3d(g) 
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    efficacy_model = PesticideEfficacyModel()
+    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     return g
 
 
