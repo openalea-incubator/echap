@@ -248,6 +248,12 @@ def test_efficacy():
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     return g
 
+def test_efficacy_nopest():
+    g = adel_mtg()
+    efficacy_model = PesticideEfficacyModel()
+    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
+    return g
+
 
 ##################################### loop test
 
