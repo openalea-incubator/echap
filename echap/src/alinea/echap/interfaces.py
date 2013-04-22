@@ -164,7 +164,7 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     return g
 
 
-#def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
+def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
     """ 
     Interface between g and the efficacy model of pesticide compounds
 
@@ -172,7 +172,7 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     ----------
     - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
     - 'efficacy_model' : : A class embending the efficacy model of surfacic and penetrated doses of pesticide and provide the following methods:    
-        - 'efficacy_model.efficacy(surfacic_doses, penetrated_doses, timestep)' : Model of pesticide efficacy. Return for all compounds the dictionnary of protectant and eradicant efficacy (value between 0 and 1).
+        - 'efficacy_model.efficacy(surfacic_doses, penetrated_doses, timestep)' : Model of pesticide efficacy. Return the dictionnary of protectant and eradicant efficacy (value between 0 and 1) respectively for surfacic doses and penetrated doses of pesticide.
         See :func:`~alinea.pesticide_efficacy.pesticide_efficacy.PesticideEfficacyModel`, :func:`~alinea.simcycle.pesticide`
 
     :Returns:
@@ -183,18 +183,12 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     -------   
       >>> g = MTG()
       >>> scene = plot3d(g)  
-      >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, scene, interception_model, product_name, dose)
-      >>> decay_model = PearLeafDecayModel(db)
-      >>> g = pesticide_surfacic_decay(g, decay_model)
-      >>> decay_model = PenetratedDecayModel()
-      >>> g = pesticide_penetrated_decay(g, decay_model)
       >>> efficacy_model = PesticideEfficacyModel()
       >>> pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
       >>> return g      
     """
-def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
     if not 'surfacic_doses' in g.properties(): 
         vids = [vid for vid in g if g.label(vid).startswith(label)]
         for v in vids : 
@@ -205,9 +199,16 @@ def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
     surfacic_doses = g.property('surfacic_doses') 
     if not 'global_efficacy' in g.properties():
         g.add_property('global_efficacy')
-    for vid, d in surfacic_doses.iteritems():
-        if g.label(vid).startswith(label):
-            g.property('global_efficacy')[vid] = efficacy_model.efficacy(surfacic_doses[vid], penetrated_doses[vid], timestep)
+    vids = [vid for vid in surfacic_doses if g.label(vid).startswith(label)]
+    for v in vids :     
+        g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v], timestep)})
     return g
+
+
+#    for vid, surf_doses in surfacic_doses.iteritems():
+#        if g.label(vid).startswith(label):
+#            g.property('global_efficacy')[vid] = efficacy_model.efficacy(surfacic_doses[vid], penetrated_doses[vid], timestep)
+#    return g
+
 
 
