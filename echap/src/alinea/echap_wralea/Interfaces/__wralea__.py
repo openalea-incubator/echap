@@ -1,5 +1,5 @@
 
-# This file has been generated at Tue Apr 16 11:49:47 2013
+# This file has been generated at Mon Apr 22 10:23:03 2013
 
 from openalea.core import *
 
@@ -17,7 +17,22 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_local_microclimate', 'interfaces_nodes_pesticide_surfacic_decay', 'interfaces_nodes_pesticide_interception']
+__all__ = ['interfaces_nodes_pesticide_efficacy', 'interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_local_microclimate', 'interfaces_nodes_pesticide_surfacic_decay', 'interfaces_nodes_pesticide_interception']
+
+
+
+interfaces_nodes_pesticide_efficacy = Factory(name='pesticide_efficacy',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='interfaces_nodes',
+                nodeclass='pesticide_efficacy',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'efficacy_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
 
 
 

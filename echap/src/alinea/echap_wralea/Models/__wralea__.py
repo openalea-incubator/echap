@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Apr 15 15:35:56 2013
+# This file has been generated at Mon Apr 22 10:38:35 2013
 
 from openalea.core import *
 
@@ -17,22 +17,7 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['models_nodes_PenetratedDecayModel', 'models_nodes_CaribuMicroclimModel', 'models_nodes_CaribuInterceptModel']
-
-
-
-models_nodes_PenetratedDecayModel = Factory(name='Milne_leaf',
-                authors=' (wralea authors)',
-                description='Milne model for penetrated pesticide decay',
-                category='model',
-                nodemodule='models_nodes',
-                nodeclass='PenetratedDecayModel',
-                inputs=[{'interface': IDict, 'name': 'compound_parameters', 'value': None, 'desc': ''}],
-                outputs=[{'interface': None, 'name': 'active_dose', 'desc': ''}],
-                widgetmodule=None,
-                widgetclass=None,
-               )
-
+__all__ = ['models_nodes_CaribuMicroclimModel', 'models_nodes_PenetratedDecayModel', 'models_nodes_CaribuInterceptModel']
 
 
 
@@ -44,6 +29,21 @@ models_nodes_CaribuMicroclimModel = Factory(name='Microclimate_leaf',
                 nodeclass='CaribuMicroclimModel',
                 inputs=[{'interface': IStr, 'name': 'sectors', 'value': '46', 'desc': ''}, {'interface': IFloat, 'name': 'energy', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': IDict, 'name': 'microclimate', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+models_nodes_PenetratedDecayModel = Factory(name='Milne_leaf',
+                authors=' (wralea authors)',
+                description='Milne model for penetrated pesticide decay',
+                category='model',
+                nodemodule='models_nodes',
+                nodeclass='PenetratedDecayModel',
+                inputs=[{'interface': IDict, 'name': 'compound_parameters', 'value': None, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'active_dose', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )
