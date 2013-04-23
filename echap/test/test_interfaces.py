@@ -4,10 +4,12 @@ Created on Mon Mar 25 16:59:54 2013
 
 @author: lepse
 """
+
 from openalea.color import colormap
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import mpl
 from pandas import *
 import pylab
 
@@ -92,8 +94,8 @@ def update_on_leaves(g, label = 'LeafElement'):
     vids = [vid for vid in g if g.label(vid).startswith(label)]
     for v in vids : 
         n = g.node(v)
-        n.surfacic_doses={'Chlorothalonil':1,'Epoxiconazole':2,'Metconazole':3}
-        n.penetrated_doses={'Chlorothalonil':1,'Epoxiconazole':2,'Metconazole':3}
+        n.surfacic_doses={'Chlorothalonil':1,'Epoxiconazole':2}
+        n.penetrated_doses={'Chlorothalonil':1,'Epoxiconazole':2}
         n.temp = 12
         n.rain_intensity = 0
         n.relative_humidity = 100 
@@ -148,7 +150,6 @@ def plot_decay(out, leaf=12):
 
 def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     """ plot the plant with pesticide doses """
-    from matplotlib import mpl
     cmap = mpl.cm.get_cmap(colmap)
     green = (0,180,0)
     for v in g.vertices(scale=g.max_scale()) : 
@@ -208,7 +209,7 @@ def test_intercept():
     g = mtg_interpreter(g) 
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     return g
 
 def test_intercept_no_dose():
@@ -217,7 +218,7 @@ def test_intercept_no_dose():
     g = mtg_interpreter(g)
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     return g
 
 
@@ -229,7 +230,7 @@ def test_microclimate():
     g = mtg_interpreter(g)
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     climate_model = CaribuMicroclimModel()
     g = local_microclimate(g, scene, climate_model, rain=50)
     return g
@@ -243,7 +244,7 @@ def test_efficacy():
     g = mtg_interpreter(g)
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     return g
@@ -274,14 +275,13 @@ def test_decay_doses():
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
     # Interception
-    g = pesticide_interception(g, scene, interception_model, product_name='Ignite', dose=200)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     # Microclimate
     g = local_microclimate(g, scene, climate_model, rain=50)
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
     for i in range(nb_steps):
-        print('time step %d' % i)
         t += dt        
         # Surfacic decay
         g = pesticide_surfacic_decay(g, Pearl_decay_model, timestep=dt)
