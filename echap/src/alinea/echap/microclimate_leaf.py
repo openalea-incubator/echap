@@ -9,20 +9,14 @@ import alinea.caribu.sky_tools.turtle as turtle
 
 
 def microclimate_leaf(sectors, energy, microclimate, rain, scene):
-    if rain >0:
-        energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, rain)     
-        sources = zip(energy, direction)
-        c_scene = CaribuScene()    
-        idmap = c_scene.add_Shapes(scene)    
-        c_scene.addSources(sources)
-        output = c_scene.runCaribu(infinity=False)
-        rain_leaf = c_scene.output_by_id(output, idmap)['Einc']
     energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy) 
     sources = zip(energy, direction)
     c_scene = CaribuScene()    
     idmap = c_scene.add_Shapes(scene)    
     c_scene.addSources(sources)
     output = c_scene.runCaribu(infinity=False)
+    if rain >0:
+        rain_leaf = c_scene.output_by_id(output, idmap)['Einc']
     EiInf = c_scene.output_by_id(output, idmap)['EiInf']
     EiSup = c_scene.output_by_id(output, idmap)['EiSup']
     for Infid, e in EiInf.iteritems():
