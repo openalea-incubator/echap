@@ -1,5 +1,5 @@
 
-# This file has been generated at Wed Apr 10 17:17:45 2013
+# This file has been generated at Tue Apr 23 17:43:09 2013
 
 from openalea.core import *
 
@@ -17,7 +17,22 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['tests_nodes_plot_pesticide']
+__all__ = ['csv_to_dict_prod_csv_to_dict_prod', 'tests_nodes_plot_pesticide']
+
+
+
+csv_to_dict_prod_csv_to_dict_prod = Factory(name='csv_to_dict_prod',
+                authors=' (wralea authors)',
+                description='Read a products names csv file and convert it to a dict',
+                category='Unclassified',
+                nodemodule='csv_to_dict_prod',
+                nodeclass='csv_to_dict_prod',
+                inputs=[{'interface': None, 'name': 'csvname', 'value': None, 'desc': ''}],
+                outputs=[{'interface': IDict, 'name': 'product_dict', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
 
 
 
