@@ -1,5 +1,5 @@
 
-# This file has been generated at Tue Apr 23 17:43:09 2013
+# This file has been generated at Wed Apr 24 10:37:03 2013
 
 from openalea.core import *
 
@@ -17,18 +17,18 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['csv_to_dict_prod_csv_to_dict_prod', 'tests_nodes_plot_pesticide']
+__all__ = ['tests_nodes_compounds_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_products_from_csv']
 
 
 
-csv_to_dict_prod_csv_to_dict_prod = Factory(name='csv_to_dict_prod',
+tests_nodes_compounds_from_csv = Factory(name='compounds_from_csv',
                 authors=' (wralea authors)',
-                description='Read a products names csv file and convert it to a dict',
+                description='',
                 category='Unclassified',
-                nodemodule='csv_to_dict_prod',
-                nodeclass='csv_to_dict_prod',
-                inputs=[{'interface': None, 'name': 'csvname', 'value': None, 'desc': ''}],
-                outputs=[{'interface': IDict, 'name': 'product_dict', 'desc': ''}],
+                nodemodule='tests_nodes',
+                nodeclass='compounds_from_csv',
+                inputs=[{'interface': IFileStr, 'name': 'csvname', 'value': None, 'desc': ''}],
+                outputs=[{'interface': IDict, 'name': 'compound_dict', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )
@@ -44,6 +44,21 @@ tests_nodes_plot_pesticide = Factory(name='plot_pesticide',
                 nodeclass='plot_pesticide',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'OUT1', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+tests_nodes_products_from_csv = Factory(name='products_from_csv',
+                authors=' (wralea authors)',
+                description='Read a products names csv file and convert it to a dict',
+                category='Unclassified',
+                nodemodule='tests_nodes',
+                nodeclass='products_from_csv',
+                inputs=[{'interface': IFileStr, 'name': 'csvname', 'value': None, 'desc': ''}],
+                outputs=[{'interface': IDict, 'name': 'product_dict', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )
