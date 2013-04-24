@@ -60,8 +60,8 @@ def local_microclimate(g, scene, climate_model, rain, label='LeafElement'):
         - 'climate_model.microclim(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
         See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
-        - 'interception_model.intercept(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
-        See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel` !!!!!!
+        - 'climate_model.microclim(microclimate, rain, scene)' : Return the dictionnary of scene_id: radiation and rain
+        See :func:`~alinea.echap.interception_leaf.CaribuMicroclimModel`
     - 'energy' : 
     
     :Returns:  
@@ -76,8 +76,7 @@ def local_microclimate(g, scene, climate_model, rain, label='LeafElement'):
       >>> microclimate(g, scene, climate_model, rain)
       >>> return g
     """
-    microclimate = {}
-    local_meteo = climate_model.microclim(microclimate, rain, scene)
+    local_meteo = climate_model.microclim(rain, scene)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
     return g

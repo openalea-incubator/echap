@@ -7,6 +7,7 @@ Created on Tue Apr 16 17:15:32 2013
 from openalea.color import colormap
 
 import numpy as np
+from numpy import recfromcsv
 import matplotlib.pyplot as plt
 from pandas import *
 import pylab
@@ -34,5 +35,37 @@ def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     Viewer.display(scene)
     return scene
 
+
+def products_from_csv(csvname, delimiter = ';'):
+    """ 
+    Read a csv of products parameters and import them in a dict.
+    Expected columns are :
+        - 'product' : commercial name of the product
+        - 'compound' : name of the active compound of the product
+        - 'dose' : dose of active compound in the product (g.l-1)    
+    """
+    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
+    d = {}
+    for i in range(0,len(tab['compound'])):
+        d[tab[i][0]] = {tab[i][1]:tab[i][2]}
+    return d
+
+
+def compounds_from_csv(csvname, delimiter = ';'):
+    """ 
+    Read a csv of compounds parameters and import them in a dict.
+    Expected columns are :
+        - 'compound'
+        - 'dose_max_ha'
+        - 'type_code'
+        - 'Ap'
+        - 'Kp'
+        - 'Ae'
+        - 'Ke'
+        - 'decay_rate'    
+    """
+    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
+    d = [dict(zip(tab.dtype.names, data)) for data in tab]
+    return d
 
 

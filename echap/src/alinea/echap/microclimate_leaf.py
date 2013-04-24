@@ -8,7 +8,26 @@ from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
 
 
-def microclimate_leaf(sectors, energy, microclimate, rain, scene):
+def climate_from_csv(csvname, delimiter = ';'):
+    """ 
+    Read a csv of compounds parameters and import them in a dict.
+    Expected columns are :
+        - 'compound'
+        - 'dose_max_ha'
+        - 'type_code'
+        - 'Ap'
+        - 'Kp'
+        - 'Ae'
+        - 'Ke'
+        - 'decay_rate'    
+    """
+    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
+    d = [dict(zip(tab.dtype.names, data)) for data in tab]
+    return d
+
+
+def microclimate_leaf(sectors, energy, globalclimate, rain, scene):
+    microclimate = {}
     energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy) 
     sources = zip(energy, direction)
     c_scene = CaribuScene()    
@@ -32,11 +51,12 @@ def microclimate_leaf(sectors, energy, microclimate, rain, scene):
 class CaribuMicroclimModel(object):
     """ Adaptor for Caribu model compliying echap microclimate_model protocol 
     """
-    def __init__(self, sectors='46', energy=1):
+    def __init__(self, sectors='46', energy=1, globalclimate={}):
         self.sectors = sectors
         self.energy = energy
-    def microclim(self, microclimate, rain, scene):
-        local_meteo = microclimate_leaf(self.sectors, self.energy, microclimate, rain, scene)
+        self.globalclimate = globalclimate
+    def microclim(self, rain, scene):
+        local_meteo = microclimate_leaf(self.sectors, self.energy, self.globalclimate, rain, scene)
         return local_meteo
 
 

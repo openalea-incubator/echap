@@ -8,9 +8,18 @@ from numpy import recfromcsv
 from numpy import exp
 
 
-def compounds_from_csv(csvname, delimiter = ';') :
+def compounds_from_csv(csvname, delimiter = ';'):
     """ 
     Read a csv of compounds parameters and import them in a dict.
+    Expected columns are :
+        - 'compound'
+        - 'dose_max_ha'
+        - 'type_code'
+        - 'Ap'
+        - 'Kp'
+        - 'Ae'
+        - 'Ke'
+        - 'decay_rate'    
     """
     tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
     d = [dict(zip(tab.dtype.names, data)) for data in tab]
@@ -41,7 +50,7 @@ def milne_leaf(initial_dose, compound_parameters, days):
 class PenetratedDecayModel(object):
     """ Adaptor for Milne decay model
     """
-    def __init__(self,compound_parameters={}):
+    def __init__(self,products_parameters = compounds_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_parameters.csv')):
         self.compound_parameters = products_parameters
     def decay(self, initial_dose, dt):
         active_dose = milne_leaf(initial_dose, self.compound_parameters, dt)
