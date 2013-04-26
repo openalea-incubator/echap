@@ -28,7 +28,7 @@ def climate_from_csv(csvname, delimiter = ';'):
 
 def microclimate_leaf(sectors, mean_globalclimate, scene):
     microclimate = {}
-    energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, mean_globalclimate['PAR']) 
+    energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy=mean_globalclimate['PAR']) 
     sources = zip(energy, direction)
     c_scene = CaribuScene()    
     idmap = c_scene.add_Shapes(scene)    
