@@ -24,6 +24,7 @@ from alinea.echap.microclimate_leaf import *
 from alinea.echap.interfaces import local_microclimate
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
+from alinea.echap.global_meteo import *
 
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
@@ -232,7 +233,8 @@ def test_microclimate():
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     climate_model = CaribuMicroclimModel()
-    g = local_microclimate(g, scene, climate_model, rain=50)
+    reader_meteo = Meteo()
+    g = local_microclimate(g, scene, climate_model, reader_meteo, timestep, t_deb)
     return g
 
 
@@ -293,7 +295,36 @@ def test_decay_doses():
     return out
 
 
-
+def test_local_meteo():
+    # Loop
+    t_deb = '2000-10-01 04:00:00'
+    t = 0
+    dt = 1
+    nb_steps = 25
+    # Initialisation du mtg 
+    g = adel_mtg()
+    g = update_no_doses(g)
+    g = mtg_interpreter(g)
+    scene = plot3d(g) 
+    # models
+    interception_model = CaribuInterceptModel()
+    reader_meteo = Meteo()
+    climate_model = CaribuMicroclimModel()
+    # Interception
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    # Import meteo
+    mean_globalclimate, globalclimate, t_deb = global_climate(reader_meteo, timestep, t_deb)
+    # Microclimate
+    g = local_microclimate(g, scene, climate_model, timestep=dt, t_deb=t_deb)
+    print t_deb
+    # loop
+    for i in range(nb_steps):
+        t += dt       
+        # Microclimat
+        g, t_deb = local_microclimate(g, scene, climate_model, reader_meteo, timestep=dt, t_deb=t_deb)
+        print g.property('microclimate')
+        t_deb = update_meteo_date(t_deb=t_deb, timestep=dt)
+        print t_deb
 
 
 
