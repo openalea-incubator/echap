@@ -31,12 +31,3 @@ class Meteo(object):
 
 
 
-
-
-
-def global_climate(reader_meteo, timestep, t_deb):
-    mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep, t_deb)
-    return mean_globalclimate, globalclimate, t_deb
-
-
-

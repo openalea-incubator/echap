@@ -72,7 +72,7 @@ def compounds_from_csv(csvname, delimiter = ';'):
     return d
 
 
-def update_meteo_date(timestep=1, t_deb='2000-10-01 01:00:00'):
+def update_meteo_date(reader_meteo, timestep=1, t_deb='2000-10-01 01:00:00'):
     mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep, t_deb)
     date_object = datetime.strptime(t_deb, '%Y-%m-%d %H:%M:%S')
     d = date_object + timedelta(hours=timestep)
