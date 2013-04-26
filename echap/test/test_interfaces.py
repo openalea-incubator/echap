@@ -297,7 +297,7 @@ def test_decay_doses():
 
 def test_local_meteo():
     # Loop
-    t_deb = '2000-10-01 04:00:00'
+    t_deb = '2000-10-01 01:00:00'
     t = 0
     dt = 1
     nb_steps = 25
@@ -313,15 +313,17 @@ def test_local_meteo():
     # Interception
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     # Import meteo
-    mean_globalclimate, globalclimate, t_deb = global_climate(reader_meteo, timestep, t_deb)
+    mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep, t_deb)
     # Microclimate
-    g = local_microclimate(g, scene, climate_model, timestep=dt, t_deb=t_deb)
+    g = local_microclimate(g, scene, climate_model, mean_globalclimate)
     print t_deb
     # loop
     for i in range(nb_steps):
-        t += dt       
+        t += dt    
+        # Import meteo
+        mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep, t_deb)
         # Microclimat
-        g, t_deb = local_microclimate(g, scene, climate_model, reader_meteo, timestep=dt, t_deb=t_deb)
+        g = local_microclimate(g, scene, climate_model, mean_globalclimate)
         print g.property('microclimate')
         t_deb = update_meteo_date(t_deb=t_deb, timestep=dt)
         print t_deb
