@@ -1,5 +1,5 @@
 
-# This file has been generated at Tue Apr 23 17:44:43 2013
+# This file has been generated at Fri Apr 26 16:11:25 2013
 
 from openalea.core import *
 
@@ -17,7 +17,7 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['models_nodes_CaribuMicroclimModel', 'models_nodes_PenetratedDecayModel', 'models_nodes_CaribuInterceptModel']
+__all__ = ['models_nodes_CaribuMicroclimModel', 'models_nodes_PenetratedDecayModel', 'models_nodes_Meteo', 'models_nodes_CaribuInterceptModel']
 
 
 
@@ -27,8 +27,8 @@ models_nodes_CaribuMicroclimModel = Factory(name='Microclimate_leaf',
                 category='Unclassified',
                 nodemodule='models_nodes',
                 nodeclass='CaribuMicroclimModel',
-                inputs=[{'interface': IStr, 'name': 'sectors', 'value': '46', 'desc': ''}, {'interface': IFloat, 'name': 'energy', 'value': 1, 'desc': ''}],
-                outputs=[{'interface': IDict, 'name': 'microclimate', 'desc': ''}],
+                inputs=[{'interface': IStr, 'name': 'sectors', 'value': 46, 'desc': ''}],
+                outputs=[{'interface': IDict, 'name': 'local_meteo', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )
@@ -44,6 +44,21 @@ models_nodes_PenetratedDecayModel = Factory(name='Milne_leaf',
                 nodeclass='PenetratedDecayModel',
                 inputs=[{'interface': IDict, 'name': 'compound_parameters', 'value': None, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'active_dose', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+models_nodes_Meteo = Factory(name='Global_meteo',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='models_nodes',
+                nodeclass='Meteo',
+                inputs=[{'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': 'Path for read the meteo data file csv'}],
+                outputs=[{'interface': None, 'name': 'climate', 'desc': 'Pandas data frame'}],
                 widgetmodule=None,
                 widgetclass=None,
                )
