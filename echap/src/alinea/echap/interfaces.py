@@ -48,7 +48,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
-def local_microclimate(g, scene, climate_model, rain, label='LeafElement'):
+def local_microclimate(g, scene, climate_model, mean_globalclimate, label='LeafElement'):
     """ 
     Interface between g and the microclimate model
 
@@ -76,7 +76,7 @@ def local_microclimate(g, scene, climate_model, rain, label='LeafElement'):
       >>> microclimate(g, scene, climate_model, rain)
       >>> return g
     """
-    local_meteo = climate_model.microclim(rain, scene)
+    local_meteo = climate_model.microclim(mean_globalclimate, scene)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
     return g

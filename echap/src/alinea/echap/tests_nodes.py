@@ -13,11 +13,14 @@ from pandas import *
 import pylab
 from matplotlib import cm
 
+from datetime import datetime, timedelta
+
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
 from openalea.plantgl.all import *
 import alinea.adel.fitting as fitting
 from alinea.adel.AdelR import devCsv,setAdel,RunAdel,genGeoLeaf,genGeoAxe
+
 
 def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     """ plot the plant with pesticide doses """
@@ -68,4 +71,11 @@ def compounds_from_csv(csvname, delimiter = ';'):
     d = [dict(zip(tab.dtype.names, data)) for data in tab]
     return d
 
+
+def update_meteo_date(timestep=1, t_deb='2000-10-01 01:00:00'):
+    mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep, t_deb)
+    date_object = datetime.strptime(t_deb, '%Y-%m-%d %H:%M:%S')
+    d = date_object + timedelta(hours=timestep)
+    t_deb = datetime.strftime(d, '%Y-%m-%d %H:%M:%S')
+    return t_deb
 
