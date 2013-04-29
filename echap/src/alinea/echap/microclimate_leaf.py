@@ -27,24 +27,29 @@ def climate_from_csv(csvname, delimiter = ';'):
 
 
 def microclimate_leaf(sectors, mean_globalclimate, scene):
+    """ 
+    energy is the global radiation in W.m-2 (PAR=ppfd in micromol.m-2.sec-1) 0.2174
+    """
     microclimate = {}
-    energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy=mean_globalclimate['PAR']) 
+    energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy=mean_globalclimate['Pluie']) 
     sources = zip(energy, direction)
     c_scene = CaribuScene()    
     idmap = c_scene.add_Shapes(scene)    
     c_scene.addSources(sources)
     output = c_scene.runCaribu(infinity=False)
-    if mean_globalclimate['Pluie'] > 0:
-        rain_leaf = c_scene.output_by_id(output, idmap)['Einc']
+    rain_leaf = c_scene.output_by_id(output, idmap)['Einc']
+    energy, emission, direction, elevation, azimuth = turtle.turtle(sectors, energy=mean_globalclimate['PAR']*0.48) 
+    sources = zip(energy, direction)
+    c_scene = CaribuScene()    
+    idmap = c_scene.add_Shapes(scene)    
+    c_scene.addSources(sources)
+    output = c_scene.runCaribu(infinity=False)
     EiInf = c_scene.output_by_id(output, idmap)['EiInf']
     EiSup = c_scene.output_by_id(output, idmap)['EiSup']
     for Infid, e in EiInf.iteritems():
         for Supid, a in EiSup.iteritems():
             if Infid == Supid:
-                if mean_globalclimate['Pluie'] == 0:
-                    microclimate[Infid] = {'radiation': e + a, 'rain': 0} 
-                else:
-                    microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid]} 
+                microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid]} 
     return microclimate
 
 

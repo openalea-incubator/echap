@@ -48,7 +48,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
-def local_microclimate(g, scene, climate_model, mean_globalclimate, label='LeafElement'):
+def local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 01:00:00', label='LeafElement', timestep=1):
     """ 
     Interface between g and the microclimate model
 
@@ -60,26 +60,30 @@ def local_microclimate(g, scene, climate_model, mean_globalclimate, label='LeafE
         - 'climate_model.microclim(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
         See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
-        - 'climate_model.microclim(microclimate, rain, scene)' : Return the dictionnary of scene_id: radiation and rain
-        See :func:`~alinea.echap.interception_leaf.CaribuMicroclimModel`
-    - 'energy' : 
-    
+        - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
+        See :func:`~alinea.echap.microclimate_leaf.CaribuMicroclimModel`
+    - 'meteo_reader' : A class embending the global meteo reader and provide the following methods:    
+        - 'meteo_reader.get_meteo_file(timestep, t_deb)' : Return the pandas dataframe of means of meteo variables
+        See :func:`~alinea.echap.global_meteo.Meteo`
+
     :Returns:  
     --------
-    - 'g' : Updated MTG representing the canopy (and the soil). 'microclimate' property is added to g or updated if present.
-    
+    - 'g' : Updated MTG representing the canopy (and the soil). 'microclimate' property (radiation and rain) is added to g or updated if present.
+
     :Example:
     -------
       >>> g = MTG()
       >>> scene = plot3d(g)  
+      >>> meteo_reader = Meteo()
       >>> climate_model = CaribuMicroclimModel()
-      >>> microclimate(g, scene, climate_model, rain)
+      >>> local_microclimate(g, scene, climate_model, meteo_reader, t_deb, label='LeafElement', timestep)
       >>> return g
     """
+    mean_globalclimate, globalclimate, t_deb = meteo_reader.get_meteo_file(timestep, t_deb)
     local_meteo = climate_model.microclim(mean_globalclimate, scene)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
-    return g
+    return g, mean_globalclimate, globalclimate, t_deb
 
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):

@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri Apr 26 16:11:25 2013
+# This file has been generated at Mon Apr 29 11:42:34 2013
 
 from openalea.core import *
 
@@ -58,7 +58,7 @@ models_nodes_Meteo = Factory(name='Global_meteo',
                 nodemodule='models_nodes',
                 nodeclass='Meteo',
                 inputs=[{'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': 'Path for read the meteo data file csv'}],
-                outputs=[{'interface': None, 'name': 'climate', 'desc': 'Pandas data frame'}],
+                outputs=[{'interface': None, 'name': 'mean_globalclimate, globalclimate, t_deb', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )

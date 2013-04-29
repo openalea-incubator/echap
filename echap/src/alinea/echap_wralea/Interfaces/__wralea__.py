@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri Apr 26 13:12:19 2013
+# This file has been generated at Mon Apr 29 11:39:28 2013
 
 from openalea.core import *
 
@@ -42,8 +42,8 @@ interfaces_nodes_local_microclimate = Factory(name='local_microclimate',
                 category='Unclassified',
                 nodemodule='interfaces_nodes',
                 nodeclass='local_microclimate',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'climate_model', 'value': None, 'desc': ''}, {'interface': None, 'name': 'reader_meteo', 'value': None, 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}, {'interface': IStr, 'name': 't_deb', 'value': '2000-10-01 01:00:00', 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
-                outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'climate_model', 'value': None, 'desc': ''}, {'interface': None, 'name': 'meteo_reader', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 't_deb', 'value': '2000-10-01 01:00:00', 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}, {'interface': None, 'name': 'mean_globalclimate', 'desc': 'Pandas dataframe'}, {'interface': None, 'name': 'globalclimate', 'desc': 'Pandas dataframe'}, {'interface': IStr, 'name': 't_deb', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )
