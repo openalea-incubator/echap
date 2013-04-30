@@ -29,13 +29,15 @@ def product_dose(product_name, dose, productsDB):
     """ 
     :Parameters:
     ----------
-            product_name: commercial name of the product
-            dose: application dose in l.ha-1
-            productsDB: dict of products name, active compounds and concentration of active compounds
+
+    - product_name: Commercial name of the product
+    - dose: Application dose in l.ha-1
+    - productsDB: dict of products name, active compounds and concentration of active compounds
 
     :Returns:
     ----------
-            active_dose: Dose of active compound in g.m-2
+
+    - active_dose: Dose of active compound in g.m-2
     """
     for prod, sub in productsDB.iteritems():
         if prod == product_name:
@@ -72,12 +74,26 @@ def interception_dose(product_name, dose, productsDB, elevation, azimuth, scene)
 
 
 class CaribuInterceptModel(object):
-    """ Adaptor for Caribu model compliying echap pesticide interception_model protocol """
+    """ Adaptor for Caribu model compliying echap pesticide_interception model protocol """
     def __init__(self, productsDB=products_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_names.csv'), elevation=90, azimuth=0): 
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth
     def intercept(self, product_name, dose, scene):
+        """ Return the surfacic doses intercept on each leaf and stem element
+
+        :Parameters:
+        ----------
+
+        - product_name: Commercial name of the product
+        - dose: Application dose in l.ha-1
+        - scene: Scene containing the simulated system
+
+        :Returns:
+        -------
+
+        - doses: Dict of doses calculated with the interception model for each leaf and stem element
+        """       
         compound_name, Einc = interception_dose(product_name, dose, self.productsDB, self.elevation, self.azimuth, scene)
         doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
         return doses

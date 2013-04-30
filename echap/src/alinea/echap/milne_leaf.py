@@ -26,9 +26,6 @@ def compounds_from_csv(csvname, delimiter = ';'):
     return d
 
 
-products_parameters = compounds_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_parameters.csv')
-
-
 def _dose_decay(decay_rate, initial_dose, days):
     active_dose = initial_dose * exp(-decay_rate * days) 
     return active_dose
@@ -38,6 +35,20 @@ class SimcyclePesticide(Exception): pass
 
 
 def milne_leaf(initial_dose, compound_parameters, days):
+    """ Milne decay model applied to penetrated doses
+
+        :Parameters:
+        ----------
+
+        - `initial_dose` (float) - Mass of product present per unit surface inside the leaf (g.m-2)
+        - `compound_parameters` : A dict of compound parameters read in a .csv file 
+        - `days` : time step (day)
+
+        :Returns:
+        ----------
+
+        - 'initial_dose' (float) - Remaining mass of product per unit surface inside the leaf after dt (g.m-2) 
+    """
     ptable = dict([(p['compound'],p) for p in compound_parameters])
     for name, dose in initial_dose.iteritems():
         try:
@@ -48,11 +59,22 @@ def milne_leaf(initial_dose, compound_parameters, days):
 
 
 class PenetratedDecayModel(object):
-    """ Adaptor for Milne decay model
+    """ Adaptor for Milne decay model and compliying echap pesticide_penetrated_decay model protocol
     """
     def __init__(self,products_parameters = compounds_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_parameters.csv')):
         self.compound_parameters = products_parameters
     def decay(self, initial_dose, dt):
+        """ Return the penetrated active doses 
+
+        :Parameters:
+        ----------
+        - initial_dose: Total amount of penetrated dose in the leaf element
+        - dt: Time step of the simulation (day)
+
+        :Returns:
+        -------
+        - active_dose: Total amount of penetrated active dose in the leaf element after decay
+        """    
         active_dose = milne_leaf(initial_dose, self.compound_parameters, dt)
         return active_dose
     def decay_and_penetrate(self, name, dose, microclimate, dt):

@@ -8,25 +8,21 @@ from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
 
 
-def climate_from_csv(csvname, delimiter = ';'):
-    """ 
-    Read a csv of compounds parameters and import them in a dict.
-    Expected columns are :
-        - 'compound'
-        - 'dose_max_ha'
-        - 'type_code'
-        - 'Ap'
-        - 'Kp'
-        - 'Ae'
-        - 'Ke'
-        - 'decay_rate'    
-    """
-    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = [dict(zip(tab.dtype.names, data)) for data in tab]
-    return d
-
-
 def microclimate_leaf(sectors, mean_globalclimate, scene):
+        """ Calculate the radiation and rain interception with the Caribu interception model and the Tair, humidity and wind for each leaf and stem element id
+
+        :Parameters:
+        ----------
+
+        - sectors: 
+        - mean_globalclimate: Dict of global climat averaged over an hour defined time step 
+        - scene: Scene containing the simulated system
+            
+        :Returns:
+        -------
+
+        - microclimate: Dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
+        """            
     """ 
     energy is the global radiation in W.m-2 (PAR=ppfd in micromol.m-2.sec-1) 0.2174
     """
@@ -49,16 +45,29 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
     for Infid, e in EiInf.iteritems():
         for Supid, a in EiSup.iteritems():
             if Infid == Supid:
-                microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid]} 
+                microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid], 'Tair': mean_globalclimate['Tair'], 'humidity':mean_globalclimate['HR'], 'wind':mean_globalclimate['Vent']} 
     return microclimate
 
 
 class CaribuMicroclimModel(object):
-    """ Adaptor for Caribu model compliying echap microclimate_model protocol 
+    """ Adaptor for Caribu model compliying echap local_microclimate model protocol (climate_model)
     """
     def __init__(self, sectors='46'):
         self.sectors = sectors
     def microclim(self, mean_globalclimate, scene):
+        """ Return the local meteo calculated with the microclimate_leaf function
+
+        :Parameters:
+        ----------
+
+        - mean_globalclimate: Dict of global climat averaged over an hour defined time step 
+        - scene: Scene containing the simulated system
+
+        :Returns:
+        -------
+
+        - local_meteo: Dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
+        """            
         local_meteo = microclimate_leaf(self.sectors, mean_globalclimate, scene)
         return local_meteo
 
