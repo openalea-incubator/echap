@@ -5,7 +5,7 @@ Created on Mon Mar 25 16:59:54 2013
 @author: lepse
 """
 
-from openalea.color import colormap
+#from openalea.color import colormap
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,7 +25,6 @@ from alinea.echap.interfaces import local_microclimate
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
 from alinea.echap.global_meteo import *
-from alinea.echap.tests_nodes import interface_meteo
 
 from alinea.adel.newmtg import *
 from alinea.adel.mtg_interpreter import *
@@ -150,14 +149,14 @@ def plot_decay(out, leaf=12):
     plt.show()
 
 
-def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
+def plot_pesticide(g, compound_name='Epoxiconazole', colmap='cm.winter_r'):
     """ plot the plant with pesticide doses """
     cmap = mpl.cm.get_cmap(colmap)
     green = (0,180,0)
-    for v in g.vertices(scale=g.max_scale()) : 
+    for v in g.vertices(scale=g.max_scale()): 
         n = g.node(v)
         if 'surfacic_doses' in n.properties():
-            r,gg,b,s= cmap(n.surfacic_doses[compound_name])
+            r,gg,b,s= cmap(n.surfacic_doses[compound_name]*100)
             n.color = (int(r*255),int(gg*255),int(b*255))           
         else : 
             n.color = green
@@ -234,8 +233,9 @@ def test_microclimate():
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     climate_model = CaribuMicroclimModel()
-    reader_meteo = Meteo()
-    g = local_microclimate(g, scene, climate_model, reader_meteo, timestep, t_deb)
+    meteo_reader = Meteo()
+    g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 01:00:00', label='LeafElement', timestep=1)[0]
+    print g.property('microclimate')
     return g
 
 
@@ -263,10 +263,11 @@ def test_efficacy_nopest():
 
 def test_decay_doses():
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
+    t_deb = '2000-10-01 02:00:00'
     # Loop
     t = 0
     dt = 1
-    nb_steps = 25
+    nb_steps = 2
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -274,13 +275,14 @@ def test_decay_doses():
     scene = plot3d(g) 
     # models
     interception_model = CaribuInterceptModel()
-    climate_model = CaribuMicroclimModel()
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
+    meteo_reader = Meteo()
+    climate_model = CaribuMicroclimModel()
     # Interception
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
-    # Microclimate
-    g = local_microclimate(g, scene, climate_model, rain=50)
+    g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
+    t_deb = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
@@ -292,7 +294,9 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r)
+        plot_pesticide(g, compound_name='Epoxiconazole', colmap='cm.winter_r')
+        g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
+        t_deb = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
     return out
 
 

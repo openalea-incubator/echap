@@ -25,7 +25,8 @@ def test_get_meteo():
         mean_globalclimate, globalclimate, t_deb = reader_meteo.get_meteo_file(timestep=dt, t_deb=t_deb)
         print t_deb
         t += dt
-        t_deb = update_meteo_date(t_deb, dt)
+
+
 
 
 
