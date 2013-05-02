@@ -5,13 +5,11 @@ Created on Mon Mar 25 16:59:54 2013
 @author: lepse
 """
 
-#from openalea.color import colormap
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import mpl
 from pandas import *
-import pylab
 
 from alinea.pearl.pearl import *
 from alinea.pearl.pearl_leaf import *
@@ -149,7 +147,7 @@ def plot_decay(out, leaf=12):
     plt.show()
 
 
-def plot_pesticide(g, compound_name='Epoxiconazole', colmap='cm.winter_r'):
+def plot_pesticide(g, compound_name='Epoxiconazole', colmap='winter_r'):
     """ plot the plant with pesticide doses """
     cmap = mpl.cm.get_cmap(colmap)
     green = (0,180,0)
@@ -263,11 +261,11 @@ def test_efficacy_nopest():
 
 def test_decay_doses():
     db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
-    t_deb = '2000-10-01 02:00:00'
+    t_deb = '2000-10-01 01:00:00'
     # Loop
     t = 0
     dt = 1
-    nb_steps = 2
+    nb_steps = 4
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -294,7 +292,7 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        plot_pesticide(g, compound_name='Epoxiconazole', colmap='cm.winter_r')
+        plot_pesticide(g, compound_name='Epoxiconazole', colmap='winter_r')
         g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
         t_deb = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
     return out
