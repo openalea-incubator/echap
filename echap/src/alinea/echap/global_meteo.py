@@ -22,7 +22,7 @@ class Meteo(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
     """
     def __init__(self, data_file = 'E:/openaleapkg/echap/test/meteo01.csv'):
-        self.data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},date_parser=parse,delimiter=';',usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
+        self.data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},date_parser=parse,delimiter=';',usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'], nrows=10)
     def get_meteo_file(self, timestep, t_deb):
         """ Read an hourly meteo file and return the global climate averaged and the global climate detail dataframe for an hour time step and the start date of each time step.
 
