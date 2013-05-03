@@ -27,7 +27,21 @@ The other echap module may be used to parameterise :
 - the fraction of product belonging to the reduce exposure class (kept constant during one run : to be kept as this ??)
 - CropGrowth parameters...
 
+.. TODO:: 
+    - Parameters to be check:
+        - Parameters used in OPEN ALEA for PEARL LEAF for Epoxiconazole : 
+            - Compound parameters:
+                * 'DT50Pen' : DT50 for penetration (d) - default 0.33. To be modified given Nebila’s estimation or by Erik?
+                * 'DT50Tra' : DT50 for transformation by photodegradation (d) - default 0.433. To be modified given Nebila’s estimation or by Erik?
+            
+            - TransportResistance (dict): parameters for transport ressistance in boundary layers. zero or more of:
+                * 'ThicknessLay' : thickness of air boundary layer (m): 0.0006. Erik, could you have a look on this ?
 
+        - Parameters used in OPEN ALEA for PEARL LEAF for Chlorothalonil : 
+            - Compound parameters:
+                * 'DT50Pen' : DT50 for penetration (d) - default 0.14. The values given here comes from Erik’s studies and were used by Nebila in her model. But, to be further checked given Nebila’s estimation with experiments or by Erik? 
+                * 'DT50Tra' : DT50 for transformation by photodegradation (d) - default 0.23. The values given here comes from Erik’s studies and were used by Nebila in her model. But, to be further checked given Nebila’s estimation with experiments or by Erik? 
+::
 
 RoadMap
 =======
