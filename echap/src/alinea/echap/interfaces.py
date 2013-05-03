@@ -8,7 +8,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     :Parameters:
     ----------
     - 'g' : MTG representing the canopy (and the soil)
-    - 'scene'
+    - 'scene' : Scene containing the simulated system
     - 'interception_model' : A class embending the interception model and provide the following methods:    
         - 'interception_model.intercept(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
         See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
@@ -55,10 +55,7 @@ def local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 
     :Parameters:
     ----------
     - 'g' : MTG representing the canopy (and the soil)
-    - 'scene'
-    - 'interception_model' : A class embending the interception model and provide the following methods:    
-        - 'climate_model.microclim(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
-        See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
+    - 'scene' : Scene containing the simulated system
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
         See :func:`~alinea.echap.microclimate_leaf.CaribuMicroclimModel`
@@ -105,10 +102,10 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=24):
     -------
       >>> g = MTG()
       >>> scene = plot3d(g)  
-      >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
+      >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, scene, interception_model, product_name, dose)
-      >>> decay_model = PearLeafDecayModel(db)'Tair':temperature[vid]    temperature = g.property('temp')
+      >>> decay_model = PearLeafDecayModel(db)
       >>> g = pesticide_surfacic_decay(g, decay_model)
       >>> return g
     """
@@ -208,10 +205,7 @@ def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
     return g
 
 
-#    for vid, surf_doses in surfacic_doses.iteritems():
-#        if g.label(vid).startswith(label):
-#            g.property('global_efficacy')[vid] = efficacy_model.efficacy(surfacic_doses[vid], penetrated_doses[vid], timestep)
-#    return g
+
 
 
 

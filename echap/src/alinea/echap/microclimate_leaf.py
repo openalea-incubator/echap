@@ -17,17 +17,14 @@ def runcaribu(sectors, scene, energy):
 
     - `sectors` (int)
     - `scene` - Scene containing the simulated system
-    - `energy` (float) - meteorological means variables at the global scale:
-        - 'PAR' : radiative energy (micro mole.m-2.sec-1)
-        - 'Tair' : temperature of air (Celcius)
-        - 'HR': humidity of air (kPa)
-        - 'Vent' : wind speed (m.s-1)
-        - 'Pluie' : precipitation (mm)
+    - `energy` (float) - Meteorological mean variable at the global scale. Could be:
+        - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
+        - 'Pluie' : Precipitation (mm)
 
     :Returns:
     ----------
         
-    - 'id_out' (dict) - meteorological variables at the leaf scale
+    - 'id_out' (dict) - Meteorological variable at the leaf scale
     """
     energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy) 
     sources = zip(energie,direction)
@@ -46,17 +43,22 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
         ----------
 
         - `sectors` (int) 
-        - `mean_globalclimate` (Dict) - dict of global climat averaged over an hour defined time step
-        expe
+        - `mean_globalclimate` (Dict) - Dict of global climate averaged over an hourly defined time step
+        expected variables are:
+            - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
+            - 'Pluie' : Precipitation (mm)
+            - 'Tair' : Temperature of air (Celcius)
+            - 'HR': Humidity of air (kPa)
+            - 'Vent' : Wind speed (m.s-1)
         - `scene` - Scene containing the simulated system
 
         :Returns:
         -------
 
-        - `microclimate` (Dict) - dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
-
-    energy is the global radiation in W.m-2
-    PAR=ppfd in micromol.m-2.sec-1 (1 ppfd = 0.2174 Watts.m-2 (PAR), 1 W global = 0.48 W PAR)
+        - `microclimate` (Dict) - Dict of microclimate variables (PAR, radiation, rain, Tair, humidity, wind, Tleaf) for each id of leaf and stem element
+            - `radiation`: The global radiation in kJ.m-2.h-1
+            PAR=ppfd in micromol.m-2.sec-1 (1 ppfd = 0.2174 Watts.m-2.sec-1 PAR, 1 W.m-2.sec-1 global = 0.48 Watts.m-2.sec-1 PAR)
+            - `Tleaf`: Temperature of air near the leaf (Celcius)
     """
     microclimate = {}  
     PAR_leaf = {}
@@ -72,7 +74,7 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
     id_out = runcaribu(sectors, scene, energy = mean_globalclimate['Pluie'])
     rain_leaf = id_out['Einc']
 # PAR
-    id_out = runcaribu(sectors, scene, energy = mean_globalclimate['PAR']*0.48)
+    id_out = runcaribu(sectors, scene, energy = (((mean_globalclimate['PAR']*0.2174)/0.48)/1000)*3600)
     EiInf = id_out['EiInf']
     EiSup = id_out['EiSup']
     for Infid, e in EiInf.iteritems():
@@ -97,13 +99,13 @@ class CaribuMicroclimModel(object):
         :Parameters:
         ----------
 
-        - `mean_globalclimate` (Dict) - dict of global climat averaged over an hour defined time step 
+        - `mean_globalclimate` (Dict) - Dict of global climat averaged over an hourly defined time step 
         - `scene` - Scene containing the simulated system
 
         :Returns:
         -------
 
-        - `local_meteo` (Dict) - of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
+        - `local_meteo` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
         """            
         local_meteo = microclimate_leaf(self.sectors, mean_globalclimate, scene)
         return local_meteo

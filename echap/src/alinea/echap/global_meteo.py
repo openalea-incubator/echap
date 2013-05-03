@@ -22,22 +22,22 @@ class Meteo(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
     """
     def __init__(self, data_file = 'E:/openaleapkg/echap/test/meteo01.csv'):
-        self.data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},date_parser=parse,delimiter=';',usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'], nrows=10)
+        self.data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},date_parser=parse,delimiter=';',usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
     def get_meteo_file(self, timestep, t_deb):
         """ Read an hourly meteo file and return the global climate averaged and the global climate detail dataframe for an hour time step and the start date of each time step.
 
         :Parameters:
         ----------
 
-        - timestep: The time step on which the averages are performed and for which the data frame is return
-        - t_deb: The start date for reading the meteo file 
+        - `timestep` - The time step on which the averages are performed and for which the data frame is return
+        - `t_deb` - The start date for reading the meteo file 
 
         :Returns:
         -------
 
-        - mean_globalclimate: Mean variables of the global climate dataframe
-        - globalclimate: Pandas dataframe with hourly meteo for the time step from t_deb
-        - t_deb: The new start date for the new read of the meteo file 
+        - `mean_globalclimate` - Mean variables of the global climate dataframe
+        - `globalclimate` - Pandas dataframe with hourly meteo for the time step from t_deb
+        - `t_deb` - The new start date for the new read of the meteo file 
         """    
         df_data = self.data
         index_deb = df_data.index[df_data['datetime']==t_deb][0]
