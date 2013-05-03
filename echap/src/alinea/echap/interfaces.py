@@ -48,7 +48,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
-def local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 01:00:00', label='LeafElement', timestep=1):
+def local_microclimate(g, scene, climate_model, t_deb='2000-10-01 01:00:00', label='LeafElement', timestep=1):
     """ 
     Interface between g and the microclimate model
 
@@ -59,9 +59,6 @@ def local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
         See :func:`~alinea.echap.microclimate_leaf.CaribuMicroclimModel`
-    - 'meteo_reader' : A class embending the global meteo reader and provide the following methods:    
-        - 'meteo_reader.get_meteo_file(timestep, t_deb)' : Return the pandas dataframe of means of meteo variables
-        See :func:`~alinea.echap.global_meteo.Meteo`
 
     :Returns:  
     --------
@@ -76,8 +73,7 @@ def local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 
       >>> local_microclimate(g, scene, climate_model, meteo_reader, t_deb, label='LeafElement', timestep)
       >>> return g
     """
-    mean_globalclimate, globalclimate, t_deb = meteo_reader.get_meteo_file(timestep, t_deb)
-    local_meteo = climate_model.microclim(mean_globalclimate, scene)
+    local_meteo, mean_globalclimate, globalclimate, t_deb = climate_model.microclim(scene, timestep, t_deb)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
     return g, mean_globalclimate, globalclimate, t_deb

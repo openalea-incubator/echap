@@ -237,8 +237,7 @@ def test_microclimate():
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     climate_model = CaribuMicroclimModel()
-    meteo_reader = Meteo()
-    g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb='2000-10-01 09:00:00', label='LeafElement', timestep=1)[0]
+    g = local_microclimate(g, scene, climate_model, t_deb='2000-10-01 09:00:00', label='LeafElement', timestep=1)[0]
     print g.property('microclimate')
     return g
 
@@ -309,7 +308,7 @@ def test_local_meteo():
     t_deb = '2000-10-01 02:00:00'
     t = 0
     dt = 1
-    nb_steps = 1
+    nb_steps = 2
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -317,22 +316,21 @@ def test_local_meteo():
     scene = plot3d(g) 
     # models
     interception_model = CaribuInterceptModel()
-    meteo_reader = Meteo()
     climate_model = CaribuMicroclimModel()
     # Interception
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     print t_deb
     # Microclimate
-    g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
-    t_deb = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
+    g = local_microclimate(g, scene, climate_model, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
+    t_deb = local_microclimate(g, scene, climate_model, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
     print g.property('microclimate')
     # loop
     for i in range(nb_steps):
         t += dt    
         print t_deb
         # Microclimate
-        g = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
-        t_deb = local_microclimate(g, scene, climate_model, meteo_reader, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
+        g = local_microclimate(g, scene, climate_model, t_deb=t_deb, label='LeafElement', timestep=dt)[0]
+        t_deb = local_microclimate(g, scene, climate_model, t_deb=t_deb, label='LeafElement', timestep=dt)[3]
         print g.property('microclimate')
 
 

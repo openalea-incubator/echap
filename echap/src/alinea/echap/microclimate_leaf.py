@@ -6,6 +6,8 @@ Created on Mon Apr 15 10:58:05 2013
 """
 from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
+import pandas as pd
+from datetime import datetime, timedelta
 
 
 def runcaribu(sectors, scene, energy):
@@ -88,27 +90,43 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
     return microclimate
 
 
+def parse(yr, doy, hr):
+    an, jour, heure = [int(x) for x in [yr, doy, hr/100]]
+    dt = datetime(an - 1, 12, 31)
+    delta = timedelta(days=jour, hours=heure)
+    return dt + delta
+
+
 class CaribuMicroclimModel(object):
     """ Adaptor for Caribu model compliying echap local_microclimate model protocol (climate_model)
     """
-    def __init__(self, sectors='46'):
+    def __init__(self, sectors='46', data_file = 'E:/openaleapkg/echap/test/meteo01.csv'):
         self.sectors = sectors
-    def microclim(self, mean_globalclimate, scene):
+        self.data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},date_parser=parse,delimiter=';',usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
+    def microclim(self, scene, timestep, t_deb):
         """ Return the local meteo calculated with the microclimate_leaf function
 
         :Parameters:
         ----------
 
-        - `mean_globalclimate` (Dict) - Dict of global climat averaged over an hourly defined time step 
         - `scene` - Scene containing the simulated system
+        - `timestep`
+        - 't_deb'
 
         :Returns:
         -------
 
         - `local_meteo` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
         """            
+        df_data = self.data
+        index_deb = df_data.index[df_data['datetime']==t_deb][0]
+        globalclimate = df_data.truncate(before = index_deb, after = index_deb + (timestep - 1))
+        mean_globalclimate = globalclimate.set_index('datetime').mean()
+        date_object = datetime.strptime(t_deb, '%Y-%m-%d %H:%M:%S')
+        d = date_object + timedelta(hours=timestep)
+        t_deb = datetime.strftime(d, '%Y-%m-%d %H:%M:%S')        
         local_meteo = microclimate_leaf(self.sectors, mean_globalclimate, scene)
-        return local_meteo
+        return local_meteo, mean_globalclimate, globalclimate, t_deb
 
 
 

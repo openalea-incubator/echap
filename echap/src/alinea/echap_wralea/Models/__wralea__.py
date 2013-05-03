@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Apr 29 11:42:34 2013
+# This file has been generated at Fri May 03 17:46:45 2013
 
 from openalea.core import *
 
@@ -27,7 +27,7 @@ models_nodes_CaribuMicroclimModel = Factory(name='Microclimate_leaf',
                 category='Unclassified',
                 nodemodule='models_nodes',
                 nodeclass='CaribuMicroclimModel',
-                inputs=[{'interface': IStr, 'name': 'sectors', 'value': 46, 'desc': ''}],
+                inputs=[{'interface': IStr, 'name': 'sectors', 'value': 46, 'desc': ''}, {'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': ''}],
                 outputs=[{'interface': IDict, 'name': 'local_meteo', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
