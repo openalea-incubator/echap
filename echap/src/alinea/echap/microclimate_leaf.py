@@ -57,10 +57,10 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
         :Returns:
         -------
 
-        - `microclimate` (Dict) - Dict of microclimate variables (PAR, radiation, rain, Tair, humidity, wind, Tleaf) for each id of leaf and stem element
+        - `microclimate` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity, wind) for each id of leaf and stem element
             - `radiation`: The global radiation in kJ.m-2.h-1
             PAR=ppfd in micromol.m-2.sec-1 (1 ppfd = 0.2174 Watts.m-2.sec-1 PAR, 1 W.m-2.sec-1 global = 0.48 Watts.m-2.sec-1 PAR)
-            - `Tleaf`: Temperature of air near the leaf (Celcius)
+            - `Tair`: Temperature of air near the leaf (Celcius)
     """
     microclimate = {}  
     PAR_leaf = {}
@@ -82,11 +82,11 @@ def microclimate_leaf(sectors, mean_globalclimate, scene):
     for Infid, e in EiInf.iteritems():
         for Supid, a in EiSup.iteritems():
             if Infid == Supid:
-                microclimate[Infid] = {'PAR': PAR_leaf[Infid]['PAR'], 'radiation': e + a, 'rain': rain_leaf[Infid], 'Tair': mean_globalclimate['Tair'], 'humidity':mean_globalclimate['HR'], 'wind':mean_globalclimate['Vent'], 'Tleaf':0} 
-                if microclimate[Infid]['PAR'] == 0:
-                    microclimate[Infid]['Tleaf'] = microclimate[Infid]['Tair']
+                microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid], 'humidity':mean_globalclimate['HR'], 'wind':mean_globalclimate['Vent']} 
+                if PAR_leaf[Infid]['PAR'] == 0:
+                    microclimate[Infid]['Tair'] = mean_globalclimate['Tair']
                 else:
-                    microclimate[Infid]['Tleaf'] = microclimate[Infid]['Tair'] + (microclimate[Infid]['PAR'] / 300)
+                    microclimate[Infid]['Tair'] = mean_globalclimate['Tair'] + (PAR_leaf[Infid]['PAR'] / 300)
     return microclimate
 
 
@@ -110,13 +110,16 @@ class CaribuMicroclimModel(object):
         ----------
 
         - `scene` - Scene containing the simulated system
-        - `timestep`
-        - 't_deb'
+        - `timestep` - Timestep of the simulation
+        - 't_deb' - Initial start t_deb for the simulation 
 
         :Returns:
         -------
 
-        - `local_meteo` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity and wind) for each id of leaf and stem element
+        - `local_meteo` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity, wind) for each id of leaf and stem element
+        - `mean_globalclimate` (Dataframe) - Pandas dataframe with microclimate variables averaged for the timestep 
+        - `globalclimate` (Dataframe) - Pandas dataframe with microclimate variables for the timestep 
+        - `t_deb` (String) - New t_deb after the timestep 
         """            
         df_data = self.data
         index_deb = df_data.index[df_data['datetime']==t_deb][0]
