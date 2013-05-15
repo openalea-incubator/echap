@@ -37,7 +37,6 @@ class Meteo(object):
 
         - `mean_globalclimate` - Mean variables of the global climate dataframe
         - `globalclimate` - Pandas dataframe with hourly meteo for the time step from t_deb
-        - `t_deb` - The new start date for the new read of the meteo file 
         """    
         df_data = self.data
         index_deb = df_data.index[df_data['datetime']==t_deb][0]
@@ -45,10 +44,32 @@ class Meteo(object):
         mean_globalclimate = globalclimate.set_index('datetime').mean()
         return mean_globalclimate, globalclimate
     def next_date(timestep, t_deb):
+        """ Return the new t_deb after the timestep 
+        """
         date_object = datetime.strptime(t_deb, '%Y-%m-%d %H:%M:%S')
         d = date_object + timedelta(hours=timestep)
         t_deb = datetime.strftime(d, '%Y-%m-%d %H:%M:%S')
         return t_deb
     def convert_par(PAR):
+        """Convert the PAR (ppfd in micromol.m-2.sec-1) in global radiation (kJ.m-2.h-1)
+        1 ppfd = 0.2174 Watts.m-2.sec-1 PAR, 1 W.m-2.sec-1 global = 0.48 Watts.m-2.sec-1 PAR)
+        """
         energy = (((PAR*0.2174)/0.48)/1000)*3600
         return energy
+    def temp_par(Tair, PAR):
+        """ Return an estimation of air temperature near the leaf
+        """
+        Tair_leaf = Tair + (PAR / 300)
+        return Tair_leaf
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
