@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon Apr 29 11:19:06 2013
+# This file has been generated at Mon May 13 16:37:22 2013
 
 from openalea.core import *
 
@@ -17,18 +17,18 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['tests_nodes_products_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_compounds_from_csv', 'tests_nodes_interface_meteo', 'tests_nodes_update_meteo_date']
+__all__ = ['tests_nodes_sum_temp_global', 'tests_nodes_plot_pesticide', 'tests_nodes_compounds_from_csv', 'tests_nodes_interface_meteo', 'tests_nodes_update_meteo_date', 'tests_nodes_products_from_csv']
 
 
 
-tests_nodes_products_from_csv = Factory(name='products_from_csv',
+tests_nodes_sum_temp_global = Factory(name='sum_temp_global',
                 authors=' (wralea authors)',
-                description='Read a products names csv file and convert it to a dict',
+                description='',
                 category='Unclassified',
                 nodemodule='tests_nodes',
-                nodeclass='products_from_csv',
-                inputs=[{'interface': IFileStr, 'name': 'csvname', 'value': None, 'desc': ''}],
-                outputs=[{'interface': IDict, 'name': 'product_dict', 'desc': ''}],
+                nodeclass='sum_temp_global',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'globalclimate', 'value': None, 'desc': 'Pandas dataframe with global climate for the time step'}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': 'MTG with the sum of temperature at the plant scale'}],
                 widgetmodule=None,
                 widgetclass=None,
                )
@@ -89,6 +89,21 @@ tests_nodes_update_meteo_date = Factory(name='update_meteo_date',
                 nodeclass='update_meteo_date',
                 inputs=[{'interface': IInt, 'name': 'timesteps', 'value': 1, 'desc': ''}, {'interface': IStr, 'name': 't_deb', 'value': '2000-10-01 01:00:00', 'desc': ''}],
                 outputs=[{'interface': IStr, 'name': 't_deb', 'desc': "String date updated in '%Y-%m-%d %H:%M:%S' format"}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+tests_nodes_products_from_csv = Factory(name='products_from_csv',
+                authors=' (wralea authors)',
+                description='Read a products names csv file and convert it to a dict',
+                category='Unclassified',
+                nodemodule='tests_nodes',
+                nodeclass='products_from_csv',
+                inputs=[{'interface': IFileStr, 'name': 'csvname', 'value': None, 'desc': ''}],
+                outputs=[{'interface': IDict, 'name': 'product_dict', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
                )

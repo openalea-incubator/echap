@@ -82,3 +82,16 @@ def update_meteo_date(timestep=1, t_deb='2000-10-01 01:00:00'):
 def interface_meteo(meteo_reader, timestep=1, t_deb='2000-10-01 01:00:00'):
     mean_globalclimate, globalclimate, t_deb = meteo_reader.get_meteo_file(timestep, t_deb)
     return mean_globalclimate, globalclimate, t_deb
+
+
+def sum_temp_global(g, globalclimate):    
+    sum_temp = sum(globalclimate['Tair'])
+    if not 'sum_temp' in g.property_names():
+        for v in g.vertices(scale=1): 
+            n = g.node(v)
+            n.sum_temp = sum_temp
+    else:
+        for v in g.vertices(scale=1): 
+            n = g.node(v)
+            n.sum_temp += n.sum_temp
+    return g

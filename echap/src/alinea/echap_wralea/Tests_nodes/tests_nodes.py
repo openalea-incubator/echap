@@ -10,3 +10,4 @@ from alinea.echap.tests_nodes import products_from_csv
 from alinea.echap.tests_nodes import compounds_from_csv
 from alinea.echap.tests_nodes import update_meteo_date
 from alinea.echap.tests_nodes import interface_meteo
+from alinea.echap.tests_nodes import sum_temp_global
