@@ -59,6 +59,9 @@ def local_microclimate(g, scene, climate_model, t_deb='2000-10-01 01:00:00', lab
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
         See :func:`~alinea.echap.microclimate_leaf.CaribuMicroclimModel`
+    - 't_deb' (str)
+    - 'label' (str)
+    - 'timestep' (int)
 
     :Returns:  
     --------
@@ -68,9 +71,8 @@ def local_microclimate(g, scene, climate_model, t_deb='2000-10-01 01:00:00', lab
     -------
       >>> g = MTG()
       >>> scene = plot3d(g)  
-      >>> meteo_reader = Meteo()
       >>> climate_model = CaribuMicroclimModel()
-      >>> local_microclimate(g, scene, climate_model, meteo_reader, t_deb, label='LeafElement', timestep)
+      >>> local_microclimate(g, scene, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g
     """
     local_meteo, mean_globalclimate, globalclimate, t_deb = climate_model.microclim(scene, timestep, t_deb)
