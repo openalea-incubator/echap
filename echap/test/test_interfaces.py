@@ -30,6 +30,7 @@ from openalea.plantgl.all import *
 import alinea.adel.fitting as fitting
 from alinea.adel.AdelR import devCsv,setAdel,RunAdel,genGeoLeaf,genGeoAxe
 
+from datetime import datetime, timedelta
 
 ############# Création d'un MTG
 
@@ -246,8 +247,10 @@ def test_microclimate():
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
-    climate_model = CaribuMicroclimModel()
-    g = local_microclimate(g, scene, climate_model, t_deb='2000-10-01 09:00:00', label='LeafElement', timestep=1)[0]
+    climate_model = MicroclimateLeaf()
+    weather_reader = Weather()
+    t_deb=datetime(2000, 10, 01, 9, 00, 00)
+    g = local_microclimate(g, scene, weather_reader, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     print g.property('microclimate')
     return g
 
