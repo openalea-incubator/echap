@@ -17,15 +17,15 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['interfaces_nodes_pesticide_penetrated_decay', 'interfaces_nodes_local_microclimate', 'interfaces_nodes_pesticide_surfacic_decay', 'interfaces_nodes_pesticide_interception', 'interfaces_nodes_pesticide_efficacy']
+__all__ = ['interfaces_pesticide_penetrated_decay', 'interfaces_local_microclimate', 'interfaces_pesticide_surfacic_decay', 'interfaces_pesticide_interception', 'interfaces_pesticide_efficacy']
 
 
 
-interfaces_nodes_pesticide_penetrated_decay = Factory(name='pesticide_penetrated_decay',
+interfaces_pesticide_penetrated_decay = Factory(name='pesticide_penetrated_decay',
                 authors=' (wralea authors)',
                 description='Update the decay of penetrated doses of pesticide on the MTG',
                 category='Unclassified',
-                nodemodule='interfaces_nodes',
+                nodemodule='alinea.echap.interfaces',
                 nodeclass='pesticide_penetrated_decay',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG with penetrated doses of pesticide as property'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Model of penetrated pesticide decay'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'Update MTG with decay of the penetrated doses'}],
@@ -36,13 +36,13 @@ interfaces_nodes_pesticide_penetrated_decay = Factory(name='pesticide_penetrated
 
 
 
-interfaces_nodes_local_microclimate = Factory(name='local_microclimate',
+interfaces_local_microclimate = Factory(name='local_microclimate',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
-                nodemodule='interfaces_nodes',
+                nodemodule='alinea.echap.interfaces',
                 nodeclass='local_microclimate',
-                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'climate_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 't_deb', 'value': '2000-10-01 01:00:00', 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'weather', 'value': None, 'desc': ''}, {'interface': None, 'name': 'climate_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 't_deb', 'value': '2000-10-01 01:00:00', 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}, {'interface': None, 'name': 'mean_globalclimate', 'desc': 'Pandas dataframe'}, {'interface': None, 'name': 'globalclimate', 'desc': 'Pandas dataframe'}, {'interface': IStr, 'name': 't_deb', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
@@ -51,11 +51,11 @@ interfaces_nodes_local_microclimate = Factory(name='local_microclimate',
 
 
 
-interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
+interfaces_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_decay',
                 authors=' (wralea authors)',
                 description='Interface between g and the decay model of Pearl',
                 category='Unclassified',
-                nodemodule='interfaces_nodes',
+                nodemodule='alinea.echap.interfaces',
                 nodeclass='pesticide_surfacic_decay',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': 'MTG'}, {'interface': None, 'name': 'decay_model', 'value': None, 'desc': 'Pearl decay model'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': 'Leaf element of MTG'}, {'interface': IInt, 'name': 'timestep', 'value': 24, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': 'New MTG with pesticide dose on leaf'}],
@@ -66,11 +66,11 @@ interfaces_nodes_pesticide_surfacic_decay = Factory(name='pesticide_surfacic_dec
 
 
 
-interfaces_nodes_pesticide_interception = Factory(name='pesticide_interception',
+interfaces_pesticide_interception = Factory(name='pesticide_interception',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
-                nodemodule='interfaces_nodes',
+                nodemodule='alinea.echap.interfaces',
                 nodeclass='pesticide_interception',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'scene', 'value': None, 'desc': ''}, {'interface': None, 'name': 'interception_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'product_name', 'value': None, 'desc': 'Commercial name of the product'}, {'interface': IFloat, 'name': 'dose', 'value': None, 'desc': 'Dose in l.ha-1'}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
@@ -81,11 +81,11 @@ interfaces_nodes_pesticide_interception = Factory(name='pesticide_interception',
 
 
 
-interfaces_nodes_pesticide_efficacy = Factory(name='pesticide_efficacy',
+interfaces_pesticide_efficacy = Factory(name='pesticide_efficacy',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
-                nodemodule='interfaces_nodes',
+                nodemodule='alinea.echap.interfaces',
                 nodeclass='pesticide_efficacy',
                 inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'efficacy_model', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IInt, 'name': 'timestep', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],

@@ -6,23 +6,8 @@ Created on Thu Apr 04 11:25:45 2013
 """
 
 from alinea.caribu.CaribuScene import CaribuScene
-from numpy import recfromcsv
 from numpy import exp
 from math import radians, degrees, sin , cos
-
-def products_from_csv(csvname, delimiter = ';'):
-    """ 
-    Read a csv of products parameters and import them in a dict.
-    Expected columns are :
-        - 'product' : commercial name of the product
-        - 'compound' : name of the active compound of the product
-        - 'dose' : dose of active compound in the product (g.l-1)    
-    """
-    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = {}
-    for i in range(0,len(tab['compound'])):
-        d[tab[i][0]] = {tab[i][1]:tab[i][2]}
-    return d
 
 
 def product_dose(product_name, dose, productsDB):
@@ -75,7 +60,7 @@ def interception_dose(product_name, dose, productsDB, elevation, azimuth, scene)
 
 class CaribuInterceptModel(object):
     """ Adaptor for Caribu model compliying echap pesticide_interception model protocol """
-    def __init__(self, productsDB=products_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_names.csv'), elevation=90, azimuth=0): 
+    def __init__(self, productsDB={'Opus new': {'Epoxiconazole': 83}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0): 
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth

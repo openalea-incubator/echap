@@ -1,5 +1,5 @@
 
-# This file has been generated at Fri May 03 17:46:45 2013
+# This file has been generated at Fri May 17 13:44:00 2013
 
 from openalea.core import *
 
@@ -17,17 +17,32 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['models_nodes_CaribuMicroclimModel', 'models_nodes_PenetratedDecayModel', 'models_nodes_Meteo', 'models_nodes_CaribuInterceptModel']
+__all__ = ['interception_leaf_CaribuInterceptModel', 'microclimate_leaf_MicroclimateLeaf', 'milne_leaf_PenetratedDecayModel']
 
 
 
-models_nodes_CaribuMicroclimModel = Factory(name='Microclimate_leaf',
+interception_leaf_CaribuInterceptModel = Factory(name='Interception_Leaf',
+                authors=' (wralea authors)',
+                description='Caribu adaptor for pesticide interception',
+                category='model',
+                nodemodule='alinea.echap.interception_leaf',
+                nodeclass='CaribuInterceptModel',
+                inputs=[{'interface': IDict, 'name': 'productsDB', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'doses', 'desc': 'doses of active compound in g/m'}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+microclimate_leaf_MicroclimateLeaf = Factory(name='Microclimate_Leaf',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
-                nodemodule='models_nodes',
-                nodeclass='CaribuMicroclimModel',
-                inputs=[{'interface': IStr, 'name': 'sectors', 'value': 46, 'desc': ''}, {'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': ''}],
+                nodemodule='alinea.echap.microclimate_leaf',
+                nodeclass='MicroclimateLeaf',
+                inputs=[{'interface': IStr, 'name': 'sectors', 'value': '16', 'desc': ''}],
                 outputs=[{'interface': IDict, 'name': 'local_meteo', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
@@ -36,44 +51,14 @@ models_nodes_CaribuMicroclimModel = Factory(name='Microclimate_leaf',
 
 
 
-models_nodes_PenetratedDecayModel = Factory(name='Milne_leaf',
+milne_leaf_PenetratedDecayModel = Factory(name='Milne_Leaf',
                 authors=' (wralea authors)',
                 description='Milne model for penetrated pesticide decay',
                 category='model',
-                nodemodule='models_nodes',
+                nodemodule='alinea.echap.milne_leaf',
                 nodeclass='PenetratedDecayModel',
                 inputs=[{'interface': IDict, 'name': 'compound_parameters', 'value': None, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'active_dose', 'desc': ''}],
-                widgetmodule=None,
-                widgetclass=None,
-               )
-
-
-
-
-models_nodes_Meteo = Factory(name='Global_meteo',
-                authors=' (wralea authors)',
-                description='',
-                category='Unclassified',
-                nodemodule='models_nodes',
-                nodeclass='Meteo',
-                inputs=[{'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': 'Path for read the meteo data file csv'}],
-                outputs=[{'interface': None, 'name': 'mean_globalclimate, globalclimate, t_deb', 'desc': ''}],
-                widgetmodule=None,
-                widgetclass=None,
-               )
-
-
-
-
-models_nodes_CaribuInterceptModel = Factory(name='Interception_leaf',
-                authors=' (wralea authors)',
-                description='Caribu adaptor for pesticide interception',
-                category='model',
-                nodemodule='models_nodes',
-                nodeclass='CaribuInterceptModel',
-                inputs=[{'interface': IDict, 'name': 'productsDB', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''}],
-                outputs=[{'interface': None, 'name': 'doses', 'desc': 'doses of active compound in g/m'}],
                 widgetmodule=None,
                 widgetclass=None,
                )

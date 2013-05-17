@@ -95,3 +95,15 @@ def sum_temp_global(g, globalclimate):
             n = g.node(v)
             n.sum_temp += n.sum_temp
     return g
+
+
+def generate_scene(g):
+    g = mtg_interpreter(g) 
+    scene = plot3d(g)
+    return g, scene
+
+
+def plot_scene(g):
+	scene = plot3d(g)
+	Viewer.display(scene)
+

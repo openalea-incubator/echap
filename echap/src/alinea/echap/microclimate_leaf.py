@@ -6,8 +6,6 @@ Created on Mon Apr 15 10:58:05 2013
 """
 from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
-# import pandas as pd
-# from datetime import datetime, timedelta
 from alinea.weather.global_weather import *
 
 def runcaribu(sectors, scene, energy):
@@ -68,6 +66,7 @@ class MicroclimateLeaf:
                 - `Tair`: Temperature of air near the leaf (Celcius)
         """
         sectors = self.sectors
+        sectors_rain = '1'
         
         microclimate = {}  
         PAR_leaf = {}
@@ -81,7 +80,7 @@ class MicroclimateLeaf:
                 if Infid == Supid:
                     PAR_leaf[Infid] = {'PAR': e + a}
     # Rain
-        id_out = runcaribu(sectors, scene, energy = mean_globalclimate['rain'])
+        id_out = runcaribu(sectors_rain, scene, energy = mean_globalclimate['rain'])
         rain_leaf = id_out['Einc']
     # PAR
         mean_global_radiation, gc = weather.add_global_radiation(gc)

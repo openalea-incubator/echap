@@ -49,7 +49,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
-def local_microclimate(g, scene, weather, climate_model, t_deb='2000-10-01 01:00:00', label='LeafElement', timestep=1):
+def local_microclimate(g, scene, weather, climate_model, t_deb=datetime(2000, 10, 01, 9, 00, 00), label='LeafElement', timestep=1):
     """ 
     Interface between g and the microclimate model
 
@@ -59,7 +59,7 @@ def local_microclimate(g, scene, weather, climate_model, t_deb='2000-10-01 01:00
     - 'scene' : Scene containing the simulated system
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
-        See :func:`~alinea.echap.microclimate_leaf.CaribuMicroclimModel`
+        See :func:`~alinea.echap.microclimate_leaf.MicroclimateLeaf`
     - 't_deb' (str)
     - 'label' (str)
     - 'timestep' (int)
@@ -72,7 +72,7 @@ def local_microclimate(g, scene, weather, climate_model, t_deb='2000-10-01 01:00
     -------
       >>> g = MTG()
       >>> scene = plot3d(g)  
-      >>> climate_model = CaribuMicroclimModel()
+      >>> climate_model = MicroclimateLeaf()
       >>> local_microclimate(g, scene, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g
     """
@@ -84,7 +84,7 @@ def local_microclimate(g, scene, weather, climate_model, t_deb='2000-10-01 01:00
     g.property('microclimate').update(local_meteo)
     
     # Update t_deb
-    t_deb = weather_reader.next_date(timestep, t_deb)
+    t_deb = weather.next_date(timestep, t_deb)
     
     return g, mean_globalclimate, globalclimate, t_deb
 
