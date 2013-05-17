@@ -310,7 +310,7 @@ def test_decay_doses():
     g = adel_mtg()
     g = update_no_doses(g)
     g = mtg_interpreter(g)
-    scene = plot3d(g) 
+    scene = plot3d(g)
     # models
     interception_model = CaribuInterceptModel()
     Pearl_decay_model = PearLeafDecayModel(db)

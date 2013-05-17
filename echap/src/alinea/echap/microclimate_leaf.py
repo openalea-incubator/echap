@@ -93,7 +93,8 @@ class MicroclimateLeaf:
                     microclimate[Infid] = {'global_radiation': e + a, 
                                             'rain': rain_leaf[Infid],
                                             'relative_humidity':mean_globalclimate['relative_humidity'],
-                                            'wind_speed':mean_globalclimate['wind_speed']} 
+                                            'wind_speed':mean_globalclimate['wind_speed']
+                                            'vapor_pressure':weather.humidity_to_vapor_pressure(mean_globalclimate['relative_humidity'], mean_globalclimate['temperature_air'])} 
                     if PAR_leaf[Infid]['PAR'] == 0:
                         microclimate[Infid]['temperature_air'] = mean_globalclimate['temperature_air']
                     else:
