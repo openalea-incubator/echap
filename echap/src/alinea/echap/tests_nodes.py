@@ -130,6 +130,5 @@ def plot_scene(g):
 	Viewer.display(scene)
 
 def wheat_mtg(nb_sect=1):
-    p, d = adelR(3,1000)
-    g = adel_mtg3(nb_sect=nb_sect, p=p, d=d)
+    g = adel_mtg2(nb_sect=nb_sect)
     return g

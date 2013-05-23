@@ -4,8 +4,6 @@ Created on Mon Mar 25 16:59:54 2013
 
 @author: lepse
 """
-from alinea.alep.alep_color import alep_colormap, green_yellow_red
-
 import numpy as np
 import matplotlib.pyplot as plt
 #from matplotlib import mpl
@@ -25,6 +23,8 @@ from alinea.echap.microclimate_leaf import *
 from alinea.echap.interfaces import local_microclimate
 from alinea.echap.interfaces import pesticide_efficacy
 from alinea.echap.wheat_mtg import *
+
+from alinea.echap.color_map import *
 
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.weather.global_weather import *
@@ -94,7 +94,7 @@ def plot_decay(out, leaf=12):
     plt.show()
 
 
-def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False):
+def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue):
     """ plot the plant with pesticide doses """
     if type(cmap) is str:
         try:
@@ -109,7 +109,7 @@ def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazo
     for v in g.vertices(scale=g.max_scale()): 
         n = g.node(v)
         if 'surfacic_doses' in n.properties():
-            r,gg,b,s = _cmap(n.surfacic_doses[compound_name]*100)
+            r,gg,b,s = _cmap(n.surfacic_doses[compound_name]*200)
             n.color = (int(r*255),int(gg*255),int(b*255))           
         else : 
             n.color = green
@@ -146,7 +146,8 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
-            n.properties()['color'] = dict(zip(keys,colors))
+            #n.properties()['color'] = dict(zip(keys,colors))
+            n.color = tuple(dict(zip(keys,colors))[vid])
         else : 
             n.color = green
 
@@ -296,7 +297,7 @@ def test_decay_doses():
     # Loop
     t = 0
     dt = 1
-    nb_steps = 2
+    nb_steps = 15
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -323,7 +324,8 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        plot_pesticide(g, compound_name='Epoxiconazole', colmap='winter_r')
+        #plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False)
+        plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
         g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
         t_deb = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     return out

@@ -40,7 +40,7 @@ class MicroclimateLeaf:
     """
     def __init__(self, sectors='16'):
         self.sectors=sectors
-        
+
     def microclim(self, weather, scene, timestep, t_deb):
         """ Calculate the radiation and rain interception with the Caribu interception model and the Tair, humidity and wind for each leaf and stem element id
 
@@ -67,11 +67,15 @@ class MicroclimateLeaf:
         """
         sectors = self.sectors
         sectors_rain = '1'
-        
+
         microclimate = {}  
         PAR_leaf = {}
-    # Temp
+
         mean_globalclimate, gc = weather.get_weather(timestep, t_deb)
+        mean_global_radiation, gc = weather.add_global_radiation(gc)
+        mean_vapor_pressure, gc = weather.add_vapor_pressure(gc)
+
+    # Temp
         id_out = runcaribu(sectors, scene, energy = mean_globalclimate['PPFD'])
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
@@ -83,7 +87,6 @@ class MicroclimateLeaf:
         id_out = runcaribu(sectors_rain, scene, energy = mean_globalclimate['rain'])
         rain_leaf = id_out['Einc']
     # PAR
-        mean_global_radiation, gc = weather.add_global_radiation(gc)
         id_out = runcaribu(sectors, scene, energy = mean_global_radiation)
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
@@ -94,7 +97,7 @@ class MicroclimateLeaf:
                                             'rain': rain_leaf[Infid],
                                             'relative_humidity':mean_globalclimate['relative_humidity'],
                                             'wind_speed':mean_globalclimate['wind_speed'],
-                                            'vapor_pressure':weather.humidity_to_vapor_pressure(mean_globalclimate['relative_humidity'], mean_globalclimate['temperature_air'])} 
+                                            'vapor_pressure':mean_vapor_pressure} 
                     if PAR_leaf[Infid]['PAR'] == 0:
                         microclimate[Infid]['temperature_air'] = mean_globalclimate['temperature_air']
                     else:
