@@ -1,5 +1,5 @@
 
-# This file has been generated at Wed May 22 15:00:08 2013
+# This file has been generated at Thu May 23 09:53:23 2013
 
 from openalea.core import *
 
@@ -17,11 +17,11 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['alinea.echap.tests_nodes_products_from_csv', 'alinea.echap.tests_nodes_compounds_from_csv', 'alinea.echap.tests_nodes_sum_temp_global', 'alinea.echap.tests_nodes_plot_pesticide', 'alinea.echap.tests_nodes_wheat_mtg']
+__all__ = ['tests_nodes_products_from_csv', 'tests_nodes_compounds_from_csv', 'tests_nodes_sum_temp_global', 'tests_nodes_plot_pesticide', 'tests_nodes_generate_scene', 'tests_nodes_wheat_mtg']
 
 
 
-alinea.echap.tests_nodes_products_from_csv = Factory(name='products_from_csv',
+tests_nodes_products_from_csv = Factory(name='products_from_csv',
                 authors=' (wralea authors)',
                 description='Read a products names csv file and convert it to a dict',
                 category='Unclassified',
@@ -36,7 +36,7 @@ alinea.echap.tests_nodes_products_from_csv = Factory(name='products_from_csv',
 
 
 
-alinea.echap.tests_nodes_compounds_from_csv = Factory(name='compounds_from_csv',
+tests_nodes_compounds_from_csv = Factory(name='compounds_from_csv',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
@@ -51,7 +51,7 @@ alinea.echap.tests_nodes_compounds_from_csv = Factory(name='compounds_from_csv',
 
 
 
-alinea.echap.tests_nodes_sum_temp_global = Factory(name='sum_temp_global',
+tests_nodes_sum_temp_global = Factory(name='sum_temp_global',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
@@ -66,7 +66,7 @@ alinea.echap.tests_nodes_sum_temp_global = Factory(name='sum_temp_global',
 
 
 
-alinea.echap.tests_nodes_plot_pesticide = Factory(name='plot_pesticide',
+tests_nodes_plot_pesticide = Factory(name='plot_pesticide',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
@@ -81,13 +81,28 @@ alinea.echap.tests_nodes_plot_pesticide = Factory(name='plot_pesticide',
 
 
 
-alinea.echap.tests_nodes_wheat_mtg = Factory(name='wheat_mtg',
+tests_nodes_generate_scene = Factory(name='generate_scene',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
                 nodemodule='alinea.echap.tests_nodes',
+                nodeclass='generate_scene',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}, {'interface': None, 'name': 'scene', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+
+
+
+
+tests_nodes_wheat_mtg = Factory(name='Adel_mtg2',
+                authors=' (wralea authors)',
+                description='Create a less simple mtg',
+                category='Unclassified',
+                nodemodule='alinea.echap.tests_nodes',
                 nodeclass='wheat_mtg',
-                inputs=[],
+                inputs=[{'interface': IInt, 'name': 'nb_sect', 'value': 1, 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,

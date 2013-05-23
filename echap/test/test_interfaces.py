@@ -4,15 +4,18 @@ Created on Mon Mar 25 16:59:54 2013
 
 @author: lepse
 """
-
+from alinea.alep.alep_color import alep_colormap, green_yellow_red
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import mpl
+#from matplotlib import mpl
+from matplotlib import cm
+from matplotlib.colors import Normalize, LogNorm
 from pandas import *
 
 from alinea.pearl.pearl import *
 from alinea.pearl.pearl_leaf import *
+
 from alinea.echap.interfaces import pesticide_surfacic_decay
 from alinea.echap.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
@@ -20,73 +23,16 @@ from alinea.echap.interception_leaf import *
 from alinea.echap.interfaces import pesticide_interception
 from alinea.echap.microclimate_leaf import *
 from alinea.echap.interfaces import local_microclimate
-from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
-from alinea.weather.global_weather import *
+from alinea.echap.wheat_mtg import *
 
-from alinea.adel.newmtg import *
-from alinea.adel.mtg_interpreter import *
-from openalea.plantgl.all import *
-import alinea.adel.fitting as fitting
-from alinea.adel.AdelR import devCsv,setAdel,RunAdel,genGeoLeaf,genGeoAxe
+from alinea.pesticide_efficacy.pesticide_efficacy import *
+from alinea.weather.global_weather import *
 
 from datetime import datetime, timedelta
 
-############# Création d'un MTG
 
-def adelR(nplants,dd):
-    devT = devCsv('../../adel/example/data/axeTCa0N.csv','../../adel/example/data/dimTCa0N.csv','../../adel/example/data/phenTCa0N.csv','../../adel/example/data/earTCa0N.csv','../../adel/example/data/ssi2sen.csv')
-    geoLeaf = genGeoLeaf()
-    geoAxe = genGeoAxe()
-    pars = setAdel(devT,geoLeaf,geoAxe,nplants)
-    cantable = RunAdel(dd,pars)
-    return pars,cantable
-
-def leaves_db():
-    import cPickle as Pickle
-    fn = 'E:/openaleapkg/adel/adel/data/leaves_simple.db'
-    f = open(fn)
-    leaves = Pickle.load(f)
-    f.close()
-    leaves,discard = fitting.fit_leaves(leaves, 9)
-    return leaves
-
-def leaves_db_flow(fn):
-    import cPickle as Pickle
-    f = open(fn)
-    leaves = Pickle.load(f)
-    f.close()
-    leaves,discard = fitting.fit_leaves(leaves, 9)
-    return leaves
-
-def adel_mtg():
-    """ create a very simple adel mtg """
-    d = {'plant':[1,1],'axe_id':['MS','T1'],'ms_insertion':[0,1],'numphy':[1,1], 
-         'Laz': [0,90], 'Ll' :[3,3], 'Lv' :[3,3] , 'Lsen':[0,0], 'L_shape':[3,3], 'Lw_shape':[.3,.3], 'Linc':[0,0],
-         'Einc':[0,45],'El':[1,1],'Ev':[1,1],'Esen':[0,0],'Ed': [0.1,0.1]}
-    g=mtg_factory(d,adel_metamer,leaf_db=leaves_db(), leaf_sectors=1)
-    g=mtg_interpreter(g)
-    return g
-
-def adel_mtg2(nb_sect=1):
-    """ create a less simple adel mtg """
-    p, d = adelR(3,1000)
-    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,leaf_db=leaves_db(),stand=[((0,0,0),0),((10,0,0),90), ((0,10,0), 0)])
-    g=mtg_interpreter(g)
-    return g
-
-def adel_mtg3(nb_sect=1, leaf_db=None, d=None, p=None):
-    """ create a less simple adel mtg """
-    if p: # nb_plants
-        size = int(ceil(sqrt(p)))
-        stand = numpy.array([(i, j) for i in range(size) for j in range(size)])
-        numpy.random.shuffle(stand)
-        stand = [((i, j, 0),random.randint(0,90)) for i, j in stand[:p]]
-    else:
-        stand = [((0,0,0),0),((10,0,0),90), ((0,10,0), 0)]
-    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,leaf_db=leaf_db,stand=stand)
-    g=mtg_interpreter(g)
-    return g
+############# update
 
 def update_on_leaves(g, label = 'LeafElement'):
     """ Read weather data for a step of simulation and apply it to each leaf.
@@ -148,17 +94,62 @@ def plot_decay(out, leaf=12):
     plt.show()
 
 
-def plot_pesticide(g, compound_name='Epoxiconazole', colmap='winter_r'):
+def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False):
     """ plot the plant with pesticide doses """
-    cmap = mpl.cm.get_cmap(colmap)
+    if type(cmap) is str:
+        try:
+            _cmap = cm.get_cmap(cmap())
+        except:
+            raise Exception('This colormap does not exist')
+    else:
+        _cmap = cmap()
+
     green = (0,180,0)
+
     for v in g.vertices(scale=g.max_scale()): 
         n = g.node(v)
         if 'surfacic_doses' in n.properties():
-            r,gg,b,s= cmap(n.surfacic_doses[compound_name]*100)
+            r,gg,b,s = _cmap(n.surfacic_doses[compound_name]*100)
             n.color = (int(r*255),int(gg*255),int(b*255))           
         else : 
             n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
+    return g
+
+
+def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False):
+    """ plot the plant with pesticide doses """
+    prop = g.property(property_name)
+    keys = prop.keys()
+    value = []
+    for k, val in prop.iteritems():
+        value.append(val[compound_name])
+        v = np.array(value)
+
+    if type(cmap) is str:
+        try:
+            _cmap = cm.get_cmap(cmap())
+        except:
+            raise Exception('This colormap does not exist')
+    else:
+        _cmap = cmap()
+
+    green = (0,180,0)
+
+    norm = Normalize(vmin=0, vmax=max(v)) if not lognorm else LogNorm(vmin=0, vmax=max(v)) 
+    values = norm(v)
+
+    colors = (_cmap(values)[:,0:3])*255
+    colors = np.array(colors,dtype=np.int).tolist()
+
+    for vid in g.vertices(scale=g.max_scale()): 
+        n = g.node(vid)
+        if 'surfacic_doses' in n.properties():
+            n.properties()['color'] = dict(zip(keys,colors))
+        else : 
+            n.color = green
+
     scene = plot3d(g)
     Viewer.display(scene)
     return g
@@ -184,7 +175,7 @@ def products_from_csv(csvname, delimiter = ';'):
 ########################## tests decays
 
 def test_surfacic():
-    g = adel_mtg()
+    g = adel_mtg2()
     g = update_no_doses(g)
     #db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
@@ -198,7 +189,7 @@ def test_surfacic():
     return g
 
 def test_penetrated():
-    g = adel_mtg()
+    g = adel_mtg2()
     g = update_on_leaves(g)
     decay_model = PenetratedDecayModel()
     g = pesticide_penetrated_decay(g, decay_model)
