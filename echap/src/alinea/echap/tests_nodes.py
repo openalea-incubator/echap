@@ -108,7 +108,7 @@ def compounds_from_csv(csvname, delimiter = ';'):
 
 
 def sum_temp_global(g, globalclimate):    
-    sum_temp = sum(globalclimate['Tair'])
+    sum_temp = sum(globalclimate['temperature_air'])
     if not 'sum_temp' in g.property_names():
         for v in g.vertices(scale=1): 
             n = g.node(v)

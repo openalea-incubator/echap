@@ -46,6 +46,7 @@ def adel_mtg2(nb_sect=1):
 
 def adel_mtg3(nb_sect=1, d=None, p=None):
     """ create a less simple adel mtg """
+    p, d = adelR(3,1000)
     if p: # nb_plants
         size = int(ceil(sqrt(p)))
         stand = numpy.array([(i, j) for i in range(size) for j in range(size)])

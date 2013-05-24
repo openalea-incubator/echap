@@ -4,26 +4,8 @@ Created on Wed Mar 20 15:16:51 2013
 
 @author: lepse
 """
-from numpy import recfromcsv
+
 from numpy import exp
-
-
-def compounds_from_csv(csvname, delimiter = ';'):
-    """ 
-    Read a csv of compounds parameters and import them in a dict.
-    Expected columns are :
-        - 'compound'
-        - 'dose_max_ha'
-        - 'type_code'
-        - 'Ap'
-        - 'Kp'
-        - 'Ae'
-        - 'Ke'
-        - 'decay_rate'    
-    """
-    tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = [dict(zip(tab.dtype.names, data)) for data in tab]
-    return d
 
 
 def _dose_decay(decay_rate, initial_dose, days):
@@ -61,7 +43,7 @@ def milne_leaf(initial_dose, compound_parameters, days):
 class PenetratedDecayModel(object):
     """ Adaptor for Milne decay model and compliying echap pesticide_penetrated_decay model protocol
     """
-    def __init__(self,products_parameters = compounds_from_csv('E:/openaleapkg/echap/src/alinea/echap/products_parameters.csv')):
+    def __init__(self,products_parameters = [{'Ae': 0.5, 'Ke': 7.0099999999999998, 'decay_rate': 0.069000000000000006, 'dose_max_ha': 125, 'Ap': 0.70999999999999996, 'Kp': 6, 'type_code': 2, 'compound': 'Epoxiconazole'}, {'Ae': 1.0, 'Ke': 6.4900000000000002, 'decay_rate': 0.01, 'dose_max_ha': 1000, 'Ap': 0.0, 'Kp': 0, 'type_code': 3, 'compound': 'Chlorothalonil'}]):
         self.compound_parameters = products_parameters
     def decay(self, initial_dose, dt):
         """ Return the penetrated active doses 

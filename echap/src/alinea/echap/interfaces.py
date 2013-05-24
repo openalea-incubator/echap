@@ -1,6 +1,5 @@
 """Defines interfaces between g and the different models of echap project
 """
-from alinea.weather.global_weather import *
 
 def pesticide_interception(g, scene, interception_model, product_name, dose, label='LeafElement'):
     """ 
@@ -49,7 +48,7 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     return g
 
 
-def local_microclimate(g, scene, weather, climate_model, t_deb=datetime(2000, 10, 01, 9, 00, 00), label='LeafElement', timestep=1):
+def local_microclimate(g, scene, weather, climate_model, t_deb="2000-10-01 01:00:00", label='LeafElement', timestep=1):
     """ 
     Interface between g and the microclimate model
 
@@ -75,10 +74,12 @@ def local_microclimate(g, scene, weather, climate_model, t_deb=datetime(2000, 10
       >>> climate_model = MicroclimateLeaf()
       >>> local_microclimate(g, scene, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g
-    """
+    """
+    # Convert str into datetime
+    t_deb = weather.str_to_datetime(t_deb)
+
     # Temporary : for tests
     mean_globalclimate, globalclimate = weather.get_weather(timestep, t_deb)
-
     local_meteo = climate_model.microclim(weather, scene, timestep, t_deb)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)

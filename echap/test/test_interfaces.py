@@ -146,7 +146,6 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
-            #n.properties()['color'] = dict(zip(keys,colors))
             n.color = tuple(dict(zip(keys,colors))[vid])
         else : 
             n.color = green

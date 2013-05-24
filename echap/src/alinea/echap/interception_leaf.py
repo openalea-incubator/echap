@@ -59,7 +59,14 @@ def interception_dose(product_name, dose, productsDB, elevation, azimuth, scene)
 
 
 class CaribuInterceptModel(object):
-    """ Adaptor for Caribu model compliying echap pesticide_interception model protocol """
+    """ Adaptor for Caribu model compliying echap pesticide_interception model protocol 
+    
+    productsDB: Dict
+        - product: Comercial name of the product
+        - compound: Active compound of the product
+        - dose: Concentration of active compound in g.l-1
+
+    """
     def __init__(self, productsDB={'Opus new': {'Epoxiconazole': 83}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0): 
         self.productsDB = productsDB
         self.elevation = elevation
