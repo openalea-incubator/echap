@@ -132,3 +132,7 @@ def plot_scene(g):
 def wheat_mtg(nb_sect=1):
     g = adel_mtg2(nb_sect=nb_sect)
     return g
+
+def wheat_mtg3(nb_sect=1):
+    g = adel_mtg3(nb_sect=nb_sect)
+    return g
