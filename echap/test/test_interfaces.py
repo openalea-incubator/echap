@@ -235,6 +235,7 @@ def test_intercept():
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     return g
+elevation = elevation
 
 def test_intercept_no_dose():
     g = adel_mtg()
@@ -245,6 +246,22 @@ def test_intercept_no_dose():
     g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     return g
 
+
+def test_intercept_elevation():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    g = mtg_interpreter(g)
+    scene = plot3d(g) 
+    interception_model = CaribuInterceptModel(elevation=90.)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    print g.property('surfacic_doses')
+    interception_model = CaribuInterceptModel(elevation=45.)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    print g.property('surfacic_doses')
+    interception_model = CaribuInterceptModel(elevation=1.)
+    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    print g.property('surfacic_doses')
+    return g
 
 ###################################### test microclimate
 
