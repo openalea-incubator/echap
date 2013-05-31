@@ -1,16 +1,15 @@
 """Defines interfaces between g and the different models of echap project
 """
 
-def pesticide_interception(g, scene, interception_model, product_name, dose, label='LeafElement'):
+def pesticide_interception(g, interception_model, product_name, dose, label='LeafElement'):
     """ 
     Interface between g and the interception model
 
     :Parameters:
     ----------
     - 'g' : MTG representing the canopy (and the soil)
-    - 'scene' : Scene containing the simulated system
     - 'interception_model' : A class embending the interception model and provide the following methods:    
-        - 'interception_model.intercept(scene, product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
+        - 'interception_model.intercept(product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
         See :func:`~alinea.echap.interception_leaf.CaribuInterceptModel`
     - 'product_name' : Commercial name of the product 
     - 'dose' : Dose of product use in field (l.ha)
@@ -22,12 +21,12 @@ def pesticide_interception(g, scene, interception_model, product_name, dose, lab
     :Example:
     -------
       >>> g = MTG()
-      >>> scene = plot3d(g)  
       >>> interception_model = CaribuInterceptModel()
-      >>> pesticide_interception(g, scene, interception_model, product_name, dose)
+      >>> pesticide_interception(g, interception_model, product_name, dose)
       >>> return g
     """
-    surf_dose = interception_model.intercept(product_name, dose, scene)
+    scene_geometry = g.property('geometry')
+    surf_dose = interception_model.intercept(product_name, dose, scene_geometry)
     if not 'penetrated_doses' in g.properties():
         vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
         g.add_property('penetrated_doses')
