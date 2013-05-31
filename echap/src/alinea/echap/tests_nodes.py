@@ -136,3 +136,15 @@ def wheat_mtg(nb_sect=1):
 def wheat_mtg3(nb_sect=1):
     g = adel_mtg3(nb_sect=nb_sect)
     return g
+
+def update_no_doses(g, label = 'LeafElement'):
+    """ Read weather data for a step of simulation and apply it to each leaf.
+    """        
+    vids = [vid for vid in g if g.label(vid).startswith(label)]
+    for v in vids : 
+        n = g.node(v)
+        n.temp = 12
+        n.rain_intensity = 0
+        n.relative_humidity = 100 
+        n.wetness = True
+    return g

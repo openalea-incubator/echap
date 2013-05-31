@@ -17,7 +17,7 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['tests_nodes_sum_temp_global', 'tests_nodes_compounds_from_csv', 'tests_nodes_products_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_generate_scene', 'tests_nodes_wheat_mtg']
+__all__ = ['tests_nodes_sum_temp_global', 'tests_nodes_compounds_from_csv', 'tests_nodes_products_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_generate_scene', 'tests_nodes_wheat_mtg', 'tests_nodes_update_no_doses']
 
 
 
@@ -103,6 +103,20 @@ tests_nodes_wheat_mtg = Factory(name='Adel_mtg2',
                 nodemodule='alinea.echap.tests_nodes',
                 nodeclass='wheat_mtg',
                 inputs=[{'interface': IInt, 'name': 'nb_sect', 'value': 1, 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
+               
+               
+               
+tests_nodes_update_no_doses = Factory(name='update_no_doses',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.echap.tests_nodes',
+                nodeclass='update_no_doses',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}],
                 outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
                 widgetmodule=None,
                 widgetclass=None,
