@@ -20,7 +20,7 @@ def test_intercept_elevation():
     print g45.property('surfacic_doses')
 
     interception_model_1 = CaribuInterceptModel(elevation=1.)
-    g1 = pesticide_interception(g, interception_model_1, product_name='Opus', dose=1.5)
+    g1 = pesticide_interception(g1, interception_model_1, product_name='Opus', dose=1.5)
     print g1.property('surfacic_doses')
 
 

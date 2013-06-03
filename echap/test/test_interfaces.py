@@ -177,13 +177,10 @@ def products_from_csv(csvname, delimiter = ';'):
 def test_surfacic():
     g = adel_mtg2()
     g = update_no_doses(g)
-    #db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}, 
+    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}}
+    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
     decay_model = PearLeafDecayModel(db)
     g = pesticide_surfacic_decay(g, decay_model)
     return g
@@ -199,11 +196,9 @@ def test_all_decay():
     g = adel_mtg()
     g = update_on_leaves(g)
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}, 
+    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}}
+    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
     decay_model = PearLeafDecayModel(db)
     g = pesticide_surfacic_decay(g, decay_model)
     decay_model = PenetratedDecayModel()
@@ -214,11 +209,9 @@ def test_no_doses():
     g = adel_mtg()
     g = update_no_doses(g)
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}, 
+    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}}
+    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
     decay_model = PearLeafDecayModel(db)
     g = pesticide_surfacic_decay(g, decay_model)
     decay_model = PenetratedDecayModel()
@@ -230,18 +223,14 @@ def test_no_doses():
 def test_intercept():
     g = adel_mtg()
     g = update_on_leaves(g)
-    g = mtg_interpreter(g) 
-    scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     return g
-elevation = elevation
+
 
 def test_intercept_no_dose():
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     return g
@@ -250,16 +239,14 @@ def test_intercept_no_dose():
 def test_intercept_elevation():
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g) 
     interception_model = CaribuInterceptModel(elevation=90.)
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     print g.property('surfacic_doses')
     interception_model = CaribuInterceptModel(elevation=45.)
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     print g.property('surfacic_doses')
     interception_model = CaribuInterceptModel(elevation=1.)
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     print g.property('surfacic_doses')
     return g
 
@@ -268,14 +255,10 @@ def test_intercept_elevation():
 def test_microclimate():
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g) 
-    #interception_model = CaribuInterceptModel()
-    #g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
     climate_model = MicroclimateLeaf()
-    weather = Weather()
-    t_deb=datetime(2000, 10, 01, 9, 00, 00)
-    g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
+    t_deb = "2000-10-01 01:00:00"
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     print g.property('microclimate')
     return g
 
@@ -285,10 +268,8 @@ def test_microclimate():
 def test_efficacy():
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     return g
@@ -304,31 +285,27 @@ def test_efficacy_nopest():
 
 def test_decay_doses():
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}, 
+    'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
-    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'FacTraDepRex':0, 
-    'FacVolDepRex':0,'FacPenDepRex':0,'FacWasDepRex':0,'FraDepRex':0}}
-    t_deb=datetime(2000, 10, 01, 9, 00, 00)
+    'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
+    t_deb = "2000-10-01 01:00:00"
     # Loop
     t = 0
     dt = 1
-    nb_steps = 15
+    nb_steps = 2
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g)
     # models
     interception_model = CaribuInterceptModel()
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
     climate_model = MicroclimateLeaf()
-    weather = Weather()
+    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
     # Interception
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
-    g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    t_deb = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     # sauvegarde etat initial
     out = get_df_out(0,g)
     # loop
@@ -342,40 +319,38 @@ def test_decay_doses():
         out = out.append(df)
         #plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False)
         plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
-        g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-        t_deb = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     return out
 
 
 def test_local_meteo():
     # Loop
-    t_deb=datetime(2000, 10, 01, 9, 00, 00)
+    t_deb = "2000-10-01 01:00:00"
     t = 0
     dt = 1
     nb_steps = 2
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
-    g = mtg_interpreter(g)
-    scene = plot3d(g) 
     # models
     interception_model = CaribuInterceptModel()
     climate_model = MicroclimateLeaf()
-    weather = Weather()
+    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
     # Interception
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     print t_deb
     # Microclimate
-    g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    t_deb = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     print g.property('microclimate')
     # loop
     for i in range(nb_steps):
         t += dt    
         print t_deb
         # Microclimate
-        g = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-        t_deb = local_microclimate(g, scene, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
         print g.property('microclimate')
 
 
