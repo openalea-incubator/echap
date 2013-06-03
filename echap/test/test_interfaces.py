@@ -233,7 +233,7 @@ def test_intercept():
     g = mtg_interpreter(g) 
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus new', dose=1.5)
     return g
 elevation = elevation
 
@@ -243,7 +243,7 @@ def test_intercept_no_dose():
     g = mtg_interpreter(g)
     scene = plot3d(g) 
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, scene, interception_model, product_name='Opus new', dose=1.5)
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     return g
 
 
