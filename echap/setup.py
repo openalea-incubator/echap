@@ -7,6 +7,9 @@ import os
 from setuptools import setup, find_packages
 from openalea.deploy.metainfo import read_metainfo
 
+# Share datas
+share_dirs = {'share':'share'}
+
 # Reads the metainfo file
 metadata = read_metainfo('metainfo.ini', verbose=True)
 for key,value in metadata.iteritems():

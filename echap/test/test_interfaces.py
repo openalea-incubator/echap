@@ -64,6 +64,35 @@ def update_no_doses(g, label = 'LeafElement'):
     return g
 
 
+########################## initiate
+#data
+db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
+'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
+'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
+'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
+# Loop
+t = 0
+dt = 1
+nb_steps = 2
+# Param
+timestep=1
+product_name='Opus'
+dose=1.5
+data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv'
+label='LeafElement'
+t_deb = "2000-10-01 01:00:00"
+# Initialisation du mtg 
+g = adel_mtg()
+g = update_no_doses(g)
+scene_geometry = g.property('geometry')
+# models
+interception_model = CaribuInterceptModel()
+Pearl_decay_model = PearLeafDecayModel(db)
+Milne_decay_model = PenetratedDecayModel()
+climate_model = MicroclimateLeaf()
+weather = Weather(data_file=data_file)
+
+    
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
 
 def get_df_out(time,g):
@@ -354,8 +383,16 @@ def test_local_meteo():
         print g.property('microclimate')
 
 
+import alinea.echap
+from openalea.deploy.shared_data import get_shared_data_path
+data_filepath = get_shared_data_path(alinea.echap, 'meteo01.csv')
+data_files = shared_data(alinea.echap, pattern='*.csv')
+   
 
-    
+import openalea.stat_tool
+from openalea.deploy.shared_data import shared_data
+data_filepath = shared_data(openalea.stat_tool, 'meri1.his')
+data_files = shared_data(openalea.stat_tool, pattern='*.his')   
     
     
     
