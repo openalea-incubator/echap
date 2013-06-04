@@ -16,22 +16,25 @@ class MicroclimateLeaf(object):
         self.sectors=sectors
 
     def microclim(self, weather, scene_geometry, timestep, t_deb):
-        """ Calculate the radiation and rain interception with the Caribu interception model and the Tair, humidity and wind for each leaf and stem element id
+        """ 
+        Calculate the radiation and rain interception with the Caribu interception model and the Tair, humidity and wind for each leaf and stem element id
 
-            :Parameters:
-            ----------
-            - `sectors` (int) 
-            - `weather` A class embending the weather reader
-            - `scene_geometry`
-            - 'timestep' (int)
-                The timestep of the simulation
-            - 't_deb' (datetime)
+        :Parameters:
+        ----------
+        - `sectors` (int) 
+        - `weather` (class)
+            A class embending the weather reader
+        - `scene_geometry`
+        - 'timestep' (int)
+            The timestep of the simulation
+        - 't_deb' (datetime)
 
-            :Returns:
-            -------
-            - `microclimate` (Dict) - Dict of microclimate variables (radiation, rain, Tair, humidity, wind) for each id of leaf and stem element
+        :Returns:
+        -------
+        - `microclimate` (Dict)
+            Dict of microclimate variables (radiation, rain, Tair, humidity, wind) for each id of leaf and stem element
                 - `radiation`: The global radiation in kJ.m-2.h-1
-                PAR=ppfd in micromol.m-2.sec-1 (1 ppfd = 0.2174 Watts.m-2.sec-1 PAR, 1 W.m-2.sec-1 global = 0.48 Watts.m-2.sec-1 PAR)
+                PAR = PPFD in micromol.m-2.sec-1 (1 PPFD = 0.2174 Watts.m-2.sec-1 PAR, 1 W.m-2.sec-1 global = 0.48 Watts.m-2.sec-1 PAR)
                 - `Tair`: Temperature of air near the leaf (Celcius)
         """
         sectors = self.sectors

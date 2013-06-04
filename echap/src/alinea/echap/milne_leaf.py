@@ -20,16 +20,18 @@ def milne_leaf(initial_dose, compound_parameters, days):
     """ Milne decay model applied to penetrated doses
 
         :Parameters:
-        ----------
-
-        - `initial_dose` (float) - Mass of product present per unit surface inside the leaf (g.m-2)
-        - `compound_parameters` : A dict of compound parameters read in a .csv file 
-        - `days` : time step (day)
+        ------------
+        - `initial_dose` (float)
+            Mass of product present per unit surface inside the leaf (g.m-2)
+        - `compound_parameters` (dict)
+            A dict of compound parameters read in a .csv file 
+        - `days` (int)
+            Timestep (day)
 
         :Returns:
-        ----------
-
-        - 'initial_dose' (float) - Remaining mass of product per unit surface inside the leaf after dt (g.m-2) 
+        ---------
+        - 'initial_dose' (float)
+            Remaining mass of product per unit surface inside the leaf after dt (g.m-2) 
     """
     ptable = dict([(p['compound'],p) for p in compound_parameters])
     for name, dose in initial_dose.iteritems():
@@ -50,12 +52,15 @@ class PenetratedDecayModel(object):
 
         :Parameters:
         ----------
-        - initial_dose: Total amount of penetrated dose in the leaf element
-        - dt: Time step of the simulation (day)
+        - 'initial_dose' (float) 
+            Total amount of penetrated dose in the leaf element
+        - 'dt' (int) 
+            Timestep of the simulation (day)
 
         :Returns:
         -------
-        - active_dose: Total amount of penetrated active dose in the leaf element after decay
+        - 'active_dose' (float)
+            Total amount of penetrated active dose in the leaf element after decay
         """    
         active_dose = milne_leaf(initial_dose, self.compound_parameters, dt)
         return active_dose

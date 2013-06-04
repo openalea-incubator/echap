@@ -105,10 +105,10 @@ def local_microclimate(g, weather, climate_model, t_deb="2000-10-01 01:00:00", l
     local_meteo = climate_model.microclim(weather, scene_geometry, timestep, t_deb)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
-    
+
     # Update t_deb
     t_deb = weather.next_date(timestep, t_deb)
-    
+
     return g, mean_globalclimate, globalclimate, t_deb
 
 
