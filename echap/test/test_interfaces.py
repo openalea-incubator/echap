@@ -71,10 +71,17 @@ db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':
 'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
 'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
 'ThicknessLay':0.0006,'DT50Pen':0.14,'DT50Tra':0.23, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}}
-# Loop
+
+compound_parameters = [{'Ae': 0.5, 'Ke': 7.0099999999999998, 'decay_rate': 0.069000000000000006,
+ 'dose_max_ha': 125, 'Ap': 0.70999999999999996, 'Kp': 6, 'type_code': 2, 
+ 'compound': 'Epoxiconazole'}, {'Ae': 1.0, 'Ke': 6.4900000000000002, 'decay_rate': 0.01, 
+ 'dose_max_ha': 1000, 'Ap': 0.0, 'Kp': 0, 'type_code': 3, 'compound': 'Chlorothalonil'}]
+
+ # Loop
 t = 0
 dt = 1
 nb_steps = 2
+
 # Param
 timestep=1
 product_name='Opus'
@@ -82,10 +89,12 @@ dose=1.5
 meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
 label='LeafElement'
 t_deb = "2000-10-01 01:00:00"
+
 # Initialisation du mtg 
 g = adel_mtg()
 g = update_no_doses(g)
 scene_geometry = g.property('geometry')
+
 # models
 interception_model = CaribuInterceptModel()
 Pearl_decay_model = PearLeafDecayModel(db)
@@ -148,6 +157,13 @@ def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazo
     return g
 
 
+def dose_norm(dose, dose_max_ha):
+    """ normalise doses(g.m-2) """
+    dn = 0
+    if dose_max_ha > 0 :
+        dn = float(dose * 1e4) / dose_max_ha
+    return dn
+
 def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False):
     """ plot the plant with pesticide doses """
     prop = g.property(property_name)
@@ -155,7 +171,7 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     value = []
     for k, val in prop.iteritems():
         value.append(val[compound_name])
-        v = np.array(value)
+        val = np.array(value)
 
     if type(cmap) is str:
         try:
@@ -167,10 +183,12 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
 
     green = (0,180,0)
 
-    norm = Normalize(vmin=0, vmax=max(v)) if not lognorm else LogNorm(vmin=0, vmax=max(v)) 
-    values = norm(v)
-
-    colors = (_cmap(values)[:,0:3])*255
+    # norm = Normalize(vmin=0, vmax=max(v)) if not lognorm else LogNorm(vmin=0, vmax=max(v)) 
+    # values = norm(v)
+    for i in range(0,len(value)):
+        val[i] = dose_norm(value[i], dose_max_ha)
+    
+    colors = (_cmap(val)[:,0:3])*255
     colors = np.array(colors,dtype=np.int).tolist()
 
     for vid in g.vertices(scale=g.max_scale()): 
@@ -323,7 +341,7 @@ def test_decay_doses():
     # Loop
     t = 0
     dt = 1
-    nb_steps = 2
+    nb_steps = 6
     # Initialisation du mtg 
     g = adel_mtg()
     g = update_no_doses(g)
@@ -349,8 +367,8 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        #plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False)
-        plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
+        plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False)
+        #plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
         g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
         t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     return out

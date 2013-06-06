@@ -134,7 +134,6 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):
     :Example:
     -------
       >>> g = MTG()
-      >>> scene = plot3d(g)  
       >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, interception_model, product_name, dose)
@@ -185,7 +184,6 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
     :Example:
     -------   
       >>> g = MTG()
-      >>> scene = plot3d(g)  
       >>> db = {'Chlorothalonil':{}, 'Epoxiconazole':{}, 'Metconazole':{}}
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, interception_model, product_name, dose)
@@ -225,7 +223,6 @@ def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
     :Example:
     ---------   
       >>> g = MTG()
-      >>> scene = plot3d(g)  
       >>> interception_model = CaribuInterceptModel()
       >>> pesticide_interception(g, interception_model, product_name, dose)
       >>> efficacy_model = PesticideEfficacyModel()
@@ -263,6 +260,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
         default "LeafElement"
     - geometry (str)
         default "geometry"
+
     :Returns:
     ---------
     returns the fraction of intercepted rain
