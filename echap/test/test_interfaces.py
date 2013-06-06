@@ -30,6 +30,7 @@ from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.weather.global_weather import *
 
 from datetime import datetime, timedelta
+from openalea.deploy.shared_data import get_shared_data_path
 
 
 ############# update
@@ -78,7 +79,7 @@ nb_steps = 2
 timestep=1
 product_name='Opus'
 dose=1.5
-data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv'
+meteo01_filepath = get_shared_data_path('alinea/echap/share/data', 'meteo01.csv')
 label='LeafElement'
 t_deb = "2000-10-01 01:00:00"
 # Initialisation du mtg 
@@ -90,7 +91,7 @@ interception_model = CaribuInterceptModel()
 Pearl_decay_model = PearLeafDecayModel(db)
 Milne_decay_model = PenetratedDecayModel()
 climate_model = MicroclimateLeaf()
-weather = Weather(data_file=data_file)
+weather = Weather(data_file=meteo01_filepath)
 
     
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
@@ -285,7 +286,8 @@ def test_microclimate():
     g = adel_mtg()
     g = update_no_doses(g)
     climate_model = MicroclimateLeaf()
-    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
+    meteo01_filepath = get_shared_data_path('alinea/echap/share/data', 'meteo01.csv')
+    weather = Weather(data_file=meteo01_filepath)
     t_deb = "2000-10-01 01:00:00"
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     print g.property('microclimate')
@@ -330,7 +332,8 @@ def test_decay_doses():
     Pearl_decay_model = PearLeafDecayModel(db)
     Milne_decay_model = PenetratedDecayModel()
     climate_model = MicroclimateLeaf()
-    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
+    meteo01_filepath = get_shared_data_path('alinea/echap/share/data', 'meteo01.csv')
+    weather = Weather(data_file=meteo01_filepath)
     # Interception
     g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
@@ -365,7 +368,8 @@ def test_local_meteo():
     # models
     interception_model = CaribuInterceptModel()
     climate_model = MicroclimateLeaf()
-    weather = Weather(data_file='E:/openaleapkg/echap/src/alinea/echap_wralea/Data/meteo01.csv')
+    meteo01_filepath = get_shared_data_path('alinea/echap/share/data', 'meteo01.csv')
+    weather = Weather(data_file=meteo01_filepath)
     # Interception
     g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     print t_deb
@@ -383,16 +387,12 @@ def test_local_meteo():
         print g.property('microclimate')
 
 
-import alinea.echap
-from openalea.deploy.shared_data import get_shared_data_path
-data_filepath = get_shared_data_path(alinea.echap, 'meteo01.csv')
-data_files = shared_data(alinea.echap, pattern='*.csv')
+
+
+
    
 
-import openalea.stat_tool
-from openalea.deploy.shared_data import shared_data
-data_filepath = shared_data(openalea.stat_tool, 'meri1.his')
-data_files = shared_data(openalea.stat_tool, pattern='*.his')   
+
     
     
     
