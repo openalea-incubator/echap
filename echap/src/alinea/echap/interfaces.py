@@ -273,4 +273,48 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     return g
 
 
+def update_lesions(g, LesionsCycle, label="LeafElement", timestep=1):
+    """ Update the status of every lesion on the MTG.
+    
+    :Parameters:
+    ----------
+    - 'g': MTG
+        MTG representing the canopy (and the soil)
+        'lesions' are stored in the MTG as a property
+    - 'LesionsCycle'
+    - 'label': str
+        Label of the part of the MTG concerned by the calculation
+    - 'timestep': int
+        Time step of the simulation
+    
+    :Returns:
+    -------
+    - 'g': MTG
+        Updated MTG representing the canopy (and the soil)
+    
+    :Example:
+    -------
+      >>> g = MTG()
+      >>> p = ParCycle()
+      >>> LesionsCycle = Lesions(p)
+      >>> infect(g, dt)
+      >>> update(g, LesionsCycle, dt)
+      >>> return g
+    """
+    lesions = g.property('lesions')
+    microclimate = g.property('microclimate')
+    if not 'global_efficacy' in g.properties():
+        vids = [vid for vid in g if g.label(vid).startswith(label)]
+        for v in vids : 
+            n = g.node(v)
+            n.global_efficacy = {'protectant' : 0, 'eradicant' : 0}
+    efficacy = g.property('global_efficacy')
+    for vid, l in lesions.iteritems():
+        if g.label(vid).startswith(label):
+            l[vid] = LesionsCycle.update(microclimate[vid], efficacy[vid], dt)
+    return g
+
+
+
+
 

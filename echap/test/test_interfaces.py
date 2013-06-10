@@ -329,6 +329,29 @@ def test_efficacy_nopest():
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     return g
 
+    
+###################################### test lesions
+
+def test_update():
+    g = adel_mtg()
+    g = update_no_doses(g)
+    # Interception
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    # Microclimate
+    climate_model = MicroclimateLeaf()
+    meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
+    weather = Weather(data_file=meteo01_filepath)
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    # Efficacy
+    efficacy_model = PesticideEfficacyModel()
+    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
+    # Update lesion
+    p = ParCycle()
+    LesionsCycle = Lesions(p)
+    g = update_lesions(g, LesionsCycle, label="LeafElement", timestep=1)
+    return g
+
 
 ##################################### loop test
 
