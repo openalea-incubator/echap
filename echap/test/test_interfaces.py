@@ -22,6 +22,7 @@ from alinea.echap.interfaces import pesticide_interception
 from alinea.echap.microclimate_leaf import *
 from alinea.echap.interfaces import local_microclimate
 from alinea.echap.interfaces import pesticide_efficacy
+from alinea.echap.interfaces import update_lesions
 from alinea.echap.wheat_mtg import *
 
 from alinea.echap.color_map import *
@@ -29,9 +30,13 @@ from alinea.echap.color_map import *
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.weather.global_weather import *
 
+from alinea.septo3d.cycle.Lesions import *
+
 from datetime import datetime, timedelta
 from openalea.deploy.shared_data import get_shared_data_path
 
+from alinea.alep.protocol import wash
+from alinea.alep.protocol import disperse
 
 ############# update
 
@@ -53,7 +58,7 @@ def update_on_leaves(g, label = 'LeafElement'):
 
 def update_no_doses(g, label = 'LeafElement'):
     """ Read weather data for a step of simulation and apply it to each leaf.
-    """        
+    """     
     vids = [vid for vid in g if g.label(vid).startswith(label)]
     for v in vids : 
         n = g.node(v)
@@ -62,6 +67,37 @@ def update_no_doses(g, label = 'LeafElement'):
         n.relative_humidity = 100 
         n.wetness = True
         n.microclimate = {}
+    return g
+
+
+def set_initial_properties_g(g, surface_leaf_element=5., position_senescence=None, label = 'LeafElement'):
+    """ Give initial values for plant properties of each LeafElement. 
+    
+    :Parameters:
+    ----------
+    - 'g': MTG
+        MTG representing the canopy
+    - 'surface': float
+        Initial surface of each leaf element
+    - 'position_senescence': float
+        Position of senescence on blade axis
+    - 'label': str
+        Label of the part of the MTG concerned by the calculation
+        
+    :Returns:
+    -------
+    - 'g': MTG
+        Updated MTG representing the canopy
+    """
+    p = ParCycle()
+    lesions = Lesions(p)
+    vids = [n for n in g if g.label(n).startswith(label)]
+    for v in vids : 
+        n = g.node(v)
+        n.lesions = lesions
+        n.surface = surface_leaf_element
+        n.healthy_surface = surface_leaf_element # TODO : Manage properly
+        n.position_senescence = position_senescence
     return g
 
 
@@ -101,7 +137,7 @@ Pearl_decay_model = PearLeafDecayModel(db)
 Milne_decay_model = PenetratedDecayModel()
 climate_model = MicroclimateLeaf()
 weather = Weather(data_file=meteo01_filepath)
-
+lesions_update = LesionsUpdate()
     
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
 
@@ -335,6 +371,7 @@ def test_efficacy_nopest():
 def test_update():
     g = adel_mtg()
     g = update_no_doses(g)
+    g = set_initial_properties_g(g)
     # Interception
     interception_model = CaribuInterceptModel()
     g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
@@ -347,12 +384,14 @@ def test_update():
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # Update lesion
-    p = ParCycle()
-    LesionsCycle = Lesions(p)
-    g = update_lesions(g, LesionsCycle, label="LeafElement", timestep=1)
+    lesions_update = LesionsUpdate()
+    g = update_lesions(g, lesions_update, label="LeafElement", timestep=1)
     return g
 
 
+def test_disperse():
+    
+    
 ##################################### loop test
 
 def test_decay_doses():

@@ -268,12 +268,12 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     :Example:
     ---------   
     """
-    geometries = g.property('geometry')
+    scene_geometry = g.property('geometry')
     rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, time_control)
     return g
 
 
-def update_lesions(g, LesionsCycle, label="LeafElement", timestep=1):
+def update_lesions(g, lesions_update, label="LeafElement", timestep=1):
     """ Update the status of every lesion on the MTG.
     
     :Parameters:
@@ -301,6 +301,7 @@ def update_lesions(g, LesionsCycle, label="LeafElement", timestep=1):
       >>> update(g, LesionsCycle, dt)
       >>> return g
     """
+    scene_geometry = g.property('geometry')
     lesions = g.property('lesions')
     microclimate = g.property('microclimate')
     if not 'global_efficacy' in g.properties():
@@ -309,9 +310,10 @@ def update_lesions(g, LesionsCycle, label="LeafElement", timestep=1):
             n = g.node(v)
             n.global_efficacy = {'protectant' : 0, 'eradicant' : 0}
     efficacy = g.property('global_efficacy')
-    for vid, l in lesions.iteritems():
-        if g.label(vid).startswith(label):
-            l[vid] = LesionsCycle.update(microclimate[vid], efficacy[vid], dt)
+    healthy_surface = g.property('healthy_surface')
+    vids = [vid for vid in microclimate if g.label(vid).startswith(label)]
+    for v in vids :
+        lesions.update({v:lesions_update.update(healthy_surface[v], microclimate[v], efficacy[v], timestep)})
     return g
 
 
