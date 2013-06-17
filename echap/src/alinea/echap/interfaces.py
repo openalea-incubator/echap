@@ -273,6 +273,113 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     return g
 
 
+def initiate_lesions(g, 
+             fungal_objects_stock, 
+             initiation_model, 
+             label="LeafElement",
+             activate=True):
+    """ Allocates fungal objects (dispersal units OR lesions) on elements of the MTG
+        according to initiation_model.
+
+    Parameters
+    ----------
+    g: MTG
+        MTG representing the canopy (and the soil)
+    fungal_objects_stock: list of fungal objects (dispersal units OR lesions)
+        Source of fungal objects to distribute in the scene
+    initiation_model: model
+        Model that sets the position of each DU/lesion in stock on g
+        Requires a method named 'allocate' (see doc)
+    label: str
+        Label of the part of the MTG concerned by the calculation
+    activate: bool
+        True if computation is achieved, False otherwise
+    
+    Returns
+    -------
+    g: MTG
+        Updated MTG representing the canopy (and the soil)
+    
+    Example
+    ------- 
+      >>> g = MTG()
+      >>> stock = [SeptoriaDU(fungus = septoria(), nbSpores=random.randint(1,100), status='emitted') for i in range(100)]
+      >>> inoculator = RandomInoculation()
+      >>> initiate(g, stock, inoculator)
+      >>> return g
+    """
+    if activate:
+        vids = [n for n in g if g.label(n).startswith(label)]
+        if vids:
+            # Allocation of stock of inoculum
+            initiation_model.allocate(g, fungal_objects_stock, label)
+
+    return g
+
+
+def infect(g, dt, 
+          position_checker_model=None, 
+          label="LeafElement",
+          activate=True):
+    """ Compute infection success by dispersal units.
+    
+    Parameters
+    ----------
+    g: MTG
+        MTG representing the canopy (and the soil)
+        'dispersal_units' are stored in the MTG as a property
+    position_checker_model: model
+        Model that disable the DU if it falls on an existing lesion or senescent tissue
+        Requires methods: 'check position' and 'disable' (see doc)
+    dt: int
+        Time step of the simulation
+    label: str
+        Label of the part of the MTG concerned by the calculation
+    activate: bool
+        True if computation is achieved, False otherwise
+    
+    Returns
+    -------
+    g: MTG
+        Updated MTG representing the canopy (and the soil)
+    
+    Example
+    -------
+      >>> g = MTG()
+      >>> stock = [SeptoriaDU(fungus = septoria(), nbSpores=random.randint(1,100), status='emitted') for i in range(100)]
+      >>> inoculator = RandomInoculation()
+      >>> initiate(g, stock, inoculator)
+      >>> dt = 1
+      >>> nb_steps = 50
+      >>> for i in range(nb_steps):
+      >>>     update_climate(g)
+      >>>     infect(g, dt)
+      >>> return g
+      
+    """
+    if activate:
+        # Check if its position prevent it from infecting (optional)
+        if position_checker_model:
+            position_checker_model.check_position(g)
+        
+        # Find dispersal units on MTG
+        dispersal_units = g.property('dispersal_units')
+        for vid, du in dispersal_units.iteritems():
+            # By leaf element, keep only those which are deposited and active
+            du = [d for d in du if d.is_active and d.status=="deposited"]
+            leaf = g.node(vid)       
+            for d in du:
+                if not d.can_infect_at_position:
+                    d.disable()     
+                # If not compute infection success
+                if d.is_active:
+                    d.infect(dt, leaf)
+            # Update the list of dispersal unit by leaf element
+            dispersal_units[vid] = [d for d in du if d.is_active]
+
+    return g
+
+
 def update_lesions(g, lesions_update, label="LeafElement", timestep=1):
     """ Update the status of every lesion on the MTG.
     
