@@ -137,7 +137,9 @@ Pearl_decay_model = PearLeafDecayModel(db)
 Milne_decay_model = PenetratedDecayModel()
 climate_model = MicroclimateLeaf()
 weather = Weather(data_file=meteo01_filepath)
-lesions_update = LesionsUpdate()
+inoculator = Septo3dDU()
+lesions_model = Lesions(p)
+
     
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
 
@@ -368,24 +370,27 @@ def test_efficacy_nopest():
     
 ###################################### test lesions
 
+def test_initiate_Lesions():
+    """ Check if 'initiate' from 'interfaces.py' deposits Lesions on the MTG.
+    """
+    g = adel_mtg()
+    inoculator = Septo3dDU()
+    stock = inoculator.make_Lesions_stock(nb_Lesions=4)
+    g = initiate(g, stock, inoculator)
+    return g
+
+
 def test_update():
     g = adel_mtg()
-    g = update_no_doses(g)
-    g = set_initial_properties_g(g)
-    # Interception
-    interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
-    # Microclimate
-    climate_model = MicroclimateLeaf()
-    meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
-    weather = Weather(data_file=meteo01_filepath)
+    # Initiate Lesions
+    stock = inoculator.make_Lesions_stock(nb_Lesions=10)
+    g = initiate(g, stock, inoculator)
+    # microclimate
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    # Efficacy
-    efficacy_model = PesticideEfficacyModel()
-    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
-    # Update lesion
-    lesions_update = LesionsUpdate()
-    g = update_lesions(g, lesions_update, label="LeafElement", timestep=1)
+    # healthy_surface
+    g = set_initial_properties_g(g, surface_leaf_element=5.)
+    # Update Lesions
+    g = update_lesions(g, lesions_model, label="LeafElement", timestep=1)
     return g
 
 

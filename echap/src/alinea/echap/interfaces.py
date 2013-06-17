@@ -273,11 +273,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     return g
 
 
-def initiate_lesions(g, 
-             fungal_objects_stock, 
-             initiation_model, 
-             label="LeafElement",
-             activate=True):
+def initiate(g, Lesions_stock, initiation_model, label="LeafElement", activate=True):
     """ Allocates fungal objects (dispersal units OR lesions) on elements of the MTG
         according to initiation_model.
 
@@ -285,21 +281,21 @@ def initiate_lesions(g,
     ----------
     g: MTG
         MTG representing the canopy (and the soil)
-    fungal_objects_stock: list of fungal objects (dispersal units OR lesions)
-        Source of fungal objects to distribute in the scene
+    Lesions_stock: list of Lesions objects
+        Source of Lesions objects to distribute in the scene
     initiation_model: model
-        Model that sets the position of each DU/lesion in stock on g
-        Requires a method named 'allocate' (see doc)
+        Model that sets the position of each lesion in stock on g
+        Requires a method named 'random_allocate'
     label: str
         Label of the part of the MTG concerned by the calculation
     activate: bool
         True if computation is achieved, False otherwise
-    
+
     Returns
     -------
     g: MTG
         Updated MTG representing the canopy (and the soil)
-    
+
     Example
     ------- 
       >>> g = MTG()
@@ -312,8 +308,7 @@ def initiate_lesions(g,
         vids = [n for n in g if g.label(n).startswith(label)]
         if vids:
             # Allocation of stock of inoculum
-            initiation_model.allocate(g, fungal_objects_stock, label)
-
+            initiation_model.random_allocate(g, Lesions_stock, label)
     return g
 
 
@@ -380,7 +375,7 @@ def infect(g, dt,
     return g
 
 
-def update_lesions(g, lesions_update, label="LeafElement", timestep=1):
+def update_lesions(g, lesions_model, label="LeafElement", timestep=1):
     """ Update the status of every lesion on the MTG.
     
     :Parameters:
@@ -411,16 +406,16 @@ def update_lesions(g, lesions_update, label="LeafElement", timestep=1):
     scene_geometry = g.property('geometry')
     lesions = g.property('lesions')
     microclimate = g.property('microclimate')
+    healthy_surface = g.property('healthy_surface')
     if not 'global_efficacy' in g.properties():
         vids = [vid for vid in g if g.label(vid).startswith(label)]
         for v in vids : 
             n = g.node(v)
             n.global_efficacy = {'protectant' : 0, 'eradicant' : 0}
     efficacy = g.property('global_efficacy')
-    healthy_surface = g.property('healthy_surface')
     vids = [vid for vid in microclimate if g.label(vid).startswith(label)]
     for v in vids :
-        lesions.update({v:lesions_update.update(healthy_surface[v], microclimate[v], efficacy[v], timestep)})
+        healthy_surface.update({v:lesions_model.update(lesions[v], healthy_surface[v], microclimate[v], efficacy[v], timestep)})
     return g
 
 
