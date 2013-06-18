@@ -273,7 +273,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     return g
 
 
-def initiate(g, Lesions_stock, initiation_model, label="LeafElement", activate=True):
+def initiate(g, fungal_objects_stock, initiation_model, label="LeafElement", activate=True):
     """ Allocates fungal objects (dispersal units OR lesions) on elements of the MTG
         according to initiation_model.
 
@@ -308,7 +308,7 @@ def initiate(g, Lesions_stock, initiation_model, label="LeafElement", activate=T
         vids = [n for n in g if g.label(n).startswith(label)]
         if vids:
             # Allocation of stock of inoculum
-            initiation_model.random_allocate(g, Lesions_stock, label)
+            initiation_model.random_allocate(g, fungal_objects_stock, label)
     return g
 
 
@@ -371,11 +371,10 @@ def infect(g, dt,
                     d.infect(dt, leaf)
             # Update the list of dispersal unit by leaf element
             dispersal_units[vid] = [d for d in du if d.is_active]
-
     return g
 
 
-def update_lesions(g, lesions_model, label="LeafElement", timestep=1):
+def update(g, lesions_model, label="LeafElement", timestep=1):
     """ Update the status of every lesion on the MTG.
     
     :Parameters:
@@ -403,8 +402,6 @@ def update_lesions(g, lesions_model, label="LeafElement", timestep=1):
       >>> update(g, LesionsCycle, dt)
       >>> return g
     """
-    scene_geometry = g.property('geometry')
-    lesions = g.property('lesions')
     microclimate = g.property('microclimate')
     healthy_surface = g.property('healthy_surface')
     if not 'global_efficacy' in g.properties():
@@ -415,7 +412,7 @@ def update_lesions(g, lesions_model, label="LeafElement", timestep=1):
     efficacy = g.property('global_efficacy')
     vids = [vid for vid in microclimate if g.label(vid).startswith(label)]
     for v in vids :
-        healthy_surface.update({v:lesions_model.update(lesions[v], healthy_surface[v], microclimate[v], efficacy[v], timestep)})
+        healthy_surface.update({v:lesions_model.update(healthy_surface[v], microclimate[v], efficacy[v], timestep)})
     return g
 
 

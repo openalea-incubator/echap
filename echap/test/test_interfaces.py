@@ -4,39 +4,47 @@ Created on Mon Mar 25 16:59:54 2013
 
 @author: lepse
 """
+############################ Imports
+# Utils
 import numpy as np
 import matplotlib.pyplot as plt
-#from matplotlib import mpl
 from matplotlib import cm
 from matplotlib.colors import Normalize, LogNorm
 from pandas import *
-
-from alinea.pearl.pearl import *
-from alinea.pearl.pearl_leaf import *
-
-from alinea.echap.interfaces import pesticide_surfacic_decay
-from alinea.echap.milne_leaf import *
-from alinea.echap.interfaces import pesticide_penetrated_decay
-from alinea.echap.interception_leaf import *
-from alinea.echap.interfaces import pesticide_interception
-from alinea.echap.microclimate_leaf import *
-from alinea.echap.interfaces import local_microclimate
-from alinea.echap.interfaces import pesticide_efficacy
-from alinea.echap.interfaces import update_lesions
-from alinea.echap.wheat_mtg import *
-
 from alinea.echap.color_map import *
-
-from alinea.pesticide_efficacy.pesticide_efficacy import *
-from alinea.weather.global_weather import *
-
-from alinea.septo3d.cycle.Lesions import *
-
 from datetime import datetime, timedelta
 from openalea.deploy.shared_data import get_shared_data_path
 
+# Pearl
+from alinea.pearl.pearl import *
+from alinea.pearl.pearl_leaf import *
+from alinea.echap.interfaces import pesticide_surfacic_decay
+# Milne
+from alinea.echap.milne_leaf import *
+from alinea.echap.interfaces import pesticide_penetrated_decay
+# Interception
+from alinea.echap.interception_leaf import *
+from alinea.echap.interfaces import pesticide_interception
+# Microclimate
+from alinea.weather.global_weather import *
+from alinea.echap.microclimate_leaf import *
+from alinea.echap.interfaces import local_microclimate
+# Efficacy
+from alinea.pesticide_efficacy.pesticide_efficacy import *
+from alinea.echap.interfaces import pesticide_efficacy
+# Septo3d
+from alinea.septo3d.cycle import Lesions
+from alinea.septo3d.cycle.Lesions import *
+from alinea.septo3d.cycle.inoculation import *
+from alinea.echap.interfaces import initiate
+from alinea.echap.interfaces import update
+# Alep protocol
 from alinea.alep.protocol import wash
 from alinea.alep.protocol import disperse
+
+# Wheat
+from alinea.echap.wheat_mtg import *
+
 
 ############# update
 
@@ -138,9 +146,10 @@ Milne_decay_model = PenetratedDecayModel()
 climate_model = MicroclimateLeaf()
 weather = Weather(data_file=meteo01_filepath)
 inoculator = Septo3dDU()
+p = ParCycle()
 lesions_model = Lesions(p)
 
-    
+
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
 
 def get_df_out(time,g):
@@ -370,7 +379,7 @@ def test_efficacy_nopest():
     
 ###################################### test lesions
 
-def test_initiate_Lesions():
+def test_initiate():
     """ Check if 'initiate' from 'interfaces.py' deposits Lesions on the MTG.
     """
     g = adel_mtg()
@@ -390,11 +399,44 @@ def test_update():
     # healthy_surface
     g = set_initial_properties_g(g, surface_leaf_element=5.)
     # Update Lesions
-    g = update_lesions(g, lesions_model, label="LeafElement", timestep=1)
+    g = update(g, lesions_model, label="LeafElement", timestep=1)
     return g
 
 
 def test_disperse():
+    """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
+    """
+    g = adel_mtg()
+    # Initiate Lesions
+    stock = inoculator.make_Lesions_stock(nb_Lesions=10)
+    g = initiate(g, stock, inoculator)
+    # microclimate
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    # healthy_surface
+    g = set_initial_properties_g(g, surface_leaf_element=5.)
+    # Update Lesions
+    g = update(g, lesions_model, label="LeafElement", timestep=1)
+    scene = plot3d(g)
+    disperse(g, scene, dispersor(), "Septoria")
+
+               
+               
+               
+        # Count of lesions :
+        nb_les[i] = count_lesions(g)
+        
+        # Display results
+        plot_lesions(g)
+        
+        # displayer = DisplayLesions()
+        # displayer.print_new_lesions(g)
+    
+    plot(nb_les)
+    ylabel('Nombre de lesions sur le MTG')
+    xlabel('Pas de temps de simulation')
+    show()
+    
+    return g
     
     
 ##################################### loop test
