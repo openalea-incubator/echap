@@ -33,11 +33,12 @@ from alinea.echap.interfaces import local_microclimate
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
 # Septo3d
-from alinea.septo3d.cycle import Lesions
 from alinea.septo3d.cycle.Lesions import *
+from alinea.septo3d.cycle.septoria import *
 from alinea.septo3d.cycle.inoculation import *
 from alinea.echap.interfaces import initiate
 from alinea.echap.interfaces import update
+from alinea.echap.interfaces import infect
 # Alep protocol
 from alinea.alep.protocol import wash
 from alinea.alep.protocol import disperse
@@ -189,9 +190,7 @@ def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazo
             raise Exception('This colormap does not exist')
     else:
         _cmap = cmap()
-
     green = (0,180,0)
-
     for v in g.vertices(scale=g.max_scale()): 
         n = g.node(v)
         if 'surfacic_doses' in n.properties():
@@ -219,7 +218,6 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for k, val in prop.iteritems():
         value.append(val[compound_name])
         val = np.array(value)
-
     if type(cmap) is str:
         try:
             _cmap = cm.get_cmap(cmap())
@@ -227,27 +225,50 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
             raise Exception('This colormap does not exist')
     else:
         _cmap = cmap()
-
     green = (0,180,0)
-
     # norm = Normalize(vmin=0, vmax=max(v)) if not lognorm else LogNorm(vmin=0, vmax=max(v)) 
     # values = norm(v)
     for i in range(0,len(value)):
         val[i] = dose_norm(value[i], dose_max_ha)
-    
     colors = (_cmap(val)[:,0:3])*255
     colors = np.array(colors,dtype=np.int).tolist()
-
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
             n.color = tuple(dict(zip(keys,colors))[vid])
         else : 
             n.color = green
-
     scene = plot3d(g)
     Viewer.display(scene)
     return g
+
+
+def plot_DU(g):
+    """ plot the plant with elements carrying dispersal units in yellow """
+    green = (0,180,0)
+    yellow = (247, 220, 17)
+    for v in g.vertices(scale=g.max_scale()) : 
+        n = g.node(v)
+        if 'dispersal_units' in n.properties() and n.dispersal_units:
+            n.color = yellow
+        else : 
+            n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
+
+
+def plot_lesions(g):
+    """ plot the plant with infected elements in red """
+    green = (0,180,0)
+    red = (180, 0, 0)
+    for v in g.vertices(scale=g.max_scale()) : 
+        n = g.node(v)
+        if 'lesions' in n.properties():
+            n.color = red
+        else : 
+            n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
 
 
 ########################## import .csv as dict
@@ -377,22 +398,55 @@ def test_efficacy_nopest():
     return g
 
     
-###################################### test lesions
+###################################### test lesions _ DU
 
-def test_initiate():
+def test_initiate_DU():
+    """ Check if 'initiate' from 'interfaces.py' deposits dispersal units on the MTG.
+    """
+    g = adel_mtg()
+    inoculator = Septo3dLesions()
+    stock = inoculator.make_DU_stock(nb_DU=4)
+    g = initiate(g, stock, inoculator)
+    plot_DU(g)
+    return g
+
+def test_initiate_Lesions():
     """ Check if 'initiate' from 'interfaces.py' deposits Lesions on the MTG.
     """
     g = adel_mtg()
-    inoculator = Septo3dDU()
-    stock = inoculator.make_Lesions_stock(nb_Lesions=4)
+    inoculator = Septo3dLesions()
+    stock = inoculator.make_Lesions_stock(nb_Lesions=6)
     g = initiate(g, stock, inoculator)
+    plot_lesions(g)
     return g
 
+def test_infect():
+    """ Check if 'infect' from 'interfaces.py' leads to infection by dispersal units on the MTG.
+    """
+    t_deb = "2000-10-01 01:00:00"
+    g = adel_mtg()
+    # Initiate
+    inoculator = Septo3dLesions()
+    stock = inoculator.make_DU_stock(nb_DU=4)
+    g = initiate(g, stock, inoculator)
+    # Microclimate
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+    dt = 1
+    nb_steps = 10
+    plot_DU(g)
+    for i in range(nb_steps):
+        g = infect(g, dt)
+        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+        plot_lesions(g)
+    return g
 
 def test_update():
     g = adel_mtg()
     # Initiate Lesions
-    stock = inoculator.make_Lesions_stock(nb_Lesions=10)
+    inoculator = Septo3dLesions()
+    stock = inoculator.make_Lesions_stock(nb_Lesions=6)
     g = initiate(g, stock, inoculator)
     # microclimate
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
@@ -401,7 +455,6 @@ def test_update():
     # Update Lesions
     g = update(g, lesions_model, label="LeafElement", timestep=1)
     return g
-
 
 def test_disperse():
     """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
