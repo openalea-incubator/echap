@@ -273,45 +273,6 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     return g
 
 
-def initiate(g, fungal_objects_stock, initiation_model, label="LeafElement", activate=True):
-    """ Allocates fungal objects (dispersal units OR lesions) on elements of the MTG
-        according to initiation_model.
-
-    Parameters
-    ----------
-    g: MTG
-        MTG representing the canopy (and the soil)
-    Lesions_stock: list of Lesions objects
-        Source of Lesions objects to distribute in the scene
-    initiation_model: model
-        Model that sets the position of each lesion in stock on g
-        Requires a method named 'random_allocate'
-    label: str
-        Label of the part of the MTG concerned by the calculation
-    activate: bool
-        True if computation is achieved, False otherwise
-
-    Returns
-    -------
-    g: MTG
-        Updated MTG representing the canopy (and the soil)
-
-    Example
-    ------- 
-      >>> g = MTG()
-      >>> stock = [SeptoriaDU(fungus = septoria(), nbSpores=random.randint(1,100), status='emitted') for i in range(100)]
-      >>> inoculator = RandomInoculation()
-      >>> initiate(g, stock, inoculator)
-      >>> return g
-    """
-    if activate:
-        vids = [n for n in g if g.label(n).startswith(label)]
-        if vids:
-            # Allocation of stock of inoculum
-            initiation_model.random_allocate(g, fungal_objects_stock, label)
-    return g
-
-
 def infect(g, dt, 
           position_checker_model=None, 
           label="LeafElement",

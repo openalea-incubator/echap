@@ -33,15 +33,13 @@ from alinea.echap.interfaces import local_microclimate
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
 # Septo3d
+from alinea.septo3d.cycle.alep_objects import *
 from alinea.septo3d.cycle.Lesions import *
-from alinea.septo3d.cycle.septoria import *
-from alinea.septo3d.cycle.inoculation import *
-from alinea.echap.interfaces import initiate
-from alinea.echap.interfaces import update
-from alinea.echap.interfaces import infect
 # Alep protocol
-from alinea.alep.protocol import wash
-from alinea.alep.protocol import disperse
+from alinea.alep.inoculation import RandomInoculation
+from alinea.alep.protocol import initiate
+from alinea.alep.protocol import infect
+from alinea.alep.protocol import update
 
 # Wheat
 from alinea.echap.wheat_mtg import *
@@ -146,9 +144,6 @@ Pearl_decay_model = PearLeafDecayModel(db)
 Milne_decay_model = PenetratedDecayModel()
 climate_model = MicroclimateLeaf()
 weather = Weather(data_file=meteo01_filepath)
-inoculator = Septo3dDU()
-p = ParCycle()
-lesions_model = Lesions(p)
 
 
 ########################## extraction d'un data frame des doses de pesticide sur le mtg
@@ -401,45 +396,26 @@ def test_efficacy_nopest():
 ###################################### test lesions _ DU
 
 def test_initiate_DU():
-    """ Check if 'initiate' from 'interfaces.py' deposits dispersal units on the MTG.
+    """ Check if 'initiate' from 'alep.protocol.py' deposits DU on the MTG.
     """
     g = adel_mtg()
-    inoculator = Septo3dLesions()
-    stock = inoculator.make_DU_stock(nb_DU=4)
+    stock = create_stock(N=100,par=None)
+    inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
     plot_DU(g)
-    return g
-
-def test_initiate_Lesions():
-    """ Check if 'initiate' from 'interfaces.py' deposits Lesions on the MTG.
-    """
-    g = adel_mtg()
-    inoculator = Septo3dLesions()
-    stock = inoculator.make_Lesions_stock(nb_Lesions=6)
-    g = initiate(g, stock, inoculator)
-    plot_lesions(g)
     return g
 
 def test_infect():
-    """ Check if 'infect' from 'interfaces.py' leads to infection by dispersal units on the MTG.
+    """ Check if 'infect' from 'alep.protocol.py' leads to infection by dispersal units on the MTG.
     """
-    t_deb = "2000-10-01 01:00:00"
     g = adel_mtg()
     # Initiate
-    inoculator = Septo3dLesions()
-    stock = inoculator.make_DU_stock(nb_DU=4)
+    stock = create_stock(N=100,par=None)
+    inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
-    # Microclimate
-    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
-    dt = 1
-    nb_steps = 10
-    plot_DU(g)
-    for i in range(nb_steps):
-        g = infect(g, dt)
-        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
-        plot_lesions(g)
+    # Infect
+    g = infect(g, dt=1)
+    plot_lesions(g)
     return g
 
 def test_update():
