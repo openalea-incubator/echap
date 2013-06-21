@@ -1,7 +1,16 @@
 """Defines interfaces between g and the different models of echap project
 """
 
-def pesticide_interception(g, interception_model, product_name, dose, label='LeafElement'):
+def setup_canopy(plant_model, age = 0):
+    g = plant_model.setup_canopy(age)
+    return g
+
+def grow_canopy(g,plant_model,time_control):
+    plant_model.grow(g,time_control)
+    return g
+
+
+def pesticide_interception(g, scene, interception_model, product_name, dose, label='LeafElement'):
     """ 
     Interface between g and the interception model
 
@@ -270,6 +279,10 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     """
     scene_geometry = g.property('geometry')
     rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, time_control)
+    if not 'rain' in g.properties():
+        g.add_property('rain')
+    rain = dict([(k,{'water':v}) for k,v in rain_leaf.iteritems()])
+    g.property('rain') = rain.update(rain_fate)
     return g
 
 
