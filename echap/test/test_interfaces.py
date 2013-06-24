@@ -445,9 +445,13 @@ def test_disperse():
     """
     g = test_update()
     scene = plot3d(g)
+    meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
+    t_deb = "2000-10-01 01:00:00"
+    climate_model = MicroclimateLeaf()
+    weather = Weather(data_file=meteo01_filepath)
     # Disperse
     rain_interception_model = RapillyInterceptionModel()
-    time_control = 
+    time_control = TimeControl(1, 1, rain_interception_model, weather)
     g = rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry')
     disperse(g, dispersal_model, fungus_name, label="LeafElement", activate=True)
     return g
