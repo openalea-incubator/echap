@@ -33,7 +33,8 @@ def product_dose(product_name, dose, productsDB):
 
 
 def interception_dose(product_name, dose, scene_geometry, productsDB, elevation, azimuth):
-    """ Implement pesticide interception_model using Caribu model """
+    """ Implement pesticide interception_model using Caribu model """ 
+# TODO appeller la méthode 'convert_units' de caribu interface pour convertir les m en cm
     compound_name, active_dose = product_dose(product_name, dose, productsDB)
     received_dose = emission_inv(elevation, active_dose)
     sources = (received_dose,(vecteur_direction(elevation,azimuth)))

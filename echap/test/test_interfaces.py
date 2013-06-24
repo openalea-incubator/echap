@@ -32,18 +32,24 @@ from alinea.echap.interfaces import local_microclimate
 # Efficacy
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
+# Rain interception
+from alinea.septo3d.Rapilly import *
+from alinea.echap.interfaces import rain_interception
 # Septo3d
 from alinea.septo3d.cycle.alep_objects import *
-from alinea.septo3d.cycle.Lesions import *
+#from alinea.septo3d.cycle.Lesions import *
 # Alep protocol
 from alinea.alep.inoculation import RandomInoculation
 from alinea.alep.protocol import initiate
 from alinea.alep.protocol import infect
 from alinea.alep.protocol import update
+from alinea.alep.protocol import disperse
 
 # Wheat
 from alinea.echap.wheat_mtg import *
 
+# Time control
+from alinea.astk.TimeControl import *
 
 ############# update
 
@@ -96,12 +102,9 @@ def set_initial_properties_g(g, surface_leaf_element=5., position_senescence=Non
     - 'g': MTG
         Updated MTG representing the canopy
     """
-    p = ParCycle()
-    lesions = Lesions(p)
     vids = [n for n in g if g.label(n).startswith(label)]
     for v in vids : 
         n = g.node(v)
-        n.lesions = lesions
         n.surface = surface_leaf_element
         n.healthy_surface = surface_leaf_element # TODO : Manage properly
         n.position_senescence = position_senescence
@@ -413,61 +416,44 @@ def test_infect():
     stock = create_stock(N=100,par=None)
     inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
+    import copy
+    g0 = copy.copy(g)
     # Infect
     g = infect(g, dt=1)
-    plot_lesions(g)
+    #plot_lesions(g)
     return g
 
 def test_update():
-    g = adel_mtg()
-    # Initiate Lesions
-    inoculator = Septo3dLesions()
-    stock = inoculator.make_Lesions_stock(nb_Lesions=6)
-    g = initiate(g, stock, inoculator)
+    """ Check if 'update' from 'alep.protocol.py' provokes the growth of a lesion instantiated on the MTG.
+    """
+    g = test_infect()
     # microclimate
+    meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
+    t_deb = "2000-10-01 01:00:00"
+    climate_model = MicroclimateLeaf()
+    weather = Weather(data_file=meteo01_filepath)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     # healthy_surface
     g = set_initial_properties_g(g, surface_leaf_element=5.)
     # Update Lesions
-    g = update(g, lesions_model, label="LeafElement", timestep=1)
+    growth_control_model = GrowthControlModel()
+    g = update(g, dt=1, growth_control_model = growth_control_model)
     return g
 
 def test_disperse():
     """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
     """
-    g = adel_mtg()
-    # Initiate Lesions
-    stock = inoculator.make_Lesions_stock(nb_Lesions=10)
-    g = initiate(g, stock, inoculator)
-    # microclimate
-    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    # healthy_surface
-    g = set_initial_properties_g(g, surface_leaf_element=5.)
-    # Update Lesions
-    g = update(g, lesions_model, label="LeafElement", timestep=1)
+    g = test_update()
     scene = plot3d(g)
-    disperse(g, scene, dispersor(), "Septoria")
-
-               
-               
-               
-        # Count of lesions :
-        nb_les[i] = count_lesions(g)
-        
-        # Display results
-        plot_lesions(g)
-        
-        # displayer = DisplayLesions()
-        # displayer.print_new_lesions(g)
-    
-    plot(nb_les)
-    ylabel('Nombre de lesions sur le MTG')
-    xlabel('Pas de temps de simulation')
-    show()
-    
+    # Disperse
+    rain_interception_model = RapillyInterceptionModel()
+    time_control = 
+    g = rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry')
+    disperse(g, dispersal_model, fungus_name, label="LeafElement", activate=True)
     return g
-    
-    
+
+
+
 ##################################### loop test
 
 def test_decay_doses():
