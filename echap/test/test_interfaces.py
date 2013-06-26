@@ -131,17 +131,21 @@ def test_infect():
     stock = create_stock(N=100,par=None)
     inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
-    g0 = copy.copy(g)
     # Infect
     g = infect(g, dt=1)
-    #plot_lesions(g)
+    plot_lesions(g)
     return g
 
 def test_update():
     """ Check if 'update' from 'alep.protocol.py' provokes the growth of a lesion instantiated on the MTG.
     """
-    g = test_infect()
-    # microclimate
+    # Initiate and infect
+    g = adel_mtg()
+    stock = create_stock(N=100,par=None)
+    inoculator = RandomInoculation()
+    g = initiate(g, stock, inoculator)
+    g = infect(g, dt=1)
+    # microclimate pour la methode update
     meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
     t_deb = "2000-10-01 01:00:00"
     climate_model = MicroclimateLeaf()
@@ -154,21 +158,36 @@ def test_update():
     g = update(g, dt=1, growth_control_model = growth_control_model)
     return g
 
+    
 def test_disperse():
     """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
     """
-    g = test_update()
-    scene = plot3d(g)
+    from alinea.echap.imports_echap import *
+    # Initiate and infect
+    g = adel_mtg()
+    stock = create_stock(N=10,par=None)
+    inoculator = RandomInoculation()
+    g = initiate(g, stock, inoculator)
+    g = infect(g, dt=1)
+    # microclimate pour la methode update
     meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
     t_deb = "2000-10-01 01:00:00"
     climate_model = MicroclimateLeaf()
     weather = Weather(data_file=meteo01_filepath)
-    # Disperse
+    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    # healthy_surface
+    g = set_initial_properties_g(g, surface_leaf_element=5.)
+    # Update Lesions
+    growth_control_model = GrowthControlModel()
+    g = update(g, dt=1, growth_control_model = growth_control_model)
+    # Rain interception model
     rain_interception_model = RapillyInterceptionModel()
-
+    rain_timing = TimeControl(delay = 24, steps = 1, model = rain_interception_model, weather = weather)
+    time_control = rain_timing.next()
     g = rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry')
-    
-    disperse(g, dispersal_model, fungus_name, label="LeafElement", activate=True)
+    # Disperse
+    dispersor = RandomDispersal()
+    disperse(g, dispersor, fungus_name='septo3d', label="LeafElement", activate=True)
     return g
 
 

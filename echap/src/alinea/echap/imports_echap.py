@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize, LogNorm
 from pandas import *
-from alinea.echap.color_map import *
 from datetime import datetime, timedelta
 from openalea.deploy.shared_data import get_shared_data_path
 
@@ -38,6 +37,7 @@ from alinea.septo3d.cycle.alep_objects import *
 
 # Alep protocol
 from alinea.alep.inoculation import RandomInoculation
+from alinea.alep.dispersal import RandomDispersal
 from alinea.alep.protocol import initiate
 from alinea.alep.protocol import infect
 from alinea.alep.protocol import update

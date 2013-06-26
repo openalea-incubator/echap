@@ -1,6 +1,6 @@
-#################### Imports
+from alinea.echap.wheat_mtg import *
+# Color map
 from alinea.echap.color_map import green_lightblue_blue
-
 green_lightblue_blue = green_lightblue_blue(levels=10)
 
 #################### Update
@@ -198,3 +198,21 @@ def products_from_csv(csvname, delimiter = ';'):
     for i in range(0,len(tab['compound'])):
         d[tab[i][0]] = {tab[i][1]:tab[i][2]}
     return d
+    
+    
+############## Add Lesions on g
+
+def lesions_infect():
+    g = adel_mtg()
+    stock = create_stock(N=10,par=None)
+    inoculator = RandomInoculation()
+    g = initiate(g, stock, inoculator)
+    g = infect(g, dt=1)
+    return g
+
+############# Add a g property on leaf node
+def param_g_on_leaf(g, parameters):
+    param = g.property(parameters)
+    for ids, vid in param.iteritems():
+        leaf = g.node(ids)
+    return leaf
