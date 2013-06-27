@@ -10,7 +10,7 @@ def grow_canopy(g,plant_model,time_control):
     return g
 
 
-def pesticide_interception(g, scene, interception_model, product_name, dose, label='LeafElement'):
+def pesticide_interception(g, interception_model, product_name, dose, label='LeafElement'):
     """ 
     Interface between g and the interception model
 

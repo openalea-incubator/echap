@@ -210,9 +210,18 @@ def lesions_infect():
     g = infect(g, dt=1)
     return g
 
-############# Add a g property on leaf node
-def param_g_on_leaf(g, parameters):
-    param = g.property(parameters)
-    for ids, vid in param.iteritems():
-        leaf = g.node(ids)
-    return leaf
+
+def update_plot(g):
+    # Count lesions by id & add it as MTG property ####################################
+    #nb_lesions_by_leaf = count_lesions_by_leaf(g, label = 'lf')
+    #set_property_on_each_id(g, 'nb_lesions', nb_lesions_by_leaf, label = 'lf')
+                       
+    # Visualization ###################################################################
+    g = alep_colormap(g, 'nb_lesions', cmap=green_white(levels=10), lognorm=False)
+    trunk_ids = [n for n in g if g.label(n).startswith('tronc')]
+    brown = (100,70,30)
+    for id in trunk_ids:
+        trunk = g.node(id)
+        trunk.color = brown
+    scene = plot3d(g)
+    Viewer.display(scene)

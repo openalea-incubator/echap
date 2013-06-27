@@ -141,6 +141,7 @@ def test_update():
     """
     # Initiate and infect
     g = adel_mtg()
+    g = update_no_doses(g)
     stock = create_stock(N=100,par=None)
     inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
@@ -151,6 +152,11 @@ def test_update():
     climate_model = MicroclimateLeaf()
     weather = Weather(data_file=meteo01_filepath)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    # Efficacy pour la methode update
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    efficacy_model = PesticideEfficacyModel()
+    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # healthy_surface
     g = set_initial_properties_g(g, surface_leaf_element=5.)
     # Update Lesions
@@ -158,14 +164,14 @@ def test_update():
     g = update(g, dt=1, growth_control_model = growth_control_model)
     return g
 
-    
+
 def test_disperse():
     """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
     """
     from alinea.echap.imports_echap import *
     # Initiate and infect
     g = adel_mtg()
-    stock = create_stock(N=10,par=None)
+    stock = create_stock(N=100,par=None)
     inoculator = RandomInoculation()
     g = initiate(g, stock, inoculator)
     g = infect(g, dt=1)
@@ -175,6 +181,12 @@ def test_disperse():
     climate_model = MicroclimateLeaf()
     weather = Weather(data_file=meteo01_filepath)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    global_climate = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[2]
+    # Efficacy pour la methode update
+    interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    efficacy_model = PesticideEfficacyModel()
+    g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # healthy_surface
     g = set_initial_properties_g(g, surface_leaf_element=5.)
     # Update Lesions
@@ -182,12 +194,13 @@ def test_disperse():
     g = update(g, dt=1, growth_control_model = growth_control_model)
     # Rain interception model
     rain_interception_model = RapillyInterceptionModel()
-    rain_timing = TimeControl(delay = 24, steps = 1, model = rain_interception_model, weather = weather)
-    time_control = rain_timing.next()
-    g = rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry')
+    rain_timing = TimeControl(delay = 24, steps = 2, model = rain_interception_model, weather = weather)
+    timer = TimeControler(rain = rain_timing)
+    t = timer.next()
+    g = rain_interception(g, rain_interception_model, t['rain'], label='LeafElement', geometry = 'geometry')
     # Disperse
     dispersor = RandomDispersal()
-    disperse(g, dispersor, fungus_name='septo3d', label="LeafElement", activate=True)
+    g = disperse(g, dispersor, fungus_name='septo3d', label="LeafElement", activate=True)
     return g
 
 
