@@ -277,15 +277,18 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     :Example:
     ---------   
     """
-    scene_geometry = g.property('geometry')
-    if not 'rain' in g.properties():
-        g.add_property('rain')
-    rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, time_control)
-    rain = dict([(k,{'water':v}) for k,v in rain_leaf.iteritems()])
-    g.property('rain').update(rain_fate)
-    vids = [vid for vid in g.property('rain')]
-    for v in vids : 
-        g.property('rain')[v].update(rain[v])
+    
+
+    if time_control.dt > 0:
+        scene_geometry = g.property('geometry')
+        if not 'rain' in g.properties():
+            g.add_property('rain')
+        rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, time_control)
+        rain = dict([(k,{'water':v}) for k,v in rain_leaf.iteritems()])
+        g.property('rain').update(rain_fate)
+        vids = [vid for vid in g.property('rain')]
+        for v in vids : 
+            g.property('rain')[v].update(rain[v])
     return g
 
 
