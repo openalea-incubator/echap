@@ -17,7 +17,7 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['tests_nodes_sum_temp_global', 'tests_nodes_compounds_from_csv', 'tests_nodes_products_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_generate_scene', 'tests_nodes_wheat_mtg', 'tests_nodes_update_no_doses']
+__all__ = ['tests_nodes_sum_temp_global', 'tests_nodes_compounds_from_csv', 'tests_nodes_products_from_csv', 'tests_nodes_plot_pesticide', 'tests_nodes_generate_scene', 'tests_nodes_wheat_mtg', 'tests_nodes_update_no_doses', 'tests_nodes_plot_DU', 'tests_nodes_plot_lesions']
 
 
 
@@ -124,5 +124,28 @@ tests_nodes_update_no_doses = Factory(name='update_no_doses',
 
 
 
+tests_nodes_plot_DU = Factory(name='plot_DU',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.echap.tests_nodes',
+                nodeclass='plot_DU',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}],
+                outputs=[],
+                widgetmodule=None,
+                widgetclass=None,
+               )
 
 
+
+tests_nodes_plot_lesions = Factory(name='plot_lesions',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.echap.tests_nodes',
+                nodeclass='plot_lesions',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}],
+                outputs=[],
+                widgetmodule=None,
+                widgetclass=None,
+               )

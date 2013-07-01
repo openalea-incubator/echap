@@ -17,7 +17,7 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['interfaces_pesticide_penetrated_decay', 'interfaces_local_microclimate', 'interfaces_pesticide_surfacic_decay', 'interfaces_pesticide_interception', 'interfaces_pesticide_efficacy']
+__all__ = ['interfaces_pesticide_penetrated_decay', 'interfaces_local_microclimate', 'interfaces_pesticide_surfacic_decay', 'interfaces_pesticide_interception', 'interfaces_pesticide_efficacy', 'interfaces_rain_interception']
 
 
 
@@ -96,3 +96,14 @@ interfaces_pesticide_efficacy = Factory(name='pesticide_efficacy',
 
 
 
+interfaces_rain_interception = Factory(name='rain_interception',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.echap.interfaces',
+                nodeclass='rain_interception',
+                inputs=[{'interface': None, 'name': 'g', 'value': None, 'desc': ''}, {'interface': None, 'name': 'rain_interception_model', 'value': None, 'desc': ''}, {'interface': None, 'name': 'time_control', 'value': None, 'desc': ''}, {'interface': IStr, 'name': 'label', 'value': 'LeafElement', 'desc': ''}, {'interface': IStr, 'name': 'geometry', 'value': 'geometry', 'desc': ''}],
+                outputs=[{'interface': None, 'name': 'g', 'desc': ''}],
+                widgetmodule=None,
+                widgetclass=None,
+               )
