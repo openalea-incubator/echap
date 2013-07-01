@@ -18,6 +18,8 @@ climate_model = MicroclimateLeaf()
 weather = Weather(data_file=meteo01_filepath)
 rain_interception_model = RapillyInterceptionModel()
 
+g0 = local_microclimate(g0, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+
 # Fake controler in septo3d.cycle.alep_objects
 controler = GrowthControlModel()
 

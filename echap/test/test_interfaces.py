@@ -203,6 +203,10 @@ def test_disperse():
     g = disperse(g, dispersor, fungus_name='septo3d', label="LeafElement", activate=True)
     return g
 
+les=g.property('lesions')[12][0]
+les.AfficheLesion()
+les.devLes(Svert=5, dt=1, T=[28], PPFD=[200], Rh=[90], efficacy={'protectant':0, 'eradicant' : 0})
+les.AfficheLesion()
 
 
 ##################################### loop test

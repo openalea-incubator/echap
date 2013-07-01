@@ -148,3 +148,30 @@ def update_no_doses(g, label = 'LeafElement'):
         n.relative_humidity = 100 
         n.wetness = True
     return g
+    
+def plot_DU(g):
+    """ plot the plant with elements carrying dispersal units in yellow """
+    green = (0,180,0)
+    yellow = (247, 220, 17)
+    for v in g.vertices(scale=g.max_scale()) : 
+        n = g.node(v)
+        if 'dispersal_units' in n.properties() and n.dispersal_units:
+            n.color = yellow
+        else : 
+            n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
+
+
+def plot_lesions(g):
+    """ plot the plant with infected elements in red """
+    green = (0,180,0)
+    red = (180, 0, 0)
+    for v in g.vertices(scale=g.max_scale()) : 
+        n = g.node(v)
+        if 'lesions' in n.properties():
+            n.color = red
+        else : 
+            n.color = green
+    scene = plot3d(g)
+    Viewer.display(scene)
