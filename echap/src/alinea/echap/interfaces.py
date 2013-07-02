@@ -60,6 +60,56 @@ def pesticide_interception(g, interception_model, product_name, dose, label='Lea
     return g
 
 
+def pesticide_interception_tc(g, interception_model, time_control, product_name, label='LeafElement'):
+    """ 
+    Interface between g and the interception model
+
+    :Parameters:
+    ----------
+    - 'g' : MTG representing the canopy (and the soil)
+    - 'interception_model' : A class embending the interception model and provide the following methods:    
+        - 'interception_model.intercept(product_name, dose)' : Return the dictionnary of scene_id: compound name of the product and surfacic doses (g.m-2)
+        See :class:`~alinea.echap.interception_leaf.CaribuInterceptModel`
+    - 'product_name' (str)
+        Commercial name of the product (e.g. "Opus", "Banko 500") 
+    - 'dose' (float)
+        Dose of product use in field (l.ha)
+    - label (str)
+        default "LeafElement"
+
+    :Returns:  
+    --------
+    - 'g' : Updated MTG representing the canopy (and the soil). 'surfacic_doses' property is added to g or updated if present.
+    
+    :Example:
+    -------
+      >>> g = MTG()
+      >>> interception_model = CaribuInterceptModel()
+      >>> pesticide_interception(g, interception_model, product_name, dose)
+      >>> return g
+    """
+    scene_geometry = g.property('geometry')
+    surf_dose = interception_model.intercept(product_name, time_control, scene_geometry)
+    if not 'penetrated_doses' in g.properties():
+        vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
+        g.add_property('penetrated_doses')
+        g.property('penetrated_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
+    if not 'surfacic_doses' in g.properties():
+        vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
+        g.add_property('surfacic_doses')
+        g.property('surfacic_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
+    surfacic_doses = g.property('surfacic_doses')
+    for vid, nd in surf_dose.iteritems():
+        if g.label(vid).startswith(label):
+            for name, dose in nd.iteritems():
+                if name in surfacic_doses[vid]:
+                    surfacic_doses[vid][name] += dose
+                else:
+                    g.add_property('surfacic_doses')
+                    g.property('surfacic_doses')[vid].update(nd)
+    return g
+
+
 def local_microclimate(g, weather, climate_model, t_deb="2000-10-01 01:00:00", label='LeafElement', timestep=1):
     """ 
     Interface between g and the microclimate model

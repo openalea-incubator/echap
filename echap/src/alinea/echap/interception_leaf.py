@@ -6,7 +6,7 @@ Created on Thu Apr 04 11:25:45 2013
 """
 from numpy import exp
 from alinea.astk.caribu_interface import *
-
+from alinea.astk.TimeControl import * 
 
 
 def product_dose(product_name, dose, productsDB):
@@ -56,6 +56,26 @@ class CaribuInterceptModel(object):
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth
+
+    def timing(calendar = {}, start_date = "", steps = 2):
+        """ compute timing and time_control_sets for a simulation between start and stop. return 0 when there is no rain
+        """ 
+        import copy
+        treatments = calendar.get_calendar(steps, calendar.str_to_datetime(start_date))
+        treat = copy.copy(treatments['dose'])
+        # compute pesticide events
+        def treat_event(treat,istart):
+            i = istart
+            event = []
+            while treat[i] > 0:
+                event.append(treat[i])
+                treat[i]=0
+                i+=1
+            return event
+
+        events = [rain_event(treat,pos) if treat[pos] > 0 else False for pos in range(len(treat))]
+
+        return (TimeControlSet(treat = x, dt = len(x)) if x else TimeControlSet(treat=None,dt=0) for x in events)
 
     def intercept(self, product_name, dose, scene_geometry):
         """ Return the surfacic doses intercept on each leaf and stem element
