@@ -284,11 +284,31 @@ def test_local_meteo():
         print g.property('microclimate')
 
 
-
-
-
-   
-
+############################# Big loop
+def test_big_loop():
+    from alinea.echap.imports_echap import *
+    # Initialisation du mtg 
+    g = adel_mtg()
+    g = update_no_doses(g)
+    # Interception
+    pesticide_interception_model = CaribuInterceptModel()
+    g = pesticide_interception(g, pesticide_interception_model, product_name='Opus', dose=1.5)
+    # loop
+    t_deb = "2000-10-01 01:00:00"
+    nbsteps = 2
+    for i in range(nbsteps):
+        # Microclimate
+        climate_model = MicroclimateLeaf()
+        meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
+        weather = Weather(data_file=meteo01_filepath)
+        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
+        # Rain_interception
+        rain_interception_model = RapillyInterceptionModel()
+        rain_timing = TimeControl(steps = nbsteps, weather=weather, model = rain_interception_model, start_date = t_deb)
+        rt = rain_timing.next()
+        g = rain_interception(g, rain_interception_model, rt, label='LeafElement', geometry = 'geometry')
+        print g.property('rain')
 
     
     
