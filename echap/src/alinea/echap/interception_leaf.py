@@ -4,7 +4,7 @@ Created on Thu Apr 04 11:25:45 2013
 
 @author: lepse
 """
-import pandas as pd
+from pandas import *
 from datetime import datetime, timedelta
 from numpy import exp
 from alinea.astk.caribu_interface import *
@@ -52,16 +52,17 @@ class CaribuInterceptModel(object):
         - compound: Active compound of the product
         - dose: Concentration of active compound in g.l-1
     """
-    def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0, pest_calendar=''): 
+    def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0, pest_calendar={}): 
         self.productsDB = productsDB
         self.elevation = elevation
         self.azimuth = azimuth
-        self.calendar = pd.read_csv(pest_calendar, delimiter=';', parse_dates={'datetime':['date']})
+        self.pest_calendar = pest_calendar
 
     def timing(self, start_date = "", steps = 1, delay=1, weather=None):
         """ compute timing and time_control_sets for a simulation between start and stop. return False when there is no treatment
         """
-        data = self.calendar
+        pest_data = self.pest_calendar
+        data = DataFrame(pest_data)
         
         def str_to_datetime(t_deb):
             format = "%Y-%m-%d %H:%M:%S"
@@ -79,7 +80,7 @@ class CaribuInterceptModel(object):
         event = []
         id = 0
         for i in step:
-            if i == data['datetime'][id].to_datetime():
+            if i == str_to_datetime(data['datetime'][id]):#.to_datetime()
                 event.append([data['dose'][id], data['product_name'][id]])
                 id += 1
             else:

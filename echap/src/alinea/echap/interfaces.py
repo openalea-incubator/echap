@@ -1,6 +1,8 @@
 """Defines interfaces between g and the different models of echap project
 """
 
+class EchapInterfacesError(Exception): pass
+
 def setup_canopy(plant_model, age = 0):
     g = plant_model.setup_canopy(age)
     return g
@@ -159,7 +161,11 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):
     for vid, d in surfacic_doses.iteritems():
         if g.label(vid).startswith(label):
             for compound_name,compound_dose in d.iteritems():
-                new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
+                if vid in microclimate:
+                    new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
+                else:
+                    new_dose,penetrated_amount,loss = 0, 0, 0
+                    print 'EchapInterfacesError : KeyErreur', vid
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
                     if compound_name in penetrated_doses:
