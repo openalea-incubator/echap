@@ -175,3 +175,31 @@ def plot_lesions(g):
             n.color = green
     scene = plot3d(g)
     Viewer.display(scene)
+
+
+def set_initial_properties_g(g, surface_leaf_element=5., position_senescence=None, label = 'LeafElement'):
+    """ Give initial values for plant properties of each LeafElement. 
+    
+    :Parameters:
+    ----------
+    - 'g': MTG
+        MTG representing the canopy
+    - 'surface': float
+        Initial surface of each leaf element
+    - 'position_senescence': float
+        Position of senescence on blade axis
+    - 'label': str
+        Label of the part of the MTG concerned by the calculation
+        
+    :Returns:
+    -------
+    - 'g': MTG
+        Updated MTG representing the canopy
+    """
+    vids = [n for n in g if g.label(n).startswith(label)]
+    for v in vids : 
+        n = g.node(v)
+        n.surface = surface_leaf_element
+        n.healthy_surface = surface_leaf_element # TODO : Manage properly
+        n.position_senescence = position_senescence
+    return g

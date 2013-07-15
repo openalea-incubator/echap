@@ -63,7 +63,7 @@ class CaribuInterceptModel(object):
         """
         pest_data = self.pest_calendar
         data = DataFrame(pest_data)
-        
+
         def str_to_datetime(t_deb):
             format = "%Y-%m-%d %H:%M:%S"
             if isinstance(t_deb, str):

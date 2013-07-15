@@ -154,7 +154,7 @@ def test_update():
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     # Efficacy pour la methode update
     interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    g = pesticide_interception(g, interception_model)
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # healthy_surface
