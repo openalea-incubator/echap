@@ -52,30 +52,43 @@ def test_no_doses():
 def test_intercept():
     g = adel_mtg()
     g = update_on_leaves(g)
-    interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     return g
 
 
 def test_intercept_no_dose():
     g = adel_mtg()
     g = update_no_doses(g)
-    interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     return g
 
 
 def test_intercept_elevation():
     g = adel_mtg()
     g = update_no_doses(g)
-    interception_model = CaribuInterceptModel(elevation=90.)
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(elevation=90., pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     print g.property('surfacic_doses')
-    interception_model = CaribuInterceptModel(elevation=45.)
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    interception_model = CaribuInterceptModel(elevation=45., pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     print g.property('surfacic_doses')
-    interception_model = CaribuInterceptModel(elevation=1.)
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    interception_model = CaribuInterceptModel(elevation=1., pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     print g.property('surfacic_doses')
     return g
 
@@ -152,9 +165,13 @@ def test_update():
     climate_model = MicroclimateLeaf()
     weather = Weather(data_file=meteo01_filepath)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    # Pesticide_interception
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
+    tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = tc.next()
+    g = pesticide_interception(g, interception_model, time_control)
     # Efficacy pour la methode update
-    interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model)
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # healthy_surface
@@ -168,7 +185,6 @@ def test_update():
 def test_disperse():
     """ Check if 'disperse' from 'protocol.py' disperse new dispersal units on the MTG.
     """
-    from alinea.echap.imports_echap import *
     # Initiate and infect
     g = adel_mtg()
     stock = create_stock(N=100,par=None)
@@ -182,9 +198,13 @@ def test_disperse():
     weather = Weather(data_file=meteo01_filepath)
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     global_climate = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[2]
+    # Pesticide_interception
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
+    pest_timing = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
+    time_control = pest_timing.next()
+    g = pesticide_interception(g, interception_model, time_control)
     # Efficacy pour la methode update
-    interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
     efficacy_model = PesticideEfficacyModel()
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # healthy_surface
@@ -194,24 +214,24 @@ def test_disperse():
     g = update(g, dt=1, growth_control_model = growth_control_model)
     # Rain interception model
     rain_interception_model = RapillyInterceptionModel()
-    rain_timing = TimeControl(delay = 24, steps = 2, model = rain_interception_model, weather = weather)
-    timer = TimeControler(rain = rain_timing)
-    t = timer.next()
-    g = rain_interception(g, rain_interception_model, t['rain'], label='LeafElement', geometry = 'geometry')
+    rain_timing = TimeControl(delay = 1, steps = 1, model = rain_interception_model, weather = weather, start_date = "2000-10-01 01:00:00")
+    time_control = rain_timing.next()
+    g = rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry')
     # Disperse
     dispersor = RandomDispersal()
     g = disperse(g, dispersor, fungus_name='septo3d', label="LeafElement", activate=True)
     return g
 
-les=g.property('lesions')[12][0]
-les.AfficheLesion()
-les.devLes(Svert=5, dt=1, T=[28], PPFD=[200], Rh=[90], efficacy={'protectant':0, 'eradicant' : 0})
-les.AfficheLesion()
+# les=g.property('lesions')[12][0]
+# les.AfficheLesion()
+# les.devLes(Svert=5, dt=1, T=[28], PPFD=[200], Rh=[90], efficacy={'protectant':0, 'eradicant' : 0})
+# les.AfficheLesion()
 
 
 ##################################### loop test
 
 def test_decay_doses():
+    from alinea.echap.imports_echap import *
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
     'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 
@@ -232,7 +252,12 @@ def test_decay_doses():
     meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
     weather = Weather(data_file=meteo01_filepath)
     # Interception
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
+    pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
+    interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
+    pest_timing = TimeControl(steps = 1, model = interception_model, start_date = t_deb)
+    time_control = pest_timing.next()
+    g = pesticide_interception(g, interception_model, time_control)
+    # Microclimate
     g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
     t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     # sauvegarde etat initial
@@ -246,69 +271,11 @@ def test_decay_doses():
         g = pesticide_penetrated_decay(g, Milne_decay_model, timestep=dt)
         df = get_df_out(t,g)
         out = out.append(df)
-        plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False)
-        #plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
+        plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue)
         g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
         t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
     return out
 
-
-def test_local_meteo():
-    # Loop
-    t_deb = "2000-10-01 01:00:00"
-    t = 0
-    dt = 1
-    nb_steps = 2
-    # Initialisation du mtg 
-    g = adel_mtg()
-    g = update_no_doses(g)
-    # models
-    interception_model = CaribuInterceptModel()
-    climate_model = MicroclimateLeaf()
-    meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
-    weather = Weather(data_file=meteo01_filepath)
-    # Interception
-    g = pesticide_interception(g, interception_model, product_name='Opus', dose=1.5)
-    print t_deb
-    # Microclimate
-    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-    t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
-    print g.property('microclimate')
-    # loop
-    for i in range(nb_steps):
-        t += dt    
-        print t_deb
-        # Microclimate
-        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
-        print g.property('microclimate')
-
-
-############################# Big loop
-def test_big_loop():
-    from alinea.echap.imports_echap import *
-    # Initialisation du mtg 
-    g = adel_mtg()
-    g = update_no_doses(g)
-    # Interception
-    pesticide_interception_model = CaribuInterceptModel()
-    g = pesticide_interception(g, pesticide_interception_model, product_name='Opus', dose=1.5)
-    # loop
-    t_deb = "2000-10-01 01:00:00"
-    nbsteps = 2
-    for i in range(nbsteps):
-        # Microclimate
-        climate_model = MicroclimateLeaf()
-        meteo01_filepath = get_shared_data_path(['alinea/echap'], 'meteo01.csv')
-        weather = Weather(data_file=meteo01_filepath)
-        g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
-        t_deb = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[3]
-        # Rain_interception
-        rain_interception_model = RapillyInterceptionModel()
-        rain_timing = TimeControl(steps = nbsteps, weather=weather, model = rain_interception_model, start_date = t_deb)
-        rt = rain_timing.next()
-        g = rain_interception(g, rain_interception_model, rt, label='LeafElement', geometry = 'geometry')
-        print g.property('rain')
 
     
     

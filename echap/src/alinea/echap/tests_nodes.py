@@ -12,11 +12,16 @@ import matplotlib.pyplot as plt
 from pandas import *
 import pylab
 from matplotlib import cm
+from matplotlib.colors import Normalize, LogNorm
 
 from datetime import datetime, timedelta
 
 from alinea.echap.wheat_mtg import *
 from alinea.echap.color_map import *
+
+# Color map
+from alinea.echap.color_map import green_lightblue_blue
+green_lightblue_blue = green_lightblue_blue(levels=10)
 
 ###############################################
 
@@ -37,15 +42,21 @@ def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     return scene
 
 
-def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue, lognorm=False):
-    """ plot the plant with normalized pesticide doses """
+def dose_norm(dose, dose_max_ha):
+    """ normalise doses(g.m-2) """
+    dn = 0
+    if dose_max_ha > 0 :
+        dn = float(dose * 1e4) / dose_max_ha
+    return dn
+
+def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', dose_max_ha=125, cmap=green_lightblue_blue):
+    """ plot the plant with pesticide doses """
     prop = g.property(property_name)
     keys = prop.keys()
     value = []
     for k, val in prop.iteritems():
         value.append(val[compound_name])
-        v = np.array(value)
-
+        val = np.array(value)
     if type(cmap) is str:
         try:
             _cmap = cm.get_cmap(cmap())
@@ -53,25 +64,20 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
             raise Exception('This colormap does not exist')
     else:
         _cmap = cmap()
-
     green = (0,180,0)
-
-    norm = Normalize(vmin=0, vmax=max(v)) if not lognorm else LogNorm(vmin=0, vmax=max(v)) 
-    values = norm(v)
-
-    colors = (_cmap(values)[:,0:3])*255
+    for i in range(0,len(value)):
+        val[i] = dose_norm(value[i], dose_max_ha)
+    colors = (_cmap(val)[:,0:3])*255
     colors = np.array(colors,dtype=np.int).tolist()
-
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
-            n.properties()['color'] = dict(zip(keys,colors))
+            n.color = tuple(dict(zip(keys,colors))[vid])
         else : 
             n.color = green
-
     scene = plot3d(g)
     Viewer.display(scene)
-    return scene
+    return g
 
     
 def products_from_csv(csvname, delimiter = ';'):

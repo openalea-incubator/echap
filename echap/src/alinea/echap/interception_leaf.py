@@ -51,6 +51,12 @@ class CaribuInterceptModel(object):
         - product: Comercial name of the product
         - compound: Active compound of the product
         - dose: Concentration of active compound in g.l-1
+    elevation
+    azimuth
+    pest_calendar (dict)
+        - datetime: List of the dates and times of the treatments (str format = "%Y-%m-%d %H:%M:%S" or datetime format)
+        - dose: List of the doses of each treatment in l.ha-1 (float)
+        - product_name: List of the comercial names of the products used for the treatments (str)
     """
     def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0, pest_calendar={}): 
         self.productsDB = productsDB
@@ -88,35 +94,13 @@ class CaribuInterceptModel(object):
         
         return (TimeControlSet(dose = x[0], product = x[1], dt = len(x)) if x else TimeControlSet(dose=None, product=None, dt=0) for x in event)
 
-    def intercept(self, product_name, dose, scene_geometry):
+
+    def intercept(self, time_control, scene_geometry):
         """ Return the surfacic doses intercept on each leaf and stem element
 
         :Parameters:
         ------------
-        - product_name: (str)
-            Commercial name of the product
-        - dose: (float)
-            Application dose of product in l.ha-1
-        - scene_geometry
-
-        :Returns:
-        ---------
-        - doses: (float)
-            Dict of doses (g.m-2) calculated with the interception model for each leaf and stem element
-        """       
-        compound_name, Einc = interception_dose(product_name, dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
-        doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
-        return doses
-
-    def intercept_tc(self, time_control, scene_geometry):
-        """ Return the surfacic doses intercept on each leaf and stem element
-
-        :Parameters:
-        ------------
-        - product_name: (str)
-            Commercial name of the product
-        - dose: (float)
-            Application dose of product in l.ha-1
+        - time_control
         - scene_geometry
 
         :Returns:

@@ -10,9 +10,10 @@ from datetime import datetime, timedelta
 from openalea.deploy.shared_data import get_shared_data_path
 
 # Utils echap - alep
-from alinea.echap.update_parameters import *
+#from alinea.echap.update_parameters import *
 from alinea.echap.tests_nodes import *
 from alinea.alep.disease_outputs import *
+from alinea.astk.plantgl_utils import *
 
 # Pearl
 from alinea.pearl.pearl import *
@@ -36,6 +37,10 @@ from alinea.septo3d.Rapilly import *
 from alinea.echap.interfaces import rain_interception
 # Septo3d
 from alinea.septo3d.cycle.alep_objects import *
+# Popdrops
+from alinea.popdrops.RainInterception import *
+from alinea.popdrops.Rain import *
+from alinea.popdrops.Drops import *
 
 # Alep protocol
 from alinea.alep.inoculation import RandomInoculation
