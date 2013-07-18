@@ -40,6 +40,7 @@ def interception_dose(product_name, dose, scene_geometry, productsDB, elevation,
     compound_name, active_dose = product_dose(product_name, dose, productsDB)
     received_dose = emission_inv(elevation, active_dose)
     sources = (received_dose,(vecteur_direction(elevation,azimuth)))
+    #out_moy = turtle_interception(sectors='1', scene_geometry, energy=received_dose, output_by_triangle = False, convUnit = 0.01):
     out_moy = run_caribu(sources, scene_geometry)
     Einc = out_moy['Einc']
     return compound_name, Einc 
