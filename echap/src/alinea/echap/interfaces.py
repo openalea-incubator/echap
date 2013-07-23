@@ -42,7 +42,7 @@ def pesticide_interception(g, interception_model, time_control, label='LeafEleme
     """
     if time_control.dt > 0:
         scene_geometry = g.property('geometry')
-        surf_dose = interception_model.intercept(time_control, scene_geometry)
+        surf_dose = interception_model.intercept(scene_geometry, time_control)
         if not 'penetrated_doses' in g.properties():
             vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
             g.add_property('penetrated_doses')

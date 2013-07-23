@@ -96,7 +96,7 @@ class CaribuInterceptModel(object):
         return (TimeControlSet(dose = x[0], product = x[1], dt = len(x)) if x else TimeControlSet(dose=None, product=None, dt=0) for x in event)
 
 
-    def intercept(self, time_control, scene_geometry):
+    def intercept(self, scene_geometry, time_control):
         """ Return the surfacic doses intercept on each leaf and stem element
 
         :Parameters:

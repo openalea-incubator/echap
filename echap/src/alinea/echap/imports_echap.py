@@ -38,6 +38,7 @@ from alinea.echap.interfaces import rain_interception
 # Septo3d
 from alinea.septo3d.cycle.alep_objects import *
 # Popdrops
+from alinea.popdrops.PesticideInterception import *
 from alinea.popdrops.RainInterception import *
 from alinea.popdrops.Rain import *
 from alinea.popdrops.Drops import *
