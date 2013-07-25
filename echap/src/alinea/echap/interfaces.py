@@ -280,7 +280,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     :Returns:
     ---------
     returns the fraction of intercepted rain
-    
+
     :Example:
     ---------   
     """
