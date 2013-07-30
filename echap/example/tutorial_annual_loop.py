@@ -37,7 +37,7 @@ Milne_decay_model = PenetratedDecayModel()
 controler = GrowthControlModel()
 
 # Timer
-nbsteps = 5
+nbsteps = 8
 pest_timing = TimeControl(steps = nbsteps, model = pesticide_interception_model, start_date = t_deb)
 meteo_timing = TimeControl(delay = 1, steps = nbsteps)
 rain_timing = TimeControl(steps = nbsteps, weather = weather, model = rain_interception_model, start_date = t_deb)

@@ -284,7 +284,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     :Example:
     ---------   
     """
-    
+
 
     if time_control.dt > 0:
         scene_geometry = g.property('geometry')
