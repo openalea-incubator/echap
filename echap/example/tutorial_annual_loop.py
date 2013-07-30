@@ -1,8 +1,13 @@
 # Imports
 from alinea.echap.imports_echap import *
+from alinea.adel.astk_interface import AdelWheat
+from alinea.astk.plant_interface import *
+
 
 # Initiate
-g = adel_mtg()
+wheat = AdelWheat()
+g,_ = new_canopy(wheat, age=100)
+#grow_canopy(g, wheat, time_control)
 # Début de la simul
 t_deb = "2000-10-01 01:00:00"
 # db pearl
@@ -38,12 +43,13 @@ controler = GrowthControlModel()
 
 # Timer
 nbsteps = 8
+microclimate_timing = TimeControl(steps = nbsteps, weather = weather, model = climate_model, start_date = t_deb)
 pest_timing = TimeControl(steps = nbsteps, model = pesticide_interception_model, start_date = t_deb)
 meteo_timing = TimeControl(delay = 1, steps = nbsteps)
 rain_timing = TimeControl(steps = nbsteps, weather = weather, model = rain_interception_model, start_date = t_deb)
 septo_timing = TimeControl(delay = 1, steps = nbsteps)
 
-timer = TimeControler(pest = pest_timing, meteo = meteo_timing, rain = rain_timing, septo = septo_timing)
+timer = TimeControler(microclim = microclimate_timing, pest = pest_timing, meteo = meteo_timing, rain = rain_timing, septo = septo_timing)
 
 # Initialisation de la maladie
 g = initiate(g, stock, inoculator)
@@ -56,7 +62,7 @@ for tc in timer:
     # Pesticide efficacy
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # Microclimate (timer)
-    g = local_microclimate(g, weather, climate_model, t_deb=t_deb, label='LeafElement', timestep=1)[0]
+    g = local_microclimate(g, climate_model, tc['microclim'], label='LeafElement')
     # Rain interception (timer)
     g = rain_interception(g, rain_interception_model, tc['rain'], label='LeafElement', geometry = 'geometry')
     # Infect (timer)

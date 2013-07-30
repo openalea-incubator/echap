@@ -3,14 +3,6 @@
 
 class EchapInterfacesError(Exception): pass
 
-def setup_canopy(plant_model, age = 0):
-    g = plant_model.setup_canopy(age)
-    return g
-
-def grow_canopy(g,plant_model,time_control):
-    plant_model.grow(g,time_control)
-    return g
-
 
 def pesticide_interception(g, interception_model, time_control, label='LeafElement'):
     """ 
@@ -60,10 +52,10 @@ def pesticide_interception(g, interception_model, time_control, label='LeafEleme
                     else:
                         g.add_property('surfacic_doses')
                         g.property('surfacic_doses')[vid].update(nd)
-    return g
+    return g, interception_model
 
 
-def local_microclimate(g, weather, climate_model, t_deb="2000-10-01 01:00:00", label='LeafElement', timestep=1):
+def local_microclimate(g, climate_model, time_control, label='LeafElement'):
     """ 
     Interface between g and the microclimate model
 
@@ -107,21 +99,14 @@ def local_microclimate(g, weather, climate_model, t_deb="2000-10-01 01:00:00", l
       >>> climate_model = MicroclimateLeaf()
       >>> local_microclimate(g, weather, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g, mean_globalclimate, globalclimate, t_deb
-    """    scene_geometry = g.property('geometry')
+    """
+    if time_control.dt > 0:        scene_geometry = g.property('geometry')
 
-    # Convert str into datetime
-    t_deb = weather.str_to_datetime(t_deb)
+        local_meteo = climate_model.microclim(scene_geometry, time_control)
+        g.add_property('microclimate')
+        g.property('microclimate').update(local_meteo)
 
-    # Temporary : for tests
-    mean_globalclimate, globalclimate = weather.get_weather(timestep, t_deb)
-    local_meteo = climate_model.microclim(weather, scene_geometry, timestep, t_deb)
-    g.add_property('microclimate')
-    g.property('microclimate').update(local_meteo)
-
-    # Update t_deb
-    t_deb = weather.next_date(timestep, t_deb)
-
-    return g, mean_globalclimate, globalclimate, t_deb
+        return g, climate_model
 
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):

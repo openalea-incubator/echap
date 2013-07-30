@@ -87,7 +87,7 @@ class CaribuInterceptModel(object):
         event = []
         id = 0
         for i in step:
-            if i == str_to_datetime(data['datetime'][id]):#.to_datetime()
+            if i == str_to_datetime(data['datetime'][id]):
                 event.append([data['dose'][id], data['product_name'][id]])
                 id += 1
             else:
