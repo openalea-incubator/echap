@@ -52,7 +52,9 @@ from alinea.alep.protocol import update
 from alinea.alep.protocol import disperse
 
 # Wheat
-from alinea.echap.wheat_mtg import *
+#from alinea.echap.wheat_mtg import *
+from alinea.adel.astk_interface import AdelWheat
+from alinea.astk.plant_interface import *
 
 # Time control
 from alinea.astk.TimeControl import *

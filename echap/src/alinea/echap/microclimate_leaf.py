@@ -65,16 +65,7 @@ class MicroclimateLeaf(object):
                 ws.append(x[5])
                 ta.append(x[6])
                 duration = len(pp)
-            else:
-                pp=None
-                ra=None
-                gr=None
-                vp=None
-                rh=None
-                ws=None
-                ta=None
-                duration=0
-        return (TimeControlSet(PPFD = pp, rain = ra, global_radiation = gr, vapor_pressure = vp, relative_humidity = rh, wind_speed = ws, temperature_air = ta, dt = duration))
+        return (TimeControlSet(PPFD = pp, rain = ra, global_radiation = gr, vapor_pressure = vp, relative_humidity = rh, wind_speed = ws, temperature_air = ta, dt = duration) if x else TimeControlSet(PPFD = None, rain = None, global_radiation = None, vapor_pressure = None, relative_humidity = None, wind_speed = None, temperature_air = None, dt = 0) for x in event)
 
 
     def microclim(self, scene_geometry, time_control):
@@ -105,7 +96,6 @@ class MicroclimateLeaf(object):
         microclimate = {}  
         PAR_leaf = {}
 
-        mean_globalclimate, gc = weather.get_weather(timestep, t_deb)
         mean_global_radiation = np.mean(time_control.global_radiation)
         mean_vapor_pressure = np.mean(time_control.vapor_pressure)
 

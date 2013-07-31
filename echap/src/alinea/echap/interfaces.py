@@ -101,7 +101,6 @@ def local_microclimate(g, climate_model, time_control, label='LeafElement'):
       >>> return g, mean_globalclimate, globalclimate, t_deb
     """
     if time_control.dt > 0:        scene_geometry = g.property('geometry')
-
         local_meteo = climate_model.microclim(scene_geometry, time_control)
         g.add_property('microclimate')
         g.property('microclimate').update(local_meteo)
@@ -150,7 +149,7 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):
                     new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
                 else:
                     new_dose,penetrated_amount,loss = 0, 0, 0
-                    print 'EchapInterfacesError : KeyErreur', vid
+                    #print 'EchapInterfacesError : KeyErreur', vid
                 surfacic_doses[vid][compound_name] = new_dose
                 if vid in penetrated_doses:
                     if compound_name in penetrated_doses:

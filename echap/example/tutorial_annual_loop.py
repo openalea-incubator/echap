@@ -1,8 +1,5 @@
 # Imports
 from alinea.echap.imports_echap import *
-from alinea.adel.astk_interface import AdelWheat
-from alinea.astk.plant_interface import *
-
 
 # Initiate
 wheat = AdelWheat()
@@ -42,7 +39,7 @@ Milne_decay_model = PenetratedDecayModel()
 controler = GrowthControlModel()
 
 # Timer
-nbsteps = 8
+nbsteps = 4
 microclimate_timing = TimeControl(steps = nbsteps, weather = weather, model = climate_model, start_date = t_deb)
 pest_timing = TimeControl(steps = nbsteps, model = pesticide_interception_model, start_date = t_deb)
 meteo_timing = TimeControl(delay = 1, steps = nbsteps)
@@ -58,11 +55,12 @@ g = set_initial_properties_g(g, surface_leaf_element=5.)
 
 for tc in timer:
     # Pesticide interception (timer)
-    g = pesticide_interception(g, pesticide_interception_model, tc['pest'], label='LeafElement')
+    g,_ = pesticide_interception(g, pesticide_interception_model, tc['pest'], label='LeafElement')
     # Pesticide efficacy
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # Microclimate (timer)
-    g = local_microclimate(g, climate_model, tc['microclim'], label='LeafElement')
+    g,_ = local_microclimate(g, climate_model, tc['microclim'], label='LeafElement')
+    print g.property('microclimate')
     # Rain interception (timer)
     g = rain_interception(g, rain_interception_model, tc['rain'], label='LeafElement', geometry = 'geometry')
     # Infect (timer)
