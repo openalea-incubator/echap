@@ -14,7 +14,7 @@ dynT_user = {'a_cohort': 0.010736,
                                    'T2': 1447.03671450791,
                                    'T3': 1447.03671450791,
                                    'T4': 1447.03671450791}}
-dimT_user = 'C:/openaleapkg/echap/AdelInputData/Tremie1_dimT_user.csv'
+dimT_user = 'C:/openaleapkg/echap/adel_DataFile/Tremie1_dimT_user.csv'
 plant_number = 203
 decide_child_axis_probabilities = {'T0': 0.00, 'T1': 0.90,
                                    'T2': 0.866666666666667, 'T3': 0.733333333333333,
@@ -22,7 +22,7 @@ decide_child_axis_probabilities = {'T0': 0.00, 'T1': 0.90,
 MS_leaves_number_probabilities = {'10': 0.0,
                                   '11': 0.0,
                                   '12': 0.366666666666667,
-                                  '13': 0.533333333333333,
+                                  '13': 0.633333333333333,
                                   '14': 0.0}
 TT_bolting = 1070
 final_axes_density = 491
