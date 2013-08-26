@@ -10,7 +10,7 @@ __editable__ = True
 __description__ = ''
 __license__ = ''
 __url__ = ''
-__alias__ = ['Rdata_curvature', 'alinea.echap.rdata', 'alinea.echap.data_file']
+__alias__ = ['AdelInputData', 'alinea.echap.rdata', 'alinea.echap.data_file']
 __version__ = ''
 __authors__ = ''
 __institutes__ = ''
@@ -1499,13 +1499,13 @@ _133205712 = CompositeNodeFactory(name='reconstruction_Mercia_2010.2011',
          (2, "'Mercia_dimT_user.csv'")],
    6: [],
    7: [  (  0,
-            "'C:\\\\openaleapkg\\\\echap\\\\Rdata_curvature\\\\Mercia_axeT.csv'"),
+            "'C:\\\\openaleapkg\\\\echap\\\\AdelInputData\\\\Mercia_axeT.csv'"),
          (  1,
-            "'C:\\\\openaleapkg\\\\echap\\\\Rdata_curvature\\\\Mercia_dimT.csv'"),
+            "'C:\\\\openaleapkg\\\\echap\\\\AdelInputData\\\\Mercia_dimT.csv'"),
          (  2,
-            "'C:\\\\openaleapkg\\\\echap\\\\Rdata_curvature\\\\Mercia_phenT.csv'"),
+            "'C:\\\\openaleapkg\\\\echap\\\\AdelInputData\\\\Mercia_phenT.csv'"),
          (  3,
-            "'C:\\\\openaleapkg\\\\echap\\\\Rdata_curvature\\\\Mercia_earT.csv'"),
+            "'C:\\\\openaleapkg\\\\echap\\\\AdelInputData\\\\Mercia_earT.csv'"),
          (4, "'c:\\\\openaleapkg\\\\adel\\\\adel\\\\data\\\\ssi2sen.csv'")],
    8: [(0, '4'), (1, '60'), (2, '10')],
    9: [  (0, 'PackageData(alinea.echap.adel_DataFile, SR_bg.RData)'),
