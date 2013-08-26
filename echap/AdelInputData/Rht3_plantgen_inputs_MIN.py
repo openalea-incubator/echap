@@ -13,7 +13,7 @@ dynT_user = {'a_cohort': 0.00832352191765225,
                                    'T2': 1386.55716893825,
                                    'T3': 1386.55716893825,
                                    'T4': 1386.55716893825}}
-dimT_user = 'C:/openaleapkg/echap/adel_DataFile/rht3_dimT_user.csv'
+dimT_user = 'C:/openaleapkg/echap/AdelInputData/rht3_dimT_user.csv'
 plant_number = 211
 decide_child_axis_probabilities = {'T0': 0.0, 'T1': 0.888888888888889,
                                    'T2': 0.777777777777778, 'T3': 0.694444444444444,

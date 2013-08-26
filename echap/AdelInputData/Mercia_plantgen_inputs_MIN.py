@@ -14,7 +14,7 @@ dynT_user = {'a_cohort': 0.009380186,
                                    'T2': 1380.766379,
                                    'T3': 1380.766379,
                                    'T4': 1380.766379}}
-dimT_user = 'C:/openaleapkg/echap/adel_DataFile/Mercia_dimT_user.csv'
+dimT_user = 'C:/openaleapkg/echap/AdelInputData/Mercia_dimT_user.csv'
 plant_number = 203
 decide_child_axis_probabilities = {'T0': 0.0277777777777778, 'T1': 1.000,
                                    'T2': 0.833333333333333, 'T3': 0.75,
