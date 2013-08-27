@@ -8,12 +8,12 @@ dynT_user = {'a_cohort': 0.010736,
              'n0': 3.82, 
              'n1': 1.9,
              'n2': 5.0,
-             'TT_col_N_phytomer': {'MS': 1447.03671450791,
-                                   'T0': 1447.03671450791,             
+             'TT_col_N_phytomer': {'MS': 1447.03671450791,             
                                    'T1': 1447.03671450791,
                                    'T2': 1447.03671450791,
                                    'T3': 1447.03671450791,
-                                   'T4': 1447.03671450791}}
+                                   'T4': 1447.03671450791,
+                                   'T7': 1447.03671450791}}
 dimT_user = 'C:/openaleapkg/echap/adel_DataFile/Tremie1_dimT_user.csv'
 plant_number = 203
 decide_child_axis_probabilities = {'T0': 0.00, 'T1': 0.90,
