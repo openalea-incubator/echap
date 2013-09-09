@@ -15,7 +15,7 @@ dynT_user = {'a_cohort': 0.010736,
                                    'T4': 1447.03671450791,
                                    'T7': 1447.03671450791}}
 dimT_user = 'C:/openaleapkg/echap/AdelInputData/Tremie1_dimT_user.csv'
-plant_number = 203
+plant_number = 278
 decide_child_axis_probabilities = {'T0': 0.00, 'T1': 0.90,
                                    'T2': 0.866666666666667, 'T3': 0.733333333333333,
                                    'T4': 0.166666666666667, 'T5': 0.0, 'T6': 0.0, 'T7': 0.533333333333333}
