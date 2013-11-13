@@ -55,32 +55,20 @@ def pesticide_interception(g, interception_model, time_control, label='LeafEleme
     return g, interception_model
 
 
-def local_microclimate(g, climate_model, time_control, label='LeafElement'):
+def local_microclimate(g, climate_model, weather_data, label='LeafElement'):
     """ 
     Interface between g and the microclimate model
 
     :Parameters:
     -----------
     - 'g' : MTG representing the canopy (and the soil)
-    - 'weather' : A class embending the weather reader and provide the following methods:    
-        - weather.get_weather(timestep, t_deb)
-        - weather.str_to_datetime(t_deb)
-        - weather.add_global_radiation(globalclimate)
-        - weather.add_vapor_pressure(globalclimate)
-        - weather.next_date(timestep, t_deb)
-        - weather.PPFD_to_global(PAR)
-        - weather.Psat(T)
-        - weather.humidity_to_vapor_pressure(humidity, Tair)
-            See :class:`alinea.weather.global_weather.Weather`
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
-        See :class:`~alinea.echap.microclimate_leaf.MicroclimateLeaf`
-    - 't_deb' (str) format = "%Y-%m-%d %H:%M:%S"
-        The start date to run the simulation. Default ""2000-10-01 01:00:00""
+        See :class:`~alinea.echap.microclimate_leaf.MicroclimateLeaf`
+    - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-    - timestep (int)
-        The timestep of the simulation. Default 1
+
 
     :Returns:  
     --------
@@ -100,12 +88,12 @@ def local_microclimate(g, climate_model, time_control, label='LeafElement'):
       >>> local_microclimate(g, weather, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g, mean_globalclimate, globalclimate, t_deb
     """
-    if time_control.dt > 0:        scene_geometry = g.property('geometry')
-        local_meteo = climate_model.microclim(scene_geometry, time_control)
-        g.add_property('microclimate')
-        g.property('microclimate').update(local_meteo)
+     scene_geometry = g.property('geometry')
+    local_meteo = climate_model.microclim(scene_geometry, weather_data)
+    g.add_property('microclimate')
+    g.property('microclimate').update(local_meteo)
 
-        return g, climate_model
+    return g, climate_model
 
 
 def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):

@@ -17,58 +17,58 @@ class MicroclimateLeaf(object):
         self.sectors=sectors
 
 
-    def timing(self, delay, steps, weather, start_date):
-        """ compute timing and time_control_sets for a simulation between start and stop. return False when there is no treatment
-        """
+    # def timing(self, delay, steps, weather, start_date):
+        # """ compute timing and time_control_sets for a simulation between start and stop. return False when there is no treatment
+        # """
 
-        def str_to_datetime(t_deb):
-            format = "%Y-%m-%d %H:%M:%S"
-            if isinstance(t_deb, str):
-                t_deb = datetime.strptime(t_deb,format)
-            return t_deb
+        # def str_to_datetime(t_deb):
+            # format = "%Y-%m-%d %H:%M:%S"
+            # if isinstance(t_deb, str):
+                # t_deb = datetime.strptime(t_deb,format)
+            # return t_deb
 
-        istart = str_to_datetime(start_date)
-        stop = istart + timedelta(hours=steps-1)
-        i = istart
-        step = []
+        # istart = str_to_datetime(start_date)
+        # stop = istart + timedelta(hours=steps-1)
+        # i = istart
+        # step = []
 
-        mean_globalclimate, gc = weather.get_weather(steps, istart)
-        mean_global_radiation,gc = weather.add_global_radiation(gc)
-        mean_vapor_pressure,gc = weather.add_vapor_pressure(gc)
+        # mean_globalclimate, gc = weather.get_weather(steps, istart)
+        # mean_global_radiation,gc = weather.add_global_radiation(gc)
+        # mean_vapor_pressure,gc = weather.add_vapor_pressure(gc)
 
-        while i <= stop:
-            step.append(i)
-            i+= timedelta(hours=1)
-        event = []
-        id = 0
-        for i in step:
-            if i == str_to_datetime(gc['datetime'][id]):
-                event.append([gc['PPFD'][id], gc['rain'][id], gc['global_radiation'][id], gc['vapor_pressure'][id], gc['relative_humidity'][id], gc['wind_speed'][id], gc['temperature_air'][id]])
-                id += 1
-            else:
-                event.append(False)
+        # while i <= stop:
+            # step.append(i)
+            # i+= timedelta(hours=1)
+        # event = []
+        # id = 0
+        # for i in step:
+            # if i == str_to_datetime(gc['datetime'][id]):
+                # event.append([gc['PPFD'][id], gc['rain'][id], gc['global_radiation'][id], gc['vapor_pressure'][id], gc['relative_humidity'][id], gc['wind_speed'][id], gc['temperature_air'][id]])
+                # id += 1
+            # else:
+                # event.append(False)
 
-        pp=[]
-        ra=[]
-        gr=[]
-        vp=[]
-        rh=[]
-        ws=[]
-        ta=[]
-        for x in event:
-            if x:
-                pp.append(x[0])
-                ra.append(x[1])
-                gr.append(x[2])
-                vp.append(x[3])
-                rh.append(x[4])
-                ws.append(x[5])
-                ta.append(x[6])
-                duration = len(pp)
-        return (TimeControlSet(PPFD = pp, rain = ra, global_radiation = gr, vapor_pressure = vp, relative_humidity = rh, wind_speed = ws, temperature_air = ta, dt = duration) if x else TimeControlSet(PPFD = None, rain = None, global_radiation = None, vapor_pressure = None, relative_humidity = None, wind_speed = None, temperature_air = None, dt = 0) for x in event)
+        # pp=[]
+        # ra=[]
+        # gr=[]
+        # vp=[]
+        # rh=[]
+        # ws=[]
+        # ta=[]
+        # for x in event:
+            # if x:
+                # pp.append(x[0])
+                # ra.append(x[1])
+                # gr.append(x[2])
+                # vp.append(x[3])
+                # rh.append(x[4])
+                # ws.append(x[5])
+                # ta.append(x[6])
+                # duration = len(pp)
+        # return (TimeControlSet(PPFD = pp, rain = ra, global_radiation = gr, vapor_pressure = vp, relative_humidity = rh, wind_speed = ws, temperature_air = ta, dt = duration) if x else TimeControlSet(PPFD = None, rain = None, global_radiation = None, vapor_pressure = None, relative_humidity = None, wind_speed = None, temperature_air = None, dt = 0) for x in event)
 
 
-    def microclim(self, scene_geometry, time_control):
+    def microclim(self, scene_geometry, weather_data):
         """ 
         Calculate the radiation and rain interception with the Caribu interception model and the Tair, humidity and wind for each leaf and stem element id
 
@@ -96,11 +96,11 @@ class MicroclimateLeaf(object):
         microclimate = {}  
         PAR_leaf = {}
 
-        mean_global_radiation = np.mean(time_control.global_radiation)
-        mean_vapor_pressure = np.mean(time_control.vapor_pressure)
+        mean_global_radiation = weather_data[['global_radiation']].mean()
+        mean_vapor_pressure = weather_data[['vapor_pressure']].mean()
 
     # Temp model with PPFD
-        id_out = turtle_interception(sectors, scene_geometry, energy = np.mean(time_control.PPFD))
+        id_out = turtle_interception(sectors, scene_geometry, energy = weather_data[['PPFD']].mean())
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
         for Infid, e in EiInf.iteritems():
@@ -108,7 +108,7 @@ class MicroclimateLeaf(object):
                 if Infid == Supid:
                     PAR_leaf[Infid] = {'PAR': e + a}
     # Rain
-        id_out = turtle_interception(sectors_rain, scene_geometry, energy = np.mean(time_control.rain))
+        id_out = turtle_interception(sectors_rain, scene_geometry, energy = weather_data[['rain']].mean())
         rain_leaf = id_out['Einc']
     # PAR
         id_out = turtle_interception(sectors, scene_geometry, energy = mean_global_radiation)
@@ -119,13 +119,13 @@ class MicroclimateLeaf(object):
                 if Infid == Supid:
                     microclimate[Infid] = {'global_radiation': e + a, 
                                             'rain': rain_leaf[Infid],
-                                            'relative_humidity':np.mean(time_control.relative_humidity),
-                                            'wind_speed':np.mean(time_control.wind_speed),
+                                            'relative_humidity':weather_data[['relative_humidity']].mean(),
+                                            'wind_speed':weather_data[['wind_speed']].mean(),
                                             'vapor_pressure':mean_vapor_pressure} 
                     if PAR_leaf[Infid]['PAR'] == 0:
-                        microclimate[Infid]['temperature_air'] = np.mean(time_control.temperature_air)
+                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean()
                     else:
-                        microclimate[Infid]['temperature_air'] = np.mean(time_control.temperature_air) + (PAR_leaf[Infid]['PAR'] / 300)
+                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean() + (PAR_leaf[Infid]['PAR'] / 300)
         return microclimate
 
 
