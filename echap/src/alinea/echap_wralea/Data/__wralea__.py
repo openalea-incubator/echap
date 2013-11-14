@@ -1,5 +1,5 @@
 
-# This file has been generated at Mon May 27 11:38:44 2013
+# This file has been generated at Wed Nov 13 20:00:13 2013
 
 from openalea.core import *
 
@@ -17,25 +17,39 @@ __institutes__ = ''
 __icon__ = ''
 
 
-__all__ = ['_214842992', '_213256784', '_214842960']
+__all__ = ['_221442672', '_150109168', '_150109136', '_150109104', '_221556336']
 
 
-_214842992 = DataFactory(name='products_parameters.csv',
-                    description='products_parameters',
+_221442672 = DataFactory(name='meteo00-01.txt',
+                    description='',
                     editors=None,
                     includes=None,
                     )
 
 
-_213256784 = DataFactory(name='products_names.csv',
+_150109168 = DataFactory(name='meteo01.csv',
+                    description='meteo01',
+                    editors=None,
+                    includes=None,
+                    )
+
+
+_150109136 = DataFactory(name='products_names.csv',
                     description='products_names',
                     editors=None,
                     includes=None,
                     )
 
 
-_214842960 = DataFactory(name='meteo01.csv',
-                    description='meteo01',
+_150109104 = DataFactory(name='products_parameters.csv',
+                    description='products_parameters',
+                    editors=None,
+                    includes=None,
+                    )
+
+
+_221556336 = DataFactory(name='meteo01-02.txt',
+                    description='',
                     editors=None,
                     includes=None,
                     )

@@ -96,7 +96,7 @@ def local_microclimate(g, climate_model, weather_data, label='LeafElement'):
     return g, climate_model
 
 
-def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):
+def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
     """ 
     Interface between g and the decay model of Pearl
 
@@ -125,31 +125,36 @@ def pesticide_surfacic_decay(g, decay_model, label='LeafElement', timestep=1):
       >>> g = pesticide_surfacic_decay(g, decay_model)
       >>> return g
     """
-    surfacic_doses = g.property('surfacic_doses') 
-    microclimate = g.property('microclimate') 
-    if not 'penetrated_doses' in g.property_names():
-        g.add_property('penetrated_doses')
-    penetrated_doses = g.property('penetrated_doses')
-    for vid, d in surfacic_doses.iteritems():
-        if g.label(vid).startswith(label):
-            for compound_name,compound_dose in d.iteritems():
-                if vid in microclimate:
-                    new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
-                else:
-                    new_dose,penetrated_amount,loss = 0, 0, 0
-                    #print 'EchapInterfacesError : KeyErreur', vid
-                surfacic_doses[vid][compound_name] = new_dose
-                if vid in penetrated_doses:
-                    if compound_name in penetrated_doses:
-                        penetrated_doses[vid][compound_name] += penetrated_amount
-                    else:
-                        penetrated_doses[vid].update({compound_name:penetrated_amount})
-                else:
-                    penetrated_doses[vid] = {compound_name : penetrated_amount}
+    if 'surfacic_doses' in g.property_names():
+        surfacic_doses = g.property('surfacic_doses')
+        if 'microclimate' not in g.property_names():
+            print 'could not compute decay : TODO : use weather data instead'
+        else:
+            timestep = len(weather_data)
+            microclimate = g.property('microclimate') 
+            if not 'penetrated_doses' in g.property_names():
+                g.add_property('penetrated_doses')
+            penetrated_doses = g.property('penetrated_doses')
+            for vid, d in surfacic_doses.iteritems():
+                if g.label(vid).startswith(label):
+                    for compound_name,compound_dose in d.iteritems():
+                        if vid in microclimate:
+                            new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
+                        else:
+                            new_dose,penetrated_amount,loss = 0, 0, 0
+                            #print 'EchapInterfacesError : KeyErreur', vid
+                        surfacic_doses[vid][compound_name] = new_dose
+                        if vid in penetrated_doses:
+                            if compound_name in penetrated_doses:
+                                penetrated_doses[vid][compound_name] += penetrated_amount
+                            else:
+                                penetrated_doses[vid].update({compound_name:penetrated_amount})
+                        else:
+                            penetrated_doses[vid] = {compound_name : penetrated_amount}
     return g
 
 
-def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
+def pesticide_penetrated_decay(g, decay_model, weather_data, label='LeafElement'):
     """ 
     Interface between g and the decay model of penetrated doses of pesticide
 
@@ -181,14 +186,16 @@ def pesticide_penetrated_decay(g, decay_model, label='LeafElement', timestep=1):
       >>> g = pesticide_penetrated_decay(g, decay_model)
       >>> return g      
     """
-    penetrated_doses = g.property('penetrated_doses')
-    for vid, d in penetrated_doses.iteritems():
-        if g.label(vid).startswith(label):
-            penetrated_doses = decay_model.decay(d,timestep)
+    if 'penetrated_doses' in g.property_names():
+        timestep = len(weather_data)
+        penetrated_doses = g.property('penetrated_doses')
+        for vid, d in penetrated_doses.iteritems():
+            if g.label(vid).startswith(label):
+                penetrated_doses = decay_model.decay(d,timestep)
     return g
 
 
-def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
+def pesticide_efficacy(g, efficacy_model, weather_data, label='LeafElement'):
     """ 
     Interface between g and the efficacy model of pesticide compounds
 
@@ -217,23 +224,32 @@ def pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1):
       >>> pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
       >>> return g      
     """
-    if not 'surfacic_doses' in g.properties(): 
-        vids = [vid for vid in g if g.label(vid).startswith(label)]
+    if 'surfacic_doses' in g.property_names():
+        timestep = len(weather_data)    
+        surfacic_doses = g.property('surfacic_doses') 
+        # if not 'penetrated_doses' in g.properties(): 
+            # vids = [vid for vid in g if g.label(vid).startswith(label)]
+            # for v in vids : 
+                # n = g.node(v)
+                # n.surfacic_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
+                # n.penetrated_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
+        # penetrated_doses = g.property('penetrated_doses')
+        if 'penetrated_doses' in g.property_names():
+            penetrated_doses = g.property('penetrated_doses')
+        else:
+            first = surfacic_doses[surfacic_doses.keys()[0]]
+            zero = dict([(k,0) for k in first.keys()])
+            penetrated_doses = dict([(k,zero) for k in surfacic_doses])
+        if not 'global_efficacy' in g.properties():
+            g.add_property('global_efficacy')
+        vids = [vid for vid in surfacic_doses if g.label(vid).startswith(label)]
+
         for v in vids : 
-            n = g.node(v)
-            n.surfacic_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
-            n.penetrated_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
-    penetrated_doses = g.property('penetrated_doses')
-    surfacic_doses = g.property('surfacic_doses') 
-    if not 'global_efficacy' in g.properties():
-        g.add_property('global_efficacy')
-    vids = [vid for vid in surfacic_doses if g.label(vid).startswith(label)]
-    for v in vids :     
-        g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v], timestep)})
+            g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v], timestep)})
     return g
 
 
-def rain_interception(g, rain_interception_model, time_control, label='LeafElement', geometry = 'geometry'):
+def rain_interception(g, rain_interception_model, weather_data, label='LeafElement'):
     """ 
     Interface between g and the rain interception model
 
@@ -246,8 +262,7 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     - time_control
     - label (str)
         default "LeafElement"
-    - geometry (str)
-        default "geometry"
+
 
     :Returns:
     ---------
@@ -257,17 +272,18 @@ def rain_interception(g, rain_interception_model, time_control, label='LeafEleme
     ---------   
     """
 
-
-    if time_control.dt > 0:
+    rain_data = weather_data[['rain']]
+    if rain_data.sum() > 0:
+        intensity = rain_data.mean()
         scene_geometry = g.property('geometry')
         if not 'rain' in g.properties():
             g.add_property('rain')
-        rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, time_control)
+        rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, intensity)
         rain = dict([(k,{'water':v}) for k,v in rain_leaf.iteritems()])
         g.property('rain').update(rain_fate)
-        vids = [vid for vid in g.property('rain')]
-        for v in vids : 
-            g.property('rain')[v].update(rain[v])
+        #vids = [vid for vid in g.property('rain')]
+        #for v in vids : 
+        #    g.property('rain')[v].update(rain[v])
     return g
 
 
