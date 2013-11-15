@@ -4,11 +4,33 @@ Created on Thu Apr 04 11:25:45 2013
 
 @author: lepse
 """
-from pandas import *
-from datetime import datetime, timedelta
+import pandas
+import os
+import StringIO
 from numpy import exp
 from alinea.astk.caribu_interface import *
 from alinea.astk.TimeControl import * 
+
+def pesticide_applications(data, sep=','):
+    """ Construct a pesticide application agenda from user data
+    
+    - data a file of string with columns: 
+        * date, with 'yyyy-mm-dd hh:mm:ss' format
+        * dose (unit??), 
+        * product_name
+    
+    return a time indexed panda dataframe
+    """
+    if os.path.isfile(str(data)):
+       path_or_buffer = data
+    else:
+       path_or_buffer = StringIO.StringIO(data)
+    calendar = pandas.read_csv(path_or_buffer, sep=sep, skipinitialspace = True)
+    calendar.index = pandas.to_datetime(calendar['date'])
+    calendar = calendar.sort_index()
+     
+    return calendar 
+
 
 
 def product_dose(product_name, dose, productsDB):
@@ -65,38 +87,9 @@ class CaribuInterceptModel(object):
         self.azimuth = azimuth
         self.pest_calendar = pest_calendar
 
-    def timing(self, start_date = "", steps = 1, delay=1, weather=None):
-        """ compute timing and time_control_sets for a simulation between start and stop. return False when there is no treatment
-        """
-        pest_data = self.pest_calendar
-        data = DataFrame(pest_data)
-
-        def str_to_datetime(t_deb):
-            format = "%Y-%m-%d %H:%M:%S"
-            if isinstance(t_deb, str):
-                t_deb = datetime.strptime(t_deb,format)
-            return t_deb
-
-        istart = str_to_datetime(start_date)
-        stop = istart + timedelta(hours=steps-1)
-        i = istart
-        step = []
-        while i <= stop:
-            step.append(i)
-            i+= timedelta(hours=1)
-        event = []
-        id = 0
-        for i in step:
-            if i == str_to_datetime(data['datetime'][id]):
-                event.append([data['dose'][id], data['product_name'][id]])
-                id += 1
-            else:
-                event.append(False)
-        
-        return (TimeControlSet(dose = x[0], product = x[1], dt = len(x)) if x else TimeControlSet(dose=None, product=None, dt=0) for x in event)
 
 
-    def intercept(self, scene_geometry, time_control):
+    def intercept(self, scene_geometry, product_name, dose):
         """ Return the surfacic doses intercept on each leaf and stem element
 
         :Parameters:
@@ -109,7 +102,7 @@ class CaribuInterceptModel(object):
         - doses: (float)
             Dict of doses (g.m-2) calculated with the interception model for each leaf and stem element
         """       
-        compound_name, Einc = interception_dose(time_control.product, time_control.dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
+        compound_name, Einc = interception_dose(product_name, dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
         doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
         return doses
 

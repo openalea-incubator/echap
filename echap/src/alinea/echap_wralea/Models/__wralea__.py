@@ -20,6 +20,7 @@ __icon__ = ''
 __all__ = ['interception_leaf_CaribuInterceptModel', 'microclimate_leaf_MicroclimateLeaf', 'milne_leaf_PenetratedDecayModel']
 
 
+productDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}
 
 interception_leaf_CaribuInterceptModel = Factory(name='Interception_Leaf',
                 authors=' (wralea authors)',
@@ -27,8 +28,11 @@ interception_leaf_CaribuInterceptModel = Factory(name='Interception_Leaf',
                 category='model',
                 nodemodule='alinea.echap.interception_leaf',
                 nodeclass='CaribuInterceptModel',
-                inputs=[{'interface': IDict, 'name': 'productsDB', 'value': None, 'desc': ''}, {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''}, {'interface': IDict, 'name': 'pest_calendar', 'value': None, 'desc': ''}],
-                outputs=[{'interface': None, 'name': 'doses', 'desc': 'doses of active compound in g/m'}],
+                inputs=[{'interface': IDict, 'name': 'productsDB', 'value': productDB, 'desc': ''},
+                        {'interface': IFloat, 'name': 'elevation', 'value': 90, 'desc': 'Angle  from horizontal'}, 
+                        {'interface': IFloat, 'name': 'azimuth', 'value': 0, 'desc': ''},
+                        ],
+                outputs=[{'interface': None, 'name': 'interception model'}],
                 widgetmodule=None,
                 widgetclass=None,
                )
@@ -63,6 +67,10 @@ milne_leaf_PenetratedDecayModel = Factory(name='Milne_Leaf',
                 widgetclass=None,
                )
 
-
+interception_applications = Factory(name='pesticide applications',
+                            nodemodule = 'alinea.echap.interception_leaf',
+                            nodeclass='pesticide_applications',
+                            )
+__all__.append('interception_applications')                            
 
 

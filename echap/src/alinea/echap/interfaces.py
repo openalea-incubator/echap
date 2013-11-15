@@ -4,7 +4,7 @@
 class EchapInterfacesError(Exception): pass
 
 
-def pesticide_interception(g, interception_model, time_control, label='LeafElement'):
+def pesticide_interception(g, interception_model, application_data, label='LeafElement'):
     """ 
     Interface between g and the interception model
 
@@ -18,6 +18,7 @@ def pesticide_interception(g, interception_model, time_control, label='LeafEleme
         Commercial name of the product (e.g. "Opus", "Banko 500") 
     - 'dose' (float)
         Dose of product use in field (l.ha)
+    - application data : a panda dataframe with (date), product_name and dose (l.ha-1) in columns and time-indexed
     - label (str)
         default "LeafElement"
 
@@ -32,26 +33,28 @@ def pesticide_interception(g, interception_model, time_control, label='LeafEleme
       >>> pesticide_interception(g, interception_model, product_name, dose)
       >>> return g
     """
-    if time_control.dt > 0:
-        scene_geometry = g.property('geometry')
-        surf_dose = interception_model.intercept(scene_geometry, time_control)
-        if not 'penetrated_doses' in g.properties():
-            vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
-            g.add_property('penetrated_doses')
-            g.property('penetrated_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
-        if not 'surfacic_doses' in g.properties():
-            vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
-            g.add_property('surfacic_doses')
-            g.property('surfacic_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
-        surfacic_doses = g.property('surfacic_doses')
-        for vid, nd in surf_dose.iteritems():
-            if g.label(vid).startswith(label):
-                for name, dose in nd.iteritems():
-                    if name in surfacic_doses[vid]:
-                        surfacic_doses[vid][name] += dose
-                    else:
-                        g.add_property('surfacic_doses')
-                        g.property('surfacic_doses')[vid].update(nd)
+
+    scene_geometry = g.property('geometry')
+    product_name = application_data[['product_name']].values[0][0]
+    dose = application_data[['dose']].values[0][0]
+    surf_dose = interception_model.intercept(scene_geometry, product_name, dose)
+    if not 'penetrated_doses' in g.properties():
+        vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
+        g.add_property('penetrated_doses')
+        g.property('penetrated_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
+    if not 'surfacic_doses' in g.properties():
+        vi = [vid for vid in surf_dose if g.label(vid).startswith(label)]   
+        g.add_property('surfacic_doses')
+        g.property('surfacic_doses').update(dict((v, {'Chlorothalonil': 0, 'Epoxiconazole': 0}) for v in vi))
+    surfacic_doses = g.property('surfacic_doses')
+    for vid, nd in surf_dose.iteritems():
+        if g.label(vid).startswith(label):
+            for name, dose in nd.iteritems():
+                if name in surfacic_doses[vid]:
+                    surfacic_doses[vid][name] += dose
+                else:
+                    g.add_property('surfacic_doses')
+                    g.property('surfacic_doses')[vid].update(nd)
     return g, interception_model
 
 

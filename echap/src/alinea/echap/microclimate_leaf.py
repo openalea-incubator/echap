@@ -96,11 +96,11 @@ class MicroclimateLeaf(object):
         microclimate = {}  
         PAR_leaf = {}
 
-        mean_global_radiation = weather_data[['global_radiation']].mean()
-        mean_vapor_pressure = weather_data[['vapor_pressure']].mean()
+        mean_global_radiation = weather_data[['global_radiation']].mean().item(0)
+        mean_vapor_pressure = weather_data[['vapor_pressure']].mean().item(0)
 
     # Temp model with PPFD
-        id_out = turtle_interception(sectors, scene_geometry, energy = weather_data[['PPFD']].mean())
+        id_out = turtle_interception(sectors, scene_geometry, energy = weather_data[['PPFD']].mean().item(0))
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
         for Infid, e in EiInf.iteritems():
@@ -108,7 +108,7 @@ class MicroclimateLeaf(object):
                 if Infid == Supid:
                     PAR_leaf[Infid] = {'PAR': e + a}
     # Rain
-        id_out = turtle_interception(sectors_rain, scene_geometry, energy = weather_data[['rain']].mean())
+        id_out = turtle_interception(sectors_rain, scene_geometry, energy = weather_data[['rain']].mean().item(0))
         rain_leaf = id_out['Einc']
     # PAR
         id_out = turtle_interception(sectors, scene_geometry, energy = mean_global_radiation)
@@ -119,13 +119,13 @@ class MicroclimateLeaf(object):
                 if Infid == Supid:
                     microclimate[Infid] = {'global_radiation': e + a, 
                                             'rain': rain_leaf[Infid],
-                                            'relative_humidity':weather_data[['relative_humidity']].mean(),
-                                            'wind_speed':weather_data[['wind_speed']].mean(),
+                                            'relative_humidity':weather_data[['relative_humidity']].mean().item(0),
+                                            'wind_speed':weather_data[['wind_speed']].mean().item(0),
                                             'vapor_pressure':mean_vapor_pressure} 
                     if PAR_leaf[Infid]['PAR'] == 0:
-                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean()
+                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean().item(0)
                     else:
-                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean() + (PAR_leaf[Infid]['PAR'] / 300)
+                        microclimate[Infid]['temperature_air'] = weather_data[['temperature_air']].mean().item(0) + (PAR_leaf[Infid]['PAR'] / 300)
         return microclimate
 
 
