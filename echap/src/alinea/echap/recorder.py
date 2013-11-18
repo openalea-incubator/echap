@@ -13,11 +13,16 @@ class LeafElementRecorder:
             for item in items:
                 if item in properties:
                     data[item] = properties[item]
+                    
             items = ['surfacic_doses', 'penetrated_doses']
             for item in items:
                 if item in properties:
                     for compound in properties[item]:
                         data['_'.join([item,compound])] = properties[item][compound]
+            
+            if 'lesions' in properties:
+                les = properties['lesions'][0]
+                data.update(les.EtatS())
            
             data.update(header)
             self.data[self.counts] = data
