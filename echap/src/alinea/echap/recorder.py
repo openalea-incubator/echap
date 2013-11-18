@@ -9,10 +9,16 @@ class LeafElementRecorder:
         if node.area > 0:
             data = {}
             properties = node.properties()
-            items = ['green_area']
+            items = ['area', 'green_area']
             for item in items:
                 if item in properties:
                     data[item] = properties[item]
+            items = ['surfacic_doses', 'penetrated_doses']
+            for item in items:
+                if item in properties:
+                    for compound in properties[item]:
+                        data['_'.join([item,compound])] = properties[item][compound]
+           
             data.update(header)
             self.data[self.counts] = data
             self.counts += 1
