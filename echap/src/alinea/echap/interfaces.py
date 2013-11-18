@@ -291,8 +291,25 @@ def rain_interception(g, rain_interception_model, weather_data, label='LeafEleme
     return g
 
 
+def record(g, weather_data, recorder, label = 'LeafElement'):
+    """
+    tentative protocol for recording data during a simulation
+    """
+    date = weather_data.index[0].to_datetime()
+    for vid in g:
+        if g.label(vid).startswith(label):
+            n = g.node(vid)
+            header = {'date' : date,
+                      'plant' : n.complex().complex().complex().complex().label,
+                      'axe' : n.complex().complex().complex().label,
+                      'metamer' : n.complex().complex().label,
+                      'organ' : n.complex().label,
+                      'id' : n._vid
+                         }
+            recorder.record(n, header)
+            
+    return g
 
-
-
-
-
+def save_records(recorder, path):
+    recorder.save_records(path)
+    return path

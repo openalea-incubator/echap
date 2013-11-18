@@ -123,3 +123,19 @@ interfaces_rain_interception = Factory(name='rain_interception',
                 widgetmodule=None,
                 widgetclass=None,
                )
+               
+               
+interfaces_record = Factory(name = 'record',
+                                  nodemodule = 'alinea.echap.interfaces',
+                                  nodeclass = 'record',
+                                  )
+__all__.append('interfaces_record')
+
+interfaces_save_records = Factory(name = 'save records',
+                                  nodemodule = 'alinea.echap.interfaces',
+                                  nodeclass = 'save_records',
+                                  inputs = [{'interface': None, 'name' : 'recorder', 'value': None},
+                                            {'interface': IFileStr, 'name' : 'output file', 'value': None}
+                                  ],
+                                  )
+__all__.append('interfaces_save_records')

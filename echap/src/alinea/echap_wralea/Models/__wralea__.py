@@ -73,4 +73,8 @@ interception_applications = Factory(name='pesticide applications',
                             )
 __all__.append('interception_applications')                            
 
-
+outputs_leafelement_recorder = Factory(name='LeafElementRecorder',
+                            nodemodule = 'alinea.echap.recorder',
+                            nodeclass='LeafElementRecorder',
+                            )
+__all__.append('outputs_leafelement_recorder')   
