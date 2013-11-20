@@ -52,8 +52,11 @@ microclimate_leaf_MicroclimateLeaf = Factory(name='Microclimate_Leaf',
                 widgetclass=None,
                )
 
-
-
+microclimate_leafmicroclimate = Factory(name='Leaf Microclimate',
+                nodemodule='alinea.echap.microclimate_leaf',
+                nodeclass='microclimate_leaf',
+               )
+__all__.append('microclimate_leafmicroclimate')
 
 milne_leaf_PenetratedDecayModel = Factory(name='Milne_Leaf',
                 authors=' (wralea authors)',

@@ -4,10 +4,42 @@ Created on Mon Apr 15 10:58:05 2013
 
 @author: lepse
 """
-from alinea.astk.TimeControl import * 
-from alinea.weather.global_weather import *
-from alinea.astk.caribu_interface import *
+from alinea.caribu.exposition import rain_and_light
 
+# new approach
+
+def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01):
+    
+    if not ('rain_exposed_area' in g.properties() and 'light_exposed_fraction' in g.properties()):
+        g = rain_and_light(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)   
+    rain_exposed_area = g.property('rain_exposed_area')
+    light_exposed_fraction = g.property('light_exposed_fraction')
+
+    for var in ['global_radiation', 'vapor_pressure', 'relative_humidity', 'wind_speed', 'temperature_air', 'PPFD']:
+        exec("%s = weather_data[['%s']].mean().item(0)"%(var,var))
+    water_amount = weather_data[['rain']].sum().item(0)
+    
+    microclimate = {}
+    
+    for vid in light_exposed_fraction:
+        microclimate[vid] = {'global_radiation': light_exposed_fraction[vid] * global_radiation,
+                             'PPFD': light_exposed_fraction[vid] * PPFD,
+                             'water': rain_exposed_area[vid] * water_amount,
+                             'relative_humidity': relative_humidity,
+                             'wind_speed': wind_speed,
+                             'vapor_pressure': vapor_pressure} 
+        if microclimate[vid]['PPFD'] == 0:
+            microclimate[vid]['temperature_air'] = temperature_air
+        else:
+            microclimate[vid]['temperature_air'] = temperature_air + microclimate[vid]['PPFD'] / 300.
+        
+    if not 'microclimate' in g.properties():
+        g.add_property('microclimate')
+    g.property('microclimate').update(microclimate)    
+    return g
+
+# deprecated
+from alinea.astk.caribu_interface import *
 
 
 class MicroclimateLeaf(object):
@@ -15,57 +47,6 @@ class MicroclimateLeaf(object):
     """
     def __init__(self, sectors='16'):
         self.sectors=sectors
-
-
-    # def timing(self, delay, steps, weather, start_date):
-        # """ compute timing and time_control_sets for a simulation between start and stop. return False when there is no treatment
-        # """
-
-        # def str_to_datetime(t_deb):
-            # format = "%Y-%m-%d %H:%M:%S"
-            # if isinstance(t_deb, str):
-                # t_deb = datetime.strptime(t_deb,format)
-            # return t_deb
-
-        # istart = str_to_datetime(start_date)
-        # stop = istart + timedelta(hours=steps-1)
-        # i = istart
-        # step = []
-
-        # mean_globalclimate, gc = weather.get_weather(steps, istart)
-        # mean_global_radiation,gc = weather.add_global_radiation(gc)
-        # mean_vapor_pressure,gc = weather.add_vapor_pressure(gc)
-
-        # while i <= stop:
-            # step.append(i)
-            # i+= timedelta(hours=1)
-        # event = []
-        # id = 0
-        # for i in step:
-            # if i == str_to_datetime(gc['datetime'][id]):
-                # event.append([gc['PPFD'][id], gc['rain'][id], gc['global_radiation'][id], gc['vapor_pressure'][id], gc['relative_humidity'][id], gc['wind_speed'][id], gc['temperature_air'][id]])
-                # id += 1
-            # else:
-                # event.append(False)
-
-        # pp=[]
-        # ra=[]
-        # gr=[]
-        # vp=[]
-        # rh=[]
-        # ws=[]
-        # ta=[]
-        # for x in event:
-            # if x:
-                # pp.append(x[0])
-                # ra.append(x[1])
-                # gr.append(x[2])
-                # vp.append(x[3])
-                # rh.append(x[4])
-                # ws.append(x[5])
-                # ta.append(x[6])
-                # duration = len(pp)
-        # return (TimeControlSet(PPFD = pp, rain = ra, global_radiation = gr, vapor_pressure = vp, relative_humidity = rh, wind_speed = ws, temperature_air = ta, dt = duration) if x else TimeControlSet(PPFD = None, rain = None, global_radiation = None, vapor_pressure = None, relative_humidity = None, wind_speed = None, temperature_air = None, dt = 0) for x in event)
 
 
     def microclim(self, scene_geometry, weather_data):
