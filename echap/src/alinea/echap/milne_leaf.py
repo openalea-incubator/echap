@@ -47,7 +47,7 @@ class PenetratedDecayModel(object):
     """
     def __init__(self,products_parameters = [{'Ae': 0.5, 'Ke': 7.0099999999999998, 'decay_rate': 0.069000000000000006, 'dose_max_ha': 125, 'Ap': 0.70999999999999996, 'Kp': 6, 'type_code': 2, 'compound': 'Epoxiconazole'}, {'Ae': 1.0, 'Ke': 6.4900000000000002, 'decay_rate': 0.01, 'dose_max_ha': 1000, 'Ap': 0.0, 'Kp': 0, 'type_code': 3, 'compound': 'Chlorothalonil'}]):
         self.compound_parameters = products_parameters
-    def decay(self, initial_dose, dt):
+    def decay(self, initial_dose, weather_data):
         """ Return the penetrated active doses 
 
         :Parameters:
@@ -62,7 +62,8 @@ class PenetratedDecayModel(object):
         - 'active_dose' (float)
             Total amount of penetrated active dose in the leaf element after decay
         """    
-        active_dose = milne_leaf(initial_dose, self.compound_parameters, dt)
+        hours = len(weather_data)
+        active_dose = milne_leaf(initial_dose, self.compound_parameters, hours / 24)
         return active_dose
     def decay_and_penetrate(self, name, dose, microclimate, dt):
         """ make all the product penetrates to simulate fully the model of Milne"""

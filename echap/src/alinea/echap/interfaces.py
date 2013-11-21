@@ -191,11 +191,10 @@ def pesticide_penetrated_decay(g, decay_model, weather_data, label='LeafElement'
       >>> return g      
     """
     if 'penetrated_doses' in g.property_names():
-        timestep = len(weather_data)
         penetrated_doses = g.property('penetrated_doses')
         for vid, d in penetrated_doses.iteritems():
             if g.label(vid).startswith(label):
-                penetrated_doses = decay_model.decay(d,timestep)
+                penetrated_doses = decay_model.decay(d,weather_data)
     return g
 
 
