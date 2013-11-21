@@ -4,27 +4,29 @@ Created on Mon Apr 15 10:58:05 2013
 
 @author: lepse
 """
-from alinea.caribu.exposition import rain_and_light
+from alinea.caribu.caribu_star import rain_and_light_star
 
 # new approach
 
 def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01):
     
-    if not ('rain_exposed_area' in g.properties() and 'light_exposed_fraction' in g.properties()):
-        g = rain_and_light(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)   
-    rain_exposed_area = g.property('rain_exposed_area')
-    light_exposed_fraction = g.property('light_exposed_fraction')
+    if not ('rain_star' in g.properties() and 'light_star' in g.properties()):
+        g = rain_and_light_star(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)   
+    rain_star = g.property('rain_star')
+    light_star = g.property('light_star')
 
     for var in ['global_radiation', 'vapor_pressure', 'relative_humidity', 'wind_speed', 'temperature_air', 'PPFD']:
         exec("%s = weather_data[['%s']].mean().item(0)"%(var,var))
-    water_amount = weather_data[['rain']].sum().item(0)
-    
+    water = weather_data[['rain']].sum().item(0)
+    rain = 0
+    if water > 0:
+        rain = water / len(weather_data[['rain']][weather_data[['rain']] > 0])
     microclimate = {}
     
-    for vid in light_exposed_fraction:
-        microclimate[vid] = {'global_radiation': light_exposed_fraction[vid] * global_radiation,
-                             'PPFD': light_exposed_fraction[vid] * PPFD,
-                             'water': rain_exposed_area[vid] * water_amount,
+    for vid in light_star:
+        microclimate[vid] = {'global_radiation': light_star[vid] * global_radiation,
+                             'PPFD': light_star[vid] * PPFD,
+                             'rain': rain_star[vid] * rain,
                              'relative_humidity': relative_humidity,
                              'wind_speed': wind_speed,
                              'vapor_pressure': vapor_pressure} 
