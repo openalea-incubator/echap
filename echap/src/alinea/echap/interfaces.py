@@ -228,27 +228,17 @@ def pesticide_efficacy(g, efficacy_model, weather_data, label='LeafElement'):
       >>> return g      
     """
     if 'surfacic_doses' in g.property_names():
-        timestep = len(weather_data)    
         surfacic_doses = g.property('surfacic_doses') 
-        # if not 'penetrated_doses' in g.properties(): 
-            # vids = [vid for vid in g if g.label(vid).startswith(label)]
-            # for v in vids : 
-                # n = g.node(v)
-                # n.surfacic_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
-                # n.penetrated_doses = {'Chlorothalonil':0,'Epoxiconazole':0}
-        # penetrated_doses = g.property('penetrated_doses')
         if 'penetrated_doses' in g.property_names():
             penetrated_doses = g.property('penetrated_doses')
         else:
-            first = surfacic_doses[surfacic_doses.keys()[0]]
-            zero = dict([(k,0) for k in first.keys()])
-            penetrated_doses = dict([(k,zero) for k in surfacic_doses])
+            penetrated_doses = {}
         if not 'global_efficacy' in g.properties():
             g.add_property('global_efficacy')
-        vids = [vid for vid in surfacic_doses if g.label(vid).startswith(label)]
-
+            
+        vids = (vid for vid in surfacic_doses if g.label(vid).startswith(label))
         for v in vids : 
-            g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v], timestep)})
+            g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v])})
     return g
 
 
