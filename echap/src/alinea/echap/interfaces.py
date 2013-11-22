@@ -227,18 +227,26 @@ def pesticide_efficacy(g, efficacy_model, weather_data, label='LeafElement'):
       >>> pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
       >>> return g      
     """
+    
     if 'surfacic_doses' in g.property_names():
         surfacic_doses = g.property('surfacic_doses') 
-        if 'penetrated_doses' in g.property_names():
-            penetrated_doses = g.property('penetrated_doses')
-        else:
-            penetrated_doses = {}
+    else: 
+        surfacic_doses = {}
+    if 'penetrated_doses' in g.property_names():
+        penetrated_doses = g.property('penetrated_doses')
+    else:
+        penetrated_doses = {}
+        
+    if (len(surfacic_doses) + len(penetrated_doses)) > 0:
         if not 'global_efficacy' in g.properties():
             g.add_property('global_efficacy')
-            
-        vids = (vid for vid in surfacic_doses if g.label(vid).startswith(label))
-        for v in vids : 
-            g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses[v], penetrated_doses[v])})
+        vids = set().union(surfacic_doses, penetrated_doses)  
+        for v in vids :
+            if g.label(v).startswith(label):
+                g.property('global_efficacy').update({v: efficacy_model.efficacy(surfacic_doses.get(v,{}), penetrated_doses.get(v,{}))})
+    else:
+        if 'global_efficacy' in g.properties():
+            g.remove_property('global_efficacy')
     return g
 
 
