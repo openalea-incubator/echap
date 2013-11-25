@@ -308,6 +308,10 @@ def record(g, weather_data, recorder, label = 'LeafElement'):
             
     return g
 
+def print_date(g,weather_data):
+    print weather_data.index[-1]
+    return g
+    
 def save_records(recorder, path):
     recorder.save_records(path)
     return path

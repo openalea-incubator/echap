@@ -139,3 +139,9 @@ interfaces_save_records = Factory(name = 'save records',
                                   ],
                                   )
 __all__.append('interfaces_save_records')
+
+interfaces_printdate = Factory(name = 'print date',
+                                  nodemodule = 'alinea.echap.interfaces',
+                                  nodeclass = 'print_date',
+                                  )
+__all__.append('interfaces_printdate')
