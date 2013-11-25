@@ -8,7 +8,7 @@ from alinea.caribu.caribu_star import rain_and_light_star
 
 # new approach
 
-def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01):
+def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01, label='LeafElement'):
     
     if not ('rain_star' in g.properties() and 'light_star' in g.properties()):
         g = rain_and_light_star(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)   
@@ -23,17 +23,27 @@ def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUn
         rain = water / len(weather_data[['rain']][weather_data[['rain']] > 0])
     microclimate = {}
     
-    for vid in light_star:
-        microclimate[vid] = {'global_radiation': light_star[vid] * global_radiation,
-                             'PPFD': light_star[vid] * PPFD,
-                             'rain': rain_star[vid] * rain,
-                             'relative_humidity': relative_humidity,
-                             'wind_speed': wind_speed,
-                             'vapor_pressure': vapor_pressure} 
-        if microclimate[vid]['PPFD'] == 0:
-            microclimate[vid]['temperature_air'] = temperature_air
-        else:
-            microclimate[vid]['temperature_air'] = temperature_air + microclimate[vid]['PPFD'] / 300.
+    for vid in g:
+        if g.label(vid).startswith(label):
+            if vid in light_star: # may not be here because of asynchrony of leaf formation and with caribulightstar
+                microclimate[vid] = {'global_radiation': light_star[vid] * global_radiation,
+                                     'PPFD': light_star[vid] * PPFD,
+                                     'rain': rain_star[vid] * rain,
+                                     'relative_humidity': relative_humidity,
+                                     'wind_speed': wind_speed,
+                                     'vapor_pressure': vapor_pressure} 
+                if microclimate[vid]['PPFD'] == 0:
+                    microclimate[vid]['temperature_air'] = temperature_air
+                else:
+                    microclimate[vid]['temperature_air'] = temperature_air + microclimate[vid]['PPFD'] / 300.
+            else:
+                microclimate[vid] = {'global_radiation': global_radiation,
+                                     'PPFD': PPFD,
+                                     'rain': rain,
+                                     'relative_humidity': relative_humidity,
+                                     'wind_speed': wind_speed,
+                                     'vapor_pressure': vapor_pressure, 
+                                     'temperature_air' : temperature_air}
         
     if not 'microclimate' in g.properties():
         g.add_property('microclimate')

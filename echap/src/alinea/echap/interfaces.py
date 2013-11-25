@@ -33,29 +33,30 @@ def pesticide_interception(g, interception_model, application_data, label='LeafE
       >>> pesticide_interception(g, interception_model, product_name, dose)
       >>> return g
     """
-
-    scene_geometry = g.property('geometry')
-    product_name = application_data[['product_name']].values[0][0]
     dose = application_data[['dose']].values[0][0]
-    surf_dose = interception_model.intercept(scene_geometry, product_name, dose)
-    if not 'penetrated_doses' in g.properties():
-        g.add_property('penetrated_doses')
-    if not 'surfacic_doses' in g.properties():
-        g.add_property('surfacic_doses')
-    surfacic_doses = g.property('surfacic_doses')
-    penetrated_doses = g.property('penetrated_doses')
-    for vid, nd in surf_dose.iteritems():
-        if g.label(vid).startswith(label):
-            for name, dose in nd.iteritems():
-                if vid in surfacic_doses:
-                    if name in surfacic_doses[vid]:
-                        surfacic_doses[vid][name] += dose
+    if dose > 0:
+        scene_geometry = g.property('geometry')
+        product_name = application_data[['product_name']].values[0][0]
+        
+        surf_dose = interception_model.intercept(scene_geometry, product_name, dose)
+        if not 'penetrated_doses' in g.properties():
+            g.add_property('penetrated_doses')
+        if not 'surfacic_doses' in g.properties():
+            g.add_property('surfacic_doses')
+        surfacic_doses = g.property('surfacic_doses')
+        penetrated_doses = g.property('penetrated_doses')
+        for vid, nd in surf_dose.iteritems():
+            if g.label(vid).startswith(label):
+                for name, dose in nd.iteritems():
+                    if vid in surfacic_doses:
+                        if name in surfacic_doses[vid]:
+                            surfacic_doses[vid][name] += dose
+                        else:
+                            surfacic_doses[vid][name] = nd[name]
+                            penetrated_doses[vid][name] = 0
                     else:
-                        surfacic_doses[vid][name] = nd[name]
-                        penetrated_doses[vid][name] = 0
-                else:
-                    surfacic_doses[vid] = nd
-                    penetrated_doses[vid] = dict([(n,0) for n in nd])
+                        surfacic_doses[vid] = nd
+                        penetrated_doses[vid] = dict([(n,0) for n in nd])
     return g, interception_model
 
 

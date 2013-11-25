@@ -49,6 +49,8 @@ def product_dose(product_name, dose, productsDB):
     - active_dose (float)
         Dose of active compound in g.m-2
     """
+    compound_name = None
+    active_dose = 0
     for prod, sub in productsDB.iteritems():
         if prod == product_name:
             for compound_name, compound_dose in sub.iteritems():
