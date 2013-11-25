@@ -31,3 +31,7 @@ class LeafElementRecorder:
     def save_records(self, path='./echap_outputs'):
         d = pandas.DataFrame(self.data)
         d.T.to_csv(path)
+        
+    def get_records(self):
+        d = pandas.DataFrame(self.data)
+        return d.T
