@@ -1,6 +1,6 @@
 import pandas
 
-from openalea.core.alea import load_package_manager, function
+#from openalea.core.alea import load_package_manager, function
 from openalea.deploy.shared_data import shared_data
 
 from alinea.astk.Weather import Weather
@@ -13,9 +13,9 @@ from alinea.echap.recorder import LeafElementRecorder
 from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
 
 
-pm = load_package_manager()
-node_factory = pm['alinea.echap.macros']['setup canopy']
-setup_canopy = function(node_factory)
+# pm = load_package_manager()
+# node_factory = pm['alinea.echap.macros']['setup canopy']
+# setup_canopy = function(node_factory)
 #node_factory = pm['alinea.echap.macros']['update lesions']
 #update_lesions = function(node_factory)
 #node_factory = pm['alinea.echap.macros']['update pesticide']
@@ -25,7 +25,7 @@ setup_canopy = function(node_factory)
 #node_factory = pm['alinea.echap.macros']['contamination']
 #contamination = function(node_factory)
 
-from macros_annual_loop import update_lesions, update_pesticides, dispersion, contamination
+from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination
 
 import alinea.septo3d
 meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
@@ -41,7 +41,7 @@ applications = """date,dose, product_name
 pest_calendar = pesticide_applications(applications)
 
 seq = pandas.date_range(start = "2000-11-20", periods=5000, freq='H')
-g, adel, domain, domain_area, convUnit = setup_canopy()
+g, adel, domain, domain_area, convUnit, nplants = setup_canopy()
 SspoSol = 0.01
 recorder = LeafElementRecorder()
 
@@ -59,18 +59,18 @@ for controls in zip(canopy_timing, doses_timing, rain_timing):
     canopy_iter, doses_iter, rain_iter = controls
     if canopy_iter:
         print canopy_iter.value.index[-1]
-        adel.grow(g, canopy_iter.value)
-        _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
-        _=update_lesions(g, canopy_iter.dt, True)   
+        g = adel.grow(g, canopy_iter.value)
+#        _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
+#        _=update_lesions(g, canopy_iter.dt, True)   
         _=do_record(g, canopy_iter.value, recorder)
-    if doses_iter:
-        print 'updte microclimate / doses...'
-        _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
-        _=update_pesticides(g, doses_iter.value)
-    if rain_iter:
-        wdata = rain_iter.value
+#    if doses_iter:
+#        print 'updte microclimate / doses...'
+#        _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
+#        _=update_pesticides(g, doses_iter.value)
+#    if rain_iter:
+#        wdata = rain_iter.value
         #dispersion(g, wdata, domain, domain_area, convUnit)
-        _=contamination(g,wdata, SspoSol, domain, domain_area, convUnit)
-        _=infect(g, rain_iter.dt)
+#        _=contamination(g,wdata, SspoSol, domain, domain_area, convUnit)
+#        _=infect(g, rain_iter.dt)
         
 recorder.save_records('test.csv')     
