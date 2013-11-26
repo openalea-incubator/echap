@@ -1,4 +1,5 @@
 import pandas
+import numpy
 
 class LeafElementRecorder:
     def __init__(self):
@@ -9,7 +10,7 @@ class LeafElementRecorder:
         if node.area > 0:
             data = {}
             properties = node.properties()
-            items = ['area', 'green_area']
+            items = ['length', 'area', 'green_area', 'senesced_area']
             for item in items:
                 if item in properties:
                     data[item] = properties[item]
@@ -35,3 +36,20 @@ class LeafElementRecorder:
     def get_records(self):
         d = pandas.DataFrame(self.data)
         return d.T
+        
+    def plotkin(self, what='area', n='ntop'):
+        from itertools import cycle, islice
+        d = self.get_records()
+        dm=d[(d.axe=='MS') & (d.plant=='plant1')]
+        gr=dm.groupby(['plant', n,'dd'])
+        dmp=gr.agg(numpy.sum)
+        dmp = dmp.reset_index()
+        gr=dmp.groupby([n,'dd'])
+        dms=gr.agg(numpy.mean)
+        dms=dms.reset_index()
+        gr=dms.groupby(n)
+        colors = list(islice(cycle(['k', 'r', 'g', 'b', 'y', 'c','m']),None,len(gr)))
+        for i,group in enumerate(gr):
+            group[1].plot('dd',what,color=colors[i])
+       
+        
