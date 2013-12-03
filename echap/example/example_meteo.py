@@ -6,7 +6,6 @@ Created on Mon Apr 15 10:58:05 2013
 """
 from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
-import pandas as pd
 from datetime import datetime, timedelta
 
 
