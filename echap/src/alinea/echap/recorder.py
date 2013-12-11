@@ -23,7 +23,7 @@ class LeafElementRecorder:
             
             if 'lesions' in properties:
                 les = properties['lesions'][0]
-                data.update(les.EtatS())
+                data.update(les.Lesions.EtatS())
            
             data.update(header)
             self.data[self.counts] = data
@@ -37,19 +37,22 @@ class LeafElementRecorder:
         d = pandas.DataFrame(self.data)
         return d.T
         
-    def plotkin(self, what='area', n='ntop'):
+    def plot(self, what='area',t = 'dd',  by='ntop', axe = 'MS', plant='all'):
         from itertools import cycle, islice
         d = self.get_records()
-        dm=d[(d.axe=='MS') & (d.plant=='plant1')]
-        gr=dm.groupby(['plant', n,'dd'])
+        if plant == 'all':
+            dm=d[d.axe==axe]
+        else:
+            dm=d[(d.axe==axe) & (d.plant==plant)]
+        gr=dm.groupby(['plant', by, t])
         dmp=gr.agg(numpy.sum)
         dmp = dmp.reset_index()
-        gr=dmp.groupby([n,'dd'])
+        gr=dmp.groupby([by,t])
         dms=gr.agg(numpy.mean)
         dms=dms.reset_index()
-        gr=dms.groupby(n)
+        gr=dms.groupby(by)
         colors = list(islice(cycle(['k', 'r', 'g', 'b', 'y', 'c','m']),None,len(gr)))
         for i,group in enumerate(gr):
-            group[1].plot('dd',what,color=colors[i])
+            group[1].plot(t,what,color=colors[i])
        
         

@@ -1,7 +1,7 @@
 ############################ Imports
 # Utils
 import copy
-import numpy as np
+import numpy
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize, LogNorm

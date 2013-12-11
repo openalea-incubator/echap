@@ -6,7 +6,7 @@ Created on Tue Apr 16 17:15:32 2013
 """
 from openalea.color import colormap
 
-import numpy as np
+import numpy
 from numpy import recfromcsv
 import matplotlib.pyplot as plt
 from pandas import *
@@ -56,7 +56,7 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     value = []
     for k, val in prop.iteritems():
         value.append(val[compound_name])
-        val = np.array(value)
+        val = numpy.array(value)
     if type(cmap) is str:
         try:
             _cmap = cm.get_cmap(cmap())
@@ -68,7 +68,7 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for i in range(0,len(value)):
         val[i] = dose_norm(value[i], dose_max_ha)
     colors = (_cmap(val)[:,0:3])*255
-    colors = np.array(colors,dtype=np.int).tolist()
+    colors = numpy.array(colors,dtype=numpy.int).tolist()
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():

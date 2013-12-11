@@ -11,7 +11,7 @@ from alinea.caribu.caribu_star import rain_and_light_star
 def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01, label='LeafElement'):
     
     if not ('rain_star' in g.properties() and 'light_star' in g.properties()):
-        g = rain_and_light_star(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)   
+        g = rain_and_light_star(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, trigger = 1)   
     rain_star = g.property('rain_star')
     light_star = g.property('light_star')
 

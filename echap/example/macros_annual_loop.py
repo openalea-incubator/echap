@@ -50,10 +50,12 @@ Milne_efficacy = PesticideEfficacyModel()
 def update_pesticides(g, weather_data):
     g = pesticide_surfacic_decay(g, PearlLeaf, weather_data)
     g = pesticide_penetrated_decay(g, Milne_leaf, weather_data)
-    return pesticide_efficacy(g, Milne_efficacy, weather_data)
+    g = pesticide_efficacy(g, Milne_efficacy, weather_data)
+    return g
     
 from alinea.alep.protocol import disperse
 from alinea.septo3d.dispersion.alep_interfaces import Septo3DEmission, Septo3DTransport
+from alinea.septo3d.dispersion.alep_interfaces import SimpleTransport
 
 def dispersion(g, weather_data, domain, domain_area, convUnit):
     emission = Septo3DEmission(domain=domain, convUnit = convUnit)
@@ -61,14 +63,27 @@ def dispersion(g, weather_data, domain, domain_area, convUnit):
     g,dus = disperse(g,emission, transport, 'septo3d', weather_data=weather_data)
     return g
  
+def simple_dispersion(g, weather_data, domain, domain_area, convUnit):
+    emission = Septo3DEmission(domain=domain, convUnit = convUnit)
+    transport = SimpleTransport(domain = domain, domain_area =domain_area, convUnit=convUnit)
+    g,dus = disperse(g,emission, transport, 'septo3d', weather_data=weather_data)
+    return g
+ 
 from alinea.alep.protocol import external_contamination
 from alinea.septo3d.dispersion.alep_interfaces import SoilInoculum, Septo3DSoilContamination
+from alinea.septo3d.dispersion.alep_interfaces import SimpleSoilInoculum, SimpleContamination
 from alinea.septo3d.cycle.alep_objects import Septo3D_DU
 generator = Septo3D_DU()
  
 def contamination(g, weather_data, level, domain, domain_area, convUnit):
     inoc = SoilInoculum(DU_generator=generator, sporulating_fraction =level, domain_area = domain_area, convUnit=convUnit)
     contaminator = Septo3DSoilContamination(domain = domain, domain_area =domain_area, convUnit=convUnit)
-    return external_contamination(g, inoc, contaminator, weather_data)
-    
+    g = external_contamination(g, inoc, contaminator, weather_data)
+    return g
+  
+def simple_contamination(g, weather_data, level, domain, domain_area, convUnit):
+    inoc = SimpleSoilInoculum(DU_generator=generator, sporulating_fraction =level, domain_area = domain_area, convUnit=convUnit)
+    contaminator = SimpleContamination(domain = domain, domain_area =domain_area, convUnit=convUnit)
+    g = external_contamination(g, inoc, contaminator, weather_data)
+    return g  
     

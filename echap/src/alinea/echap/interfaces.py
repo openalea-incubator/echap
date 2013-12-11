@@ -300,8 +300,9 @@ def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
             header.update({'date' : date,
                       'plant' : n.complex().complex().complex().complex().label,
                       'axe' : n.complex().complex().complex().label,
-                      'metamer' : n.complex().complex().label,
+                      'metamer' : int(''.join(list(n.complex().complex().label)[7:])),
                       'organ' : n.complex().label,
+                      'ntop' : n.complex().ntop,
                       'id' : n._vid
                          })
             recorder.record(n, header)
