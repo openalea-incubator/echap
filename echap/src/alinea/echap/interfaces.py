@@ -33,12 +33,11 @@ def pesticide_interception(g, interception_model, application_data, label='LeafE
       >>> pesticide_interception(g, interception_model, product_name, dose)
       >>> return g
     """
+    
     dose = application_data[['dose']].values[0][0]
     if dose > 0:
-        scene_geometry = g.property('geometry')
         product_name = application_data[['product_name']].values[0][0]
-        
-        surf_dose = interception_model.intercept(scene_geometry, product_name, dose)
+        surf_dose = interception_model.intercept(g, product_name, dose)
         if not 'penetrated_doses' in g.properties():
             g.add_property('penetrated_doses')
         if not 'surfacic_doses' in g.properties():
@@ -69,11 +68,10 @@ def local_microclimate(g, climate_model, weather_data, label='LeafElement'):
     - 'g' : MTG representing the canopy (and the soil)
     - 'climate_model' : A class embending the microclimate model and provide the following methods:    
         - 'climate_model.microclim(mean_globalclimate, scene)' : Return the dictionnary of scene_id: radiation and rain
-        See :class:`~alinea.echap.microclimate_leaf.MicroclimateLeaf`
+        See :class:`~alinea.echap.microclimate_leaf.MicroclimateLeaf`
     - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-
 
     :Returns:  
     --------
@@ -111,10 +109,9 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
     - 'decay_model' : A class embending the decay model and provide the following methods:    
         - 'decay_model.decay_and_penetrate(compound_name, compound_dose, microclimate, timestep)': Return for one compound the decayed surfacic dose (g.m-2), the penetrated amount and the loss to the environment.
         See :class:`alinea.pearl.pearl_leaf.PearLeafDecayModel`
+    - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-    - timestep (int)
-        The timestep of the simulation. Default 1
 
     :Returns:    
     ----------
@@ -170,10 +167,9 @@ def pesticide_penetrated_decay(g, decay_model, weather_data, label='LeafElement'
         - 'decay_model.decay(d,timestep)' : Model of penetrated pesticide decay. Return for one compound the dictionnary of compound name of the productof and the decayed penetrated dose (g.m-2).
         See :class:`~alinea.echap.milne_leaf.PenetratedDecayModel`
         See :func:`alinea.simcycle.pesticide`
+    - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-    - timestep (int)
-        The timestep of the simulation. Default 1
 
     :Returns:
     -------
@@ -210,10 +206,9 @@ def pesticide_efficacy(g, efficacy_model, weather_data, label='LeafElement'):
         - 'efficacy_model.efficacy(surfacic_doses, penetrated_doses, timestep)' : Model of pesticide efficacy. Return the dictionnary of protectant and eradicant efficacy (value between 0 and 1) respectively for surfacic doses and penetrated doses of pesticide.
         See :class:`alinea.pesticide_efficacy.pesticide_efficacy.PesticideEfficacyModel` 
         See :func:`alinea.simcycle.pesticide`
+    - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-    - timestep (int)
-        The timestep of the simulation. Default 1
 
     :Returns:
     ---------
@@ -261,10 +256,9 @@ def rain_interception(g, rain_interception_model, weather_data, label='LeafEleme
     - 'rain_interception_model' : : A class embending the rain interception model and provide the following methods:    
         - 'rain_interception_model.intercept(scene_geometry, time_control)' : Model of rain interception. return : fraction_runoff = f(normales, D_pdf, v_pdf), impacted_surface = f(pdf,intensities, duration, surfaces), splashed_droplets_per_square_meter = f(v_pdf, intensities)
         See :class:`alinea.popdrops.rain.RainInterceptionModel` 
-    - time_control
+    - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
         default "LeafElement"
-
 
     :Returns:
     ---------

@@ -8,8 +8,10 @@ import pandas
 import os
 import StringIO
 from numpy import exp
-from alinea.astk.caribu_interface import *
-from alinea.astk.TimeControl import * 
+#from alinea.astk.caribu_interface import *
+from alinea.caribu.caribu_star import rain_and_light_star, caribu_rain_star
+
+
 
 def pesticide_applications(data, sep=','):
     """ Construct a pesticide application agenda from user data
@@ -58,19 +60,59 @@ def product_dose(product_name, dose, productsDB):
     return compound_name, active_dose
 
 
-def interception_dose(product_name, dose, scene_geometry, productsDB, elevation, azimuth):
-    """ Implement pesticide interception_model using Caribu model """ 
-# TODO appeller la méthode 'convert_units' de caribu interface pour convertir les m en cm
-    compound_name, active_dose = product_dose(product_name, dose, productsDB)
-    received_dose = emission_inv(elevation, active_dose)
-    sources = (received_dose,(vecteur_direction(elevation,azimuth)))
+# def interception_dose(product_name, dose, scene_geometry, productsDB, elevation, azimuth):
+    # """ Implement pesticide interception_model using Caribu model """ 
+#TODO appeller la méthode 'convert_units' de caribu interface pour convertir les m en cm
+    # compound_name, active_dose = product_dose(product_name, dose, productsDB)
+    # received_dose = emission_inv(elevation, active_dose)
+    # sources = (received_dose,(vecteur_direction(elevation,azimuth)))
     #out_moy = turtle_interception(sectors='1', scene_geometry, energy=received_dose, output_by_triangle = False, convUnit = 0.01):
-    out_moy = run_caribu(sources, scene_geometry)
-    Einc = out_moy['Einc']
-    return compound_name, Einc 
+    # out_moy = run_caribu(sources, scene_geometry)
+    # Einc = out_moy['Einc']
+    # return compound_name, Einc 
 
 
-class CaribuInterceptModel(object):
+# class CaribuInterceptModel(object):
+    # """ Adaptor for Caribu model compliying echap pesticide_interception model protocol 
+    # productsDB (dict)
+        # - product: Comercial name of the product
+        # - compound: Active compound of the product
+        # - dose: Concentration of active compound in g.l-1
+    # elevation
+    # azimuth
+    # pest_calendar (dict)
+        # - datetime: List of the dates and times of the treatments (str format = "%Y-%m-%d %H:%M:%S" or datetime format)
+        # - dose: List of the doses of each treatment in l.ha-1 (float)
+        # - product_name: List of the comercial names of the products used for the treatments (str)
+    # """
+    # def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0, pest_calendar={}): 
+        # self.productsDB = productsDB
+        # self.elevation = elevation
+        # self.azimuth = azimuth
+        # self.pest_calendar = pest_calendar
+
+
+
+    # def intercept(self, scene_geometry, product_name, dose):
+        # """ Return the surfacic doses intercept on each leaf and stem element
+
+        # :Parameters:
+        # ------------
+        # - time_control
+        # - scene_geometry
+
+        # :Returns:
+        # ---------
+        # - doses: (float)
+            # Dict of doses (g.m-2) calculated with the interception model for each leaf and stem element
+        # """       
+        # compound_name, Einc = interception_dose(product_name, dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
+        # doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
+        # return doses
+
+
+
+class InterceptModel(object):
     """ Adaptor for Caribu model compliying echap pesticide_interception model protocol 
     productsDB (dict)
         - product: Comercial name of the product
@@ -83,30 +125,21 @@ class CaribuInterceptModel(object):
         - dose: List of the doses of each treatment in l.ha-1 (float)
         - product_name: List of the comercial names of the products used for the treatments (str)
     """
-    def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}, elevation=90, azimuth=0, pest_calendar={}): 
+    def __init__(self, productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}): 
         self.productsDB = productsDB
-        self.elevation = elevation
-        self.azimuth = azimuth
-        self.pest_calendar = pest_calendar
 
-
-
-    def intercept(self, scene_geometry, product_name, dose):
-        """ Return the surfacic doses intercept on each leaf and stem element
-
-        :Parameters:
-        ------------
-        - time_control
-        - scene_geometry
-
-        :Returns:
-        ---------
-        - doses: (float)
-            Dict of doses (g.m-2) calculated with the interception model for each leaf and stem element
-        """       
-        compound_name, Einc = interception_dose(product_name, dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
-        doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
+    def intercept(self, g, product_name, dose, domain = None, convUnit = 0.01, label='LeafElement'):
+        compound_name, active_dose = product_dose(product_name, dose, self.productsDB)
+        doses={}
+        if not 'rain_exposed_area' in g.properties():
+            g = caribu_rain_star(g, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)
+        rain_exposed_area = g.property('rain_exposed_area')
+        for vid in g:
+            if g.label(vid).startswith(label):
+                if vid in rain_exposed_area:
+                    doses[vid] = {compound_name: rain_exposed_area[vid] * active_dose}
         return doses
+
 
 
 

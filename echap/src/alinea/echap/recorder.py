@@ -40,6 +40,7 @@ class LeafElementRecorder:
     def plot(self, what='area',t = 'dd',  by='ntop', axe = 'MS', plant='all'):
         from itertools import cycle, islice
         d = self.get_records()
+        d = d[d[what].notnull()]
         if plant == 'all':
             dm=d[d.axe==axe]
         else:
