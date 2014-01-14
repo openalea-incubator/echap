@@ -32,7 +32,7 @@ growth_control = GrowthControlModel()
 def update_lesions(g,dt,activate=True):
     return update(g,dt,growth_control)
     
-from alinea.echap.interfaces import pesticide_surfacic_decay, pesticide_penetrated_decay, pesticide_efficacy
+from alinea.echap.interfaces import pesticide_surfacic_decay, pesticide_penetrated_decay, pesticide_efficacy, pesticide_interception
 
 from alinea.pearl.pearl_leaf import PearLeafDecayModel
 db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
@@ -86,4 +86,11 @@ def simple_contamination(g, weather_data, level, domain, domain_area, convUnit):
     contaminator = SimpleContamination(domain = domain, domain_area =domain_area, convUnit=convUnit)
     g = external_contamination(g, inoc, contaminator, weather_data)
     return g  
-    
+
+
+from alinea.echap.interception_leaf import InterceptModel
+productsDB={'Opus': {'Epoxiconazole': 125}, 'Banko 500': {'Chlorothalonil': 500}}
+interception = InterceptModel(productsDB)
+
+def pesticide_intercept(g, application_data, label='LeafElement'):
+    return pesticide_interception(g, interception, application_data, label='LeafElement')
