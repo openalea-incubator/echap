@@ -31,5 +31,5 @@ dmp = dmp.reset_index()
 gr=dmp.groupby(['ntop_cur','date'])
 dms=gr.agg(numpy.mean)
 dms=dms.reset_index()
-
+dms.plot(x,y,kind="bar")
 
