@@ -286,11 +286,14 @@ def rain_interception(g, rain_interception_model, weather_data, label='LeafEleme
 def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     """
     tentative protocol for recording data during a simulation
+    ng tentative debug date 12/12/12
     """
     date = weather_data.index[-1].to_datetime()# recording occurs at the end of the time step
+    print "test ng date",date
     for vid in g:
         if g.label(vid).startswith(label):
             n = g.node(vid)
+       
             header.update({'date' : date,
                       'plant' : n.complex().complex().complex().complex().label,
                       'axe' : n.complex().complex().complex().label,

@@ -48,7 +48,7 @@ from alinea.pesticide_efficacy.pesticide_efficacy import PesticideEfficacyModel
 Milne_efficacy = PesticideEfficacyModel()
 
 def update_pesticides(g, weather_data):
-    g = pesticide_surfacic_decay(g, PearlLeaf, weather_data)
+    #g = pesticide_surfacic_decay(g, PearlLeaf, weather_data)
     g = pesticide_penetrated_decay(g, Milne_leaf, weather_data)
     g = pesticide_efficacy(g, Milne_efficacy, weather_data)
     return g
