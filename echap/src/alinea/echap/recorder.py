@@ -1,5 +1,6 @@
 import pandas
 import numpy
+from pylab import *
 
 class LeafElementRecorder:
     def __init__(self):
@@ -59,7 +60,6 @@ class LeafElementRecorder:
 
     def save_plot(self, what='area',t = 'dd',  by='ntop', axe = 'MS', plant='all', fig_name='test.png'):
         from itertools import cycle, islice
-        from pylab import *
         d = self.get_records()
         d = d[d[what].notnull()]
         if plant == 'all':

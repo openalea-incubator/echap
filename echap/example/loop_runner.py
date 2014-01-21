@@ -2,13 +2,13 @@ from new_annual_loop_pest import pesticide_loop, repartition_at_application
 import pesticide_protocol as proto
 import numpy
 
-# g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', applications=proto.Mercia2011_treat1, start="2011-04-11", periods=24, freq='H', TB=0, delayH=1, delayDD=15)
+#g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', applications=proto.Mercia2011_treat1, start="2011-04-11", periods=24, freq='H', TB=0, delayH=1, delayDD=15)
 # recorder.save_records('test.csv')   
 # recorder.save_plot(what='area',t = 'dd',  by='ntop', axe = 'MS', plant='all', fig_name='test.png')   
 
 
 # test
-#g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', start="2001-04-25", periods=50, freq='H', TB=0, delayH=1, delayDD=15, applications=proto.Test2001_treat1)
+g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', start="2001-04-25", periods=50, freq='H', TB=0, delayH=1, delayDD=15, applications=proto.Test2001_treat1)
 #recorder.save_records('test.csv')   
 #recorder.save_plot(what='area',t = 'iter',  by='ntop', axe = 'MS', plant='all', fig_name='test.png')   
 
