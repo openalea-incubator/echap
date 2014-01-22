@@ -1,3 +1,14 @@
 This file can be used to document future development
 
- * document the Sconstruct file of the Alinea.Echap package 
+ * Pearl : faire un perl calculant des degradation rate sur 24h de meteo reelle (non moyenne)
+ * dans surfacic decay on appelle alor un perl qui fait l'upodate au decay rate constant : ainsi on peut faire un calcul pearl toutes les 24h mais un decay plus frequent
+ 
+ * de meme pour adel, on peut imaginer un adel_interpolation_rate qui calcule pour les prochaine 24h le taux d'volution de green are, senarea et senposition, sans en cahnger les valeur. le grow canopy utilise alors ces valeur pour des pas de temps plus frequent
+ 
+ * pour infect : situer eventuellement l'infection au milieu de la pluie, et non pas au debut 
+ 
+ 
+ *mettre a pas de temps 'day' le calcul caribu et gerer les parcours pour les cas ou un vid est dans g main pas dans rain_star
+* dans adel calculer area etc dans update mtg et non dans mtg construction: ca permet d'eviter la duplication de données. En plus on aura une methode 'add areas' + methode LAI fonctionnant sur tous les mtg
+
+* Faire un mtg picklable (__reduce__ + add aas ars le resultat du reduce dans le constructeur) pour pouvoir arreter/reprendre les simulations
