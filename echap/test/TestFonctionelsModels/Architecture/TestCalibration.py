@@ -23,12 +23,14 @@ def test_axis_dynamics():
     #newfit
     obs = tdata['tillering']
     obs = obs[obs.Var=='Mercia']
-    primary_proba={'T1': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
-    for w in ('T2','T3','T4','T5'):
+    primary_proba={'T2': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
+    for w in ('T1','T3','T4','T5'):
         primary_proba[w] = obs[w].values
     ears_per_plant = obs['MB'].values + obs['TT'].values
     nff = float(obs['Nff'].values)
     new_m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
+    
+    # todo : add comparison to primary emission
     
     #test plantgen fit
     
