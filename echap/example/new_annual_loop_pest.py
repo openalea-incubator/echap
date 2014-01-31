@@ -48,6 +48,7 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
             _=do_record(g, canopy_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
         if pest_iter:
             print pest_iter.value
+            print '\n\npesticide_loop!!\n\n'
             _=pesticide_intercept(g, pest_iter.value)
         if doses_iter:
             print 'updte microclimate / doses...'
@@ -58,6 +59,7 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
       
 
 def repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166):
+    print '\n\nrepartition_at_application 3!!\n\n'
     from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
     
@@ -70,4 +72,5 @@ def repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166):
     g,_=pesticide_intercept(g, application_data)
     do_record(g, application_data, recorder)
     df =  recorder.get_records()
+    print 'repartition_at_application df.columns before ', df.columns
     return df
