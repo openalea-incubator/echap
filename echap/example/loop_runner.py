@@ -55,12 +55,6 @@ print 'df_1.columns = ', df_1.columns
 df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
 print 'df.columns after = ', df.columns
 
-# Appel a la fonction repartition_at_application_modif
-applications = """date,dose, product_name
-2001-04-25 10:00:00, 1, Opus
-"""
-df_2 = repartition_at_application_modif(applications, age = 1166)
-print 'df_2.columns after = ', df_2.columns
 
 
 
