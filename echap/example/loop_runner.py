@@ -1,25 +1,25 @@
-from new_annual_loop_pest import pesticide_loop, repartition_at_application
+from new_annual_loop_pest import pesticide_loop, repartition_at_application, repartition_at_application_modif
 import pesticide_protocol as proto
 import numpy
 import pylab as p
 import matplotlib.pyplot as plt
 
-import pandas
-from openalea.deploy.shared_data import shared_data
+# import pandas
+# from openalea.deploy.shared_data import shared_data
 
-from alinea.astk.Weather import Weather
-from alinea.astk.TimeControl import *
-from alinea.caribu.caribu_star import rain_and_light_star
-from alinea.alep.protocol import infect
-from alinea.echap.interception_leaf import pesticide_applications
-from alinea.echap.microclimate_leaf import microclimate_leaf
-from alinea.echap.recorder import LeafElementRecorder
-from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
+# from alinea.astk.Weather import Weather
+# from alinea.astk.TimeControl import *
+# from alinea.caribu.caribu_star import rain_and_light_star
+# from alinea.alep.protocol import infect
+# from alinea.echap.interception_leaf import pesticide_applications
+# from alinea.echap.microclimate_leaf import microclimate_leaf
+# from alinea.echap.recorder import LeafElementRecorder
+# from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
 
-from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
-import alinea.septo3d
+# from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
+# import alinea.septo3d
 
-from alinea.echap.tests_nodes import plot_pesticide
+# from alinea.echap.tests_nodes import plot_pesticide
 
 #g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', applications=proto.Mercia2011_treat1, start="2011-04-11", periods=24, freq='H', TB=0, delayH=1, delayDD=15)
 # recorder.save_records('test.csv')   
@@ -29,14 +29,17 @@ from alinea.echap.tests_nodes import plot_pesticide
 # test
 g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', start="2001-04-25", periods=50, freq='H', TB=0, delayH=1, delayDD=15, applications=proto.Test2001_treat1)
 recorder.save_records('test.csv')   
-recorder.save_plot(what='surfacic_doses_Epoxiconazole',t = 'iter',  by='ntop', axe = 'MS', plant='all', fig_name='test2.png')   
+recorder.save_plot(what='surfacic_doses_Epoxiconazole', t = 'iter',  by='ntop', axe = 'MS', plant='all', fig_name='test2.png')   
 #recorder.plt.show()
 
+
+
+
+# Function repartition_at_application
 appdate = '2011-04-19' ; dose = 0.5 ; age = 1166
 print '\n\nrepartition_at_application 2 !!\n\n'
 from macros_annual_loop import setup_canopy
 from alinea.echap.recorder import LeafElementRecorder
-
 recorder = LeafElementRecorder()
 g, adel, domain, domain_area, convUnit, nplants = setup_canopy(age=1166)
 applications= """date,dose, product_name
@@ -47,10 +50,24 @@ g,_=pesticide_intercept(g, application_data)
 do_record(g, application_data, recorder)
 df_1 =  recorder.get_records()
 print 'df_1.columns = ', df_1.columns
-    
-df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
 
+# Appel a la fonction repartition_at_application
+df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
 print 'df.columns after = ', df.columns
+
+# Appel a la fonction repartition_at_application_modif
+applications = """date,dose, product_name
+2001-04-25 10:00:00, 1, Opus
+"""
+df_2 = repartition_at_application_modif(applications, age = 1166)
+print 'df_2.columns after = ', df_2.columns
+
+
+
+
+
+
+
 
 from itertools import cycle, islice
 from pylab import *
