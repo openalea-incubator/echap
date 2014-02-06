@@ -29,40 +29,17 @@ def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUn
         g = rain_and_light_star(g, light_sectors=light_sectors, output_by_triangle = False, domain = domain, convUnit = convUnit, trigger = 1)   
     rain_star = g.property('rain_star')
     light_star = g.property('light_star')
-
-    for var in ['global_radiation', 'vapor_pressure', 'relative_humidity', 'wind_speed', 'temperature_air', 'PPFD']:
-        exec("%s = weather_data[['%s']].mean().item(0)"%(var,var))
-    water = weather_data[['rain']].sum().item(0)
-    rain = 0
-    if water > 0:
-        rain = water / len(weather_data[['rain']][weather_data[['rain']] > 0])
-    microclimate = {}
     
+    if not 'microclimate' in g.properties():
+        g.add_property('microclimate')
+    microclimate = g.property('microclimate')
+      
     for vid in g:
         if g.label(vid).startswith(label):
             if vid in light_star: # may not be here because of asynchrony of leaf formation and with caribulightstar
-                microclimate[vid] = {'global_radiation': light_star[vid] * global_radiation,
-                                     'PPFD': light_star[vid] * PPFD,
-                                     'rain': rain_star[vid] * rain,
-                                     'relative_humidity': relative_humidity,
-                                     'wind_speed': wind_speed,
-                                     'vapor_pressure': vapor_pressure} 
-                if microclimate[vid]['PPFD'] == 0:
-                    microclimate[vid]['temperature_air'] = temperature_air
-                else:
-                    microclimate[vid]['temperature_air'] = temperature_air + microclimate[vid]['PPFD'] / 300.
-            else:
-                microclimate[vid] = {'global_radiation': global_radiation,
-                                     'PPFD': PPFD,
-                                     'rain': rain,
-                                     'relative_humidity': relative_humidity,
-                                     'wind_speed': wind_speed,
-                                     'vapor_pressure': vapor_pressure, 
-                                     'temperature_air' : temperature_air}
-        
-    if not 'microclimate' in g.properties():
-        g.add_property('microclimate')
-    g.property('microclimate').update(microclimate)    
+                if vid in rain_star:
+                    microclimate[vid] = local_climate(weather_data, rain_star[vid], light_star[vid]) 
+            
     return g
 
 # deprecated
