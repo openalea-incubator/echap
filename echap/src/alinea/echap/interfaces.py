@@ -107,7 +107,8 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
     -----------
     - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
     - 'decay_model' : A class embending the decay model and provide the following methods:    
-        - 'decay_model.decay_and_penetrate(compound_name, compound_dose, microclimate, timestep)': Return for one compound the decayed surfacic dose (g.m-2), the penetrated amount and the loss to the environment.
+        - 'setup_climate(global_climate,LUT_climates)' : set defaults values/LUT tables for climatic data
+        - 'decay_and_penetrate(compound_name, compound_dose, microclimate, timestep)': Return for one compound the decayed surfacic dose (g.m-2), the penetrated amount and the loss to the environment.
         See :class:`alinea.pearl.pearl_leaf.PearLeafDecayModel`
     - 'weather_data' : A panda dataframe with climatic data. 
     - label (str)
@@ -128,31 +129,32 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
       >>> return g
     """
     if 'surfacic_doses' in g.property_names():
+    
         surfacic_doses = g.property('surfacic_doses')
-        if 'microclimate' not in g.property_names():
-            print 'could not compute decay : TODO : use weather data instead'
-        else:
-            timestep = len(weather_data)
-            microclimate = g.property('microclimate') 
-            if not 'penetrated_doses' in g.property_names():
-                g.add_property('penetrated_doses')
-            penetrated_doses = g.property('penetrated_doses')
-            for vid, d in surfacic_doses.iteritems():
-                if g.label(vid).startswith(label):
-                    for compound_name,compound_dose in d.iteritems():
-                        if vid in microclimate:
-                            new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,microclimate[vid],timestep)
+        if not 'penetrated_doses' in g.property_names():
+            g.add_property('penetrated_doses')
+        penetrated_doses = g.property('penetrated_doses')
+        
+        microclimate = {}
+        if 'microclimate' in g.property_names():
+            microclimate = g.property('microclimate')
+        #todo Handle/compute LUT option
+        
+        decay_model.setup_climate(global_climate = weather_data)
+        timestep = len(weather_data)
+        for vid, d in surfacic_doses.iteritems():
+            if g.label(vid).startswith(label):
+                for compound_name,compound_dose in d.iteritems():
+                    local_climate = microclimate.get(vid,{})
+                    new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,local_climate,timestep)
+                    surfacic_doses[vid][compound_name] = new_dose
+                    if vid in penetrated_doses:
+                        if compound_name in penetrated_doses:
+                            penetrated_doses[vid][compound_name] += penetrated_amount
                         else:
-                            new_dose,penetrated_amount,loss = 0, 0, 0
-                            #print 'EchapInterfacesError : KeyErreur', vid
-                        surfacic_doses[vid][compound_name] = new_dose
-                        if vid in penetrated_doses:
-                            if compound_name in penetrated_doses:
-                                penetrated_doses[vid][compound_name] += penetrated_amount
-                            else:
-                                penetrated_doses[vid].update({compound_name:penetrated_amount})
-                        else:
-                            penetrated_doses[vid] = {compound_name : penetrated_amount}
+                            penetrated_doses[vid].update({compound_name:penetrated_amount})
+                    else:
+                        penetrated_doses[vid] = {compound_name : penetrated_amount}
     return g
 
 

@@ -8,6 +8,21 @@ from alinea.caribu.caribu_star import rain_and_light_star
 
 # new approach
 
+def local_climate(global_climate, rain_star = 0.5, light_star = 0.5, light_cols = ['global_radiation', 'PPFD'], rain_cols = ['rain'], temp_cols = ['temperature_air']):
+    """ compute a simplistic microclimate"""
+    local = global_climate.copy()
+    for col in light_cols:
+        if col in local.columns:
+            local[col] *= light_star
+    for col in rain_cols:
+        if col in local.columns:
+            local[col] *= rain_star
+    for col in temp_cols:
+        if col in local.columns and 'PPFD' in local.columns:
+            local[col] = local[col] + local['PPFD'] / 300
+    return local
+
+
 def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUnit = 0.01, label='LeafElement'):
     
     if not ('rain_star' in g.properties() and 'light_star' in g.properties()):
