@@ -54,7 +54,7 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
             print 'updte microclimate / doses...'
             _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
             _=update_pesticides(g, doses_iter.value)
-            #_=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
+            _=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
     return g, recorder
       
 
