@@ -7,10 +7,9 @@ from matplotlib import cm
 from matplotlib.colors import Normalize, LogNorm
 from pandas import *
 from datetime import datetime, timedelta
-from openalea.deploy.shared_data import get_shared_data_path
+from openalea.deploy.shared_data import shared_data
 
 # Utils echap - alep
-#from alinea.echap.update_parameters import *
 from alinea.echap.tests_nodes import *
 from alinea.alep.disease_outputs import *
 from alinea.astk.plantgl_utils import *
@@ -57,4 +56,5 @@ from alinea.adel.astk_interface import AdelWheat
 from alinea.astk.plant_interface import *
 
 # Time control
+from alinea.astk.Weather import Weather
 from alinea.astk.TimeControl import *

@@ -16,7 +16,7 @@ class LeafElementRecorder:
                 if item in properties:
                     data[item] = properties[item]
                     
-            items = ['surfacic_doses', 'penetrated_doses']
+            items = ['surfacic_doses', 'penetrated_doses', 'global_efficacy']
             for item in items:
                 if item in properties:
                     for compound in properties[item]:
