@@ -16,7 +16,7 @@ def _dose_decay(decay_rate, initial_dose, days):
 class SimcyclePesticide(Exception): pass       
 
 
-def milne_leaf(initial_dose, compound_parameters, days):
+def milne_leaf(initial_dose, compound_parameters, hours):
     """ Milne decay model applied to penetrated doses
 
         :Parameters:
@@ -25,14 +25,15 @@ def milne_leaf(initial_dose, compound_parameters, days):
             Mass of product present per unit surface inside the leaf (g.m-2)
         - `compound_parameters` (dict)
             A dict of compound parameters read in a .csv file 
-        - `days` (int)
-            Timestep (day)
+        - `hours` (int)
+            Timestep (hours)
 
         :Returns:
         ---------
         - 'initial_dose' (float)
             Remaining mass of product per unit surface inside the leaf after dt (g.m-2) 
     """
+    days = float(hours) / 24
     ptable = dict([(p['compound'],p) for p in compound_parameters])
     for name, dose in initial_dose.iteritems():
         try:
@@ -63,7 +64,7 @@ class PenetratedDecayModel(object):
             Total amount of penetrated active dose in the leaf element after decay
         """    
         hours = len(weather_data)
-        active_dose = milne_leaf(initial_dose, self.compound_parameters, hours / 24)
+        active_dose = milne_leaf(initial_dose, self.compound_parameters, hours)
         return active_dose
     def decay_and_penetrate(self, name, dose, microclimate, dt):
         """ make all the product penetrates to simulate fully the model of Milne"""
