@@ -107,7 +107,7 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
     -----------
     - 'g' : MTG representing the canopy (and the soil), doses are stored in the MTG as a property
     - 'decay_model' : A class embending the decay model and provide the following methods:    
-        - 'setup_climate(global_climate,LUT_climates)' : set defaults values/LUT tables for climatic data
+        - 'setup_climate(global_climate, local_climates={})' : set default climate data to global_climate (madatory). local_climates is given to allow the decay model computing a LUT for optimisation. returns empty dict of a maping vid:LUT_index
         - 'decay_and_penetrate(compound_name, compound_dose, microclimate, timestep)': Return for one compound the decayed surfacic dose (g.m-2), the penetrated amount and the loss to the environment.
         See :class:`alinea.pearl.pearl_leaf.PearLeafDecayModel`
     - 'weather_data' : A panda dataframe with climatic data. 
@@ -140,12 +140,14 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
             microclimate = g.property('microclimate')
         #todo Handle/compute LUT option
         
-        decay_model.setup_climate(global_climate = weather_data)
+        lut = decay_model.setup_climate(global_climate = weather_data, local_climates = microclimate)
         timestep = len(weather_data)
         for vid, d in surfacic_doses.iteritems():
             if g.label(vid).startswith(label):
                 for compound_name,compound_dose in d.iteritems():
                     local_climate = microclimate.get(vid,{})
+                    if vid in lut:
+                        local_climate = lut[vid]
                     new_dose,penetrated_amount,loss = decay_model.decay_and_penetrate(compound_name,compound_dose,local_climate,timestep)
                     surfacic_doses[vid][compound_name] = new_dose
                     if vid in penetrated_doses:
