@@ -6,6 +6,7 @@ Created on Wed Mar 20 15:16:51 2013
 """
 
 from numpy import exp
+import pandas
 
 
 def _dose_decay(decay_rate, initial_dose, days):
@@ -34,7 +35,7 @@ def milne_leaf(initial_dose, compound_parameters, hours):
             Remaining mass of product per unit surface inside the leaf after dt (g.m-2) 
     """
     days = float(hours) / 24
-    ptable = dict([(p['compound'],p) for p in compound_parameters])
+    ptable = compound_parameters
     for name, dose in initial_dose.iteritems():
         try:
             initial_dose[name] = _dose_decay(ptable[name]['decay_rate'], initial_dose[name], days)
@@ -42,12 +43,26 @@ def milne_leaf(initial_dose, compound_parameters, hours):
             raise SimcyclePesticide('product %s not found in parameter dict'%name)
     return initial_dose
 
+    
+class MilneModel(object):
+    """ A simple user-interface for manipulating Milne model for a single compound    
+    """
+    def __init__(self, compound_parameters):
+        self.compound_parameters = compound_parameters
+        
+    def decay(self, dose, time_sequence):
+        hours = range(len(time_sequence))
+        doses = map(lambda x: _dose_decay(self.compound_parameters['decay_rate'], dose, float(x) / 24), hours)
+        res = pandas.DataFrame({'datetime' : time_sequence, 'dose' :doses})
+        res.index = res['datetime']
+        return res
 
 class PenetratedDecayModel(object):
     """ Adaptor for Milne decay model and compliying echap pesticide_penetrated_decay model protocol
     """
     def __init__(self,products_parameters = [{'Ae': 0.5, 'Ke': 7.0099999999999998, 'decay_rate': 0.069000000000000006, 'dose_max_ha': 125, 'Ap': 0.70999999999999996, 'Kp': 6, 'type_code': 2, 'compound': 'Epoxiconazole'}, {'Ae': 1.0, 'Ke': 6.4900000000000002, 'decay_rate': 0.01, 'dose_max_ha': 1000, 'Ap': 0.0, 'Kp': 0, 'type_code': 3, 'compound': 'Chlorothalonil'}]):
-        self.compound_parameters = products_parameters
+        self.compound_parameters = dict([(p['compound'],p) for p in products_parameters])
+        
     def decay(self, initial_dose, weather_data):
         """ Return the penetrated active doses 
 
