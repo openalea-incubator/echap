@@ -18,7 +18,9 @@ def arvalis_reader(data_file):
     #convert wind km/h -> m.s-1
     data['wind_speed'] *= (1000. / 3600)
     return data
-    
+  
+#to do : one function with year as argument
+  
 def Boigneville_2010_2011():
     meteo_path = shared_data(alinea.echap, 'Boigneville_01092010_31082011_h.csv')
     weather = Weather(meteo_path, reader = arvalis_reader)
