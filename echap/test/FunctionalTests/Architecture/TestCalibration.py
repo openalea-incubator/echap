@@ -39,3 +39,11 @@ def test_axis_dynamics():
     fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
     plt.plot([1,13],[tdata['plant_density_at_emergence']['Mercia'],tdata['ear_density_at_harvest']['Mercia']] ,'ob')
+    
+def test_adel():
+    from alinea.echap.macros_annual_loop import devT_pgen,setup_canopy
+    pgen = archidb.Mercia_2010_plantgen()
+    devT=devT_pgen(pgen)
+    g, adel, domain, domain_area, convUnit, nplants = setup_canopy(devT=devT)
+    
+    return 
