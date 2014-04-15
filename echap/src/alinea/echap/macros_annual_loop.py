@@ -2,15 +2,7 @@ from alinea.adel.AdelR import devCsv
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
-from alinea.adel.plantgen.plantgen import gen_adel_input_data
-
-def devT_pgen(pgen):
-    
-    axeT, dimT, phenT, phenT_abs, dimT_abs, dynT_, phenT_first, HS_GL_SSI_T, tilleringT, cardinalityT, config = gen_adel_input_data(**pgen)
-    earT = shared_data(alinea.echap, 'Mercia_earT.csv')
-    ssisenT = shared_data(alinea.echap, 'ssi2sen.csv')
-    
-    return devCsv(axeT,dimT,phenT,earT,ssisenT)
+import numpy as np
 
 
 def devT_Mercia():

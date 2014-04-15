@@ -3,7 +3,6 @@ import numpy
 import matplotlib.pyplot as plt
 
 from alinea.adel.WheatTillering import WheatTillering
-
 import alinea.echap.architectural_data as archidb
 
 plt.ion()
@@ -41,9 +40,27 @@ def test_axis_dynamics():
     plt.plot([1,13],[tdata['plant_density_at_emergence']['Mercia'],tdata['ear_density_at_harvest']['Mercia']] ,'ob')
     
 def test_adel():
-    from alinea.echap.macros_annual_loop import devT_pgen,setup_canopy
-    pgen = archidb.Mercia_2010_plantgen()
-    devT=devT_pgen(pgen)
-    g, adel, domain, domain_area, convUnit, nplants = setup_canopy(devT=devT)
+    from alinea.echap.macros_annual_loop import setup_canopy
+    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
+    from alinea.adel.stand.stand import agronomicplot
+    from alinea.adel.astk_interface import AdelWheat
+    from alinea.adel.AdelR import devCsv
+    from alinea.adel.postprocessing import axis_statistics, plot_statistics 
     
-    return 
+    pgen = archidb.Mercia_2010_plantgen()
+    axeT_, dimT_, phenT_, _, _, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
+    axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
+    devT = devCsv(axeT, dimT, phenT)
+
+    nplants, positions, domain, domain_area, convUnit = agronomicplot(length=0.2, 
+                                                            width=0.15, 
+                                                            sowing_density=pgen['plants_density'], 
+                                                            plant_density=pgen['plants_number'],
+                                                            inter_row=0.125)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=1, devT=devT, seed= 1, sample='random')
+    dd = range(0,1500,100)
+    outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
+    out = reduce(lambda x,y: pandas.concat([x,y],ignore_index=True), outs)
+    axstat = axis_statistics(out, domain_area, convUnit)    
+    res =  plot_statistics(axstat, nplants, domain_area)
+    return res
