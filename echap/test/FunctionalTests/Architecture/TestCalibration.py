@@ -117,41 +117,14 @@ def compare_LAI():
     obs['HS'] = obs.TT*tx
     obs.plot('HS','PAI',style='o',color='r')
 
-def draft_TC(adel, domain, thermal_time, pov_dirpath='.'):
-    from alinea.adel.povray import povray
-    from alinea.adel.mtg_interpreter import plot3d   
+def draft_TC(adel, domain,thermal_time):
+    from alinea.adel.postprocessing import ground_cover
     
     g =adel.setup_canopy(thermal_time)
-    # colors
-    colors_def = {'green':[0, 255, 0], 'red' : [255, 0, 0]}
-    greeness = g.property('is_green')
-    colors = {k:colors_def['green'] if greeness[k] else colors_def['red'] for k in greeness}
-    # scene
-    scene = plot3d(g, colors=colors)
-    # plot3D
-    # povray
-    pov_filename = os.path.join(pov_dirpath, '%s%s%s' % ('scene_', thermal_time, '.pov'))
-    povray_image_filepath, stand_box_image_filepath = povray.povray(scene, pov_filename, 200.0, 50, 4288, 2848, domain, 0, 0, 'perspective', False, 'povray')
-    # genFilepath
-    from alinea.adel.povray import post_processing
-    outpath = './counts.txt'
-    post_processing.count_pixels(povray_image_filepath, stand_box_image_filepath, colors_def.values(), outpath)
-    return povray_image_filepath, stand_box_image_filepath, colors_def
+    return ground_cover(g,domain, camera = {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':0.}, image_width = 4288, image_height = 2848)
     
-def color_count(image,RGBcolor = (0,255,0)):
-    import cv2
-    BGRcolor = numpy.array(RGBcolor[::-1])
-    res = cv2.inRange(image, BGRcolor, BGRcolor)
-    return res.sum() / 255.
+
     
-def count_pixels(povray_image_filepath, stand_box_image_filepath, colors_def):
-    import cv2
-    im = cv2.imread(povray_image_filepath)
-    box = cv2.imread(stand_box_image_filepath)
-    mask = numpy.uint8(box[:,:,0] / box.max() * 255)
-    total = mask.sum() / 255.
-    masked=cv2.bitwise_and(im,im,mask=mask)
-    return {k:color_count(masked,v) / total for k,v in colors_def.iteritems()}
     
 def mat_ray(csv_file):
     from pandas import read_csv
