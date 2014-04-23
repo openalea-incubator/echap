@@ -49,10 +49,11 @@ def setAdel(TT_stop, var):
     from alinea.adel.stand.stand import agronomicplot
     from alinea.adel.astk_interface import AdelWheat
     from alinea.adel.AdelR import devCsv
-    pgen = archidb.Mercia_2010_plantgen()
-    #pgen = archidb.Tremie_2011_plantgen()
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()
-    #tdata = archidb.Tillering_data_Tremie1_2011_2012()
+    #pgen = archidb.Mercia_2010_plantgen()
+    #pgen = archidb.Rht3_2010_plantgen()
+    pgen = archidb.Tremie_2011_plantgen()
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()
+    tdata = archidb.Tillering_data_Tremie1_2011_2012()
     obs = tdata['tillering']
     obs = obs[obs.Var==var]
     #primary_proba={'T2': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
@@ -80,15 +81,12 @@ def setAdel(TT_stop, var):
                                                             inter_row=0.125)
     adel = AdelWheat(nplants=nplants, positions = positions, nsect=10, devT=devT, seed= 1, sample='random')
     return adel, nplants, positions, domain, domain_area, convUnit
-    
-
-    
+      
 def sample_adel():
     adel, nplants, positions, domain, domain_area, convUnit = setAdel(0, 'Mercia')
     return adel, domain
 
 def simLAI(TT_stop, var):
-    
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
     
     adel, nplants, positions, domain, domain_area, convUnit = setAdel(TT_stop,var)
@@ -119,7 +117,7 @@ def compare_LAI():
     obs['HS'] = obs.TT*tx
     obs.plot('HS','PAI',style='o',color='r')
 
-def draft_TC(adel, domain,thermal_time, pov_dirpath='.'):
+def draft_TC(adel, domain, thermal_time, pov_dirpath='.'):
     from alinea.adel.povray import povray
     from alinea.adel.mtg_interpreter import plot3d   
     
@@ -155,10 +153,20 @@ def count_pixels(povray_image_filepath, stand_box_image_filepath, colors_def):
     masked=cv2.bitwise_and(im,im,mask=mask)
     return {k:color_count(masked,v) / total for k,v in colors_def.iteritems()}
     
-    
-    
-
-    
+def mat_ray(csv_file):
+    from pandas import read_csv
+    df = read_csv(csv_file,';')
+    col1 = df.DATE             #Ajout de ma part dans le csv
+    col2 = df.QR_PAR_Avg       #PAR a 2m du sol
+    col3 = df.SE_PAR_Avg_1     #PAR surface du sol
+    col7 = df.SE_PAR_Avg_5     #PAR ds le couvert (env 20 cm)
+    col1 = col1.astype(int)
+    col2 = col2.astype(int)
+    col3 = col3.astype(int)
+    col7 = col7.astype(int)
+    plt.plot(col1, col2)
+    plt.plot(col1, col3)
+    plt.plot(col1, col7)
     
 def func_star(a_b):
     return test_adel(*a_b)
