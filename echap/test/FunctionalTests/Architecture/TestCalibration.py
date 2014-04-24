@@ -165,32 +165,35 @@ def mat_ray(data_file):
     dat20 = dat20.apply(numpy.mean,1)
     # tableau % dat0/dat200
     tab_prc0 = dat0/df.QR_PAR_Avg
-    # tableau % dat20/dat200
+    # tableau % dat20/dat200 
     tab_prc20 = dat20/df.QR_PAR_Avg
     return tab_prc0, tab_prc20
     
-def meteo_20112012(date): #date au format JJ-MM-AAAA (09-03-2012) - 11-04-2012 - 09-05-2012
+def meteo_20112012(dates): #date au format JJ-MM-AAAA (2012-03-09) = ['2012-04-11','2012-05-09']
     data_file = 'METEO_stationINRA_20112012.csv'
     tab_prc0, tab_prc20 = mat_ray(data_file)
-    t_deb = "Timestamp:" + date + " " + "12:00:00"
-    args = tab_prc0.index
-    i=0
-    prc0 = ''
-    for arg in args:
-        if arg==t_deb:
-            print 'yes'
-            prc0 = tab_prc0[i]
-        else:
-                i=i+1
-    #    print 'no'
-    #if not args[i]==t_deb :
-    #    i=i+1
-    #    print 'no'
-    #else:
-    #    print 'yes'
-    #    prc0 = tab_prc0[i]
-    #return prc0
-    print t_deb, " : ", prc0    
+    prc0 = []; prc20 = []
+    TT = [1260, 1551]
+    
+    for date in dates :
+        seq = pandas.date_range(start = date, periods=13, freq='H')
+        t_deb = seq[12]
+        args0 = tab_prc0.index
+        i=0;j=0
+        
+        for arg0 in args0:
+            if arg0==t_deb:
+                val = tab_prc0[i]
+                val2 = tab_prc20[i]
+            else:
+                i=i+1;  j=j+1
+        prc0.append(val)
+        prc20.append(val2)
+        
+    print prc0, prc20
+    plt.plot(TT, prc0, color='r')
+    plt.plot(TT, prc20, color='g')
+    
     
 def func_star(a_b):
     return test_adel(*a_b)
