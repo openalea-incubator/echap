@@ -18,39 +18,42 @@ def get_reconstruction(name='Mercia', **args):
     _, adel, domain, domain_area, convUnit, nplants = fun(**args)
     return adel, domain, domain_area, convUnit, nplants
 
+def get_pgen(name='Mercia', original = False, dTT_stop = 0):
+    fun = reconst_db[name]
+    pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
+    return pgen
+    
+    
+def test_axis_dynamics(name='Mercia'):
+# todo : add comparison to primary emission
 
-def test_axis_dynamics():
-    pgen = archidb.Mercia_2010_plantgen()
-    tdata = archidb.Tillering_data_2010()
+    pgen = get_pgen(name, original=True)
+    newpgen = get_pgen(name, original=False)
+    if name is not 'Tremie':
+        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()[name]
+    else:
+        obs = archidb.Plot_data_Tremie_2011_2012()[name]
+    
+    def _getfit(pgen):
+        primary_proba = pgen['decide_child_axis_probabilities']
+        plant_density = pgen['plants_density']
+        ears_density = pgen['ears_density']
+        ears_per_plant = float(ears_density) / plant_density
+        v=list(pgen['MS_leaves_number_probabilities'].values())
+        k=list(pgen['MS_leaves_number_probabilities'].keys())
+        nff = int(k[v.index(max(v))]) # key of maximal value
+        m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
+        fit = m.axis_dynamics(plant_density = plant_density)
+        return fit
     
     # fit by Mariem
-    primary_proba = pgen['decide_child_axis_probabilities']
-    plant_density = pgen['plants_number']
-    ears_density = pgen['ears_density']
-    ears_per_plant = float(ears_density) / plant_density
-    nff = 12
-    m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
-    
+    fit = _getfit(pgen)
     #newfit
-    obs = tdata['tillering']
-    obs = obs[obs.Var=='Mercia']
-    primary_proba={'T2': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
-    for w in ('T1','T3','T4','T5'):
-        primary_proba[w] = obs[w].values
-    ears_per_plant = obs['MB'].values + obs['TT'].values
-    nff = float(obs['Nff'].values)
-    new_m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
-    
-    # todo : add comparison to primary emission
-    
-    #test plantgen fit&
-    
-    fit = m.axis_dynamics(plant_density = plant_density)
-    
-    new_fit = new_m.axis_dynamics(plant_density = float(tdata['ear_density_at_harvest']['Mercia']) / new_m.ears_per_plant)
+    new_fit = _getfit(newpgen)
+
     fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
-    plt.plot([1,13],[tdata['plant_density_at_emergence']['Mercia'],tdata['ear_density_at_harvest']['Mercia']] ,'ob')
+    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')
 
 def setAdel(TT_stop, var):
     from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
