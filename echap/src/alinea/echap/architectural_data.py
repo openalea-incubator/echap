@@ -9,9 +9,13 @@ def Mercia_2010_plantgen():
     dynT = shared_data(alinea.echap, 'Mercia_dynT_user.csv')
     dimT = shared_data(alinea.echap, 'Mercia_dimT_user.csv')
     inputs = shared_data(alinea.echap, 'Mercia_plantgen_inputs_MIN.py')
-    #dynT = shared_data(alinea.echap, 'Tremie1_dynT_user.csv')
-    #dimT = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
-    #inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
+    d={}
+    d['dynT_user'], d['dimT_user'], d['plants_number'],d['plants_density'], d['decide_child_axis_probabilities'], d['MS_leaves_number_probabilities'], d['ears_density'], d['GL_number'], d['delais_TT_stop_del_axis'], d['TT_col_break'],d['inner_params'] =  read_plantgen_inputs(inputs, dynT, dimT)
+    return d
+def Rht3_2010_plantgen():
+    dynT = shared_data(alinea.echap, 'Rht3_dynT_user.csv')
+    dimT = shared_data(alinea.echap, 'Rht3_dimT_user.csv')
+    inputs = shared_data(alinea.echap, 'Rht3_plantgen_inputs_MIN.py')
     d={}
     d['dynT_user'], d['dimT_user'], d['plants_number'],d['plants_density'], d['decide_child_axis_probabilities'], d['MS_leaves_number_probabilities'], d['ears_density'], d['GL_number'], d['delais_TT_stop_del_axis'], d['TT_col_break'],d['inner_params'] =  read_plantgen_inputs(inputs, dynT, dimT)
     return d
