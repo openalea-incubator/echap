@@ -54,7 +54,16 @@ def Plot_data_Tremie_2011_2012():
     'inter_row':0.125
     }
     return d
-    
+   
+#
+# LAI data
+#
+def PAI_data():
+    d = {'Mercia':pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.27,4.03,4.05]}),
+         'Rht3': pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.40,3.96,3.45]}),
+         'Tremie': pandas.DataFrame({'TT':[923,1260,1550],'PAI':[1.1,4.31,4.43]})}
+    return d
+   
 # Tillering data    
 #-------------------------------------------------------------------------------   
 def _maxna(x):

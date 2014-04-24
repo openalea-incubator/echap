@@ -74,11 +74,13 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT
         #hack for removing tillers
         pgen['delais_TT_stop_del_axis'] -= dTT_stop
         
+     
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, 
                                                            devT=devT, 
-                                                           sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density_at_harvest, 
+                                                           sowing_density=pdata['plant_density_at_emergence'], 
+                                                           plant_density=pgen['plants_density'], 
                                                            inter_row=pdata['inter_row'], 
                                                            seed=seed, sample=sample)
     
@@ -111,7 +113,8 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT_s
     devT = plantgen_to_devT(pgen)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, 
                                                            devT=devT, 
-                                                           sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density_at_harvest, 
+                                                           sowing_density=pdata['plant_density_at_emergence'], 
+                                                           plant_density=pgen['plants_density'], 
                                                            inter_row=pdata['inter_row'], 
                                                            seed=seed, sample=sample)
     
@@ -128,7 +131,7 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT
     #adapt reconstruction
     # TO DO get nff probailitiesfor main stem from tillerng data ?
     if not as_pgen:
-        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4', 'T7')}
+        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4','T7')}
         ears_per_plant = tdata['MB'].values + tdata['TT'].values
         plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
         nff = float(tdata['Nff'].values)
@@ -144,7 +147,8 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT
     devT = plantgen_to_devT(pgen)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, 
                                                            devT=devT, 
-                                                           sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density_at_harvest, 
+                                                           sowing_density=pdata['plant_density_at_emergence'], 
+                                                           plant_density=pgen['plants_density'], 
                                                            inter_row=pdata['inter_row'], 
                                                            seed=seed, sample=sample)
     

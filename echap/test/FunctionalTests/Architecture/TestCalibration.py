@@ -21,8 +21,19 @@ def get_reconstruction(name='Mercia', **args):
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
     pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
+    
     return pgen
     
+    
+# test new tillering parametrisation againts original one by Mariem and data
+#
+# usage (ipython):
+# %pylab
+# %run TestCalibbration.py
+# test_axis_dynamics('Mercia')
+#
+# Very strange simulation for Tremie
+#    
     
 def test_axis_dynamics(name='Mercia'):
 # todo : add comparison to primary emission
@@ -55,76 +66,35 @@ def test_axis_dynamics(name='Mercia'):
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
     plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')
 
-def setAdel(TT_stop, var):
-    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
-    from alinea.adel.stand.stand import agronomicplot
-    from alinea.adel.astk_interface import AdelWheat
-    from alinea.adel.AdelR import devCsv
-    pgen = archidb.Mercia_2010_plantgen()
-    #pgen = archidb.Rht3_2010_plantgen()
-    #pgen = archidb.Tremie_2011_plantgen()
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()
-    #tdata = archidb.Tillering_data_Tremie1_2011_2012()
-    obs = tdata['tillering']
-    obs = obs[obs.Var==var]
-    #primary_proba={'T2': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
-    primary_proba={}
-    for w in ('T1','T2','T3','T4'):
-        primary_proba[w] = obs[w].values
-    ears_per_plant = obs['MB'].values + obs['TT'].values
-    nff = float(obs['Nff'].values)
-    new_m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
-    #update avec les probas primares de Tillering data
-    pgen['decide_child_axis_probabilities'] = primary_proba
-    # replace plant_number par eardensity / ear_per_plant, avec earsperplant =tillering data['MB'].values + Tillering data['TT'].values
-    pgen['plants_number'] = float(tdata['ear_density_at_harvest'][var]) / new_m.ears_per_plant
-    #
-    pgen['delais_TT_stop_del_axis'] -= TT_stop
-    tx = pgen['dynT_user'].a_cohort[0]
-    axeT_, dimT_, phenT_, _, _, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
-    axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
-    devT = devCsv(axeT, dimT, phenT)
-
-    nplants, positions, domain, domain_area, convUnit = agronomicplot(length=0.5, 
-                                                            width=0.5, 
-                                                            sowing_density=pgen['plants_density'], 
-                                                            plant_density=pgen['plants_number'],
-                                                            inter_row=0.125)
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=10, devT=devT, seed= 1, sample='random')
-    return adel, nplants, positions, domain, domain_area, convUnit
-      
-
-def simLAI(TT_stop, var):
-    from alinea.adel.postprocessing import axis_statistics, plot_statistics 
     
-    adel, nplants, positions, domain, domain_area, convUnit = setAdel(TT_stop,var)
+
+def simLAI(adel, domain_area, convUnit, nplants):
+    from alinea.adel.postprocessing import axis_statistics, plot_statistics 
+     
     dd = range(0,2000,100)
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
     out = reduce(lambda x,y: pandas.concat([x,y],ignore_index=True), new_outs)
     axstat = axis_statistics(out, domain_area, convUnit)    
     res =  plot_statistics(axstat, nplants, domain_area)
-    return res, tx
+    return res
     #res['HS'] = res.ThermalTime*tx
     #print res.plot('HS','PAI_vert',color='b')
 
-def compare_LAI():
-    sim = test_adel()
-    #Mercia
-    #obs = pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.27,4.03,4.05]})
-    #Rht3
-    obs = pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.40,3.96,3.45]})
-    #Tremie2012
-    #obs = pandas.DataFrame({'TT':[923,1260,1550],'PAI':[1.1,4.31,4.43]})
-    #Tremie2013
-    #obs = pandas.DataFrame({'TT':[917.5,1018.3,1377,1612.25],'PAI':[1.73,2.7,2.78,1.95]})
+def compare_LAI(name='Mercia', dTT_stop=0, original='False', n=30):
+
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
+    pgen = get_pgen(name, dTT_stop=dTT_stop, original=original)
+    sim = simLAI(adel, domain_area, convUnit, nplants)
+    obs = archidb.PAI_data()[name]
     #sim.plot('ThermalTime','PAI_vert')
     #obs.plot('TT','PAI',style='o')
     tx = pgen['dynT_user'].a_cohort[0]
     sim['HS'] = sim.ThermalTime*tx
-    sim.plot('HS','PAI_vert',color='g')
     obs['HS'] = obs.TT*tx
-    obs.plot('HS','PAI',style='o',color='r')
+    
+    sim.plot('HS','PAI_vert',color='g')
+    obs.plot('HS','PAI',style='or')
 
 def draft_TC(adel, domain,thermal_time):
     from alinea.adel.postprocessing import ground_cover
