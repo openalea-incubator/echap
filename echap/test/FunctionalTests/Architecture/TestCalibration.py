@@ -128,7 +128,7 @@ def draft_TC(adel, domain,thermal_time):
 def draft_light(adel, domain, z_level, thermal_time):
     from alinea.caribu.caribu_star import diffuse_source, run_caribu
     from alinea.caribu.label import Label
-    
+
     g =adel.setup_canopy(thermal_time)
     scene = adel.scene(g)
     sources = diffuse_source(46)
@@ -136,21 +136,55 @@ def draft_light(adel, domain, z_level, thermal_time):
     labs = {k:Label(v) for k,v in out['label'].iteritems()}
     ei_soil = [out['Ei'][k] for k in out['Ei'] if labs[k].is_soil()]
     return numpy.mean(ei_soil)
+
+def mat_ray(data_file):
+    header_row = ['TIMESTAMP','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
+    data = pandas.read_csv(data_file, parse_dates={'datetime':[0,0]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
     
-def mat_ray(csv_file):
-    from pandas import read_csv
-    df = read_csv(csv_file,';')
-    col1 = df.DATE             #Ajout de ma part dans le csv
-    col2 = df.QR_PAR_Avg       #PAR a 2m du sol
-    col3 = df.SE_PAR_Avg_1     #PAR surface du sol
-    col7 = df.SE_PAR_Avg_5     #PAR ds le couvert (env 20 cm)
-    col1 = col1.astype(int)
-    col2 = col2.astype(int)
-    col3 = col3.astype(int)
-    col7 = col7.astype(int)
-    plt.plot(col1, col2)
-    plt.plot(col1, col3)
-    plt.plot(col1, col7)
+    #filtre valeur negative
+    df = data
+    df_header = data[:0]
+    col = df_header.columns
+    i=1
+    while i<10:
+        df = df[(df[col[i]]>0)]
+        i=i+1
+    #verif : any(dd.SE_PAR_Avg_1 <=0)
+    
+    #avg PAR niveau du sol ('SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4')
+    dat0 = df.ix[:,'SE_PAR_Avg_1':'SE_PAR_Avg_4']
+    dat0 = dat0.apply(numpy.mean,1)
+    #avg PAR env 20 cm du sol ('SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8')
+    dat20 = df.ix[:,'SE_PAR_Avg_5':'SE_PAR_Avg_8']
+    dat20 = dat20.apply(numpy.mean,1)
+    # tableau % dat0/dat200
+    tab_prc0 = dat0/df.QR_PAR_Avg
+    # tableau % dat20/dat200
+    tab_prc20 = dat20/df.QR_PAR_Avg
+    return tab_prc0, tab_prc20
+    
+def meteo_20112012(date): #date au format JJ-MM-AAAA (09-03-2012) - 11-04-2012 - 09-05-2012
+    data_file = 'METEO_stationINRA_20112012.csv'
+    tab_prc0, tab_prc20 = mat_ray(data_file)
+    t_deb = "Timestamp:" + date + " " + "12:00:00"
+    args = tab_prc0.index
+    i=0
+    prc0 = ''
+    for arg in args:
+        if arg==t_deb:
+            print 'yes'
+            prc0 = tab_prc0[i]
+        else:
+                i=i+1
+    #    print 'no'
+    #if not args[i]==t_deb :
+    #    i=i+1
+    #    print 'no'
+    #else:
+    #    print 'yes'
+    #    prc0 = tab_prc0[i]
+    #return prc0
+    print t_deb, " : ", prc0    
     
 def func_star(a_b):
     return test_adel(*a_b)
