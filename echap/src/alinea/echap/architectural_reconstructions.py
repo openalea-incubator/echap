@@ -46,7 +46,9 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
     return adel, domain, domain_area, convUnit, nplants
     
     
-#---------- reconstruction    
+#---------- reconstructions    
+
+reconst_db={}
 
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT_stop=0):
 
@@ -80,8 +82,10 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT
                                                            inter_row=pdata['inter_row'], 
                                                            seed=seed, sample=sample)
     
-    return adel, domain, domain_area, convUnit, nplants
-    
+    return pgen, adel, domain, domain_area, convUnit, nplants
+ 
+reconst_db['Mercia'] = Mercia_2010
+ 
 age_at_application = {'Mercia_2010': {'2011-04-19': 1166,
                                       '2011-05-11' : 1500}}
                                 

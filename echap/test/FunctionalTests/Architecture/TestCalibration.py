@@ -6,10 +6,18 @@ import matplotlib.pyplot as plt
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
 
+from alinea.echap.architectural_reconstructions import reconst_db
+
 from multiprocessing import Pool,freeze_support
 import itertools
 
 plt.ion()
+
+def get_reconstruction(name='Mercia'):
+    fun = reconst_db[name]
+    _, adel, domain, domain_area, convUnit, nplants = fun()
+    return adel, domain, domain_area, convUnit, nplants
+
 
 def test_axis_dynamics():
     pgen = archidb.Mercia_2010_plantgen()
@@ -82,9 +90,6 @@ def setAdel(TT_stop, var):
     adel = AdelWheat(nplants=nplants, positions = positions, nsect=10, devT=devT, seed= 1, sample='random')
     return adel, nplants, positions, domain, domain_area, convUnit
       
-def sample_adel():
-    adel, nplants, positions, domain, domain_area, convUnit = setAdel(0, 'Mercia')
-    return adel, domain
 
 def simLAI(TT_stop, var):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
