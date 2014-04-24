@@ -83,8 +83,75 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT
                                                            seed=seed, sample=sample)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
- 
+    
 reconst_db['Mercia'] = Mercia_2010
+
+def Rht3_2010(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT_stop=0):
+
+    pgen = archidb.Rht3_2010_plantgen()
+    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
+    tdata = tdata[tdata.Var=='Rht3']
+    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+    #adapt reconstruction
+    # TO DO get nff probailitiesfor main stem from tillerng data ?
+    if not as_pgen:
+        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')}
+        ears_per_plant = tdata['MB'].values + tdata['TT'].values
+        plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
+        nff = float(tdata['Nff'].values)
+        # pgen adapt
+        pgen['decide_child_axis_probabilities'] = primary_proba
+        pgen['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
+        pgen['plants_number'] = pgen['plants_density']#to be optimised from a precision wanted on tillering probas and used to compute plot dimension
+        pgen['ears_density'] = pdata['ear_density_at_harvest']
+        #hack for removing tillers
+        pgen['delais_TT_stop_del_axis'] -= dTT_stop
+        
+    #generate reconstruction
+    devT = plantgen_to_devT(pgen)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, 
+                                                           devT=devT, 
+                                                           sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density_at_harvest, 
+                                                           inter_row=pdata['inter_row'], 
+                                                           seed=seed, sample=sample)
+    
+    return pgen, adel, domain, domain_area, convUnit, nplants
+    
+reconst_db['Rht3'] = Rht3_2010
+
+def Tremie_2011(nplants=30, nsect=3, seed=1, sample='random', as_pgen=False, dTT_stop=0):
+#BUG: nplants not generated as expected for this genotype !
+    pgen = archidb.Tremie_2011_plantgen()
+    tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering']
+    tdata = tdata[tdata.Var=='Tremie']
+    pdata = archidb.Plot_data_Tremie_2011_2012()['Tremie']
+    #adapt reconstruction
+    # TO DO get nff probailitiesfor main stem from tillerng data ?
+    if not as_pgen:
+        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4', 'T7')}
+        ears_per_plant = tdata['MB'].values + tdata['TT'].values
+        plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
+        nff = float(tdata['Nff'].values)
+        # pgen adapt
+        pgen['decide_child_axis_probabilities'] = primary_proba
+        pgen['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
+        pgen['plants_number'] = pgen['plants_density']#to be optimised from a precision wanted on tillering probas and used to compute plot dimension
+        pgen['ears_density'] = pdata['ear_density_at_harvest']
+        #hack for removing tillers
+        pgen['delais_TT_stop_del_axis'] -= dTT_stop
+        
+    #generate reconstruction
+    devT = plantgen_to_devT(pgen)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, 
+                                                           devT=devT, 
+                                                           sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density_at_harvest, 
+                                                           inter_row=pdata['inter_row'], 
+                                                           seed=seed, sample=sample)
+    
+    return pgen, adel, domain, domain_area, convUnit, nplants
+    
+reconst_db['Tremie'] = Tremie_2011
+
  
 age_at_application = {'Mercia_2010': {'2011-04-19': 1166,
                                       '2011-05-11' : 1500}}

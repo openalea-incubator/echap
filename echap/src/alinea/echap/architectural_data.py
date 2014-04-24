@@ -48,6 +48,13 @@ def Plot_data_Mercia_Rht3_2010_2011():
         'inter_row':0.125}}
     return d
 
+def Plot_data_Tremie_2011_2012():
+    d = {}
+    d['Tremie'] = {'plant_density_at_emergence' : 279, 'ear_density_at_harvest' : 491,
+    'inter_row':0.125
+    }
+    return d
+    
 # Tillering data    
 #-------------------------------------------------------------------------------   
 def _maxna(x):

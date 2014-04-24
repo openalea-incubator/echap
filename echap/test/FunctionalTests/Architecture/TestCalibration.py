@@ -13,9 +13,9 @@ import itertools
 
 plt.ion()
 
-def get_reconstruction(name='Mercia'):
+def get_reconstruction(name='Mercia', **args):
     fun = reconst_db[name]
-    _, adel, domain, domain_area, convUnit, nplants = fun()
+    _, adel, domain, domain_area, convUnit, nplants = fun(**args)
     return adel, domain, domain_area, convUnit, nplants
 
 
@@ -117,6 +117,7 @@ def compare_LAI():
     #obs = pandas.DataFrame({'TT':[917.5,1018.3,1377,1612.25],'PAI':[1.73,2.7,2.78,1.95]})
     #sim.plot('ThermalTime','PAI_vert')
     #obs.plot('TT','PAI',style='o')
+    tx = pgen['dynT_user'].a_cohort[0]
     sim['HS'] = sim.ThermalTime*tx
     sim.plot('HS','PAI_vert',color='g')
     obs['HS'] = obs.TT*tx
