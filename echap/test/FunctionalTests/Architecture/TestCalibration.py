@@ -49,11 +49,11 @@ def setAdel(TT_stop, var):
     from alinea.adel.stand.stand import agronomicplot
     from alinea.adel.astk_interface import AdelWheat
     from alinea.adel.AdelR import devCsv
-    #pgen = archidb.Mercia_2010_plantgen()
+    pgen = archidb.Mercia_2010_plantgen()
     #pgen = archidb.Rht3_2010_plantgen()
-    pgen = archidb.Tremie_2011_plantgen()
-    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()
-    tdata = archidb.Tillering_data_Tremie1_2011_2012()
+    #pgen = archidb.Tremie_2011_plantgen()
+    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()
+    #tdata = archidb.Tillering_data_Tremie1_2011_2012()
     obs = tdata['tillering']
     obs = obs[obs.Var==var]
     #primary_proba={'T2': obs['MB'].values + obs['TC'].values}#handle damages to MB and simplify TC
@@ -120,11 +120,22 @@ def compare_LAI():
 def draft_TC(adel, domain,thermal_time):
     from alinea.adel.postprocessing import ground_cover
     
+    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':0.}
     g =adel.setup_canopy(thermal_time)
-    return ground_cover(g,domain, camera = {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':0.}, image_width = 4288, image_height = 2848)
+    return ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848)
     
-
     
+def draft_light(adel, domain, z_level, thermal_time):
+    from alinea.caribu.caribu_star import diffuse_source, run_caribu
+    from alinea.caribu.label import Label
+    
+    g =adel.setup_canopy(thermal_time)
+    scene = adel.scene(g)
+    sources = diffuse_source(46)
+    out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
+    labs = {k:Label(v) for k,v in out['label'].iteritems()}
+    ei_soil = [out['Ei'][k] for k in out['Ei'] if labs[k].is_soil()]
+    return numpy.mean(ei_soil)
     
 def mat_ray(csv_file):
     from pandas import read_csv
