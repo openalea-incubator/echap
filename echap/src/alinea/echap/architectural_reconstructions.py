@@ -26,7 +26,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     
     inter_plant = 1. / inter_row / sowing_density
     nseed = int(nplants * sowing_density / plant_density) + 1
-    nrow = max(1, int(sqrt(nseed) * 1. * inter_plant / inter_row))
+    nrow = max(1, round(sqrt(nseed) * 1. * inter_plant / inter_row))
     plant_per_row = max(1, int(nseed * 1. / nrow) + 1) 
     plot_length = inter_plant * plant_per_row
     plot_width = inter_row * nrow

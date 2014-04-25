@@ -29,7 +29,7 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
 #
 # usage (ipython):
 # %pylab
-# %run TestCalibbration.py
+# %run TestCalibration.py
 # test_axis_dynamics('Mercia')
 #
 # Very strange simulation for Tremie
@@ -104,21 +104,35 @@ def draft_TC(adel, domain,thermal_time):
     return ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848)
     
     
-def draft_light(adel, domain, z_level, thermal_time):
+def draft_light(g, adel, domain, z_level):
     from alinea.caribu.caribu_star import diffuse_source, run_caribu
     from alinea.caribu.label import Label
 
-    g =adel.setup_canopy(thermal_time)
     scene = adel.scene(g)
     sources = diffuse_source(46)
     out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
-    labs = {k:Label(v) for k,v in out['label'].iteritems()}
-    ei_soil = [out['Ei'][k] for k in out['Ei'] if labs[k].is_soil()]
+    labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
+    ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
     return numpy.mean(ei_soil)
 
+    
+    
+    
+def comp_light(name='Mercia', dTT_stop=0, original='False', n=30):
+
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
+    dd = range(400,2000,300)
+    sim = [adel.setup_canopy(age) for age in dd]
+
+    light_sim_0 = [draft_light(g, adel, domain, 0) for g in sim]
+    
+    sim_df = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
+    sim_df.plot('tt','light0')
+    
 def mat_ray(data_file):
     header_row = ['TIMESTAMP','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
     data = pandas.read_csv(data_file, parse_dates={'datetime':[0,0]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
+    data['Temp (C)'].plot(figsize=(15, 6))
     
     #filtre valeur negative
     df = data
@@ -147,7 +161,7 @@ def meteo_20112012(dates): #date au format JJ-MM-AAAA (2012-03-09) = ['2012-04-1
     tab_prc0, tab_prc20 = mat_ray(data_file)
     prc0 = []; prc20 = []
     TT = [1260, 1551]
-    
+ 
     for date in dates :
         seq = pandas.date_range(start = date, periods=13, freq='H')
         t_deb = seq[12]
@@ -166,7 +180,30 @@ def meteo_20112012(dates): #date au format JJ-MM-AAAA (2012-03-09) = ['2012-04-1
     print prc0, prc20
     plt.plot(TT, prc0, color='r')
     plt.plot(TT, prc20, color='g')
-    
+"""
+    for date in dates :
+        seq = pandas.date_range(start = date, periods = 24, freq='H')
+        seq_num = seq[0]
+        test = seq_num
+        t_deb = tab_prc0.index
+        i = 0; num = 0
+        for arg in t_deb:
+            if num <= 23:
+                if arg == test:
+                    val1 = tab_prc0[i]
+                    val2 = tab_prc20[i]
+                    prc0.append(val1)
+                    prc20.append(val2)
+                    i = i + 1
+                    num = num + 1
+                    test = seq_num + num
+                else:
+                    i = i + 1
+                    
+    print prc0, "\n\n\n", prc20
+    med0 = prc0.median()
+    print med0           
+"""  
     
 def func_star(a_b):
     return test_adel(*a_b)
