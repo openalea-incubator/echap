@@ -67,7 +67,6 @@ def test_axis_dynamics(name='Mercia'):
     plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')
 
     
-
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
@@ -96,14 +95,35 @@ def compare_LAI(name='Mercia', dTT_stop=0, original='False', n=30):
     sim.plot('HS','PAI_vert',color='g')
     obs.plot('HS','PAI',style='or')
 
-def draft_TC(adel, domain,thermal_time):
+def draft_TC(g, adel, domain, zenith):
     from alinea.adel.postprocessing import ground_cover
     
-    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':0.}
-    g =adel.setup_canopy(thermal_time)
+    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
+    #g =adel.setup_canopy(thermal_time)
     return ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848)
     
+def comp_TC(name='Mercia', original='False', n=30, zenith=0, zen='0', dTT_stop=0): #zenith = 0 or 57
+
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
+    dd = range(400,2000,300)
+    sim = [adel.setup_canopy(age) for age in dd]
+
+    TC_sim= [draft_TC(g, adel, domain, zenith) for g in sim]
     
+    obs = archidb.TC_data()[name+'_'+zen]
+    
+    n=0; tc=[]; tc_sen=[]
+    while n<=5:
+        tc.append(TC_sim[n]['green'])
+        tc_sen.append(TC_sim[n]['senescent'])
+        n = n + 1
+
+    sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc})
+    sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
+    sim_green.plot('tt','TCgreen',color='g')
+    sim_sen.plot('tt','TCsem',color='y')
+    obs.plot('TT','TC',style='or')
+     
 def draft_light(g, adel, domain, z_level):
     from alinea.caribu.caribu_star import diffuse_source, run_caribu
     from alinea.caribu.label import Label
@@ -114,10 +134,7 @@ def draft_light(g, adel, domain, z_level):
     labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
     ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
     return numpy.mean(ei_soil)
-
-    
-    
-    
+   
 def comp_light(name='Mercia', dTT_stop=0, original='False', n=30):
 
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
@@ -125,85 +142,19 @@ def comp_light(name='Mercia', dTT_stop=0, original='False', n=30):
     sim = [adel.setup_canopy(age) for age in dd]
 
     light_sim_0 = [draft_light(g, adel, domain, 0) for g in sim]
+    light_sim_20 = [draft_light(g, adel, domain, 20) for g in sim]
     
-    sim_df = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
-    sim_df.plot('tt','light0')
+    obs = archidb.mat_data()[name]
     
-def mat_ray(data_file):
-    header_row = ['TIMESTAMP','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
-    data = pandas.read_csv(data_file, parse_dates={'datetime':[0,0]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
-    data['Temp (C)'].plot(figsize=(15, 6))
+    sim_df0 = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
+    sim_df20 = pandas.DataFrame({'tt':dd, 'light20':light_sim_20})
+    sim_df0.plot('tt','light0',color='b')
+    sim_df20.plot('tt','light20',color='g')
     
-    #filtre valeur negative
-    df = data
-    df_header = data[:0]
-    col = df_header.columns
-    i=1
-    while i<10:
-        df = df[(df[col[i]]>0)]
-        i=i+1
-    #verif : any(dd.SE_PAR_Avg_1 <=0)
+    obs.plot('TT','light0',style='ob')
+    obs.plot('TT','light20',style='gs')
     
-    #avg PAR niveau du sol ('SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4')
-    dat0 = df.ix[:,'SE_PAR_Avg_1':'SE_PAR_Avg_4']
-    dat0 = dat0.apply(numpy.mean,1)
-    #avg PAR env 20 cm du sol ('SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8')
-    dat20 = df.ix[:,'SE_PAR_Avg_5':'SE_PAR_Avg_8']
-    dat20 = dat20.apply(numpy.mean,1)
-    # tableau % dat0/dat200
-    tab_prc0 = dat0/df.QR_PAR_Avg
-    # tableau % dat20/dat200 
-    tab_prc20 = dat20/df.QR_PAR_Avg
-    return tab_prc0, tab_prc20
-    
-def meteo_20112012(dates): #date au format JJ-MM-AAAA (2012-03-09) = ['2012-04-11','2012-05-09']
-    data_file = 'METEO_stationINRA_20112012.csv'
-    tab_prc0, tab_prc20 = mat_ray(data_file)
-    prc0 = []; prc20 = []
-    TT = [1260, 1551]
  
-    for date in dates :
-        seq = pandas.date_range(start = date, periods=13, freq='H')
-        t_deb = seq[12]
-        args0 = tab_prc0.index
-        i=0;j=0
-        
-        for arg0 in args0:
-            if arg0==t_deb:
-                val = tab_prc0[i]
-                val2 = tab_prc20[i]
-            else:
-                i=i+1;  j=j+1
-        prc0.append(val)
-        prc20.append(val2)
-        
-    print prc0, prc20
-    plt.plot(TT, prc0, color='r')
-    plt.plot(TT, prc20, color='g')
-"""
-    for date in dates :
-        seq = pandas.date_range(start = date, periods = 24, freq='H')
-        seq_num = seq[0]
-        test = seq_num
-        t_deb = tab_prc0.index
-        i = 0; num = 0
-        for arg in t_deb:
-            if num <= 23:
-                if arg == test:
-                    val1 = tab_prc0[i]
-                    val2 = tab_prc20[i]
-                    prc0.append(val1)
-                    prc20.append(val2)
-                    i = i + 1
-                    num = num + 1
-                    test = seq_num + num
-                else:
-                    i = i + 1
-                    
-    print prc0, "\n\n\n", prc20
-    med0 = prc0.median()
-    print med0           
-"""  
     
 def func_star(a_b):
     return test_adel(*a_b)
