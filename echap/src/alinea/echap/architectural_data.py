@@ -2,7 +2,7 @@ import pandas
 
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
-from alinea.adel.plantgen.plantgen import read_plantgen_inputs
+from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
 
 
