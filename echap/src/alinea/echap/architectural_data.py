@@ -117,7 +117,7 @@ def emis(data, d, n):
 #-------------------------------------------------------------------------------  
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
-    Found data are (id_data refers to column in data sythesis):
+    Found data are (id_data refers to column in data synthesis):
     - estimates of plant density at emergence (id Archi12)
     - estimates of ear density at harvest (all axes, id Archi10)
     - estimates of the number of elongated internodes on main stems
@@ -135,7 +135,7 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     # this table was contrusted using Archi11,Archi19, Archi33
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    # compute emmission probas of primary axis/ emission per plant of sencondary axis 
+    # compute emmission probas of primary axis/ emission per plant of secondary axis 
     edata = data[data['Date'] < 6]
     edata = edata.reset_index()
     grouped = edata.groupby(['Var', 'N'],as_index=False)
@@ -178,7 +178,7 @@ def Tillering_data_Tremie1_2011_2012():
     # this table was contrusted using Archi2, Archi3, Archi14, Archi15
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    # compute emmission probas of primary axis/ emission per plant of sencondary axis 
+    # compute emmission probas of primary axis/ emission per plant of secondary axis 
     edata = data[data['Date'] < 6]
     edata = edata.reset_index()
     grouped = edata.groupby(['Var', 'N'],as_index=False)

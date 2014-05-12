@@ -6,7 +6,7 @@ import alinea.echap.architectural_data as archidb
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
 
-#generic function to be moved to  adel
+#generic function to be moved to adel
 
 def plantgen_to_devT(pgen):
     """ Creates devT tables from plantgen dict
@@ -70,9 +70,10 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     pgen = archidb.Mercia_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
     tdata = tdata[tdata.Var=='Mercia']
+    tdata['MB']=0.9 #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
     #adapt reconstruction
-    # TO DO get nff probailitiesfor main stem from tillerng data ?
+    # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
         #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
         # BUG : MB is equal to 1 => should return  less than 1
@@ -94,7 +95,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     tdata = tdata[tdata.Var=='Rht3']
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
     #adapt reconstruction
-    # TO DO get nff probailitiesfor main stem from tillerng data ?
+    # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
         primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')}
         pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)    
@@ -112,11 +113,13 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering']
     tdata = tdata[tdata.Var=='Tremie']
     pdata = archidb.Plot_data_Tremie_2011_2012()['Tremie']
+    #tdata['T5']=0; tdata['T6']=0
     #adapt reconstruction
-    # TO DO get nff probailitiesfor main stem from tillerng data ?
+    # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
-        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4','T7')}
-        pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)    
+        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4','T5')} 
+        pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop) 
+        #pgen['plants_density']= 200
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)

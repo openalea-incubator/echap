@@ -11,6 +11,9 @@ from alinea.echap.architectural_reconstructions import reconst_db
 from multiprocessing import Pool,freeze_support
 import itertools
 
+import openalea.plantgl.all as pgl
+from alinea.adel.mtg_interpreter import *
+
 plt.ion()
 
 def get_reconstruction(name='Mercia', **args):
@@ -80,20 +83,18 @@ def simLAI(adel, domain_area, convUnit, nplants):
     #res['HS'] = res.ThermalTime*tx
     #print res.plot('HS','PAI_vert',color='b')
 
-def compare_LAI(name='Mercia', dTT_stop=0, original='False', n=30):
+def compare_LAI(name='Mercia', dTT_stop=600, original='False', n=30):
 
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     pgen = get_pgen(name, dTT_stop=dTT_stop, original=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     obs = archidb.PAI_data()[name]
-    #sim.plot('ThermalTime','PAI_vert')
-    #obs.plot('TT','PAI',style='o')
     tx = pgen['dynT_user'].a_cohort[0]
     sim['HS'] = sim.ThermalTime*tx
     obs['HS'] = obs.TT*tx
     
-    sim.plot('HS','PAI_vert',color='g')
-    obs.plot('HS','PAI',style='or')
+    sim.plot('HS','PAI_vert',color='r')
+    obs.plot('HS','PAI',style='or') #r = mercia, b = tremie, y = rht3
 
 def draft_TC(g, adel, domain, zenith):
     from alinea.adel.postprocessing import ground_cover
@@ -129,6 +130,11 @@ def draft_light(g, adel, domain, z_level):
     from alinea.caribu.label import Label
 
     scene = adel.scene(g)
+    
+    #modelisation afin de voir si erreur
+    #scene=plot3d(g)
+    #pgl.Viewer.display(scene)
+    
     sources = diffuse_source(46)
     out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
     labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
@@ -142,17 +148,17 @@ def comp_light(name='Mercia', dTT_stop=0, original='False', n=30):
     sim = [adel.setup_canopy(age) for age in dd]
 
     light_sim_0 = [draft_light(g, adel, domain, 0) for g in sim]
-    light_sim_20 = [draft_light(g, adel, domain, 20) for g in sim]
+    #light_sim_20 = [draft_light(g, adel, domain, 20) for g in sim]
     
     obs = archidb.mat_data()[name]
     
-    sim_df0 = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
-    sim_df20 = pandas.DataFrame({'tt':dd, 'light20':light_sim_20})
-    sim_df0.plot('tt','light0',color='b')
-    sim_df20.plot('tt','light20',color='g')
+    #sim_df0 = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
+    #sim_df20 = pandas.DataFrame({'tt':dd, 'light20':light_sim_20})
+    #sim_df0.plot('tt','light0',color='b')
+    #sim_df20.plot('tt','light20',color='g')
     
-    obs.plot('TT','light0',style='ob')
-    obs.plot('TT','light20',style='gs')
+    #obs.plot('TT','light0',style='ob')
+    #obs.plot('TT','light20',style='gs')
     
  
     
