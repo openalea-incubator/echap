@@ -5,6 +5,7 @@ Current reconstructions use fit from Mariem (pgen data) + new modification consi
 import alinea.echap.architectural_data as archidb
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
+from copy import copy
 
 #generic function to be moved to adel
 
@@ -51,6 +52,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
 #---------- reconstructions 
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
+        pgen = copy(pgen)
         ears_per_plant = tdata['MB'].values + tdata['TT'].values
         plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
         nff = float(tdata['Nff'].values)

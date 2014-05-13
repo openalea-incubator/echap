@@ -117,6 +117,7 @@ def emis(data, d, n):
 #-------------------------------------------------------------------------------  
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
+    
     Found data are (id_data refers to column in data synthesis):
     - estimates of plant density at emergence (id Archi12)
     - estimates of ear density at harvest (all axes, id Archi10)
@@ -126,9 +127,9 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive), and/or  total number of primary tillers (column TPE) and secondary tillers emited (dead or alive, column TSE). These data are used for fitting emission probabilities
         - estimation of total living tillers (column TT) at the end from the counting of tillers that are alive or that bears an ear 
     Others data :
-    - Number of secondary tiller to date 3 (Archi33)
+    - Number of secondary tiller at date 3 (Archi33)
     Notes :
-    - No data to date 5
+    - No data at date 5
     - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)"""
     
     # summarise tillering data to mean number of tiller emited per plant (columns Tc->T5), mean number of leaves, and total tillers and MS present per plant at the end (column TT and MB)
@@ -172,7 +173,7 @@ def Tillering_data_Tremie1_2011_2012():
     Others data :
     - Number of secondary tiller to date 1 
     Notes :
-    - No data to date 2, 4 & 5"""
+    - No data at date 2, 4 & 5"""
     
     # summarise tillering data to mean number of tiller emited per plant (columns Tc->T7), mean number of leaves, and total tillers and MS present per plant at the end (column TT and MB)
     # this table was contrusted using Archi2, Archi3, Archi14, Archi15
