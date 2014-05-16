@@ -34,7 +34,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     return plot_length, plot_width
    
 
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7):    
     
     
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
@@ -44,7 +44,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep)
     return adel, domain, domain_area, convUnit, nplants
     
     
