@@ -110,40 +110,46 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
     sim.plot('HS','PAI_vert',color='g')
     obs.plot('HS','PAI',style='or')
 
-def draft_TC(g, adel, domain, zenith):
+def draft_TC(g, adel, domain, zenith, rep):
     from alinea.adel.postprocessing import ground_cover
-    
-    if zenith=0:
-        rep=0
-    else:
-        rep=1
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
     
     return gc
     
-def comp_TC(name='Tremie', original=False, n=30, zenith=0, zen='0', dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
-    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
-    dd = range(400,2000,300)
+    if zenith==0:
+        zen='0'; rep=1
+    else:
+        zen='57';rep=2
+
+    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
+    #dd = range(400,2000,300)
+    dd = range(800,2700,300)
     sim = [adel.setup_canopy(age) for age in dd]
 
-    TC_sim = [draft_TC(g, adel, domain, zenith) for g in sim]
+    TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
     
     obs = archidb.TC_data()[name+'_'+zen]
     
     n=0; tc=[]; tc_sen=[]
-    while n<=5:
+    while n<len(TC_sim):
         tc.append(TC_sim[n]['green'])
         tc_sen.append(TC_sim[n]['senescent'])
         n = n + 1
 
-    sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc})
-    #si on veut tracer 1-TC pr comparer avec la lumiere
+    sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TC_sen':tc_sen})
+    # Si on veut tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
     sim_green['1-TC']=1-sim_green['TCgreen']
-    sim_green.plot('tt','1-TC',color='g')
+    sim_green['TCtot']=sim_green['TCgreen']+sim_green['TC_sen']
+    sim_green['1-TCtot']=1-sim_green['TCtot']
+    sim_green.plot('tt','1-TC',color='y',linestyle='--',linewidth=2)
+    sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
+    obs.plot('TT','1-TC',style='oy')
     
+    # Si on veut tracer TC green et senescence sur le même graph
     #sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
     #sim_green.plot('tt','TCgreen',color='g')
     #sim_sen.plot('tt','TCsem',color='y')
@@ -249,7 +255,7 @@ def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
         
     dfa, tab0, tab20 = mat_ray_obs(data_file)
         
-    # merger bid et tab0  
+    # merger bid avec tab0 puis tab20 
         # mise en forme de bid
     bid = pandas.DataFrame(list(bid.values), index=bid.index)
     bid = bid.reset_index()
@@ -261,34 +267,34 @@ def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
     
     # PARTIE SIM ------------------------------------------------------------------------------------------------------------
     _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
-    dd = range(900,2800,100)
+    dd = range(1000,2600,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
     light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
+    light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
     light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
     light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
-    light_sim_30 = [draft_light(g, adel, domain, z_level=30) for g in sim]
 
     sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
+    sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
     sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
     sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
-    sim30 = pandas.DataFrame({'TT':dd, 'light30':light_sim_30})
 
     # GRAPHES ---------------------------------------------------------------------------------------------------------------
     #obs tous les points
     dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
         #niveau du sol (point rouge)
-    dfa.plot('TT','%SE1',style='or'); dfa.plot('TT','%SE2',style='or'); dfa.plot('TT','%SE3',style='or'); dfa.plot('TT','%SE4',style='or')
+    dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
         #20cm du sol (point bleu)
-    dfa.plot('TT','%SE5',style='ob'); dfa.plot('TT','%SE6',style='ob'); dfa.plot('TT','%SE7',style='ob'); dfa.plot('TT','%SE8',style='ob')
+    dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
     #obs moyennes
-    tab0.plot('TT','%',color='r')
-    tab20.plot('TT','%',color='b')
+    tab0.plot('TT','%',color='m')
+    tab20.plot('TT','%',color='c')
     #sim
-    sim0.plot('TT','light0',color='m')                            
-    sim20.plot('TT','light20',color='c')
-    sim25.plot('TT','light25',color='g')
-    sim30.plot('TT','light30',color='y')
+    sim0.plot('TT','light0',color='r',linewidth=2)  
+    sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
+    sim20.plot('TT','light20',color='b',linewidth=2)
+    sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
  
 #-------------------------------------------------------------------------------------
 
