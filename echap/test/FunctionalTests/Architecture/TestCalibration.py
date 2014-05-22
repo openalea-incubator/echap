@@ -13,22 +13,23 @@ import itertools
 
 import openalea.plantgl.all as pgl
 from alinea.adel.mtg_interpreter import *
+from alinea.echap.weather_data import *
+from alinea.caribu.caribu_star import diffuse_source, run_caribu
 
 plt.ion()
 
 def get_reconstruction(name='Mercia', **args):
     fun = reconst_db[name]
-    _, adel, domain, domain_area, convUnit, nplants = fun(**args)
-    return adel, domain, domain_area, convUnit, nplants
+    pgen, adel, domain, domain_area, convUnit, nplants = fun(**args)
+    return pgen, adel, domain, domain_area, convUnit, nplants
 
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
     pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
-    
     return pgen
     
     
-# test new tillering parametrisation againts original one by Mariem and data
+# test new tillering parametrisation against original one by Mariem and data
 #
 # usage (ipython):
 # %pylab
@@ -43,10 +44,15 @@ def test_axis_dynamics(name='Mercia'):
 
     pgen = get_pgen(name, original=True)
     newpgen = get_pgen(name, original=False)
-    if name is not 'Tremie':
+    
+    if name is 'Mercia':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()[name]
-    else:
+    elif name is 'Rht3':
+        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()[name]
+    elif name is 'Tremie':
         obs = archidb.Plot_data_Tremie_2011_2012()[name]
+    elif name is 'Tremie2':
+        obs = archidb.Plot_data_Tremie_2012_2013()[name]
     
     def _getfit(pgen):
         primary_proba = pgen['decide_child_axis_probabilities']
@@ -60,20 +66,20 @@ def test_axis_dynamics(name='Mercia'):
         fit = m.axis_dynamics(plant_density = plant_density)
         return fit
     
-    # fit by Mariem
+    #fit by Mariem
     fit = _getfit(pgen)
     #newfit
     new_fit = _getfit(newpgen)
 
     fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
-    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')
+    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')    
 
     
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    dd = range(0,2000,100)
+    dd = range(0,3000,100)
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
     out = reduce(lambda x,y: pandas.concat([x,y],ignore_index=True), new_outs)
@@ -83,33 +89,47 @@ def simLAI(adel, domain_area, convUnit, nplants):
     #res['HS'] = res.ThermalTime*tx
     #print res.plot('HS','PAI_vert',color='b')
 
-def compare_LAI(name='Mercia', dTT_stop=600, original='False', n=30):
+def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
 
-    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
-    pgen = get_pgen(name, dTT_stop=dTT_stop, original=original)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
+    #pgen = get_pgen(name, original=original, dTT_stop=dTT_stop)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     obs = archidb.PAI_data()[name]
     tx = pgen['dynT_user'].a_cohort[0]
+    
+    '''#Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
+    sim.plot('ThermalTime','LAI_vert', color='g')
+    sim.plot('ThermalTime','LAI_tot', color='r')
+    plt.title('Mercia 2010/2011')
+    plt.legend(("LAI_vert", "LAI_tot"), 'best')
+    plt.show()'''
+    
     sim['HS'] = sim.ThermalTime*tx
     obs['HS'] = obs.TT*tx
     
-    sim.plot('HS','PAI_vert',color='r')
-    obs.plot('HS','PAI',style='or') #r = mercia, b = tremie, y = rht3
+    sim.plot('HS','PAI_vert',color='g')
+    obs.plot('HS','PAI',style='or')
 
 def draft_TC(g, adel, domain, zenith):
     from alinea.adel.postprocessing import ground_cover
     
-    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
-    #g =adel.setup_canopy(thermal_time)
-    return ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848)
+    if zenith=0:
+        rep=0
+    else:
+        rep=1
     
-def comp_TC(name='Mercia', original='False', n=30, zenith=0, zen='0', dTT_stop=0): #zenith = 0 or 57
+    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    
+    return gc
+    
+def comp_TC(name='Tremie', original=False, n=30, zenith=0, zen='0', dTT_stop=0): #zenith = 0 or 57
 
-    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
+    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
     dd = range(400,2000,300)
     sim = [adel.setup_canopy(age) for age in dd]
 
-    TC_sim= [draft_TC(g, adel, domain, zenith) for g in sim]
+    TC_sim = [draft_TC(g, adel, domain, zenith) for g in sim]
     
     obs = archidb.TC_data()[name+'_'+zen]
     
@@ -120,48 +140,160 @@ def comp_TC(name='Mercia', original='False', n=30, zenith=0, zen='0', dTT_stop=0
         n = n + 1
 
     sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc})
-    sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
-    sim_green.plot('tt','TCgreen',color='g')
-    sim_sen.plot('tt','TCsem',color='y')
-    obs.plot('TT','TC',style='or')
+    #si on veut tracer 1-TC pr comparer avec la lumiere
+    sim_green['1-TC']=1-sim_green['TCgreen']
+    sim_green.plot('tt','1-TC',color='g')
+    
+    #sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
+    #sim_green.plot('tt','TCgreen',color='g')
+    #sim_sen.plot('tt','TCsem',color='y')
+    #obs.plot('TT','TC',style='or')
+    
+#-------------------------------------------------------------------------------------
+# GRAPH METEO
+    
+def mat_ray_obs(data_file):
+    import re
+    
+    header_row = ['DATE','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
+    #data = pandas.read_csv(data_file, parse_dates={'datetime':[0,1]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
+    df = pandas.read_csv(data_file, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
      
+    #filtre seulement heure entre 9h et 19h pour chaque journee
+    df = df[df['H']>9]; df = df[df['H']<19]
+    
+    #tableau non traité
+    dfa=df; dfa = dfa.reset_index()
+    dfa.columns = ['datetime','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
+    dfa = dfa.groupby(dfa['datetime'], axis=0).mean(); dfa = dfa.reset_index()
+    da=0
+    while da<len(dfa):
+        dfa['datetime'][da] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", dfa['datetime'][da])
+        da = da+1
+    dfa['%SE1'] = dfa['SE_PAR_Avg_1']/dfa['QR_PAR_Avg']; dfa['%SE2'] = dfa['SE_PAR_Avg_2']/dfa['QR_PAR_Avg']
+    dfa['%SE3'] = dfa['SE_PAR_Avg_3']/dfa['QR_PAR_Avg']; dfa['%SE4'] = dfa['SE_PAR_Avg_4']/dfa['QR_PAR_Avg']
+    dfa['%SE5'] = dfa['SE_PAR_Avg_5']/dfa['QR_PAR_Avg']; dfa['%SE6'] = dfa['SE_PAR_Avg_6']/dfa['QR_PAR_Avg']
+    dfa['%SE7'] = dfa['SE_PAR_Avg_7']/dfa['QR_PAR_Avg']; dfa['%SE8'] = dfa['SE_PAR_Avg_8']/dfa['QR_PAR_Avg']
+    
+    # traitement tableau de données obs
+    #avg PAR niveau du sol ('SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4')
+    dat0 = df.ix[:,'SE_PAR_Avg_1':'SE_PAR_Avg_4']; dat0 = dat0.apply(numpy.mean,1)
+    #avg PAR env 20 cm du sol ('SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8')
+    dat20 = df.ix[:,'SE_PAR_Avg_5':'SE_PAR_Avg_8']; dat20 = dat20.apply(numpy.mean,1)
+    # tableau % dat0/dat200
+    tab_prc0 = dat0/df.QR_PAR_Avg
+    # tableau % dat20/dat200
+    tab_prc20 = dat20/df.QR_PAR_Avg
+    
+    # chaine de traitement pour hauteur au niveau du sol
+    tab0 = pandas.DataFrame(tab_prc0)
+    tab0 = tab0.reset_index(); tab0.columns = ['datetime','%']
+    tab0 = tab0.groupby(tab0['datetime'], axis=0).mean()
+    tab0 = tab0.reset_index()
+    # changement format date JJ/MM/AAAA en JJ-MM-AAAA
+    dt=0
+    while dt<len(tab0):
+        tab0['datetime'][dt] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", tab0['datetime'][dt])
+        dt = dt+1
+
+    # chaine de traitement pour hauteur a 20 cm du sol
+    tab20 = pandas.DataFrame(tab_prc20)
+    tab20 = tab20.reset_index(); tab20.columns = ['datetime','%']
+    tab20 = tab20.groupby(tab20['datetime'], axis=0).mean()
+    tab20 = tab20.reset_index()
+    # changement format date JJ/MM/AAAA en JJ-MM-AAAA
+    dte=0
+    while dte<len(tab20):
+        tab20['datetime'][dte] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", tab20['datetime'][dte])
+        dte = dte+1
+    
+    return dfa, tab0, tab20
+    
 def draft_light(g, adel, domain, z_level):
-    from alinea.caribu.caribu_star import diffuse_source, run_caribu
     from alinea.caribu.label import Label
 
     scene = adel.scene(g)
-    
     #modelisation afin de voir si erreur
     #scene=plot3d(g)
     #pgl.Viewer.display(scene)
-    
+
     sources = diffuse_source(46)
     out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
     labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
     ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
-    return numpy.mean(ei_soil)
-   
-def comp_light(name='Mercia', dTT_stop=0, original='False', n=30):
-
-    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
-    dd = range(400,2000,300)
+    return float(numpy.mean(ei_soil))
+    
+#fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
+def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
+    from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
+    
+    # PARTIE OBS ------------------------------------------------------------------------------------------------------------
+    if name is 'Mercia' or 'Rht3': #Mercia & Rht3 2010/2011
+        data_file = 'METEO_stationINRA_20102011.csv'
+        # correspondance entre date et TT
+        met = Boigneville_2010_2011()
+        seq = pandas.date_range(start="2010-10-15", end="2011-06-20", freq='H')
+        bid = thermal_time(seq, met.data)
+        # groupe par date
+        seq = pandas.date_range(start="2010-10-15", end="2011-06-20")
+        bid = bid[seq]
+    if name is 'Tremie': #Tremie 2011/2012
+        data_file = 'METEO_stationINRA_20112012.csv'
+        # correspondance entre date et TT
+        met = Boigneville_2011_2012()
+        seq = pandas.date_range(start="2011-10-21", end="2012-07-18", freq='H')
+        bid = thermal_time(seq, met.data)
+        # groupe par date
+        seq = pandas.date_range(start="2011-10-21", end="2012-07-18")
+        bid = bid[seq]
+        
+    dfa, tab0, tab20 = mat_ray_obs(data_file)
+        
+    # merger bid et tab0  
+        # mise en forme de bid
+    bid = pandas.DataFrame(list(bid.values), index=bid.index)
+    bid = bid.reset_index()
+    bid.columns = ['datetime','TT']
+    bid['datetime'] = bid['datetime'].map(lambda x: x.strftime('%d-%m-%Y'))
+        # merge bid avec tab0 puis tab20, clasement par ordre croissant
+    tab0 = tab0.merge(bid); tab20 = tab20.merge(bid)
+    tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
+    
+    # PARTIE SIM ------------------------------------------------------------------------------------------------------------
+    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
+    dd = range(900,2800,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
-    light_sim_0 = [draft_light(g, adel, domain, 0) for g in sim]
-    #light_sim_20 = [draft_light(g, adel, domain, 20) for g in sim]
-    
-    obs = archidb.mat_data()[name]
-    
-    #sim_df0 = pandas.DataFrame({'tt':dd, 'light0':light_sim_0})
-    #sim_df20 = pandas.DataFrame({'tt':dd, 'light20':light_sim_20})
-    #sim_df0.plot('tt','light0',color='b')
-    #sim_df20.plot('tt','light20',color='g')
-    
-    #obs.plot('TT','light0',style='ob')
-    #obs.plot('TT','light20',style='gs')
-    
+    light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
+    light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
+    light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
+    light_sim_30 = [draft_light(g, adel, domain, z_level=30) for g in sim]
+
+    sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
+    sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
+    sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
+    sim30 = pandas.DataFrame({'TT':dd, 'light30':light_sim_30})
+
+    # GRAPHES ---------------------------------------------------------------------------------------------------------------
+    #obs tous les points
+    dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
+        #niveau du sol (point rouge)
+    dfa.plot('TT','%SE1',style='or'); dfa.plot('TT','%SE2',style='or'); dfa.plot('TT','%SE3',style='or'); dfa.plot('TT','%SE4',style='or')
+        #20cm du sol (point bleu)
+    dfa.plot('TT','%SE5',style='ob'); dfa.plot('TT','%SE6',style='ob'); dfa.plot('TT','%SE7',style='ob'); dfa.plot('TT','%SE8',style='ob')
+    #obs moyennes
+    tab0.plot('TT','%',color='r')
+    tab20.plot('TT','%',color='b')
+    #sim
+    sim0.plot('TT','light0',color='m')                            
+    sim20.plot('TT','light20',color='c')
+    sim25.plot('TT','light25',color='g')
+    sim30.plot('TT','light30',color='y')
  
-    
+#-------------------------------------------------------------------------------------
+
+# test parallelisation
+'''
 def func_star(a_b):
     return test_adel(*a_b)
 def main():
@@ -174,4 +306,5 @@ def main():
 # if __name__=="__main__":
     # freeze_support()
     # main()
+'''
 
