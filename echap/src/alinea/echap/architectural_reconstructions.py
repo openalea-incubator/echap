@@ -34,7 +34,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     return plot_length, plot_width
    
 
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, leaf_db=None, dynamic_leaf_db=False):    
     
     
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
@@ -44,7 +44,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, leaf_db=leaf_db, dynamic_leaf_db=dynamic_leaf_db)
     return adel, domain, domain_area, convUnit, nplants
     
     
@@ -67,6 +67,14 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         
 reconst_db={}
 
+# fitting of leaves
+#import alinea.adel.fitting as fitting
+#a iterer sur chaque dict de dict:
+#xysrlist = d[k][kk]
+#leaves,discard = fitting.fit_leaves(xysr_list, 9)
+#dict[k][kk] = leaves
+
+
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
 
     pgen = archidb.Mercia_2010_plantgen()
@@ -85,6 +93,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
