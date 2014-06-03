@@ -27,7 +27,94 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
     pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
     return pgen
+ 
+# ANGLES
+def curve(name='Mercia'):
+    from openalea.deploy.shared_data import shared_data
+    import re
     
+    if name is 'Mercia':
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
+        
+    header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+    header_row_srdb = ['rankclass','s','r']
+    dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=',', index_col=0, skiprows=1, decimal='.')
+    dfsr = dfsr.reset_index()
+    # NIV1 
+    # cle = rankclass
+    dfxy['rankclass'] = 1
+    dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+    # filtre sur la variete
+    dfxy = dfxy.reset_index()
+    dfxy = dfxy[dfxy['variety']=='Mercia']
+    # creation de la colonne age
+    dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
+    dfxy = dfxy.sort(['age'])
+    #cut intervalle de 0 a 1, etc.
+    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    dfxy['age'] = dfxy_cut
+    # bidouille...
+    dfxy['age'] = dfxy['age'].replace("(-1, 0]", 0)
+    dfxy['age'] = dfxy['age'].replace("(0, 1]", 1)
+    dfxy['age'] = dfxy['age'].replace("(1, 2]", 2)
+    dfxy['age'] = dfxy['age'].replace("(2, 3]", 3)
+    dfxy['age'] = dfxy['age'].replace("(3, 4]", 4)
+    dfxy['age'] = dfxy['age'].replace("(4, 5]", 5)
+    dfxy['age'] = dfxy['age'].replace("(5, 6]", 6)
+    dfxy['age'] = dfxy['age'].replace("(6, 7]", 7)
+    # etc...
+    # dfxy['age'] = dfxy['age'].replace("(7, 8]", 8)
+
+    # NIV2
+    # creation du premier dico par rankclass
+    groups = dfxy.groupby(["rankclass"])
+    dxy={n:{} for n,g in groups}
+    # creation du second dico par age
+    for n,g in groups:
+        gg = g.groupby('age')
+        dxy[n] = {k:[] for k,ggg in gg}
+    # remplissage x et y
+    groups = dfxy.groupby(["inerv"])   
+    for n,d in groups:
+        dxy[int(d[['rankclass']].values[0])][int(d[['age']].values[0])].append(d.ix[:,['x','y']].to_dict('list'))
+    
+    # NIV3 : ajout des s et r
+    # traitement de dfsr (creation de 2 listes) DE STRING
+    dr = 0
+    s1 = []; r1 = []
+    s2 = []; r2 = []
+    while dr<len(dfsr):
+        if dfsr['rankclass'][dr] == 1:
+            s1.append(dfsr['s'][dr])
+            r1.append(dfsr['r'][dr])
+            dr = dr + 1
+        else :
+            s2.append(dfsr['s'][dr])
+            r2.append(dfsr['r'][dr])
+            dr = dr + 1
+    # ajout dans le dict de dict precedent
+    # longueur rankclass=1 et =2
+    rank1 = 0 ; list1 = 0 ; rank2 = 1 ; list2 = 0
+    while rank1 < len(dxy[1]):
+        while list1 < len(dxy[1][rank1]) :
+            dxy[1][rank1][list1].update({'s':s1, 'r':r1})
+            list1 = list1 + 1
+        if list1 == len(dxy[1][rank1]) :
+            list1 = 0
+        rank1 = rank1 + 1
+        
+    while rank2 <= len(dxy[2]) :
+        while list2 < len(dxy[2][rank2]) :
+            dxy[2][rank2][list2].update({'s':s2, 'r':r2})
+            list2 = list2 + 1
+        if list2 == len(dxy[2][rank2]) :
+            list2 = 0
+        rank2 = rank2 + 1
+    
+    return dxy
+#-------------------------------------------------------------------------------------
     
 # test new tillering parametrisation against original one by Mariem and data
 #
@@ -75,6 +162,7 @@ def test_axis_dynamics(name='Mercia'):
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
     plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')    
 
+#------------------------------------------------------------------------------------- 
     
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
@@ -91,14 +179,16 @@ def simLAI(adel, domain_area, convUnit, nplants):
 
 def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
 
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
-    #pgen = get_pgen(name, original=original, dTT_stop=dTT_stop)
+    # ajout des angles
+    dxy = curve(name)
+
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, dict=dxy)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     obs = archidb.PAI_data()[name]
     tx = pgen['dynT_user'].a_cohort[0]
     
-    '''#Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
-    sim.plot('ThermalTime','LAI_vert', color='g')
+    #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
+    '''sim.plot('ThermalTime','LAI_vert', color='g')
     sim.plot('ThermalTime','LAI_tot', color='r')
     plt.title('Mercia 2010/2011')
     plt.legend(("LAI_vert", "LAI_tot"), 'best')
@@ -107,8 +197,10 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
     sim['HS'] = sim.ThermalTime*tx
     obs['HS'] = obs.TT*tx
     
-    sim.plot('HS','PAI_vert',color='g')
+    sim.plot('HS','PAI_vert',color='y')
     obs.plot('HS','PAI',style='or')
+    
+#------------------------------------------------------------------------------------- 
 
 def draft_TC(g, adel, domain, zenith, rep):
     from alinea.adel.postprocessing import ground_cover
@@ -118,16 +210,19 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     return gc
     
-def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
     else:
         zen='57';rep=2
+        
+    # ajout des angles
+    dxy = curve(name)
 
-    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
-    #dd = range(400,2000,300)
-    dd = range(800,2700,300)
+    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n, dict=dxy)  
+    return adel
+    dd = range(400,2300,300)
     sim = [adel.setup_canopy(age) for age in dd]
 
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
@@ -141,20 +236,23 @@ def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
         n = n + 1
 
     sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TC_sen':tc_sen})
+    
     # Si on veut tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
+    '''
     sim_green['1-TC']=1-sim_green['TCgreen']
     sim_green['TCtot']=sim_green['TCgreen']+sim_green['TC_sen']
     sim_green['1-TCtot']=1-sim_green['TCtot']
     sim_green.plot('tt','1-TC',color='y',linestyle='--',linewidth=2)
     sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
     obs.plot('TT','1-TC',style='oy')
+    '''
     
     # Si on veut tracer TC green et senescence sur le même graph
-    #sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
-    #sim_green.plot('tt','TCgreen',color='g')
-    #sim_sen.plot('tt','TCsem',color='y')
-    #obs.plot('TT','TC',style='or')
-    
+    sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
+    sim_green.plot('tt','TCgreen',color='g')
+    sim_sen.plot('tt','TCsem',color='y')
+    obs.plot('TT','TC',style='or')
+
 #-------------------------------------------------------------------------------------
 # GRAPH METEO
     
@@ -230,7 +328,7 @@ def draft_light(g, adel, domain, z_level):
     return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
-def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
+def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
     
     # PARTIE OBS ------------------------------------------------------------------------------------------------------------
@@ -267,18 +365,18 @@ def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
     
     # PARTIE SIM ------------------------------------------------------------------------------------------------------------
     _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
-    dd = range(1000,2600,100)
+    dd = range(900,2200,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
     light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
-    light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
+    #light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
     light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
-    light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
+    #light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
 
     sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
-    sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
+    #sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
     sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
-    sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
+    #sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
 
     # GRAPHES ---------------------------------------------------------------------------------------------------------------
     #obs tous les points
@@ -292,9 +390,9 @@ def graph_meteo(name='Tremie', dTT_stop=0, original=False, n=30):
     tab20.plot('TT','%',color='c')
     #sim
     sim0.plot('TT','light0',color='r',linewidth=2)  
-    sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
+    #sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
     sim20.plot('TT','light20',color='b',linewidth=2)
-    sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
+    #sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
  
 #-------------------------------------------------------------------------------------
 
