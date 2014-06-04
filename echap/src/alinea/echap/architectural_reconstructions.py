@@ -50,7 +50,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=False, leaf_db=None)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db)
     return adel, domain, domain_area, convUnit, nplants
     
     
