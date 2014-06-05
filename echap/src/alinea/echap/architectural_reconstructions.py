@@ -41,7 +41,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     return plot_length, plot_width
    
 
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
@@ -50,12 +50,31 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf)
     return adel, domain, domain_area, convUnit, nplants
     
     
 
 #---------- reconstructions 
+
+def geoLeaf(nlim=4,dazt=60,dazb=10):
+    """ generate geoLeaf function for Adel """
+    rcode = """
+    geoLeaf <- list(
+     Azim = function(a,n,nf) {{
+            ntop = nf - n
+            ifelse(ntop <= {ntoplim:d},
+            180 + {dazTop:.2f} * (runif(1) - .5),
+            180 + {dazBase:.2f} * (runif(1) - .5))
+            }},
+     Lindex = function(a,n,nf) {{
+              ntop = nf - n
+              ifelse(ntop <= {ntoplim:d}, 2, 1)
+              }}
+              )
+        """
+    return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb)
+
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         pgen = copy(pgen)
@@ -103,7 +122,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     # adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
     leaves = fit(dict)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     

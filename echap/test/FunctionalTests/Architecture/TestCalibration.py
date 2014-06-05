@@ -51,7 +51,6 @@ def curve(name='Mercia'):
     dfxy = dfxy[dfxy['variety']=='Mercia']
     # creation de la colonne age
     dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
-    dfxy = dfxy.sort(['age'])
     #cut intervalle de 0 a 1, etc.
     dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     dfxy['age'] = dfxy_cut
