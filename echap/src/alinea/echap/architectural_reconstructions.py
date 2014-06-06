@@ -92,19 +92,19 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         
 reconst_db={}
 
-def fit(dxy):
+def fit_leaves(dxy, level=9):
     import alinea.adel.fitting as fitting
-    #a iterer sur chaque dict de dict:
     for k in dxy:
-        leaves, discard = fitting.fit_leaves(dxy[k], 9)
+        leaves, discard = fitting.fit_leaves(dxy[k], level)
         dxy[k] = leaves
     return dxy
 
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dict='dxy'):
+def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
 
     pgen = archidb.Mercia_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
     tdata = tdata[tdata.Var=='Mercia']
+    shapes = archidb.leaf_curvature_data('Mercia')
     #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     #tdata['MB']=0.9 
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
@@ -121,7 +121,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     # sans angles
     # adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
-    leaves = fit(dict)
+    leaves = fit_leaves(shapes, 9)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
     
     return pgen, adel, domain, domain_area, convUnit, nplants
@@ -185,6 +185,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     pgen = archidb.Rht3_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
     tdata = tdata[tdata.Var=='Rht3']
+    shapes = archidb.leaf_curvature_data('Rht3')
     #['Nff']=12
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
     #adapt reconstruction
@@ -194,7 +195,11 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
         pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)    
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
+    # sans angles
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
+    # avec angles
+    leaves = fit_leaves(shapes, 9)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
