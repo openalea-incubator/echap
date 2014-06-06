@@ -27,94 +27,72 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
     pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
     return pgen
- 
-# ANGLES
-def curve(name='Mercia'):
-    from openalea.deploy.shared_data import shared_data
-    import re
-    
-    if name is 'Mercia':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
-        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
-        
-    header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
-    header_row_srdb = ['rankclass','s','r']
-    dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
-    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=',', index_col=0, skiprows=1, decimal='.')
-    dfsr = dfsr.reset_index()
-    # NIV1 
-    # cle = rankclass
-    dfxy['rankclass'] = 1
-    dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
-    # filtre sur la variete
-    dfxy = dfxy.reset_index()
-    dfxy = dfxy[dfxy['variety']=='Mercia']
-    # creation de la colonne age
-    dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
-    #cut intervalle de 0 a 1, etc.
-    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    dfxy['age'] = dfxy_cut
-    # bidouille...
-    dfxy['age'] = dfxy['age'].replace("(-1, 0]", 0)
-    dfxy['age'] = dfxy['age'].replace("(0, 1]", 1)
-    dfxy['age'] = dfxy['age'].replace("(1, 2]", 2)
-    dfxy['age'] = dfxy['age'].replace("(2, 3]", 3)
-    dfxy['age'] = dfxy['age'].replace("(3, 4]", 4)
-    dfxy['age'] = dfxy['age'].replace("(4, 5]", 5)
-    dfxy['age'] = dfxy['age'].replace("(5, 6]", 6)
-    dfxy['age'] = dfxy['age'].replace("(6, 7]", 7)
-    # etc...
-    # dfxy['age'] = dfxy['age'].replace("(7, 8]", 8)
 
-    # NIV2
-    # creation du premier dico par rankclass
-    groups = dfxy.groupby(["rankclass"])
-    dxy={n:{} for n,g in groups}
-    # creation du second dico par age
-    for n,g in groups:
-        gg = g.groupby('age')
-        dxy[n] = {k:[] for k,ggg in gg}
-    # remplissage x et y
-    groups = dfxy.groupby(["inerv"])   
-    for n,d in groups:
-        dxy[int(d[['rankclass']].values[0])][int(d[['age']].values[0])].append(d.ix[:,['x','y']].to_dict('list'))
+# Creation des 2 fichiers pris en entree par curve()
+def prep_curve(name='Tremie20112012'):
+    if name is 'Tremie20112012':
+        data_file_xydb = shared_data(alinea.echap, 'prepa_xydb_GrignonTremie2011.csv')
+        data_file_srdb = shared_data(alinea.echap, 'prepa_srdb_GrignonTremie2011.csv')
+        out_xy_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'xydb_GrignonTremie2011.csv'
+        out_sr_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'srdb_GrignonTremie2011.csv'
+    header_row_xydb = ['Image','ID_Plant','ID_Axis','Organ','ID_Metamer','HS','XY','Pt1','Pt2','Pt3','Pt4','Pt5','Pt6','Pt7','Pt8','Pt9','Pt10','Pt11','Pt12','Pt13','Pt14','Pt15']									
+    dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=';', index_col=0, skiprows=1, decimal=',')
+    header_row_srdb = ['operateur','MethodeAnalyse','Date d\'analyse','fichier','Var','N_prelev','date prelev','rep','N_plante','id_Axe','id_Feuille','nmax','HS','Llimbe','Lgaine','Lentrenoeud','%vert','Llimbe2','Wlimbe','A_bl','A_bl_green','statut','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']									
+    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
     
-    # NIV3 : ajout des s et r
-    # traitement de dfsr (creation de 2 listes) DE STRING
-    dr = 0
-    s1 = []; r1 = []
-    s2 = []; r2 = []
-    while dr<len(dfsr):
-        if dfsr['rankclass'][dr] == 1:
-            s1.append(dfsr['s'][dr])
-            r1.append(dfsr['r'][dr])
-            dr = dr + 1
-        else :
-            s2.append(dfsr['s'][dr])
-            r2.append(dfsr['r'][dr])
-            dr = dr + 1
-    # ajout dans le dict de dict precedent
-    # longueur rankclass=1 et =2
-    rank1 = 0 ; list1 = 0 ; rank2 = 1 ; list2 = 0
-    while rank1 < len(dxy[1]):
-        while list1 < len(dxy[1][rank1]) :
-            dxy[1][rank1][list1].update({'s':s1, 'r':r1})
-            list1 = list1 + 1
-        if list1 == len(dxy[1][rank1]) :
-            list1 = 0
-        rank1 = rank1 + 1
-        
-    while rank2 <= len(dxy[2]) :
-        while list2 < len(dxy[2][rank2]) :
-            dxy[2][rank2][list2].update({'s':s2, 'r':r2})
-            list2 = list2 + 1
-        if list2 == len(dxy[2][rank2]) :
-            list2 = 0
-        rank2 = rank2 + 1
+    # TRAITEMENT X ET Y
+    dfxy = dfxy.reset_index(); 
+    HS=[]; x=[]; y=[]; n = 0; e = 7; row_tot = dfxy['ID_Plant'].count(); col_tot = 22
     
-    return dxy
-#-------------------------------------------------------------------------------------
+    for row in dfxy.loc[n]:
+        while n < row_tot :
+            if dfxy['XY'][n]==0 :
+                if pandas.isnull(dfxy.loc[n,e]) == False :
+                    # recup valeur de la colonne HS
+                    HS.append(dfxy.loc[n,5])
+                    # remplissage de x et y
+                    x.append(dfxy.loc[n,e])
+                    y.append(dfxy.loc[n+1,e])
+                    e = e + 1
+                else:
+                    n = n + 2
+                    e = 7
+            if e==col_tot :
+                e = 7
+                n = n + 2
+    DataXY = zip(HS,x,y)
+    dfxy_fin = pandas.DataFrame(data = DataXY, columns=['HS', 'x', 'y'])
     
+    # TRAITEMENT S ET R 
+    # on ne garde que si id_Axe='MB' et statut=1
+    sortdfsr = dfsr[dfsr['id_Axe']=='MB']
+    sortdfsr = sortdfsr[sortdfsr['statut']==1]
+    # tableau simplifie
+    s_list=['id_Feuille','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']
+    dfsr = sortdfsr[s_list]
+    dfsr = dfsr.groupby('id_Feuille').mean(); dfsr = dfsr.reset_index()
+    # creation de la colonne rankclass selon le id_Feuille (que des id_Feuille>4 dans id_feuille???)
+    # dfsr['rankclass'] = 1
+    # dfsr['rankclass'][dfsr['id_Feuille'] <= 4] = 2
+
+    id_feuille=[]; s=[]; r=[]; n = 0; e = 1; row_tot = dfsr['id_Feuille'].count(); col_tot = 22
+    for row in dfsr.loc[n]:
+        while n < row_tot :
+            while e < col_tot :
+                id_feuille.append(dfsr.loc[n,0])
+                s.append(s_list[e])
+                r.append(dfsr.loc[n,e])
+                e = e + 1
+            if e==col_tot:
+                e = 1
+            n = n + 1
+    DataSR = zip(id_feuille,s,r)
+    dfsr_fin = pandas.DataFrame(data = DataSR, columns=['id_feuille', 's', 'r'])
+    
+    # export xy et sr en format csv
+    dfxy_fin.to_csv(out_xy_csv, index=False); dfsr_fin.to_csv(out_sr_csv, index=False)
+
+#-------------------------------------------------------------------------------------   
 # test new tillering parametrisation against original one by Mariem and data
 #
 # usage (ipython):
@@ -162,6 +140,7 @@ def test_axis_dynamics(name='Mercia'):
     plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')    
 
 #------------------------------------------------------------------------------------- 
+# LAI
     
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
@@ -200,6 +179,7 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
     obs.plot('HS','PAI',style='or')
     
 #------------------------------------------------------------------------------------- 
+# Taux de couverture
 
 def draft_TC(g, adel, domain, zenith, rep):
     from alinea.adel.postprocessing import ground_cover
@@ -209,18 +189,15 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     return gc
     
-def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Rht3', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
     else:
         zen='57';rep=2
-        
-    # ajout des angles
-    dxy = curve(name)
 
-    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n, dict=dxy)  
-    return adel
+    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
+
     dd = range(400,2300,300)
     sim = [adel.setup_canopy(age) for age in dd]
 
@@ -358,7 +335,7 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
     bid = bid.reset_index()
     bid.columns = ['datetime','TT']
     bid['datetime'] = bid['datetime'].map(lambda x: x.strftime('%d-%m-%Y'))
-        # merge bid avec tab0 puis tab20, clasement par ordre croissant
+        # merge bid avec tab0 puis tab20, classement par ordre croissant
     tab0 = tab0.merge(bid); tab20 = tab20.merge(bid)
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
