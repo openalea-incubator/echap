@@ -179,6 +179,7 @@ def leaf_curvature_data(name='Mercia'):
     cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0
     
     while cpt1 < len(rank1keys):
+        rank1 = rank1keys[cpt1]
         while list1 < len(dxy[1][rank1]) :
             dxy[1][rank1][list1].update({'s':s1, 'r':r1})
             list1 = list1 + 1
@@ -188,6 +189,7 @@ def leaf_curvature_data(name='Mercia'):
         cpt1 = cpt1 + 1
         
     while cpt2 < len(rank2keys) :
+        rank2 = rank2keys[cpt2]
         while list2 < len(dxy[2][rank2]) :
             dxy[2][rank2][list2].update({'s':s2, 'r':r2})
             list2 = list2 + 1
