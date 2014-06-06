@@ -157,10 +157,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
 
 def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
 
-    # ajout des angles
-    dxy = curve(name)
-
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, dict=dxy)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     obs = archidb.PAI_data()[name]
     tx = pgen['dynT_user'].a_cohort[0]
@@ -189,7 +186,7 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     return gc
     
-def comp_TC(name='Rht3', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Rht3', original=False, n=30, zenith=57, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
@@ -222,12 +219,12 @@ def comp_TC(name='Rht3', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 
     sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
     obs.plot('TT','1-TC',style='oy')
     '''
-    
     # Si on veut tracer TC green et senescence sur le même graph
     sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
     sim_green.plot('tt','TCgreen',color='g')
     sim_sen.plot('tt','TCsem',color='y')
     obs.plot('TT','TC',style='or')
+  
 
 #-------------------------------------------------------------------------------------
 # GRAPH METEO
