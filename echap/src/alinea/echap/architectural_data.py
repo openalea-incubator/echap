@@ -119,7 +119,12 @@ def leaf_curvature_data(name='Mercia'):
     dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
     # filtre sur la variete
     dfxy = dfxy.reset_index()
-    dfxy = dfxy[dfxy['variety']==name]
+    if name is 'Mercia' or 'Rht3':
+        dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
+        dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
+        dfxy = dfxy1.append(dfxy2)
+    else:
+        dfxy = dfxy[dfxy['variety']==name] 
     # creation de la colonne age
     dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
     #cut intervalle de 0 a 1, etc.
