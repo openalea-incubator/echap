@@ -1,6 +1,6 @@
-from new_annual_loop_pest import pesticide_loop, repartition_at_application, repartition_at_application_modif
+from new_annual_loop_pest import pesticide_loop, repartition_at_application
 import pesticide_protocol as proto
-import numpy
+import numpy as np
 import pylab as p
 import matplotlib.pyplot as plt
 
@@ -28,15 +28,15 @@ import matplotlib.pyplot as plt
 
 # test
 g, recorder = pesticide_loop(meteo_file='meteo00-01.txt', start="2001-04-25", periods=50, freq='H', TB=0, delayH=1, delayDD=15, applications=proto.Test2001_treat1)
-recorder.save_records('test.csv')   
+recorder.save_records('testMAI2014.csv')   
 recorder.save_plot(what='surfacic_doses_Epoxiconazole', t = 'iter',  by='ntop', axe = 'MS', plant='all', fig_name='test2.png')   
-#recorder.plt.show()
+recorder.plt.show()
 
 
 
 
-# Function repartition_at_application
-appdate = '2011-04-19' ; dose = 0.5 ; age = 1166
+# Function repartition_at_application : appeler ensuite ici pour test appel
+"""appdate = '2011-04-19' ; dose = 0.5 ; age = 1166
 print '\n\nrepartition_at_application 2 !!\n\n'
 from macros_annual_loop import setup_canopy
 from alinea.echap.recorder import LeafElementRecorder
@@ -50,21 +50,16 @@ g,_=pesticide_intercept(g, application_data)
 do_record(g, application_data, recorder)
 df_1 =  recorder.get_records()
 print 'df_1.columns = ', df_1.columns
+"""
 
 # Appel a la fonction repartition_at_application
-df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
+df = repartition_at_application(appdate = '2011-04-19', dose = 1.0, age = 1166)
 print 'df.columns after = ', df.columns
-
-
-
-
-
-
-
 
 
 from itertools import cycle, islice
 from pylab import *
+
 
 gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
 def _fun(sub):
@@ -75,18 +70,49 @@ data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
 
 
 
-data = data[data.ntop_cur <= 4]
-gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'])
-dmp=gr.agg(numpy.sum)
-dmp = dmp.reset_index()
-gr=dmp.groupby(['ntop_cur','date'])
-dms=gr.agg(numpy.mean)
-#NG ajout ecart type
-dmserr=gr.agg(numpy.std)
-dms=dms.reset_index()
-dmserr=dmserr.reset_index()
+data.to_csv('data.csv', index=False) # cc
 
-#dms.plot(x,y,kind="bar")
+data = pandas.read_csv('data.csv')
+
+#test groupby by multiple apres avoir fait calcul sur data
+"""data = data[data.ntop_cur <= 4]
+f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
+dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
+"""
+
+data = data[data.ntop_cur <= 4]
+gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+# dmp=gr.agg([numpy.sum])
+dmp=gr.sum()
+dmp.to_csv('dmpSum.csv') # cc
+
+
+#test apply pour effectuer mean et std
+grtest =dmp.groupby(['ntop_cur','plant','date'],as_index=False).apply(lambda subf: 
+	[subf['surfacic_doses_Epoxiconazole'].mean()])
+	
+grtest = dmp.groupby(['ntop_cur','plant','date'],as_index=False)	
+surfacic_doses_Epoxiconazole_mean = grtest['surfacic_doses_Epoxiconazole'].mean()
+surfacic_doses_Epoxiconazole_std = grtest['surfacic_doses_Epoxiconazole'].std()
+	
+#grtest = dmp.groupby('ntop_cur','date').apply(lambda x: 
+#             Series({'r': (x.y + x.z).sum() / x.z.sum(), 
+#                     's': (x.y + x.z ** 2).sum() / x.z.sum()}))
+
+grtestdf=pandas.DataFrame(grtest)
+grtesterr =dmp.groupby(['ntop_cur','plant','date']).apply(lambda subf: 
+	[subf['surfacic_doses_Epoxiconazole'].std()])
+
+#gr=dmp.groupby(['ntop_cur','date'])
+#dms=gr.agg(numpy.mean)
+
+
+#NG ajout ecart type
+#dmserr=gr.agg(numpy.std)
+#dms=dms.reset_index()
+#dmserr=dmserr.reset_index()
+
+grtest.plot('ntop_cur','surfacic_doses_Epoxiconazole',kind="bar")
 
 """mise en forme sous format barplot
 fig = p.figure()
@@ -139,7 +165,7 @@ opacity = 0.4
 #error_config = {'ecolor': '0.3'}
 
 #for i in range (0,n_groups):
-rects1 = plt.bar(dms.ntop_cur[0], dms.n_max[0], bar_width,
+rects1 = plt.bar(d.ntop_cur[0], dms.n_max[0], bar_width,
                  alpha=opacity,
                  color='b',
                  yerr=dmserr.n_max[0],

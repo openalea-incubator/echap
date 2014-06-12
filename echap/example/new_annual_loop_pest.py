@@ -15,6 +15,8 @@ import alinea.septo3d
 
 from alinea.echap.tests_nodes import plot_pesticide
 
+from alinea.echap.architectural_reconstructions import *
+
 
 def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, freq='H', TB=0, delayH=1, delayDD=15, applications=""" """):
     # Fichier meteo
@@ -57,6 +59,7 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
             _=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
     return g, recorder
       
+from alinea.echap.architectural_reconstructions import reconst_db
 
 def repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166):
     print '\n\nrepartition_at_application 3!!\n\n'
@@ -64,6 +67,30 @@ def repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166):
     from alinea.echap.recorder import LeafElementRecorder
     recorder = LeafElementRecorder()
     g, adel, domain, domain_area, convUnit, nplants = setup_canopy(age=1166)
+    applications= 'date,dose, product_name\n%s 10:00:00, %f, Opus'%(appdate, dose)
+    application_data = pesticide_applications(applications)
+    g,_=pesticide_intercept(g, application_data)
+    do_record(g, application_data, recorder)
+    df =  recorder.get_records()
+    print 'repartition_at_application df.columns before ', df.columns
+    return df
+
+
+    
+    # test branchement avec architecture adel
+def get_reconstruction(name='Mercia',**args):
+    fun = reconst_db[name]
+    pgen, adel, domain, domain_area, convUnit, nplants = fun(**args)
+    return pgen, adel, domain, domain_area, convUnit, nplants
+    
+def repartition_at_applicationArch(appdate, dose, g):
+    print '\n\nrepartition_at_applicationArch 3!!\n\n'
+#    from macros_annual_loop import setup_canopy
+    
+    from alinea.echap.recorder import LeafElementRecorder
+    recorder = LeafElementRecorder()
+#   g, adel, domain, domain_area, convUnit, nplants = setup_canopy(age=1166)
+ 
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Opus'%(appdate, dose)
     application_data = pesticide_applications(applications)
     g,_=pesticide_intercept(g, application_data)

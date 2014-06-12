@@ -14,7 +14,9 @@ def devT_Mercia():
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
 
-def setup_canopy(age = 300, nsect=3, length = 0.2, width=0.15, sowing_density=150, plant_density=150, inter_row=0.125, seed=1, sample='random'):
+
+#def setup_canopy(age = 300, nsect=3, length = 0.2, width=0.15, sowing_density=150, plant_density=150, inter_row=0.125, seed=1, sample='random'):
+def setup_canopy(age = 1166, nsect=3, length = 0.4, width=0.30, sowing_density = 150, plant_density= 150, inter_row=0.125, seed=1, sample='random'):    
     devT = devT_Mercia()
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
                                                             width=width, 
