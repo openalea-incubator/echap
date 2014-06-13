@@ -1,8 +1,11 @@
+import pandas 
 from new_annual_loop_pest import pesticide_loop, repartition_at_application,repartition_at_applicationArch,get_reconstruction
 import pesticide_protocol as proto
 import numpy as np
 import pylab as p
 import matplotlib.pyplot as plt
+from alinea.echap.weather_data import *
+
 from itertools import cycle, islice
 from pylab import *
 
@@ -37,56 +40,141 @@ recorder.plt.show()
 """
 
 # Appel a la fonction repartition_at_application
-df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
-print 'df.columns after = ', df.columns
+# df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
+# print 'df.columns after = ', df.columns
 
-
-def g_constr():
+# VERSION SIMPLE (prend une date TT en entree)
+def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
 
     # Appel a la fonction get_reconstruction
-    pgen,adel,domain, domain_area, convUnit, nplants = get_reconstruction(name='Mercia',nplants=600, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0)
+    pgen,adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants, nsect=nsect, seed=seed, sample=sample, as_pgen=as_pgen, dTT_stop=dTT_stop)
     # Appel a la fonction repartition_at_application lié à l'architecture
-    age=1166
+    age = 1500
     g = adel.setup_canopy(age)
-    df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 0.5, g=g)
+    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 40, g=g)
     return df
 
-df= g_constr()
+def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0): 
 
+    df = g_constr(name, nplants, nsect, seed, sample, as_pgen, dTT_stop)
 
+    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
+    
+    def _fun(sub):
+        sub['n_max'] = sub['metamer'].max()
+        return sub
+        
+    data = gr.apply(_fun)    
+    data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
+    data = data.convert_objects() # conversion des objets en types numpy
+    
+    #test groupby by multiple apres avoir fait calcul sur data
+    """data = data[data.ntop_cur <= 4]
+    f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
+    dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
+    """
 
-gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
-def _fun(sub):
-    sub['n_max'] = sub['metamer'].max()
-    return sub
-data = gr.apply(_fun)    
-data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
-data = data.convert_objects() # conversion des objets en types numpy
+    data = data[data.ntop_cur <= 4]
+    gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+    dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
+                 # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
+                 # senesced_area, surfacic_doses_Epoxiconazole, n_max
+     
+    gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
+    # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
+    grtest = gr['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
 
-#test groupby by multiple apres avoir fait calcul sur data
-"""data = data[data.ntop_cur <= 4]
-f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
-dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
-"""
+    gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
+    # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
+    grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
 
-data = data[data.ntop_cur <= 4]
-gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
-dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
-             # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
-             # senesced_area, surfacic_doses_Epoxiconazole, n_max
- 
-gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
- # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type 
- # de surfacic_doses_Epoxiconazole
-grtest = gr['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean,
-                                                 'surfacic_doses_Epoxiconazole_std' : np.std})
+    return grtest4   
 
-gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
- # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type 
- # de surfacic_doses_Epoxiconazole
-grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean,
-                                                 'surfacic_doses_Epoxiconazole_std' : np.std})
-grtest4.to_csv('grtest4.csv')												 
+# idem mais gestion de la date    
+def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40, age=1166):
+
+    # Conversion age (TT) en date ('aaaa-mm-jj')
+    from alinea.astk.TimeControl import thermal_time
+    if name is 'Mercia' or 'Rht3':
+        data_file = 'METEO_stationINRA_20102011.csv'
+        # correspondance entre date et TT
+        met = Boigneville_2010_2011()
+        seq = pandas.date_range(start="2010-10-15", end="2011-06-20", freq='H')
+        bid = thermal_time(seq, met.data)
+        # groupe par date
+        seq = pandas.date_range(start="2010-10-15", end="2011-06-20")
+        bid = bid[seq]
+        #renommer colonnes
+        bid = bid.reset_index()
+        bid.columns = ['datetime','TT']
+        bid['datetime'] = bid['datetime'].map(lambda x: x.strftime('%Y-%m-%d'))
+        bid['TT'] = bid['TT'].astype(int)
+        # trouver la correspondance en notre age TT et la date dont a besoin repartition_at_applicationArch()
+        da=0; appdate=0
+        while appdate==0:
+            if da<len(bid):
+                if bid['TT'][da]==age:
+                    appdate=bid['datetime'][da]
+                else:
+                    da = da+1
+            if da==len(bid):
+                da=0; age=age+1
+    # Appel a la fonction get_reconstruction
+    pgen,adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants, nsect=nsect, seed=seed, sample=sample, as_pgen=as_pgen, dTT_stop=dTT_stop)
+    # Appel a la fonction repartition_at_application lié à l'architecture
+    g = adel.setup_canopy(age)
+    df = repartition_at_applicationArch(appdate = appdate, dose = 40, g = g)
+    df['age']=age
+    return df
+
+def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40): 
+
+    dd = range(1000,1400,300)
+    #df_sim = [g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, age) for age in dd]
+    
+    # lancer la reconstruction pour chaque age du range et concatener les dataframe de sortie
+    dl = len(dd); dlc = 1
+    df = g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, dd[0])
+    while dlc < dl :
+        df_other = g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, dd[dlc])
+        df = df.merge(df_other)
+        dlc = dlc+1
+            
+    
+    
+    return df
+
+    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
+    
+    def _fun(sub):
+        sub['n_max'] = sub['metamer'].max()
+        return sub
+        
+    data = gr.apply(_fun)    
+    data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
+    data = data.convert_objects() # conversion des objets en types numpy
+    
+    #test groupby by multiple apres avoir fait calcul sur data
+    """data = data[data.ntop_cur <= 4]
+    f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
+    dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
+    """
+
+    data = data[data.ntop_cur <= 4]
+    gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+    dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
+                 # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
+                 # senesced_area, surfacic_doses_Epoxiconazole, n_max
+     
+    gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
+    # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
+    grtest = gr['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+
+    gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
+    # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
+    grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+
+    return grtest4    
 												 
 												 
 	
@@ -102,12 +190,12 @@ grtest4.to_csv('grtest4.csv')
 #dmserr=gr.agg(numpy.std)
 #dms=dms.reset_index()
 #dmserr=dmserr.reset_index()
-"""
-plt.figure()
-plt = grtest.plot('ntop_cur','surfacic_doses_Epoxiconazole_mean',kind="bar")
-plt.show()
 
-#mise en forme sous format barplot
+#plt.figure()
+#plt = grtest.plot('ntop_cur','surfacic_doses_Epoxiconazole_mean',kind="bar")
+#plt.show()
+
+'''mise en forme sous format barplot
 fig = p.figure()
 ax = fig.add_subplot(1,1,1)
 #N = len(ntop_cur)
@@ -178,8 +266,6 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-"""
-"""
 #solution 3 : probleme avec non reconnaissance DataFrame
 
 #df2 = DataFrame(dms.n_max[1], columns=['1', '2', '3', '4'])
@@ -189,7 +275,7 @@ grplot = grtest2.surfacic_doses_Epoxiconazole_mean
 grplot.plot(kind='bar',yerr=grtest2.surfacic_doses_Epoxiconazole_std,grid=False)
 plt.show()
 
-#autre solution
+"""autre solution"""
 fig = plt.figure()
 ax1 = plt.subplot(111,ylabel='A')
 #ax2 = gcf().add_axes(ax1.get_position(), sharex=ax1, frameon=False, ylabel='axes2')
@@ -200,8 +286,7 @@ ax1.bar(grtest2.ntop_cur.values,grtest2.surfacic_doses_Epoxiconazole_mean.values
 ax1.legend(['A'], loc = 'upper left')
 #ax2.legend(['B'], loc = 'upper right')
 fig.show()
-"""
-"""
+
 N = 1
 ind = np.arange(N)  # the x locations for the groups dans echap = nombre de doses = N
 width = 0.2    # the width of the bars
@@ -236,3 +321,5 @@ autolabel(rects3)
 autolabel(rects4)
 
 plt.show()
+
+'''
