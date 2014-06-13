@@ -43,14 +43,17 @@ recorder.plt.show()
 # df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
 # print 'df.columns after = ', df.columns
 
+# -----------------------------------------------------------------------------------------------------------------------------------
 # VERSION SIMPLE (prend une date TT en entree)
 def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
 
     # Appel a la fonction get_reconstruction
     pgen,adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants, nsect=nsect, seed=seed, sample=sample, as_pgen=as_pgen, dTT_stop=dTT_stop)
     # Appel a la fonction repartition_at_application lié à l'architecture
+    #age=1166
     age = 1500
     g = adel.setup_canopy(age)
+    #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 40, g=g)
     df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 40, g=g)
     return df
 
@@ -87,10 +90,19 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
     gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
     # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
     grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+    
+    return grtest4
 
-    return grtest4   
+#plot des donnees obs !
+def plot():
+    from pylab import plotfile, show, gca
+    import matplotlib.cbook as cbook
+    fname = cbook.get_sample_data('ObsData2011.csv', asfileobj=False)
+    plotfile(fname, ('variete', 'stade', 'dose'))
+    show()
 
-# idem mais gestion de la date    
+# -----------------------------------------------------------------------------------------------------------------------------------
+# IDEM mais gestion d'un range de date  
 def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40, age=1166):
 
     # Conversion age (TT) en date ('aaaa-mm-jj')
@@ -124,7 +136,6 @@ def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', a
     # Appel a la fonction repartition_at_application lié à l'architecture
     g = adel.setup_canopy(age)
     df = repartition_at_applicationArch(appdate = appdate, dose = 40, g = g)
-    df['age']=age
     return df
 
 def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40): 
@@ -137,14 +148,10 @@ def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', 
     df = g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, dd[0])
     while dlc < dl :
         df_other = g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, dd[dlc])
-        df = df.merge(df_other)
         dlc = dlc+1
-            
-    
-    
-    return df
+        df = df.append(df_other)
 
-    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
+    gr = df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
         sub['n_max'] = sub['metamer'].max()
@@ -174,9 +181,7 @@ def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', 
     # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
     grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
 
-    return grtest4    
-												 
-												 
+    return grtest4   											 
 	
 #grtest = dmp.groupby('ntop_cur','date').apply(lambda x: 
 #             Series({'r': (x.y + x.z).sum() / x.z.sum(), 
