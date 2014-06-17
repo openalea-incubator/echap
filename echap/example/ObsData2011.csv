@@ -1,4 +1,4 @@
-dose;an;variete;feuille (5=somme);stade;ug/m2 par g/ha de colorant;tracer application rate (kg/ha)
+dose;an;variete;feuille;stade;colorant;application
 40;2011;mercia;1;2N;6.024702787;6
 80;2011;mercia;1;2N;5.292820695;12
 150;2011;mercia;1;2N;5.880337325;22.5
@@ -30,7 +30,7 @@ dose;an;variete;feuille (5=somme);stade;ug/m2 par g/ha de colorant;tracer applic
 40;2011;rht3;2;DFE;7.654400552;6
 80;2011;rht3;2;DFE;6.991468109;12
 150;2011;rht3;2;DFE;7.979354394;22.5
-200;2011;rht3;3;DFE;9.283215753;
+200;2011;rht3;2;DFE;9.283215753;
 40;2011;mercia;3;2N;11.66194879;6
 80;2011;mercia;3;2N;7.147921784;12
 150;2011;mercia;3;2N;6.663281121;22.5

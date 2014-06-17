@@ -93,13 +93,47 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
     
     return grtest4
 
-#plot des donnees obs !
-def plot():
-    from pylab import plotfile, show, gca
-    import matplotlib.cbook as cbook
-    fname = cbook.get_sample_data('ObsData2011.csv', asfileobj=False)
-    plotfile(fname, ('variete', 'stade', 'dose'))
-    show()
+#plot des donnees obs
+def plot(name='Mercia'):
+
+    if name is 'Mercia' or 'Rht3':
+        data_file = 'ObsData2011.csv'
+
+    df_obs = pandas.read_csv('ObsData2011.csv', sep=';')
+    df_obs = df_obs[df_obs['feuille']<5]
+    df_obs['var_stade'] = df_obs['variete'] + "_" + df_obs['stade']
+    
+    cols = df_obs.var_stade.value_counts().shape[0]
+    fig, axes = plt.subplots(1, cols, figsize=(8, 8))
+
+    for x, var_stade in enumerate(df_obs.var_stade.value_counts().index.values):
+        data = df_obs[(df_obs['var_stade'] == var_stade)]
+        data = data.groupby(['dose','feuille']).colorant.sum()
+        print (data)
+        print type(data.index)
+        left = [k[0] for k in enumerate(data)]
+        right = [k[1] for k in enumerate(data)]
+
+        #gestion des 4 couleurs differentes des, barplot
+        my_colors = list(islice(cycle(['b', 'r', 'g', 'y']), None, 4))
+        axes[x].bar(left,right,label="%s" % (var_stade), color=my_colors)
+        axes[x].set_xticks(left, minor=False)
+        # modification de la legende axe des abcisses
+        data = data.reset_index()
+        axes[x].set_xticklabels(data['dose'].values)
+        #axe des ordonnees
+        axes[x].set_ylim(0, 25)
+
+        axes[x].legend(loc='best')
+        axes[x].grid(True)
+        #changement couleur autour graph
+        fig.patch.set_facecolor('#FCF8F8')
+        #changement couleur fond graph
+        axes[x].patch.set_facecolor('#D1D1D1')
+        #titre
+        fig.suptitle('Dose par Feuille par Stade par Variete', fontsize=15)
+
+    plt.show()
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # IDEM mais gestion d'un range de date  
@@ -149,14 +183,14 @@ def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', 
     while dlc < dl :
         df_other = g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, dd[dlc])
         dlc = dlc+1
-        df = df.append(df_other)
+        df = df.append(df_other, ignore_index=True)
 
     gr = df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
         sub['n_max'] = sub['metamer'].max()
         return sub
-        
+    
     data = gr.apply(_fun)    
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
     data = data.convert_objects() # conversion des objets en types numpy
