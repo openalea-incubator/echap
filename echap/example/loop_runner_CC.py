@@ -99,7 +99,7 @@ def plot(name='Mercia'):
     if name is 'Mercia' or 'Rht3':
         data_file = 'ObsData2011.csv'
 
-    df_obs = pandas.read_csv('ObsData2011.csv', sep=';')
+    df_obs = pandas.read_csv(data_file, sep=';')
     df_obs = df_obs[df_obs['feuille']<5]
     df_obs['var_stade'] = df_obs['variete'] + "_" + df_obs['stade']
     
@@ -114,7 +114,7 @@ def plot(name='Mercia'):
         left = [k[0] for k in enumerate(data)]
         right = [k[1] for k in enumerate(data)]
 
-        #gestion des 4 couleurs differentes des, barplot
+        #gestion des 4 couleurs differentes des barplot
         my_colors = list(islice(cycle(['b', 'r', 'g', 'y']), None, 4))
         axes[x].bar(left,right,label="%s" % (var_stade), color=my_colors)
         axes[x].set_xticks(left, minor=False)
@@ -133,6 +133,10 @@ def plot(name='Mercia'):
         #titre
         fig.suptitle('Dose par Feuille par Stade par Variete', fontsize=15)
 
+    axes[x].text(12, 20, 'feuille 1', style='italic', bbox={'facecolor':'b', 'alpha':0.5, 'pad':10})
+    axes[x].text(12, 19, 'feuille 2', style='italic', bbox={'facecolor':'r', 'alpha':0.5, 'pad':10})
+    axes[x].text(12, 18, 'feuille 3', style='italic', bbox={'facecolor':'g', 'alpha':0.5, 'pad':10})
+    axes[x].text(12, 17, 'feuille 4', style='italic', bbox={'facecolor':'y', 'alpha':0.5, 'pad':10})
     plt.show()
 
 # -----------------------------------------------------------------------------------------------------------------------------------
