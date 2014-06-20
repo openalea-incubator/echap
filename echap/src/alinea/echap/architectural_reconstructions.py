@@ -6,6 +6,7 @@ import alinea.echap.architectural_data as archidb
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
 from copy import copy
+import pandas as pd
 
 #generic function to be moved to adel
 
@@ -16,11 +17,13 @@ def plantgen_to_devT(pgen):
     from alinea.adel.AdelR import devCsv
     
     axeT_, dimT_, phenT_, _, dimT_abs_, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
-    import pandas as pd
+    
+    # verif des sorties (vu avec Camille)
     #axeT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/axeT_test.csv')
     #dimT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/dimT_test.csv')
     #dimT_abs_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/dimT_abs_test.csv')
     #phenT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/phenT_test.csv')
+    
     axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
     devT = devCsv(axeT, dimT, phenT)
     return devT
