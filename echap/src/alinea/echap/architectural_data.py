@@ -115,8 +115,14 @@ def leaf_curvature_data(name='Mercia'):
     dfsr = dfsr.reset_index()
     # NIV1 
     # cle = rankclass
+    
+    # test seulement rankclass 1 =
+    #dfxy['rankclass'] = 1
+    #dfsr['rankclass'] = 1
+    # si tout =
     dfxy['rankclass'] = 1
     dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+    
     # filtre sur la variete
     dfxy = dfxy.reset_index()
     if name is 'Mercia' or 'Rht3':
@@ -176,6 +182,7 @@ def leaf_curvature_data(name='Mercia'):
             s2.append(dfsr['s'][dr])
             r2.append(dfsr['r'][dr])
             dr = dr + 1
+            
     # ajout dans le dict de dict precedent
     # longueur rankclass=1 et =2
     rank1keys = dxy[1].keys()
@@ -191,9 +198,9 @@ def leaf_curvature_data(name='Mercia'):
         if list1 == len(dxy[1][rank1]) :
             list1 = 0
         rank1 = rank1 + 1
-        cpt1 = cpt1 + 1
-        
-    while cpt2 < len(rank2keys) :
+        cpt1 = cpt1 + 1 
+    
+    while cpt2 < len(rank2keys):
         rank2 = rank2keys[cpt2]
         while list2 < len(dxy[2][rank2]) :
             dxy[2][rank2][list2].update({'s':s2, 'r':r2})
