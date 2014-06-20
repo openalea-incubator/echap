@@ -16,12 +16,11 @@ def plantgen_to_devT(pgen):
     from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
     from alinea.adel.AdelR import devCsv
     
-    axeT_, dimT_, phenT_, _, dimT_abs_, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
+    axeT_, dimT_, phenT_, _, _, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
     
     # verif des sorties (vu avec Camille)
     #axeT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/axeT_test.csv')
     #dimT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/dimT_test.csv')
-    #dimT_abs_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/dimT_abs_test.csv')
     #phenT_.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/phenT_test.csv')
     
     axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
@@ -48,7 +47,6 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     plot_width = inter_row * nrow
     return plot_length, plot_width
    
-
 def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
@@ -62,7 +60,6 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
     return adel, domain, domain_area, convUnit, nplants
     
     
-
 #---------- reconstructions 
 
 def geoLeaf(nlim=4,dazt=60,dazb=10):
