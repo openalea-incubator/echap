@@ -74,8 +74,8 @@ def Plot_data_Tremie_2012_2013():
 def PAI_data():
     d = {'Mercia':pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.27,4.03,4.05]}),
          'Rht3': pandas.DataFrame({'TT':[1137,1281,1796],'PAI':[3.40,3.96,3.45]}),
-         #'Tremie': pandas.DataFrame({'TT':[923,1260,1550],'PAI':[1.1,4.31,4.43]})}
-         'Tremie': pandas.DataFrame({'TT':[1260,1550],'PAI':[3.8,4.7]})}
+         'Tremie': pandas.DataFrame({'TT':[923,1260,1550],'PAI':[1.1,4.31,4.43]})}
+         #'Tremie': pandas.DataFrame({'TT':[1260,1550],'PAI':[3.8,4.7]})} #Publi Corinne
     return d
     
 #
@@ -87,7 +87,7 @@ def TC_data():
          'Tremie_0': pandas.DataFrame({'TT':[923,1260,1550],'TC':[0.3,0.58,0.63],'1-TC':[0.7,0.42,0.37]}),
          'Mercia_57':pandas.DataFrame({'TT':[1137,1281,1796],'TC':[0.95,0.98,0.98]}),
          'Rht3_57': pandas.DataFrame({'TT':[1137,1281,1796],'TC':[0.956,0.975,0.96]}),
-         'Tremie_57': pandas.DataFrame({'TT':[923,1260,1550],'TC':[0.59,0.97,0.985]})}
+         'Tremie_57': pandas.DataFrame({'TT':[923,1260,1550],'TC':[0.59,0.97,0.985],'1-TC':[0.41,0.03,0.015]})}
     return d
       
 #
@@ -107,12 +107,28 @@ def leaf_curvature_data(name='Mercia'):
     if name is 'Mercia' or 'Rht3':
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
-        
-    header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        # XY
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        # filtre sur la variete pour Mercia/Rht3
+        dfxy = dfxy.reset_index()
+        dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
+        dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
+        dfxy = dfxy1.append(dfxy2)
+            
+    if name is 'Tremie':
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonTremie2011.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonTremie2011.csv') 
+        # XY
+        header_row_xydb = ['plant','rank','ranktop','HS','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        dfxy = dfxy.reset_index()
+       
+    # SR
     header_row_srdb = ['rankclass','s','r']
-    dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
     dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=',', index_col=0, skiprows=1, decimal='.')
     dfsr = dfsr.reset_index()
+    
     # NIV1 
     # cle = rankclass
     
@@ -122,19 +138,11 @@ def leaf_curvature_data(name='Mercia'):
     # si tout =
     dfxy['rankclass'] = 1
     dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
-    
-    # filtre sur la variete
-    dfxy = dfxy.reset_index()
-    if name is 'Mercia' or 'Rht3':
-        dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
-        dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
-        dfxy = dfxy1.append(dfxy2)
-    else:
-        dfxy = dfxy[dfxy['variety']==name] 
+        
     # creation de la colonne age
     dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
     #cut intervalle de 0 a 1, etc.
-    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     dfxy['age'] = dfxy_cut
     # remplacement intervalle par un int (ex : (x, y)=y seulement)
     # si marche pas : bidouille = 
@@ -148,7 +156,11 @@ def leaf_curvature_data(name='Mercia'):
     dfxy['age'] = dfxy['age'].replace("(6, 7]", 7)
     dfxy['age'] = dfxy['age'].replace("(7, 8]", 8)
     dfxy['age'] = dfxy['age'].replace("(8, 9]", 9)
-    '''dfxy = dfxy.reset_index()
+    dfxy['age'] = dfxy['age'].replace("(9, 10]", 10)
+    dfxy['age'] = dfxy['age'].replace("(10, 11]", 11)
+    '''
+    # methode plus propre - ne marche pas
+    dfxy = dfxy.reset_index()
     da = 0
     while da < len(dfxy):
         dfxy['age'][da] = re.sub("\(-*[0-9]{1,2}, ([0-9]{1,2})]", "\\1", dfxy['age'][da])
@@ -163,7 +175,8 @@ def leaf_curvature_data(name='Mercia'):
         gg = g.groupby('age')
         dxy[n] = {k:[] for k,ggg in gg}
     # remplissage x et y
-    groups = dfxy.groupby(["inerv"]) 
+    groups = dfxy.groupby(["plant"]) 
+    
     #dfxy['age'] = dfxy['age'].astype(int)
     for n,d in groups:
         dxy[int(d[['rankclass']].values[0])][int(d[['age']].values[0])].append(d.ix[:,['x','y']].to_dict('list'))

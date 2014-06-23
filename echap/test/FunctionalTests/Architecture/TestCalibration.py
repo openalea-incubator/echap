@@ -41,56 +41,80 @@ def prep_curve(name='Tremie20112012'):
     dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
     
     # TRAITEMENT X ET Y
-    dfxy = dfxy.reset_index(); 
-    HS=[]; x=[]; y=[]; n = 0; e = 7; row_tot = dfxy['ID_Plant'].count(); col_tot = 22
+    dfxy = dfxy.reset_index()
+    dfxy = dfxy[dfxy['ID_Metamer']>0]
+    dfxy['rank'] = dfxy['ID_Metamer']
+    #dfxy['ranktop']
+    dfxy = dfxy.reset_index()
+    dfxy['ranktop']=13
+    s_list=['ID_Plant','rank','ranktop','HS','XY','Pt1','Pt2','Pt3','Pt4','Pt5','Pt6','Pt7','Pt8','Pt9','Pt10','Pt11','Pt12','Pt13','Pt14','Pt15']
+    dfxy = dfxy[s_list]
+    
+    plant=[]; rank=[]; HS=[]; x=[]; y=[]; ranktop=[]; n = 0; e = 5; row_tot = dfxy['rank'].count(); col_tot = 20
     
     for row in dfxy.loc[n]:
         while n < row_tot :
             if dfxy['XY'][n]==0 :
                 if pandas.isnull(dfxy.loc[n,e]) == False :
-                    # recup valeur de la colonne HS
-                    HS.append(dfxy.loc[n,5])
+                    # recup valeur de la colonne rank et HS
+                    plant.append(dfxy.loc[n,0])
+                    rank.append(dfxy.loc[n,1])
+                    ranktop.append(dfxy.loc[n,2])
+                    HS.append(dfxy.loc[n,3])
                     # remplissage de x et y
                     x.append(dfxy.loc[n,e])
                     y.append(dfxy.loc[n+1,e])
                     e = e + 1
                 else:
                     n = n + 2
-                    e = 7
+                    e = 5
             if e==col_tot :
-                e = 7
+                e = 5
                 n = n + 2
-    DataXY = zip(HS,x,y)
-    dfxy_fin = pandas.DataFrame(data = DataXY, columns=['HS', 'x', 'y'])
+    plant = map(int, plant); rank = map(int, rank); ranktop = map(int, ranktop)
+    DataXY = zip(plant,rank,ranktop,HS,x,y)
+    dfxy_fin = pandas.DataFrame(data = DataXY, columns=['plant', 'rank', 'ranktop', 'HS', 'x', 'y'])
     
     # TRAITEMENT S ET R 
+    '''
     # on ne garde que si id_Axe='MB' et statut=1
     sortdfsr = dfsr[dfsr['id_Axe']=='MB']
     sortdfsr = sortdfsr[sortdfsr['statut']==1]
     # tableau simplifie
-    s_list=['id_Feuille','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']
+    s_list=['id_Feuille','N_plante','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']
     dfsr = sortdfsr[s_list]
-    dfsr = dfsr.groupby('id_Feuille').mean(); dfsr = dfsr.reset_index()
-    # creation de la colonne rankclass selon le id_Feuille (que des id_Feuille>4 dans id_feuille???)
-    # dfsr['rankclass'] = 1
-    # dfsr['rankclass'][dfsr['id_Feuille'] <= 4] = 2
+    # enlever les lignes avec des nan
+    dfsr = dfsr[dfsr['N_plante'].notnull()]
+    dfsr = dfsr[dfsr['id_Feuille'].notnull()]
+    dfsr['N_plante'] = dfsr['N_plante'].astype(int); dfsr['id_Feuille'] = dfsr['id_Feuille'].astype(int)
+    dfsr['ranktop'] = dfsr['N_plante'] - dfsr['id_Feuille'] + 1
+    #dfsr = dfsr.groupby('ranktop')
+    # cle = rankclass
+    dfsr['rankclass'] = 1
+    dfsr['rankclass'][dfsr['ranktop'] <= 4] = 2
+    dfsr = dfsr.groupby('rankclass').mean()
+    dfsr = dfsr.reset_index()
+    s_list=['rankclass','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']
+    dfsr = dfsr[s_list]
 
-    id_feuille=[]; s=[]; r=[]; n = 0; e = 1; row_tot = dfsr['id_Feuille'].count(); col_tot = 22
+    rankclass=[]; s=[]; r=[]; n = 0; e = 1; row_tot = dfsr['rankclass'].count(); col_tot = 22
     for row in dfsr.loc[n]:
         while n < row_tot :
             while e < col_tot :
-                id_feuille.append(dfsr.loc[n,0])
+                rankclass.append(dfsr.loc[n,0])
                 s.append(s_list[e])
                 r.append(dfsr.loc[n,e])
                 e = e + 1
             if e==col_tot:
                 e = 1
             n = n + 1
-    DataSR = zip(id_feuille,s,r)
-    dfsr_fin = pandas.DataFrame(data = DataSR, columns=['id_feuille', 's', 'r'])
+    rankclass = map(int, rankclass)
+    DataSR = zip(rankclass,s,r)
+    dfsr_fin = pandas.DataFrame(data = DataSR, columns=['rankclass', 's', 'r'])'''
     
     # export xy et sr en format csv
-    dfxy_fin.to_csv(out_xy_csv, index=False); dfsr_fin.to_csv(out_sr_csv, index=False)
+    dfxy_fin.to_csv(out_xy_csv, index=False)
+    #dfsr_fin.to_csv(out_sr_csv, index=False)
 
 #-------------------------------------------------------------------------------------   
 # test new tillering parametrisation against original one by Mariem and data
@@ -146,6 +170,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
     dd = range(0,3000,100)
+    
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
     out = reduce(lambda x,y: pandas.concat([x,y],ignore_index=True), new_outs)
@@ -155,7 +180,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
     #res['HS'] = res.ThermalTime*tx
     #print res.plot('HS','PAI_vert',color='b')
 
-def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
+def compare_LAI(name='Tremie', dTT_stop=600, original=False, n=30):
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
@@ -172,7 +197,7 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
     sim['HS'] = sim.ThermalTime*tx
     obs['HS'] = obs.TT*tx
     
-    sim.plot('HS','PAI_vert',color='y')
+    sim.plot('HS','PAI_vert',color='m')
     obs.plot('HS','PAI',style='or')
     
 #------------------------------------------------------------------------------------- 
@@ -181,12 +206,16 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
 def draft_TC(g, adel, domain, zenith, rep):
     from alinea.adel.postprocessing import ground_cover
     
+    #modelisation afin de voir si erreur
+    scene=plot3d(g)
+    pgl.Viewer.display(scene)
+    
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
     
     return gc
     
-def comp_TC(name='Rht3', original=False, n=30, zenith=57, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
@@ -196,6 +225,7 @@ def comp_TC(name='Rht3', original=False, n=30, zenith=57, dTT_stop=0): #zenith =
     _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
 
     dd = range(400,2300,300)
+    #dd = range(1000,1400,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
@@ -224,6 +254,7 @@ def comp_TC(name='Rht3', original=False, n=30, zenith=57, dTT_stop=0): #zenith =
     sim_green.plot('tt','TCgreen',color='g')
     sim_sen.plot('tt','TCsem',color='y')
     obs.plot('TT','TC',style='or')
+    
   
 
 #-------------------------------------------------------------------------------------
@@ -301,7 +332,7 @@ def draft_light(g, adel, domain, z_level):
     return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
-def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
+def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
     
     # PARTIE OBS ------------------------------------------------------------------------------------------------------------
@@ -343,12 +374,12 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
 
     light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
     #light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
-    light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
+    #light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
     #light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
 
     sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
     #sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
-    sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
+    #sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
     #sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
 
     # GRAPHES ---------------------------------------------------------------------------------------------------------------
@@ -357,14 +388,14 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
         #niveau du sol (point rouge)
     dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
         #20cm du sol (point bleu)
-    dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
+    #dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
     #obs moyennes
     tab0.plot('TT','%',color='m')
-    tab20.plot('TT','%',color='c')
+    #tab20.plot('TT','%',color='c')
     #sim
     sim0.plot('TT','light0',color='r',linewidth=2)  
     #sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
-    sim20.plot('TT','light20',color='b',linewidth=2)
+    #sim20.plot('TT','light20',color='b',linewidth=2)
     #sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
  
 #-------------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ import pandas as pd
 def plantgen_to_devT(pgen):
     """ Creates devT tables from plantgen dict
     """
-    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
+    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data, plantgen2adel
     from alinea.adel.AdelR import devCsv
     
     axeT_, dimT_, phenT_, _, _, _, _, _, _, _, _ = gen_adel_input_data(**pgen)
@@ -185,7 +185,7 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
     
 reconst_db['Mercia_comp'] = Mercia_composite_2010
 
-def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
+def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9):
 
     pgen = archidb.Rht3_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
@@ -204,7 +204,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     # sans angles
     #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
-    leaves = fit_leaves(shapes, 9)
+    leaves = fit_leaves(shapes, disc_level)
     #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
     # CORRECTION DE LA DENSITE
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=147, plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22)
@@ -213,7 +213,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     
 reconst_db['Rht3'] = Rht3_2010
 
-def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
+def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9):
 #BUG: nplants not generated as expected for this genotype !
     pgen = archidb.Tremie_2011_plantgen()
     tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering']
@@ -225,15 +225,19 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     if not as_pgen:
         primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} 
         pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop) 
-        #pgen['plants_density']= 200
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
+    #sans angles
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
+    # avec angles
+    leaves = fit_leaves(shapes, disc_level)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
 reconst_db['Tremie'] = Tremie_2011
 
+'''
 def Tremie_2012(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
     pgen = archidb.Tremie_2012_plantgen()
     tdata = archidb.Tillering_data_Tremie_2012_2013()['tillering']
@@ -251,7 +255,7 @@ def Tremie_2012(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     return pgen, adel, domain, domain_area, convUnit, nplants
     
 reconst_db['Tremie2'] = Tremie_2012
-
+'''
  
 age_at_application = {'Mercia_2010': {'2011-04-19': 1166,
                                       '2011-05-11' : 1500}}
