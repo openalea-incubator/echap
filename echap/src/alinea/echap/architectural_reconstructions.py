@@ -219,6 +219,7 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering']
     tdata = tdata[tdata.Var=='Tremie']
     pdata = archidb.Plot_data_Tremie_2011_2012()['Tremie']
+    shapes = archidb.leaf_curvature_data('Tremie')
     tdata['T5']=0; tdata['T6']=0
     #adapt reconstruction
     # TO DO get nff probabilities for main stem from tillering data ?
@@ -231,7 +232,7 @@ def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
     leaves = fit_leaves(shapes, disc_level)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=200, plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
