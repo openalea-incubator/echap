@@ -105,8 +105,12 @@ def plot(name='Mercia'):
     
     cols = df_obs.var_stade.value_counts().shape[0]
     fig, axes = plt.subplots(1, cols, figsize=(8, 8))
+    
+    # avoir les graphes par ordre alphabetique
+    val = df_obs.var_stade.value_counts().index.values
+    val.sort()
 
-    for x, var_stade in enumerate(df_obs.var_stade.value_counts().index.values):
+    for x, var_stade in enumerate(val):
         data = df_obs[(df_obs['var_stade'] == var_stade)]
         data = data.groupby(['dose','feuille']).colorant.sum()
         print (data)
@@ -115,16 +119,17 @@ def plot(name='Mercia'):
         right = [k[1] for k in enumerate(data)]
 
         #gestion des 4 couleurs differentes des barplot
-        my_colors = list(islice(cycle(['b', 'r', 'g', 'y']), None, 4))
-        axes[x].bar(left,right,label="%s" % (var_stade), color=my_colors)
+        my_colors = list(islice(cycle(['#8181F7', '#FA5858', '#BEF781', '#F3F781']), None, 4))
+        axes[x].bar(left,right,label="%s" % (var_stade), width=0.5, color=my_colors, alpha=0.6)
         axes[x].set_xticks(left, minor=False)
         # modification de la legende axe des abcisses
         data = data.reset_index()
-        axes[x].set_xticklabels(data['dose'].values)
+        #axes[x].set_xticklabels(data['dose'].values)
+        labels = [item.get_text() for item in axes[x].get_xticklabels()]
+        labels[1] = '|   40'; labels[5] = '|   80'; labels[9] = '|   150'; labels[13] = '|   200'
+        axes[x].set_xticklabels(labels)
         #axe des ordonnees
         axes[x].set_ylim(0, 25)
-
-        axes[x].legend(loc='best')
         axes[x].grid(True)
         #changement couleur autour graph
         fig.patch.set_facecolor('#FCF8F8')
@@ -132,11 +137,12 @@ def plot(name='Mercia'):
         axes[x].patch.set_facecolor('#D1D1D1')
         #titre
         fig.suptitle('Dose par Feuille par Stade par Variete', fontsize=15)
+        axes[x].text(2, 23, var_stade, bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
 
-    axes[x].text(12, 20, 'feuille 1', style='italic', bbox={'facecolor':'b', 'alpha':0.5, 'pad':10})
-    axes[x].text(12, 19, 'feuille 2', style='italic', bbox={'facecolor':'r', 'alpha':0.5, 'pad':10})
-    axes[x].text(12, 18, 'feuille 3', style='italic', bbox={'facecolor':'g', 'alpha':0.5, 'pad':10})
-    axes[x].text(12, 17, 'feuille 4', style='italic', bbox={'facecolor':'y', 'alpha':0.5, 'pad':10})
+    axes[x].text(18, 20, '1', style='italic', bbox={'facecolor':'#8181F7', 'alpha':0.6, 'pad':10})
+    axes[x].text(18, 18.5, '2', style='italic', bbox={'facecolor':'#FA5858', 'alpha':0.6, 'pad':10})
+    axes[x].text(18, 17, '3', style='italic', bbox={'facecolor':'#BEF781', 'alpha':0.6, 'pad':10})
+    axes[x].text(18, 15.5, '4', style='italic', bbox={'facecolor':'#F3F781', 'alpha':0.6, 'pad':10})
     plt.show()
 
 # -----------------------------------------------------------------------------------------------------------------------------------
