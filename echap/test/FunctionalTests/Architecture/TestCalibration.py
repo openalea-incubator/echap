@@ -2,6 +2,8 @@ import pandas
 import numpy
 import os
 import matplotlib.pyplot as plt
+import math
+import csv
 
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
@@ -30,6 +32,7 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
 
 # Creation des 2 fichiers pris en entree par curve()
 def prep_curve(name='Tremie20112012'):
+    
     if name is 'Tremie20112012':
         data_file_xydb = shared_data(alinea.echap, 'prepa_xydb_GrignonTremie2011.csv')
         data_file_srdb = shared_data(alinea.echap, 'prepa_srdb_GrignonTremie2011.csv')
@@ -40,7 +43,63 @@ def prep_curve(name='Tremie20112012'):
     header_row_srdb = ['operateur','MethodeAnalyse','Date d\'analyse','fichier','Var','N_prelev','date prelev','rep','N_plante','id_Axe','id_Feuille','nmax','HS','Llimbe','Lgaine','Lentrenoeud','%vert','Llimbe2','Wlimbe','A_bl','A_bl_green','statut','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']									
     dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
     
+    # preparation fichier pr methode R Christian
+    dfxy = dfxy.reset_index()
+    #traitement des x et y
+    x=[]; y=[]; fin=[]; n = 0; row_tot = dfxy['XY'].count(); chif = range(7,22,1)
+    
+    c = csv.writer(open("test.csv", "wb"))
+    c.writerow(["ID_plant","ID_Axis","Organ","ID_Metamer","HS","stat_curve","x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15","x16","x17","x18","x19","x20","z1","z2","z3","z4","z5","z6","z7","z8","z9","z10","z11","z12","z13","z14","z15","z16","z17","z18","z19","z20"])
+    
+    for row in dfxy.loc[n]:
+        while n < row_tot :
+            if dfxy['XY'][n]==0 :
+                # initialisation liste
+                x=[]; y=[]; fin=[]
+                # ajout valeurs premieres colonnes
+                plant = (dfxy.loc[n,1]); fin.append(plant)
+                axis = (dfxy.loc[n,2]); fin.append(axis)
+                organ = (dfxy.loc[n,3]); fin.append(organ)
+                metamer = (dfxy.loc[n,4]); fin.append(metamer)
+                HS = (dfxy.loc[n,5]); fin.append(HS)
+                stat = 3; fin.append(stat)
+                # remplissage de x et y
+                for e in chif:
+                    x.append(dfxy.loc[n,e])
+                    y.append(dfxy.loc[n+1,e])
+                    # enlever valeur nan
+                    xe = [value for value in x if not math.isnan(value)]
+                    ye = [value for value in y if not math.isnan(value)]
+                # obtenir 20 valeurs de x en allant de xmin a xmax
+                xmin = min(xe); xmax = max(xe)
+                pdt = (xmax-xmin)/19
+                if pdt == 0:
+                    # !!! CAS PARTICULIER, il y a tjrs au minimun 2 valeurs mais il se peut qu'elles soient identiques > pdt=0 donc pb dans le arange !!!
+                    newx = [xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin,xmin]
+                else:
+                    newx = numpy.arange(xmin, xmax+pdt, pdt)
+                # interpolation de y
+                print xe, ye
+                interpy = numpy.interp(newx, xe, ye)
+                # concatenation x et y pour ecriture dans csv
+                ran = range(0,20,1)
+                for r in ran:
+                    fin.append(newx[r])
+                for r in ran:
+                    fin.append(interpy[r])
+                # ecriture dans csv de sortie
+                c.writerow(fin)
+                # passage a la ligne suivante
+                n = n + 1
+            else:
+                n = n + 1
+                
+    '''
     # TRAITEMENT X ET Y
+    # obtenir un fichier de la forme :
+    # plant,rank,ranktop,HS,x,y
+    # 1,7,13,7.6,1.32,5.82
+
     dfxy = dfxy.reset_index()
     dfxy = dfxy[dfxy['ID_Metamer']>0]
     dfxy['rank'] = dfxy['ID_Metamer']
@@ -76,7 +135,6 @@ def prep_curve(name='Tremie20112012'):
     dfxy_fin = pandas.DataFrame(data = DataXY, columns=['plant', 'rank', 'ranktop', 'HS', 'x', 'y'])
     
     # TRAITEMENT S ET R 
-    '''
     # on ne garde que si id_Axe='MB' et statut=1
     sortdfsr = dfsr[dfsr['id_Axe']=='MB']
     sortdfsr = sortdfsr[sortdfsr['statut']==1]
@@ -110,11 +168,11 @@ def prep_curve(name='Tremie20112012'):
             n = n + 1
     rankclass = map(int, rankclass)
     DataSR = zip(rankclass,s,r)
-    dfsr_fin = pandas.DataFrame(data = DataSR, columns=['rankclass', 's', 'r'])'''
+    dfsr_fin = pandas.DataFrame(data = DataSR, columns=['rankclass', 's', 'r'])
     
     # export xy et sr en format csv
-    dfxy_fin.to_csv(out_xy_csv, index=False)
-    #dfsr_fin.to_csv(out_sr_csv, index=False)
+    #dfxy_fin.to_csv(out_xy_csv, index=False)
+    #dfsr_fin.to_csv(out_sr_csv, index=False)'''
 
 #-------------------------------------------------------------------------------------   
 # test new tillering parametrisation against original one by Mariem and data
@@ -169,7 +227,8 @@ def test_axis_dynamics(name='Mercia'):
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    dd = range(0,3000,100)
+    #dd = range(0,3000,100)
+    dd = range(400,2300,300)
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
@@ -177,10 +236,8 @@ def simLAI(adel, domain_area, convUnit, nplants):
     axstat = axis_statistics(out, domain_area, convUnit)    
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
-    #res['HS'] = res.ThermalTime*tx
-    #print res.plot('HS','PAI_vert',color='b')
 
-def compare_LAI(name='Tremie', dTT_stop=600, original=False, n=30):
+def compare_LAI(name='Tremie', dTT_stop=0, original=False, n=30):
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
@@ -197,8 +254,10 @@ def compare_LAI(name='Tremie', dTT_stop=600, original=False, n=30):
     sim['HS'] = sim.ThermalTime*tx
     obs['HS'] = obs.TT*tx
     
-    sim.plot('HS','PAI_vert',color='m')
+    sim.plot('HS','PAI_vert',color='g')
     obs.plot('HS','PAI',style='or')
+    
+    return sim
     
 #------------------------------------------------------------------------------------- 
 # Taux de couverture
@@ -215,7 +274,7 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     return gc
     
-def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
@@ -224,8 +283,8 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
 
     _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
 
-    dd = range(400,2300,300)
-    #dd = range(1000,1400,100)
+    dd = range(400,2300,100)
+    #dd = range(1000,1300,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
@@ -238,7 +297,7 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
         tc_sen.append(TC_sim[n]['senescent'])
         n = n + 1
 
-    sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TC_sen':tc_sen})
+    sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TCsen':tc_sen})
     
     # Si on veut tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
     '''
@@ -249,13 +308,19 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
     sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
     obs.plot('TT','1-TC',style='oy')
     '''
-    # Si on veut tracer TC green et senescence sur le même graph
-    sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
+    # Si on veut tracer TC_tot, TC_green et senescence sur le même graph
+    # sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
+    # sim_sen.plot('tt','TCsem',color='y')
+    sim_green['TCtot']=sim_green['TCgreen']+sim_green['TCsen']
+    sim_green.plot('tt','TCtot',color='b')
     sim_green.plot('tt','TCgreen',color='g')
-    sim_sen.plot('tt','TCsem',color='y')
+    sim_green.plot('tt','TCsen',color='y')
     obs.plot('TT','TC',style='or')
     
-  
+    # Graph k pr Carole
+    sim_green['k_TCgreen'] = numpy.log(1/(1-sim_green['TCgreen']))
+    sim_green['k_TCtot'] = numpy.log(1/(1-sim_green['TCtot']))
+    return sim_green
 
 #-------------------------------------------------------------------------------------
 # GRAPH METEO
