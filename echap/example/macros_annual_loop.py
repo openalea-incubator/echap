@@ -28,11 +28,11 @@ def setup_canopy(age = 1166, nsect=3, length = 0.4, width=0.30, sowing_density =
     return g, adel, domain, domain_area, convUnit, nplants
 
 from alinea.alep.protocol import update
-from alinea.septo3d.cycle.alep_objects import GrowthControlModel
-growth_control = GrowthControlModel()
+from alinea.septo3d.cycle.alep_objects import Septo3DFungus
+fungus = Septo3DFungus()
 
 def update_lesions(g,dt,activate=True):
-    return update(g,dt,growth_control)
+    return update(g,dt)
     
 from alinea.echap.interfaces import pesticide_surfacic_decay, pesticide_penetrated_decay, pesticide_efficacy, pesticide_interception
 
@@ -56,38 +56,27 @@ def update_pesticides(g, weather_data):
     return g
     
 from alinea.alep.protocol import disperse
-from alinea.septo3d.dispersion.alep_interfaces import Septo3DEmission, Septo3DTransport
-from alinea.septo3d.dispersion.alep_interfaces import SimpleTransport
+from alinea.popdrops.alep_interface import PopDropsEmission, PopDropsTransport
+
 
 def dispersion(g, weather_data, domain, domain_area, convUnit):
     emission = Septo3DEmission(domain=domain, convUnit = convUnit)
     transport = Septo3DTransport(domain = domain, domain_area =domain_area, convUnit=convUnit)
-    g,dus = disperse(g,emission, transport, 'septo3d', weather_data=weather_data)
+    g,dus = disperse(g,emission, transport, fungus.name, weather_data=weather_data)
     return g
  
-def simple_dispersion(g, weather_data, domain, domain_area, convUnit):
-    emission = Septo3DEmission(domain=domain, convUnit = convUnit)
-    transport = SimpleTransport(domain = domain, domain_area =domain_area, convUnit=convUnit)
-    g,dus = disperse(g,emission, transport, 'septo3d', weather_data=weather_data)
-    return g
+
  
 from alinea.alep.protocol import external_contamination
 from alinea.septo3d.dispersion.alep_interfaces import SoilInoculum, Septo3DSoilContamination
-from alinea.septo3d.dispersion.alep_interfaces import SimpleSoilInoculum, SimpleContamination
-from alinea.septo3d.cycle.alep_objects import Septo3D_DU
-generator = Septo3D_DU()
+
  
 def contamination(g, weather_data, level, domain, domain_area, convUnit):
-    inoc = SoilInoculum(DU_generator=generator, sporulating_fraction =level, domain_area = domain_area, convUnit=convUnit)
+    inoc = SoilInoculum(fungus, sporulating_fraction =level, domain_area = domain_area, convUnit=convUnit)
     contaminator = Septo3DSoilContamination(domain = domain, domain_area =domain_area, convUnit=convUnit)
     g = external_contamination(g, inoc, contaminator, weather_data)
     return g
   
-def simple_contamination(g, weather_data, level, domain, domain_area, convUnit):
-    inoc = SimpleSoilInoculum(DU_generator=generator, sporulating_fraction =level, domain_area = domain_area, convUnit=convUnit)
-    contaminator = SimpleContamination(domain = domain, domain_area =domain_area, convUnit=convUnit)
-    g = external_contamination(g, inoc, contaminator, weather_data)
-    return g  
 
 
 from alinea.echap.interception_leaf import InterceptModel
