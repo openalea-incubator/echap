@@ -12,7 +12,6 @@ from alinea.echap.microclimate_leaf import microclimate_leaf
 from alinea.echap.recorder import LeafElementRecorder
 from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
 
-
 # pm = load_package_manager()
 # node_factory = pm['alinea.echap.macros']['setup canopy']
 # setup_canopy = function(node_factory)
@@ -25,35 +24,38 @@ from alinea.echap.interfaces import record as do_record #to avoid confusion with
 #node_factory = pm['alinea.echap.macros']['contamination']
 #contamination = function(node_factory)
 
-from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
-
+from macros_annual_loop import reconst, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
 from alinea.echap.tests_nodes import plot_pesticide
 
 import alinea.septo3d
-meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+from alinea.astk.Weather import Weather
+from alinea.echap.weather_data import *
 
 #setup
-weather = Weather(data_file=meteo_path)
-weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
+#meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+#weather = Weather(data_file=meteo_path)
+#weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
+weather = Boigneville_2010_2011()
 applications = """date,dose, product_name
-2000-11-20 00:00:00, 0, bug
-2000-11-20 1:00:00, 1, Opus
-2000-11-20 2:00:00, 0, bug
-2001-04-13 10:00:00, 1, Opus
-2001-04-13 11:00:00, 0, bug
-2001-05-13 10:00:00, 1, Opus
-2001-05-13 11:00:00, 0, bug
+2010-11-02 00:00:00, 0, bug
+2010-11-02 1:00:00, 1, Opus
+2010-11-02 2:00:00, 0, bug
+2010-04-13 10:00:00, 1, Opus
+2010-04-13 11:00:00, 0, bug
+2010-05-13 10:00:00, 1, Opus
+2010-05-13 11:00:00, 0, bug
 """
 pest_calendar = pesticide_applications(applications)
 
-seq = pandas.date_range(start = "2000-11-20", periods=24, freq='H')  # 5000 pour le cycle complet
-g, adel, domain, domain_area, convUnit, nplants = setup_canopy()
+seq = pandas.date_range(start = "2010-11-02", periods=24, freq='H')  # 5000 pour le cycle complet
+#g, adel, domain, domain_area, convUnit, nplants = setup_canopy()
+pgen, adel, domain, domain_area, convUnit, nplants = reconst(name='Mercia', dTT_stop=0, original=False, n=3)
 SspoSol = 0.01
 recorder = LeafElementRecorder()
 
 TTmodel = DegreeDayModel(Tbase = 0)
 every_rain = rain_filter(seq, weather)
-every_h = time_filter(seq, delay=6)
+every_h = time_filter(seq, delay = 6)
 every_dd = thermal_time_filter(seq, weather, TTmodel, delay = 15)
 every_pest = date_filter(seq, pest_calendar)
 
@@ -61,6 +63,8 @@ rain_timing = IterWithDelays(*time_control(seq, every_rain, weather.data))
 canopy_timing = IterWithDelays(*time_control(seq, every_dd, weather.data))
 doses_timing = IterWithDelays(*time_control(seq, every_h, weather.data))
 pest_timing = IterWithDelays(*time_control(seq, every_pest, pest_calendar))
+
+g = adel.setup_canopy(age=150)
 
 for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_timing)):
     canopy_iter, doses_iter, rain_iter, pest_iter = controls
@@ -74,7 +78,7 @@ for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_t
         _=pesticide_intercept(g, pest_iter.value)
         #plot_pesticide(g)
     if doses_iter:
-        print 'updte microclimate / doses...'
+        print 'update microclimate / doses...'
         _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
         _=update_pesticides(g, doses_iter.value)
         plot_pesticide(g)
@@ -82,7 +86,7 @@ for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_t
     if rain_iter:
         wdata = rain_iter.value
         dispersion(g, wdata, domain, domain_area, convUnit)
-        _=contamination(g,wdata, SspoSol, domain, domain_area, convUnit)
+        #_=contamination(g,wdata, SspoSol, domain, domain_area, convUnit)
         _=infect(g, rain_iter.dt)
         
 recorder.save_records('test.csv')     
