@@ -79,7 +79,7 @@ from alinea.septo3d.dispersion.alep_interfaces import Septo3DEmission, Septo3DTr
 def dispersion(g, weather_data, domain, domain_area, convUnit):
     emission = Septo3DEmission(domain=domain, convUnit = convUnit)
     transport = Septo3DTransport(domain = domain, domain_area =domain_area, convUnit=convUnit)
-    g,dus = disperse(g,emission, transport, fungus.name, weather_data=weather_data)
+    g = disperse(g,emission, transport, fungus.name, weather_data=weather_data)
     return g
  
  
