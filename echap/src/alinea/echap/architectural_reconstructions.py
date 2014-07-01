@@ -47,7 +47,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     plot_width = inter_row * nrow
     return plot_length, plot_width
    
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6}):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
@@ -56,7 +56,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf, incT=incT, dinT=dinT)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars)
     return adel, domain, domain_area, convUnit, nplants
     
     
@@ -104,7 +104,7 @@ def fit_leaves(dxy, disc_level=9):
         dxy[k] = leaves
     return dxy
 
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9):
+def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9, **kwds):
 
     pgen = archidb.Mercia_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
@@ -127,7 +127,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     # adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
     leaves = fit_leaves(shapes, disc_level)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf())
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), **kwds)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     

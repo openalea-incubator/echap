@@ -293,7 +293,7 @@ def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     ng tentative debug date 12/12/12
     """
     date = weather_data.index[-1].to_datetime()# recording occurs at the end of the time step
-    print "test ng date",date
+    print date
     for vid in g:
         if g.label(vid).startswith(label):
             n = g.node(vid)
