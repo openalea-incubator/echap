@@ -32,6 +32,7 @@ def sim_LAI_methode2(adel, domain_area, convUnit, nplants, tx, start=0, end = 24
     recorder = LeafElementRecorder()
     g = adel.setup_canopy(start)
     gouts = [adel.get_exposed_areas(g, convert=True)]
+    do_record(g, weather.data, recorder, header={'iter':-1, 'TT':adel.canopy_age, 'HS': adel.canopy_age * tx})
     for i in range((end - start) / bydd):
         g = adel.grow_dd(g, bydd)
         gouts.append(adel.get_exposed_areas(g, convert=True))
@@ -44,10 +45,10 @@ def sim_LAI_methode2(adel, domain_area, convUnit, nplants, tx, start=0, end = 24
     
 
         
-def plot_LAI(name='Mercia', dTT_stop=0, original=False, n=3):
+def plot_LAI(name='Mercia', dTT_stop=0, original=False, n=3, nsect=1):
 
     adelpars = {'senescence_leaf_shrink' : 1, 'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2, 'epsillon' : 1e-6}
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, run_adel_pars = adelpars, nsect=1)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, run_adel_pars = adelpars, nsect=nsect)
     tx = pgen['dynT_user'].a_cohort[0]
     
     
