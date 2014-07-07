@@ -49,6 +49,16 @@ def make_canopy():
             rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
             adel.save(g,it)
 
+def lesions_to_dict(g):
+    lesions = g.property('lesions')
+    for vid, les in lesions.iteritems():
+        lesions[vid] = lesions.[vid].c_to_dict()
+        
+        
+def dict_to_lesions(g):
+    lesions = g.property('lesions')
+    for vid, les in lesions.iteritems():
+        lesions[vid] = lesions.[vid].dict_to_c()
         
 def run_disease(SspoSol = 0.01, compute_star=False):
 
@@ -66,8 +76,10 @@ def run_disease(SspoSol = 0.01, compute_star=False):
         if canopy_iter:
             it += 1
             newg,TT = adel.load(it)
+            lesions_to_dict(g)
             move_properties(g,newg)
             g = newg
+            dict_to_lesions(g)
             update(g, canopy_iter.dt, growth_controler, senescence_model=None, label='LeafElement', weather_data = canopy_iter.value)
             do_record(g, canopy_iter.value, recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})  
         if rain_iter:
