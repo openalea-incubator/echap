@@ -54,15 +54,15 @@ def make_canopy():
 def lesions_to_dict(g):
     lesions = g.property('lesions')
     for vid, les in lesions.iteritems():
-        if lesions[vid][0] is not None:
-            lesions[vid][0] = lesions[vid][0].c_to_dict()
+        if len(lesions[vid]) > 0:
+            lesions[vid][0].c_to_dict()
         
         
 def dict_to_lesions(g):
     lesions = g.property('lesions')
     for vid, les in lesions.iteritems():
-        if lesions[vid][0] is not None:
-            lesions[vid][0] = lesions[vid][0].dict_to_c()
+        if len(lesions[vid]) > 0:
+            lesions[vid][0].dict_to_c()
         
 def run_disease(SspoSol = 0.01, compute_star=False):
 
