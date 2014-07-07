@@ -26,9 +26,11 @@ pgen, adel, domain, domain_area, convUnit, nplants = Mercia(nplants = 3, nsect=5
 tx = pgen['dynT_user'].a_cohort[0]
 TTmodel = DegreeDayModel(Tbase = 0)
 
+#modele
+#seq = pandas.date_range(start = "2010-11-02", periods=100, freq='H')  # hours = 5000 pour le cycle complet
+# tout le cycle hivernal
+seq = pandas.date_range(start = "2010-11-02", end = "2011-03-15 18:00:00", freq='H')
 
-
-seq = pandas.date_range(start = "2010-11-02", periods=100, freq='H')  # hours = 5000 pour le cycle complet
 every_dd = thermal_time_filter(seq, weather, TTmodel, delay = 10)
 every_rain = rain_filter(seq, weather)
 every_dd_or_rain = filter_or([every_dd, every_rain])
@@ -52,13 +54,15 @@ def make_canopy():
 def lesions_to_dict(g):
     lesions = g.property('lesions')
     for vid, les in lesions.iteritems():
-        lesions[vid] = lesions.[vid].c_to_dict()
+        if lesions[vid][0] is not None:
+            lesions[vid][0] = lesions[vid][0].c_to_dict()
         
         
 def dict_to_lesions(g):
     lesions = g.property('lesions')
     for vid, les in lesions.iteritems():
-        lesions[vid] = lesions.[vid].dict_to_c()
+        if lesions[vid][0] is not None:
+            lesions[vid][0] = lesions[vid][0].dict_to_c()
         
 def run_disease(SspoSol = 0.01, compute_star=False):
 
@@ -68,7 +72,7 @@ def run_disease(SspoSol = 0.01, compute_star=False):
     
     recorder = LeafElementRecorder()
     it = 0
-    g,TT = adel.load(it)
+    g, TT = adel.load(it)
     do_record(g, weather.get_weather_start(seq), recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})
     
     for i, controls in enumerate(zip(canopy_timing, rain_timing)):
@@ -88,7 +92,8 @@ def run_disease(SspoSol = 0.01, compute_star=False):
             g = external_contamination(g, inoc, contaminator, wdata)
             g = disperse(g, emitter, transporter, fungus.name, label='LeafElement', weather_data=wdata)
             infect(g, rain_iter.dt, infection_controler, label='LeafElement')
-            
-    return g,recorder
+                       
+    return g, recorder
     
-    
+ 
+#recorder.save_records('annual_loop_dec_recorder.csv')   
