@@ -10,7 +10,8 @@ from alinea.echap.microclimate_leaf import microclimate_leaf
 from alinea.echap.recorder import LeafElementRecorder
 from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
 
-from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
+#from macros_annual_loop import setup_canopy, update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
+from macros_annual_loop import update_lesions, update_pesticides, dispersion, contamination, pesticide_intercept
 import alinea.septo3d
 
 from alinea.echap.tests_nodes import plot_pesticide
@@ -61,7 +62,7 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
       
 from alinea.echap.architectural_reconstructions import reconst_db
 
-def repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166):
+def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
     print '\n\nrepartition_at_application 3!!\n\n'
     from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
