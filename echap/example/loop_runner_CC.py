@@ -5,6 +5,8 @@ import numpy as np
 import pylab as p
 import matplotlib.pyplot as plt
 from alinea.echap.weather_data import *
+import time 
+from alinea.echap.recorder import *
 
 from itertools import cycle, islice
 from pylab import *
@@ -53,12 +55,12 @@ def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pg
     #age=1166
     age = 1500
     g = adel.setup_canopy(age)
-    #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 40, g=g)
-    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 40, g=g)
+    #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
     return df
 
 def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0): 
-
+   
     df = g_constr(name, nplants, nsect, seed, sample, as_pgen, dTT_stop)
 
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
@@ -67,21 +69,30 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
         sub['n_max'] = sub['metamer'].max()
         return sub
         
-    data = gr.apply(_fun)    
+    data = gr.apply(_fun)
+    
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
     data = data.convert_objects() # conversion des objets en types numpy
+    data.to_csv('data1.csv')
+    
+    dataCB=data.groupby(['date'],as_index=False)
+    # calcul, pour chaque date de la surface totale verte et senecente et de l'interception totale
+    grCB= dataCB.sum()
     
     #test groupby by multiple apres avoir fait calcul sur data
     """data = data[data.ntop_cur <= 4]
     f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
     dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
     """
-
+    
+    
     data = data[data.ntop_cur <= 4]
     gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
     dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
                  # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
                  # senesced_area, surfacic_doses_Epoxiconazole, n_max
+                 
+    
      
     gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
     # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
@@ -90,8 +101,13 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
     gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
     # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
     grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+ 
+    gr3=dmp.groupby(['date'],as_index=False)
+    # calcul, pour chaque date et ntop_cur<4 de la surface totale verte et senecente et de l'interception totale
+    grtest3 = gr3.sum()
     
-    return grtest4
+    
+    return grtest4,grtest3,grCB
 
 #plot des donnees obs
 def plot(name='Mercia'):
@@ -147,7 +163,7 @@ def plot(name='Mercia'):
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # IDEM mais gestion d'un range de date  
-def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40, age=1166):
+def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=0.5, age=1166):
 
     # Conversion age (TT) en date ('aaaa-mm-jj')
     from alinea.astk.TimeControl import thermal_time
@@ -182,7 +198,7 @@ def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', a
     df = repartition_at_applicationArch(appdate = appdate, dose = 40, g = g)
     return df
 
-def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=40): 
+def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=0.5): 
 
     dd = range(1000,1400,300)
     #df_sim = [g_constr_age(name, nplants, nsect, seed, sample, as_pgen, dTT_stop, dose, age) for age in dd]
