@@ -18,7 +18,8 @@ def dt50(k):
 
 products_data={'Opus': {'Epoxiconazole': 125},
                'Opus_new': {'Epoxiconazole': 83},
-               'Banko 500': {'Chlorothalonil': 500}}
+               'Banko 500': {'Chlorothalonil': 500},
+               'Tartrazine':{'Tartrazine': 150}}
                
 # Decay parameters
 #-----------------
@@ -39,6 +40,7 @@ milne_parameters = {'Epoxiconazole': {'Ae': 3.37 * 2.0 / 9,
                                       'Ap': 4.03 * 2.0 / 9, 
                                       'Kp': 4.13, 
                                       'type_code': 3}
+                                
                     }
 
 #
