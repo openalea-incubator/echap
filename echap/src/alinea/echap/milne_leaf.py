@@ -8,6 +8,7 @@ Created on Wed Mar 20 15:16:51 2013
 from numpy import exp
 import pandas
 
+from alinea.echap.pesticide_data import milne_parameters
 
 def _dose_decay(decay_rate, initial_dose, days):
     active_dose = initial_dose * exp(-decay_rate * days) 
@@ -60,8 +61,8 @@ class MilneModel(object):
 class PenetratedDecayModel(object):
     """ Adaptor for Milne decay model and compliying echap pesticide_penetrated_decay model protocol
     """
-    def __init__(self,products_parameters = [{'Ae': 0.5, 'Ke': 7.0099999999999998, 'decay_rate': 0.069000000000000006, 'dose_max_ha': 125, 'Ap': 0.70999999999999996, 'Kp': 6, 'type_code': 2, 'compound': 'Epoxiconazole'}, {'Ae': 1.0, 'Ke': 6.4900000000000002, 'decay_rate': 0.01, 'dose_max_ha': 1000, 'Ap': 0.0, 'Kp': 0, 'type_code': 3, 'compound': 'Chlorothalonil'}]):
-        self.compound_parameters = dict([(p['compound'],p) for p in products_parameters])
+    def __init__(self,compound_parameters = milne_parameters):
+        self.compound_parameters = compound_parameters
         
     def decay(self, initial_dose, weather_data):
         """ Return the penetrated active doses 

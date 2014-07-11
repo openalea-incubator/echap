@@ -16,6 +16,9 @@ def dt50(k):
 # dosage (g.l-1) of active compounds in comercial products
 #---------------------------------------------------------
 
+# if we comprare with max_dose_ha of Milne, we get the max l.ha-1 that can be applied, eg here 1 l.ha-1 for opus and 2 l.ha-1 for Banko
+
+
 products_data={'Opus': {'Epoxiconazole': 125},
                'Opus_new': {'Epoxiconazole': 83},
                'Banko 500': {'Chlorothalonil': 500},
@@ -26,19 +29,19 @@ products_data={'Opus': {'Epoxiconazole': 125},
 
 # Milne parameters (global  activity decay and dose-response curve paramaters). Star values, Paris.ppt from Alice Milne, last slide
 
-milne_parameters = {'Epoxiconazole': {'Ae': 3.37 * 2.0 / 9,
-                                      'Ke': 4.64,
-                                      'decay_rate': 1. / 20.,#d-1
+milne_parameters = {'Epoxiconazole': {'Ae': 0.5 ,
+                                      'Ke': 7.01,
+                                      'decay_rate': 0.069,#d-1
                                       'dose_max_ha': 125,
-                                      'Ap': 3.42 * 2.0 / 9,
-                                      'Kp': 6.61,
+                                      'Ap': 0.71,
+                                      'Kp': 6.,
                                       'type_code': 2},
-                    'Chlorothalonil':{'Ae': 1.25 * 2.0 / 9, 
-                                      'Ke': 5.84, 
-                                      'decay_rate': 1. / 40, 
+                    'Chlorothalonil':{'Ae': 1., 
+                                      'Ke': 6.49, 
+                                      'decay_rate': 0.01, 
                                       'dose_max_ha': 1000, 
-                                      'Ap': 4.03 * 2.0 / 9, 
-                                      'Kp': 4.13, 
+                                      'Ap': 0, 
+                                      'Kp': 0, 
                                       'type_code': 3}
                                 
                     }
