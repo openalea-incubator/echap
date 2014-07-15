@@ -66,19 +66,6 @@ def make_canopy(dir = './Tem'):
             microclimate_leaf(g, control.value, domain = domain, convUnit = convUnit)
             adel.save(g,it, dir)
             
-            
-def lesions_to_dict(g):
-    lesions = g.property('lesions')
-    for vid, les in lesions.iteritems():
-        if len(lesions[vid]) > 0:
-            lesions[vid][0].c_to_dict()
-        
-        
-def dict_to_lesions(g):
-    lesions = g.property('lesions')
-    for vid, les in lesions.iteritems():
-        if len(lesions[vid]) > 0:
-            lesions[vid][0].dict_to_c()
         
 def run_disease(SspoSol = 0.01, compute_star=False, dir = './Nopest'):
 
@@ -90,7 +77,6 @@ def run_disease(SspoSol = 0.01, compute_star=False, dir = './Nopest'):
     it = 0
     g, TT = adel.load(it, './Tem')
     do_record(g, weather.get_weather_start(seq), recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})
-    lesions_to_dict(g)
     adel.save(g, it, dir)
 
     
@@ -102,21 +88,17 @@ def run_disease(SspoSol = 0.01, compute_star=False, dir = './Nopest'):
             newg,TT = adel.load(it, './Tem')
             move_properties(g,newg)
             g = newg
-            dict_to_lesions(g)
             update(g, canopy_iter.dt, growth_controler, senescence_model=None, label='LeafElement', weather_data = canopy_iter.value)
             do_record(g, canopy_iter.value, recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})
-            lesions_to_dict(g)
             adel.save(g, it, dir)
             
         if rain_iter:
             wdata = rain_iter.value
             if wdata.rain.sum() > 0:
                 print 'raining...'
-                dict_to_lesions(g)
                 g = external_contamination(g, inoc, contaminator, wdata)
                 g = disperse(g, emitter, transporter, fungus.name, label='LeafElement', weather_data=wdata)
                 infect(g, rain_iter.dt, infection_controler, label='LeafElement')
-                lesions_to_dict(g)
                        
     recorder.save_records(dir+'/records.csv')
     return g, recorder
@@ -134,7 +116,6 @@ def run_disease_and_decay(start = 0, refdir = './Nopest', dir = './doses'):
     it = 0
     g, TT = adel.load(it, refdir)
     do_record(g, weather.get_weather_start(seq), recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})
-    lesions_to_dict(g)
     adel.save(g, it, dir)
 
     
@@ -146,22 +127,18 @@ def run_disease_and_decay(start = 0, refdir = './Nopest', dir = './doses'):
             newg,TT = adel.load(it, refdir)
             move_properties(g,newg)
             g = newg
-            dict_to_lesions(g)
             update(g, canopy_iter.dt, growth_controler, senescence_model=None, label='LeafElement', weather_data = canopy_iter.value)
             update_pesticides(g, canopy_iter.value)
             do_record(g, canopy_iter.value, recorder, header={'iter':it, 'TT':TT, 'HS': TT * tx})
-            lesions_to_dict(g)
             adel.save(g, it, dir)
             
         if rain_iter:
             wdata = rain_iter.value
             if wdata.rain.sum() > 0:
                 print 'raining...'
-                dict_to_lesions(g)
                 g = external_contamination(g, inoc, contaminator, wdata)
                 g = disperse(g, emitter, transporter, fungus.name, label='LeafElement', weather_data=wdata)
                 infect(g, rain_iter.dt, infection_controler, label='LeafElement')
-                lesions_to_dict(g)
         if pest_iter:
             if pest_iter.value.dose.sum() > 0:
                 print 'pesticide application...'
