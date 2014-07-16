@@ -96,7 +96,7 @@ def plot_lesion_states(rec, ax=None, **kwds):
     outputs = pandas.DataFrame({#'disease area': rec.data.leaf_disease_area / rec.data.leaf_area,
                                 #'surface incubating': rec.data.surface_inc / rec.data.leaf_area,
                                 'surface chlorotic': rec.data.surface_chlo / rec.data.leaf_area*100,
-                                'surface necrotic': (rec.data.leaf_senesced_area+rec.data.surface_spo) / rec.data.leaf_area*100,
+                                'surface necrotic': (rec.data.leaf_senesced_area+ rec.data.surface_nec) / rec.data.leaf_area*100,
                                 'surface sporulating': rec.data.surface_spo / rec.data.leaf_area*100})
     ax = outputs.plot(ax=ax, **kwds)
     ax.set_xlabel('Days')
