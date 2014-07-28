@@ -18,7 +18,7 @@ from alinea.alep.septoria import plugin_septoria
 from alinea.popdrops.alep_interface import PopDropsEmission, PopDropsTransport
 from alinea.alep.growth_control import PriorityGrowthControl
 from alinea.alep.infection_control import BiotrophDUPositionModel
-from alinea.alep.disease_outputs import SeptoRecorder
+from alinea.alep.disease_outputs import AdelSeptoRecorder
 from alinea.alep.disease_outputs import plot_severity_by_leaf
 septoria = plugin_septoria()
 
@@ -56,7 +56,7 @@ def example_one_leaf(fungus = septoria,
     leaf.dispersal_units = dispersal_units
 
     # Initiate output recorder
-    recorder = SeptoRecorder(vids=[10], group_dus=group_dus)
+    recorder = AdelSeptoRecorder(vids=[10], group_dus=group_dus)
     recorder.record(g,0)
     
     # Simulation loop
