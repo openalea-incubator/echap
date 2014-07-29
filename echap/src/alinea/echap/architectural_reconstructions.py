@@ -47,7 +47,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     plot_width = inter_row * nrow
     return plot_length, plot_width
    
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6}):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
