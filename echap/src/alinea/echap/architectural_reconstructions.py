@@ -104,7 +104,7 @@ def fit_leaves(dxy, disc_level=9):
         dxy[k] = leaves
     return dxy
 
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9, **kwds):
+def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, **kwds):
 
     pgen = archidb.Mercia_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
@@ -185,7 +185,7 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
     
 reconst_db['Mercia_comp'] = Mercia_composite_2010
 
-def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9):
+def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20):
 
     pgen = archidb.Rht3_2010_plantgen()
     tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
@@ -213,7 +213,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     
 reconst_db['Rht3'] = Rht3_2010
 
-def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=9):
+def Tremie_2011(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20):
 #BUG: nplants not generated as expected for this genotype !
     pgen = archidb.Tremie_2011_plantgen()
     tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering']
