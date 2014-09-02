@@ -187,7 +187,6 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
         axeTs, dimTs, phenTs = plantgen_to_devT_comp(name)
         tx = sim * 10000
         axeTs['id_plt'] = axeTs['id_plt']+plt
-        axeTs['id_cohort'] = axeTs['id_cohort']+tx
         #modification des colonnes id_dim (commune a axeT et dimT) puis id_phen (commune a axeT et phenT)
         axeTs['id_dim'] = axeTs['id_dim']+tx; dimTs['id_dim'] = dimTs['id_dim']+tx
         axeTs['id_phen'] = axeTs['id_phen']+tx; phenTs['id_phen'] = phenTs['id_phen']+tx
