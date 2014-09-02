@@ -63,7 +63,7 @@ def Plot_data_Tremie_2011_2012():
     
 def Plot_data_Tremie_2012_2013():
     d = {}
-    d['Tremie'] = {'plant_density_at_emergence' : 204, 'ear_density_at_harvest' : 676,
+    d['Tremie2'] = {'plant_density_at_emergence' : 204, 'ear_density_at_harvest' : 676,
     'inter_row':0.15
     }
     return d
@@ -104,7 +104,7 @@ def mat_data():
 def leaf_curvature_data(name='Mercia'):
     import re
     
-    if name is 'Mercia' or 'Rht3':
+    if name is 'Mercia':
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
@@ -115,14 +115,35 @@ def leaf_curvature_data(name='Mercia'):
         dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
         dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
         dfxy = dfxy1.append(dfxy2)
+        #dfxy = dfxy[dfxy['variety']=='Mercia']
+        dfxy['rankclass'] = 1
+        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+       
+    if name is 'Rht3':
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
+        # XY
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        # filtre sur la variete Mercia seulement
+        dfxy = dfxy.reset_index()
+        dfxy = dfxy[dfxy['variety']=='Mercia'] 
+        # feuille du haut = feuille du bas pr coller a l'archi de rht3
+        dfxy['rankclass'] = 2
             
     if name is 'Tremie':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonTremie2011.csv') 
-        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonTremie2011.csv') 
-        # XY
-        header_row_xydb = ['plant','rank','ranktop','HS','inerv','x','y']
+        # fichier angle non dispo encore, on prend mercia en attendant
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        #data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonTremie2011.csv') 
+        #data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonTremie2011.csv') 
+        #header_row_xydb = ['plant','rank','ranktop','HS','inerv','x','y']
         dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
         dfxy = dfxy.reset_index()
+        dfxy = dfxy[dfxy['variety']=='Mercia']
+        dfxy['rankclass'] = 1
+        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
        
     # SR
     header_row_srdb = ['rankclass','s','r']
@@ -132,12 +153,11 @@ def leaf_curvature_data(name='Mercia'):
     # NIV1 
     # cle = rankclass
     
-    # test seulement rankclass 1 =
-    #dfxy['rankclass'] = 1
-    #dfsr['rankclass'] = 1
+    # test seulement rankclass 2 = (feuille du haut = feuille du bas)
+    #dfxy['rankclass'] = 2
     # si tout =
-    dfxy['rankclass'] = 1
-    dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+    #dfxy['rankclass'] = 1
+    #dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
         
     # creation de la colonne age
     dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
@@ -198,51 +218,43 @@ def leaf_curvature_data(name='Mercia'):
             dr = dr + 1
             
     # ajout dans le dict de dict precedent
-    # longueur rankclass=1 et =2
-    rank1keys = dxy[1].keys()
-    rank2keys = dxy[2].keys()
-    cpt1 = 0; rank1 = rank1keys[cpt1]; list1 = 0; ort = 0; ort1 = 0
-    cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0
-    
-    while cpt1 < len(rank1keys):
-        rank1 = rank1keys[cpt1]
-        while list1 < len(dxy[1][rank1]) :
-            dxy[1][rank1][list1].update({'s':s1, 'r':r1})
-            list1 = list1 + 1
-        if list1 == len(dxy[1][rank1]) :
-            list1 = 0
-        rank1 = rank1 + 1
-        cpt1 = cpt1 + 1 
+    # remplissage rankclass (rankclass=2 seulement pour rht3)
+    if name is 'Rht3':
+        rank2keys = dxy[2].keys()
+        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
+        while cpt2 < len(rank2keys):
+            rank2 = rank2keys[cpt2]
+            while list2 < len(dxy[2][rank2]) :
+                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
+                list2 = list2 + 1
+            if list2 == len(dxy[2][rank2]) :
+                list2 = 0
+            rank2 = rank2 + 1
+            cpt2 = cpt2 + 1
+    else:
+        rank1keys = dxy[1].keys()
+        cpt1 = 0; rank1 = rank1keys[cpt1]; list1 = 0
+        while cpt1 < len(rank1keys):
+            rank1 = rank1keys[cpt1]
+            while list1 < len(dxy[1][rank1]) :
+                dxy[1][rank1][list1].update({'s':s1, 'r':r1})
+                list1 = list1 + 1
+            if list1 == len(dxy[1][rank1]) :
+                list1 = 0
+            rank1 = rank1 + 1
+            cpt1 = cpt1 + 1
+        rank2keys = dxy[2].keys()
+        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
+        while cpt2 < len(rank2keys):
+            rank2 = rank2keys[cpt2]
+            while list2 < len(dxy[2][rank2]) :
+                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
+                list2 = list2 + 1
+            if list2 == len(dxy[2][rank2]) :
+                list2 = 0
+            rank2 = rank2 + 1
+            cpt2 = cpt2 + 1
         
-    '''    
-    # modif pour tremie = le fichier source a moins de x et y que de s et r (20 dans chaque liste)
-    while cpt1 < len(rank1keys):
-        rank1 = rank1keys[cpt1]
-        while list1 < len(dxy[1][rank1]) :
-            ort = len(dxy[1][rank1][list1]['x']); ort1 = 0
-            while ort1 < ort:
-                if ort1 == 0:
-                    dxy[1][rank1][list1].update({'s':[s1[ort1]], 'r':[r1[ort1]]})
-                    ort1 = ort1 + 1
-                else:
-                    dxy[1][rank1][list1]['s'].extend([s1[ort1]])
-                    dxy[1][rank1][list1]['r'].extend([r1[ort1]])
-                    ort1 = ort1 + 1
-            list1 = list1 + 1
-        if list1 == len(dxy[1][rank1]) :
-            list1 = 0
-        rank1 = rank1 + 1
-        cpt1 = cpt1 + 1'''
-    
-    while cpt2 < len(rank2keys):
-        rank2 = rank2keys[cpt2]
-        while list2 < len(dxy[2][rank2]) :
-            dxy[2][rank2][list2].update({'s':s2, 'r':r2})
-            list2 = list2 + 1
-        if list2 == len(dxy[2][rank2]) :
-            list2 = 0
-        rank2 = rank2 + 1
-        cpt2 = cpt2 + 1
     
     return dxy
     
