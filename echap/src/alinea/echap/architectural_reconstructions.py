@@ -38,6 +38,7 @@ def check_nff(devT):
 def check_primary_tillers(devT):
     """ Count/estimate probabilitie of occurence of primary tillers
     """
+    import re 
     axis = devT['axeT']['id_axis']
     ms = [e for e in axis if re.match('MS',e)]
     tillers = [e for e in axis if re.match('T.$',e)]
