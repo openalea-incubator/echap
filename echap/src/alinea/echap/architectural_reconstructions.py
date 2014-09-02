@@ -157,7 +157,7 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
     if not as_pgen:
         primary_proba={k:tdata[k].values for k in ('T1','T3','T4')}
         primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        # pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop) 
+        pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop) 
         # plantes a 11 talles
         pgen_1 = new_pgen(pgen, 11, primary_proba, tdata, pdata, dTT_stop) 
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
