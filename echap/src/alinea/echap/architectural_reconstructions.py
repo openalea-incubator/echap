@@ -176,20 +176,8 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
     #-----------------------------------------------------------------------------------------
     #generate reconstruction = MODIFICATION (3 sim plantgen)
     axeT, dimT, phenT = plantgen_to_devT_comp(pgen_1)
-    
-    # test sans renumerotation des colonnes communes -> LAI monte a 13 !!!
-    '''
-    axeT2, dimT2, phenT2 = plantgen_to_devT_comp(pgen_2)
-    axeT3, dimT3, phenT3 = plantgen_to_devT_comp(pgen_3)
-    axeT = axeT.append(axeT2, ignore_index=True)
-    axeT = axeT.append(axeT3, ignore_index=True)
-    dimT = dimT.append(dimT2, ignore_index=True)
-    dimT = dimT.append(dimT3, ignore_index=True)
-    phenT = phenT.append(phenT2, ignore_index=True)
-    phenT = phenT.append(phenT3, ignore_index=True)
-    '''
-    
-    # test avec renumerotation des colonnes communes -> LAI a 8 environ
+
+    # test avec renumerotation des colonnes communes
     sim = 2
     while sim <= 3 :
         if sim == 2:
