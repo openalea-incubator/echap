@@ -25,6 +25,26 @@ def plantgen_to_devT(pgen):
     devT = devCsv(axeT, dimT, phenT)
     return devT
     
+    
+def check_nff(devT):
+    """ Count the probailitiy of occurence of MS with given nff
+    """
+    nffs = devT['axeT']['N_phytomer'][devT['axeT']['id_axis']=='MS']
+    counts = {n:nffs.tolist().count(n) for n in set(nffs)}
+    probas = {n:nffs.tolist().count(n) * 1.0 / len(nffs) for n in set(nffs)}
+    return counts, probas
+    
+    
+def check_primary_tillers(devT):
+    """ Count/estimate probabilitie of occurence of primary tillers
+    """
+    axis = devT['axeT']['id_axis']
+    ms = [e for e in axis if re.match('MS',e)]
+    tillers = [e for e in axis if re.match('T.$',e)]
+    counts = {n:tillers.count(n) for n in set(tillers)}
+    probas = {n:tillers.count(n) * 1.0 / len(ms) for n in set(tillers)}
+    return counts, probas
+    
 #---
 def sen(pgen):
     """ Creates devT tables from plantgen dict
