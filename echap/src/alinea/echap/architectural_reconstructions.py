@@ -161,18 +161,18 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
         # plantes a 11 talles
         pgen_1 = new_pgen(pgen, 11, primary_proba, tdata, pdata, dTT_stop) 
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        #pgen_1['ears_density'] = (444*11)/31
-        #pgen_1['plants_density'] = (158.8*11)/31
+        pgen_1['ears_density'] = (pgen['ears_density']*11)/31
+        pgen_1['plants_density'] = (pgen['plants_density']*11)/31
         # plantes a 12 talles
         pgen_2 = new_pgen(pgen, 19, primary_proba, tdata, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
-        #pgen_2['ears_density'] = (444*19)/31
-        #pgen_2['plants_density'] = (158.8*19)/31
+        pgen_2['ears_density'] = (pgen['ears_density']*19)/31
+        pgen_2['plants_density'] = (pgen['plants_density']*19)/31
         # plantes a 13 talles
         pgen_3 = new_pgen(pgen, 1, primary_proba, tdata, pdata, dTT_stop)
         pgen_3['MS_leaves_number_probabilities'] = {'13':1.0}
-        #pgen_3['ears_density'] = (444*1)/31
-        #pgen_3['plants_density'] = (158.8*1)/31
+        pgen_3['ears_density'] = (pgen['ears_density']*1)/31
+        pgen_3['plants_density'] = (pgen['plants_density']*1)/31
     #-----------------------------------------------------------------------------------------
     #generate reconstruction = MODIFICATION (3 sim plantgen)
     axeT, dimT, phenT = plantgen_to_devT_comp(pgen_1)
@@ -189,19 +189,18 @@ def Mercia_composite_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pge
     phenT = phenT.append(phenT3, ignore_index=True)
     '''
     
+    # test avec renumerotation des colonnes communes -> LAI a 8 environ
     sim = 2
     while sim <= 3 :
         if sim == 2:
-            name=pgen_2
-            plt=11
+            name=pgen_2; plt=11
         else:
-            name=pgen_3
-            plt=30
+            name=pgen_3; plt=30
         axeTs, dimTs, phenTs = plantgen_to_devT_comp(name)
-        #modification des colonnes id_dim (commune a axeT et dimT) puis id_phen (commune a axeT et phenT)
         tx = sim * 10000
         axeTs['id_plt'] = axeTs['id_plt']+plt
         axeTs['id_cohort'] = axeTs['id_cohort']+tx
+        #modification des colonnes id_dim (commune a axeT et dimT) puis id_phen (commune a axeT et phenT)
         axeTs['id_dim'] = axeTs['id_dim']+tx; dimTs['id_dim'] = dimTs['id_dim']+tx
         axeTs['id_phen'] = axeTs['id_phen']+tx; phenTs['id_phen'] = phenTs['id_phen']+tx
         axeT = axeT.append(axeTs, ignore_index=True)
