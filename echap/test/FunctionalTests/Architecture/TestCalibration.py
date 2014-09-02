@@ -31,25 +31,35 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     return pgen
 
 # Creation des 2 fichiers pris en entree par curve()
-def prep_curve(name='Tremie20112012'):
+def prep_curve(name='Tremie20122013'):
     
     if name is 'Tremie20112012':
         data_file_xydb = shared_data(alinea.echap, 'prepa_xydb_GrignonTremie2011.csv')
         data_file_srdb = shared_data(alinea.echap, 'prepa_srdb_GrignonTremie2011.csv')
-        out_xy_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'xydb_GrignonTremie2011.csv'
-        out_sr_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'srdb_GrignonTremie2011.csv'
-    header_row_xydb = ['Image','ID_Plant','ID_Axis','Organ','ID_Metamer','HS','XY','Pt1','Pt2','Pt3','Pt4','Pt5','Pt6','Pt7','Pt8','Pt9','Pt10','Pt11','Pt12','Pt13','Pt14','Pt15']									
-    dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=';', index_col=0, skiprows=1, decimal=',')
-    header_row_srdb = ['operateur','MethodeAnalyse','Date d\'analyse','fichier','Var','N_prelev','date prelev','rep','N_plante','id_Axe','id_Feuille','nmax','HS','Llimbe','Lgaine','Lentrenoeud','%vert','Llimbe2','Wlimbe','A_bl','A_bl_green','statut','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']									
-    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
+        #out_xy_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'xydb_GrignonTremie2011.csv'
+        #out_sr_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'srdb_GrignonTremie2011.csv'
+        header_row_xydb = ['Image','ID_Plant','ID_Axis','Organ','ID_Metamer','HS','XY','Pt1','Pt2','Pt3','Pt4','Pt5','Pt6','Pt7','Pt8','Pt9','Pt10','Pt11','Pt12','Pt13','Pt14','Pt15']									
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=';', index_col=0, skiprows=1, decimal=',')
+        header_row_srdb = ['operateur','MethodeAnalyse','Date d\'analyse','fichier','Var','N_prelev','date prelev','rep','N_plante','id_Axe','id_Feuille','nmax','HS','Llimbe','Lgaine','Lentrenoeud','%vert','Llimbe2','Wlimbe','A_bl','A_bl_green','statut','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']									
+        dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
+    if name is 'Tremie20122013':
+        data_file_xydb = shared_data(alinea.echap, 'prepa_xydb_GrignonTremie2012.csv')
+        data_file_srdb = shared_data(alinea.echap, 'prepa_srdb_GrignonTremie2011.csv')
+        #out_xy_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'xydb_GrignonTremie2012.csv'
+        #out_sr_csv = "C://Users//Administrateur//openaleapkg//echap//src//alinea//echap//share//data" + "/" + 'srdb_GrignonTremie2012.csv'
+        header_row_xydb = ['Image','ID_Plant','Stem','Organ_type','Organ','HS','XY','Pt1','Pt2','Pt3','Pt4','Pt5','Pt6','Pt7','Pt8','Pt9','Pt10','Pt11','Pt12','Pt13','Pt14','Pt15','Pt16','Pt17','Pt18']									
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=';', index_col=0, skiprows=1, decimal=',')
+        header_row_srdb = ['operateur','MethodeAnalyse','Date d\'analyse','fichier','Var','N_prelev','date prelev','rep','N_plante','id_Axe','id_Feuille','nmax','HS','Llimbe','Lgaine','Lentrenoeud','%vert','Llimbe2','Wlimbe','A_bl','A_bl_green','statut','0.00','0.05','0.10','0.15','0.20','0.25','0.30','0.35','0.40','0.45','0.50','0.55','0.60','0.65','0.70','0.75','0.80','0.85','0.90','0.95','1.00']									
+        dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=';', index_col=0, skiprows=1, decimal=',')
     
     # preparation fichier pr methode R Christian
     dfxy = dfxy.reset_index()
     #traitement des x et y
-    x=[]; y=[]; fin=[]; n = 0; row_tot = dfxy['XY'].count(); chif = range(7,22,1)
+    #x=[]; y=[]; fin=[]; n = 0; row_tot = dfxy['XY'].count(); chif = range(7,21,1)
+    x=[]; y=[]; fin=[]; n = 0; row_tot = dfxy['XY'].count(); chif = range(7,24,1)
     
     c = csv.writer(open("test.csv", "wb"))
-    c.writerow(["ID_plant","ID_Axis","Organ","ID_Metamer","HS","stat_curve","x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15","x16","x17","x18","x19","x20","z1","z2","z3","z4","z5","z6","z7","z8","z9","z10","z11","z12","z13","z14","z15","z16","z17","z18","z19","z20"])
+    c.writerow(["ID_plant","Stem","Organ_type","Organ","HS","stat_curve","x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15","x16","x17","x18","x19","x20","z1","z2","z3","z4","z5","z6","z7","z8","z9","z10","z11","z12","z13","z14","z15","z16","z17","z18","z19","z20"])
     
     for row in dfxy.loc[n]:
         while n < row_tot :
@@ -79,7 +89,6 @@ def prep_curve(name='Tremie20112012'):
                 else:
                     newx = numpy.arange(xmin, xmax+pdt, pdt)
                 # interpolation de y
-                print xe, ye
                 interpy = numpy.interp(newx, xe, ye)
                 # concatenation x et y pour ecriture dans csv
                 ran = range(0,20,1)
@@ -219,7 +228,9 @@ def test_axis_dynamics(name='Mercia'):
 
     fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
     new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
-    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob')    
+    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob') 
+    
+    return fit, new_fit
 
 #------------------------------------------------------------------------------------- 
 # LAI
@@ -227,8 +238,7 @@ def test_axis_dynamics(name='Mercia'):
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    #dd = range(0,3000,100)
-    dd = range(400,2300,300)
+    dd = range(0,3000,100)
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
@@ -237,11 +247,11 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Tremie', dTT_stop=0, original=False, n=30):
+def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
-    obs = archidb.PAI_data()[name]
+    #obs = archidb.PAI_data()[name]
     tx = pgen['dynT_user'].a_cohort[0]
     
     #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
@@ -251,14 +261,40 @@ def compare_LAI(name='Tremie', dTT_stop=0, original=False, n=30):
     plt.legend(("LAI_vert", "LAI_tot"), 'best')
     plt.show()'''
     
-    sim['HS'] = sim.ThermalTime*tx
-    obs['HS'] = obs.TT*tx
+    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * tx
+    #obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * tx
     
-    sim.plot('HS','PAI_vert',color='g')
-    obs.plot('HS','PAI',style='or')
+    sim.plot('HS','LAI_vert',color='r')
+    #obs.plot('HS','PAI',style='or')
     
     return sim
     
+#------------------------------------------------------------------------------------- 
+# Hauteur de couvert pour Carole
+
+def height(name='Mercia', dTT_stop=0, original=False, n=30):
+    from alinea.astk.plantgl_utils import get_height
+
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)
+    dd = range(400,3000,100)
+    sim = [adel.setup_canopy(age) for age in dd]
+    
+    max_h = []
+    
+    for g in sim:
+        #scene = plot3d(g)
+        #pgl.Viewer.display(scene)
+        scene_geom = g.property('geometry')
+        heights = get_height(scene_geom)
+        max_height = max(map(numpy.min,heights.values()))
+        max_h.append(max_height)
+
+    h = pandas.DataFrame({'tt':dd, 'height':max_h})
+    tx = pgen['dynT_user'].a_cohort[0]
+    h['HS'] = (h.tt - pgen['dynT_user'].TT_col_0[0]) * tx
+    
+    return h
+        
 #------------------------------------------------------------------------------------- 
 # Taux de couverture
 
@@ -266,25 +302,23 @@ def draft_TC(g, adel, domain, zenith, rep):
     from alinea.adel.postprocessing import ground_cover
     
     #modelisation afin de voir si erreur
-    scene=plot3d(g)
-    pgl.Viewer.display(scene)
+    #scene=plot3d(g)
+    #pgl.Viewer.display(scene)
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
     
     return gc
     
-def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
     else:
         zen='57';rep=2
 
-    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
-
-    dd = range(400,2300,100)
-    #dd = range(1000,1300,100)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
+    dd = range(400,2600,100)
     sim = [adel.setup_canopy(age) for age in dd]
 
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
@@ -298,6 +332,9 @@ def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
         n = n + 1
 
     sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TCsen':tc_sen})
+    tx = pgen['dynT_user'].a_cohort[0]
+    sim_green['HS'] = (sim_green.tt - pgen['dynT_user'].TT_col_0[0]) * tx
+    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * tx
     
     # Si on veut tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
     '''
@@ -309,17 +346,15 @@ def comp_TC(name='Tremie', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
     obs.plot('TT','1-TC',style='oy')
     '''
     # Si on veut tracer TC_tot, TC_green et senescence sur le même graph
-    # sim_sen = pandas.DataFrame({'tt':dd, 'TCsem':tc_sen})
-    # sim_sen.plot('tt','TCsem',color='y')
     sim_green['TCtot']=sim_green['TCgreen']+sim_green['TCsen']
-    sim_green.plot('tt','TCtot',color='b')
-    sim_green.plot('tt','TCgreen',color='g')
-    sim_green.plot('tt','TCsen',color='y')
-    obs.plot('TT','TC',style='or')
+    sim_green.plot('HS','TCtot',color='b')
+    sim_green.plot('HS','TCgreen',color='g')
+    sim_green.plot('HS','TCsen',color='y')
+    obs.plot('HS','TC',style='or')
     
     # Graph k pr Carole
-    sim_green['k_TCgreen'] = numpy.log(1/(1-sim_green['TCgreen']))
-    sim_green['k_TCtot'] = numpy.log(1/(1-sim_green['TCtot']))
+    #sim_green['k_TCgreen'] = numpy.log(1/(1-sim_green['TCgreen']))
+    #sim_green['k_TCtot'] = numpy.log(1/(1-sim_green['TCtot']))
     return sim_green
 
 #-------------------------------------------------------------------------------------
@@ -397,7 +432,7 @@ def draft_light(g, adel, domain, z_level):
     return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
-def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
+def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
     
     # PARTIE OBS ------------------------------------------------------------------------------------------------------------
@@ -405,10 +440,10 @@ def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
         data_file = 'METEO_stationINRA_20102011.csv'
         # correspondance entre date et TT
         met = Boigneville_2010_2011()
-        seq = pandas.date_range(start="2010-10-15", end="2011-06-20", freq='H')
+        seq = pandas.date_range(start="2010-10-15", end="2011-07-18", freq='H')
         bid = thermal_time(seq, met.data)
         # groupe par date
-        seq = pandas.date_range(start="2010-10-15", end="2011-06-20")
+        seq = pandas.date_range(start="2010-10-15", end="2011-07-18")
         bid = bid[seq]
     if name is 'Tremie': #Tremie 2011/2012
         data_file = 'METEO_stationINRA_20112012.csv'
@@ -433,9 +468,12 @@ def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
     # PARTIE SIM ------------------------------------------------------------------------------------------------------------
-    _, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)    
-    dd = range(900,2200,100)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n) 
+    tx = pgen['dynT_user'].a_cohort[0]    
+    #dd = range(900,2200,100)
+    dd = range(400,2600,100)
     sim = [adel.setup_canopy(age) for age in dd]
+    #sim=adel.setup_canopy(1380)
 
     light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
     #light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
@@ -443,6 +481,7 @@ def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
     #light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
 
     sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
+    sim0['HS'] = sim0.TT*tx
     #sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
     #sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
     #sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
@@ -451,17 +490,19 @@ def graph_meteo(name='Rht3', dTT_stop=0, original=False, n=30):
     #obs tous les points
     dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
         #niveau du sol (point rouge)
-    dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
+    #dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
         #20cm du sol (point bleu)
     #dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
     #obs moyennes
-    tab0.plot('TT','%',color='m')
-    #tab20.plot('TT','%',color='c')
+    tab0['HS'] = tab0.TT*tx; tab0.plot('TT','%',color='m')
+    #tab20['HS'] = tab20.TT*tx; tab20.plot('HS','%',color='c')
     #sim
-    sim0.plot('TT','light0',color='r',linewidth=2)  
+    #sim0.plot('HS','light0',color='b',linewidth=2)  
     #sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
     #sim20.plot('TT','light20',color='b',linewidth=2)
     #sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
+    
+    return sim0
  
 #-------------------------------------------------------------------------------------
 
