@@ -247,12 +247,21 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
+def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30): #name='Mercia_comp'
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
     sim = simLAI(adel, domain_area, convUnit, nplants)
-    #obs = archidb.PAI_data()[name]
-    tx = pgen['dynT_user'].a_cohort[0]
+    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    sim.plot('HS','LAI_vert',color='r')
+    
+    #donnees obs
+    if name is 'Mercia_comp':
+        obs = archidb.PAI_data()['Mercia']
+    else:
+        obs = archidb.PAI_data()[name]       
+    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    obs.plot('HS','PAI',style='or')
+    obs.plot('HS','PAI',style='--r')
     
     #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
     '''sim.plot('ThermalTime','LAI_vert', color='g')
@@ -261,25 +270,17 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30):
     plt.legend(("LAI_vert", "LAI_tot"), 'best')
     plt.show()'''
     
-    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * tx
-    #obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * tx
-    
-    sim.plot('HS','LAI_vert',color='r')
-    #obs.plot('HS','PAI',style='or')
-    
     return sim
     
 #------------------------------------------------------------------------------------- 
-# Hauteur de couvert pour Carole
+# Hauteur de couvert simule
 
 def height(name='Mercia', dTT_stop=0, original=False, n=30):
     from alinea.astk.plantgl_utils import get_height
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)
-    dd = range(400,3000,100)
+    dd = range(400,3000,100); max_h = []
     sim = [adel.setup_canopy(age) for age in dd]
-    
-    max_h = []
     
     for g in sim:
         #scene = plot3d(g)
@@ -290,8 +291,7 @@ def height(name='Mercia', dTT_stop=0, original=False, n=30):
         max_h.append(max_height)
 
     h = pandas.DataFrame({'tt':dd, 'height':max_h})
-    tx = pgen['dynT_user'].a_cohort[0]
-    h['HS'] = (h.tt - pgen['dynT_user'].TT_col_0[0]) * tx
+    h['HS'] = (h.tt - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     
     return h
         
@@ -320,11 +320,9 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
     dd = range(400,2600,100)
     sim = [adel.setup_canopy(age) for age in dd]
-
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
-    
     obs = archidb.TC_data()[name+'_'+zen]
-    
+
     n=0; tc=[]; tc_sen=[]
     while n<len(TC_sim):
         tc.append(TC_sim[n]['green'])
@@ -332,29 +330,25 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
         n = n + 1
 
     sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TCsen':tc_sen})
-    tx = pgen['dynT_user'].a_cohort[0]
-    sim_green['HS'] = (sim_green.tt - pgen['dynT_user'].TT_col_0[0]) * tx
-    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * tx
+    sim_green['HS'] = (sim_green.tt - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     
-    # Si on veut tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
-    '''
-    sim_green['1-TC']=1-sim_green['TCgreen']
-    sim_green['TCtot']=sim_green['TCgreen']+sim_green['TC_sen']
-    sim_green['1-TCtot']=1-sim_green['TCtot']
-    sim_green.plot('tt','1-TC',color='y',linestyle='--',linewidth=2)
-    sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
-    obs.plot('TT','1-TC',style='oy')
-    '''
-    # Si on veut tracer TC_tot, TC_green et senescence sur le même graph
-    sim_green['TCtot']=sim_green['TCgreen']+sim_green['TCsen']
-    sim_green.plot('HS','TCtot',color='b')
-    sim_green.plot('HS','TCgreen',color='g')
-    sim_green.plot('HS','TCsen',color='y')
+    # Tracer TC_tot, TC_green et senescence sur le meme graph
+    sim_green['TCtot'] = sim_green['TCgreen'] + sim_green['TCsen']
+    sim_green.plot('HS','TCtot',color='b'); sim_green.plot('HS','TCgreen',color='g'); sim_green.plot('HS','TCsen',color='y')
     obs.plot('HS','TC',style='or')
     
-    # Graph k pr Carole
+    # Tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
+    #sim_green['1-TC']=1-sim_green['TCgreen']
+    #sim_green['TCtot']=sim_green['TCgreen']+sim_green['TC_sen']
+    #sim_green['1-TCtot']=1-sim_green['TCtot']
+    #sim_green.plot('tt','1-TC',color='y',linestyle='--',linewidth=2)
+    #sim_green.plot('tt','1-TCtot',color='y',linewidth=2)
+    #obs.plot('TT','1-TC',style='oy')
+    # Graph k pr Carole ?
     #sim_green['k_TCgreen'] = numpy.log(1/(1-sim_green['TCgreen']))
     #sim_green['k_TCtot'] = numpy.log(1/(1-sim_green['TCtot']))
+    
     return sim_green
 
 #-------------------------------------------------------------------------------------
