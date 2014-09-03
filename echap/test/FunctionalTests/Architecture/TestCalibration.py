@@ -247,9 +247,9 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30): #name='Mercia_comp'
+def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
 
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original)
+    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     sim.plot('HS','LAI_vert',color='r')
