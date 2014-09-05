@@ -47,13 +47,13 @@ def Tremie_2011_plantgen():
     dimT = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
     inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
     return plantgen_as_dict(inputs, dynT, dimT)
-
+'''
 def Tremie_2012_plantgen():
     #dynT = shared_data(alinea.echap, 'Tremie2_dynT_user.csv')
     dimT = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
     #inputs = shared_data(alinea.echap, 'Tremie2_plantgen_inputs_MINnew.py')
     return plantgen_as_dict(inputs, dynT, dimT)
-    
+'''   
 def HS_data():
     fn = shared_data(alinea.echap, 'HS_data_Mercia_Rht3_2010_2011.csv')
     #fn = shared_data(alinea.echap, 'HS_data_Tremie1_2011_2012.csv')
