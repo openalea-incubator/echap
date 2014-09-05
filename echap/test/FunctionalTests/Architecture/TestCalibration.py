@@ -247,7 +247,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
+def compare_LAI(name='Rht3', name_obs='Rht3', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
     sim = simLAI(adel, domain_area, convUnit, nplants)
@@ -255,10 +255,7 @@ def compare_LAI(name='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name=
     sim.plot('HS','LAI_vert',color='r')
     
     #donnees obs
-    if name is 'Mercia_comp':
-        obs = archidb.PAI_data()['Mercia']
-    else:
-        obs = archidb.PAI_data()[name]       
+    obs = archidb.PAI_data()[name_obs]       
     obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     obs.plot('HS','PAI',style='or')
     obs.plot('HS','PAI',style='--r')
@@ -306,11 +303,11 @@ def draft_TC(g, adel, domain, zenith, rep):
     #pgl.Viewer.display(scene)
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 428, image_height = 284, getImages=True, replicate=rep)
     
     return gc
     
-def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Rht3', name_obs='Rht3', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
@@ -321,7 +318,7 @@ def comp_TC(name='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith 
     dd = range(400,2600,100)
     sim = [adel.setup_canopy(age) for age in dd]
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
-    obs = archidb.TC_data()[name+'_'+zen]
+    obs = archidb.TC_data()[name_obs+'_'+zen]
 
     n=0; tc=[]; tc_sen=[]
     while n<len(TC_sim):
