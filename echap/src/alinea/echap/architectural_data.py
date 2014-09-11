@@ -1,4 +1,5 @@
 import pandas
+import numpy
 
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
@@ -75,12 +76,26 @@ def HS_data():
 # Plot data
 #
 def Plot_data_Mercia_Rht3_2010_2011():
+    """
+    Plot data for Boigneville 2010-2011 
+    
+    data include :
+    - estimates of plant density at emergence (id Archi12)
+    - estimates of ear density at harvest (all axes, id Archi10)
+    
+    Notes :
+    - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)
+    """
     d={'Mercia': {
-        'plant_density_at_emergence' : 203, 'ear_density_at_harvest' : 444,
+        'sowing_density': 220, 
+        'plant_density_at_emergence' : 203, 
+        'ear_density_at_harvest' : 444,
         'inter_row': 0.15},
         'Rht3': {
-        'plant_density_at_emergence' : 211, 'ear_density_at_harvest' : 384,
-        'inter_row':0.15}}
+        'sowing_density': 220, 
+        'plant_density_at_emergence' : 211, 
+        'ear_density_at_harvest' : 384,
+        'inter_row': 0.15}}
     return d
 
 def Plot_data_Tremie_2011_2012():
@@ -288,12 +303,41 @@ def leaf_curvature_data(name='Mercia'):
     return dxy
     
 #-------------------------------------------------------------------------------  
-# Tillering data  
+# Utilities for processing tillering data
+
 def _maxna(x):
     m = x.max()
     if any(x.isnull()) and m == 0:
         m = None
     return m
+
+def emission_probabilities(df, last='T6'):
+    grouped = df.groupby('N',as_index=False)
+    em = grouped.agg(_maxna)
+    em = em.reset_index()
+    s = em.ix[:,'TC':last].sum()
+    n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
+    probas = s / n
+    return probas.to_dict()
+    
+def plant_viability(df):
+    grouped = df.groupby('Date', as_index=False)
+    res = grouped.apply(lambda x: x['MB'].count() * 1.0 / len(x['MB']))
+    return {'Date':res.index.tolist(), 'viability':res.tolist()}
+  
+def axis_dynamics(df):
+    grouped = df.groupby('Date')
+    s = grouped.agg('sum').ix[:,'TP':'TT']
+    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':'TT']
+    axis =  s / n
+    # add main stem to primary tillers and total tillers
+    axis.ix[:,('TP','TT')] = axis.ix[:,('TP','TT')] + 1
+    res = axis.to_dict('list')
+    res.update({'Date':axis.index.tolist()})
+    return res
+    
+    
+ # deprecated   
     
 def diff(edata, s):
     e1 = edata.head(0)
@@ -320,46 +364,69 @@ def emis(data, d, n):
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
     
-    Found data are (id_data refers to column in data synthesis):
-    - estimates of plant density at emergence (id Archi12)
-    - estimates of ear density at harvest (all axes, id Archi10)
-    - estimates of the number of elongated internodes on main stems
-    - estimates of tiller dynamics, with three kind of data :
-        - presence/absence of living mainstem (column MS) and number of leaf emited
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive), and/or  total number of primary tillers (column TPE) and secondary tillers emited (dead or alive, column TSE). These data are used for fitting emission probabilities
-        - estimation of total living tillers (column TT) at the end from the counting of tillers that are alive or that bears an ear 
-    Others data :
-    - Number of secondary tiller at date 3 (Archi33)
+    Data found in Archi11,Archi19, Archi33 were used to build a synthetic table containing :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive). 
+        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
+        
+    Others data available in raw files, but not included yet:
+    - Number of secondary tiller with HS >=2 (Nt3f)  at date 3 (Archi33)
+    
     Notes :
     - No data at date 5
-    - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)"""
+    - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions """
     
-    # summarise tillering data to mean number of tiller emited per plant (columns Tc->T5), mean number of leaves, and total tillers and MS present per plant at the end (column TT and MB)
-    # this table was contrusted using Archi11,Archi19, Archi33
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    # compute emmission probas of primary axis/ emission per plant of secondary axis 
-    edata = data[data['Date'] < 6]
+    
+    # infer emision at date 3 from Total primary present (TP)
+    #add statistics for T6 as well as it may be present at date 3    
+    def infer_d3(g):
+        g.insert(13,'T6',0.0)
+        g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
+        TP = g['TP']
+        date = g['Date']
+        if TP[date==3].notnull():
+            infer = g.ix[date==2,'TC':'T6'] 
+            if TP[date==3] > TP[date==2]:
+                d = int(TP[date==3].values - TP[date==2].values)
+                try:
+                    lastT = int(max(2, max(numpy.where(infer > 0)[1])))
+                except ValueError:
+                    lastT = 2
+                infer.ix[:,(lastT+1):(lastT + 1 + d)] = 1                
+            g.ix[g['Date']==3,'TC':'T6'] = infer
+        return g
+        
+    grouped = data.groupby(['Var', 'N'],as_index=False)
+    newdata = grouped.apply(infer_d3)
+    
+    # compute emmission probability using notations before date 6
+    edata = newdata[newdata['Date'] < 6]
     edata = edata.reset_index()
-    grouped = edata.groupby(['Var', 'N'],as_index=False)
-    d = grouped.agg(_maxna)
-    d = d.reset_index()
-    #---
-    de = d.fillna(0)
-    grouped1 = de.groupby(['Var','Date'],as_index=False)
-    #---
-    grouped = d.groupby(['Var','Date'],as_index=False)
-    s = grouped.agg('sum')
-    n = grouped1.agg(lambda x: float(x.dropna().count())) 
-    s = diff(edata, s)
-    d = s
-    grouped = emis(data, d, n)
-    s = grouped.agg('sum')
-    n = grouped.agg(lambda x: x.dropna().count())
-    d['MB'] = 1.0 * s['MB'] / n['MB']
-    d['TT'] = 1.0 * s['TT'] / n['TT']
-    obs = {'plant_density_at_emergence' : {'Mercia': 203, 'Rht3': 211}, 'ear_density_at_harvest' : {'Mercia': 444, 'Rht3' : 384}, 
-            'tillering' : d}
+    grouped = edata.groupby('Var',as_index=False)
+    emission = grouped.apply(emission_probabilities).to_dict()
+    
+    # compute ear_per_plante (including main stem) 
+    eardata = newdata[newdata['Date'] >= 6]
+    eardata = eardata.reset_index()
+    grouped = eardata.groupby('Var',as_index=False)    
+    ears_per_plant = grouped.apply(lambda x:  1  + (x['FT'].sum() / x['FT'].dropna().count())).to_dict()
+    
+    # compute plant viability
+    grouped = data.groupby('Var',as_index=False)
+    viability = grouped.apply(plant_viability).to_dict()
+    
+    #compute axis dynamics (with main stem added)
+    axdyn = grouped.apply(axis_dynamics).to_dict()
+    
+    obs = {'emission_probabilities': emission,
+           'ears_per_plant': ears_per_plant,
+           'plant_viability': viability,
+           'axis_per_plant': axdyn}
     return obs
 
 def Tillering_data_Tremie1_2011_2012():
