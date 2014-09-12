@@ -8,8 +8,11 @@ from alinea.echap.weather_data import *
 import time 
 from alinea.echap.recorder import *
 
+
 from itertools import cycle, islice
 from pylab import *
+
+plt.ion()
 
 # import pandas
 # from openalea.deploy.shared_data import shared_data
@@ -43,26 +46,28 @@ recorder.plt.show()
 
 # Appel a la fonction repartition_at_application
 # df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
-# print 'df.columns after = ', df.columns
+#print 'df.columns after = ', df.columns
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # VERSION SIMPLE (prend une date TT en entree)
+# pour homogeneite avec donnees experimentales : dose = 10000 l.ha-1
 def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0):
 
     # Appel a la fonction get_reconstruction
     pgen,adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants, nsect=nsect, seed=seed, sample=sample, as_pgen=as_pgen, dTT_stop=dTT_stop)
     # Appel a la fonction repartition_at_application lié à l'architecture
-    #age=1166
-    age = 1500
+    age=1166
+    #age = 1173
     g = adel.setup_canopy(age)
     #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
-    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2011-04-29', dose = 10000, g=g)
+    
     return df
 
 def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0): 
    
     df = g_constr(name, nplants, nsect, seed, sample, as_pgen, dTT_stop)
-
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
@@ -73,11 +78,46 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
     
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1    
     data = data.convert_objects() # conversion des objets en types numpy
-    data.to_csv('data1.csv')
-    
+    #data.to_csv('data1'.name.'.csv')
+    data.to_csv('data1'+name+'.csv')
     dataCB=data.groupby(['date'],as_index=False)
     # calcul, pour chaque date de la surface totale verte et senecente et de l'interception totale
     grCB= dataCB.sum()
+    grCB.to_csv('grCB.csv')
+    #grCBm=grCB.groupby(['ntop_cur', 'date', 'axe'],as_index=False)
+    #grCFmean = grCBm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+    #grCBmean.to_csv('grCBmean.csv')
+    
+    #calcul pour sortir donnees interception sur leaf 1 et metamer A CONFIRMER
+    dataCF=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+    grCF= dataCF.sum()
+    grCF.to_csv('grCF.csv')
+    grCFm=grCF.groupby(['ntop_cur','date'],as_index=False)
+    grCFmean = grCFm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+    grCFmean['name'] = name
+    
+    #old
+    
+    grCFmean.to_csv('grCFmean'+name+'.csv')
+    ficname = list(grCFmean.to_csv('grCFmean'+name+'.csv'))
+    #concatenation des fichiers plutot que de les lire/ecrire (pb car beoins de liste or ici traitement de dataframe
+    import shutil
+    fichier_final = open("ficname[0]",'w')
+    for i in ficname.count:
+          shutil.copyfileobj(open(i, 'r'), fichier_final)
+    fichier_final.close()
+
+
+    #new ci-dessous a peaufiner
+    #
+    #import csv
+    #c = csv.writer(open('grCFmean.csv',"wb"))
+    #list= list(
+    #n=0
+    #while grCFmean.loc[n+1]<grCFmean.len:
+    #    c.writerow(grCFmean.loc[n])
+    
+    grCFmean.plot('ntop_cur','surfacic_doses_Epoxiconazole_mean' )
     
     #test groupby by multiple apres avoir fait calcul sur data
     """data = data[data.ntop_cur <= 4]
@@ -107,7 +147,9 @@ def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_p
     grtest3 = gr3.sum()
     
     
-    return grtest4,grtest3,grCB
+    return grtest4,grCB,grCF
+    
+    
 
 #plot des donnees obs
 def plot(name='Mercia'):
@@ -240,6 +282,8 @@ def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', 
     gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
     # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
     grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
+    
+    grtest4.to_csv('grtest_treatment_age')
 
     return grtest4   											 
 	
