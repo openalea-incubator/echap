@@ -447,7 +447,9 @@ def Tillering_data_Tremie1_2011_2012():
     These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
  
     Notes :
+    - at Date 1, it was noted 'due to freezing of plants, it was difficult to determine main stem'
     - At date 3, Mariem noted "T7 almost always present on scaned plants"
+    - Emission of tiller 5 and 6 were ever noted.
     """
     
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
