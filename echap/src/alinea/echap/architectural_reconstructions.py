@@ -117,9 +117,9 @@ def geoLeaf(nlim=4,dazt=60,dazb=10):
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         pgenc = deepcopy(pgen)
-        ears_per_plant = tdata['MB'].values + tdata['TT'].values
+        ears_per_plant = tdata['ears_per_plant']
         plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
-        nff = float(tdata['Nff'].values)
+        #nff = float(tdata['emission_probabilities']['Nff'].values)
         # pgen adapt
         pgenc['decide_child_axis_probabilities'] = primary_proba
         pgenc['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
@@ -128,6 +128,11 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         #hack for removing tillers
         pgenc['delais_TT_stop_del_axis'] -= dTT_stop
         return pgenc
+        
+        
+# Standard echap reconstruction protocol for plant development and axis dynamic       
+#def echap_development(nplants, pgen, primary_proba, tdata, pdata, dTT_stop)
+    #ici include mortality
         
 reconst_db={}
 
@@ -141,8 +146,7 @@ def fit_leaves(dxy, disc_level=9):
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, **kwds):
 
     pgen = archidb.Mercia_2010_plantgen()
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Mercia']
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
     shapes = archidb.leaf_curvature_data('Mercia')
     #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     #tdata['MB']=0.9 
@@ -150,11 +154,12 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     #adapt reconstruction
     # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
+        tdata = tdb['emission_probabilities']
         #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
         # BUG : MB is equal to 1 => should return  less than 1
-        primary_proba={k:tdata[k].values for k in ('T1','T3','T4')}
-        primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)   
+        primary_proba={k:tdata[k] for k in ('T1','T3','T4')}
+        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
+        pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
     # sans angles
