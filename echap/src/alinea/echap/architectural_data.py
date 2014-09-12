@@ -318,7 +318,7 @@ def _maxna(x):
 def emission_probabilities(df, last='T6'):
     grouped = df.groupby('N',as_index=False)
     em = grouped.agg(_maxna)
-    em = em.reset_index()
+    # em = em.reset_index()
     s = em.ix[:,'TC':last].sum()
     n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
     probas = s / n
@@ -392,9 +392,9 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
         TP = g['TP']
         date = g['Date']
-        if TP[date==3].notnull():
+        if all(TP[date==3].notnull()):
             infer = g.ix[date==2,'TC':'T6'] 
-            if TP[date==3] > TP[date==2]:
+            if all(TP[date==3] > TP[date==2]):
                 d = int(TP[date==3].values - TP[date==2].values)
                 try:
                     lastT = int(max(2, max(numpy.where(infer > 0)[1])))
@@ -411,20 +411,20 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     edata = newdata[newdata['Date'] < 6]
     edata = edata.reset_index()
     grouped = edata.groupby('Var',as_index=False)
-    emission = grouped.apply(emission_probabilities).to_dict()
+    emission = {k:emission_probabilities(v) for k,v in grouped}
     
     # compute ear_per_plante (including main stem) 
     eardata = newdata[newdata['Date'] >= 6]
     eardata = eardata.reset_index()
-    grouped = eardata.groupby('Var',as_index=False)    
-    ears_per_plant = grouped.apply(lambda x:  1  + (x['FT'].sum() / x['FT'].dropna().count())).to_dict()
+    grouped = eardata.groupby('Var',as_index=False)
+    ears_per_plant = {k:  1  + (v['FT'].sum() / v['FT'].dropna().count()) for k,v in grouped}
     
     # compute plant viability
     grouped = data.groupby('Var',as_index=False)
-    viability = grouped.apply(plant_viability).to_dict()
+    viability = {k:plant_viability(v) for k,v in grouped}
     
-    #compute tillering dynamics 
-    axdyn = grouped.apply(axis_dynamics).to_dict()
+    #compute tillering dynamics
+    axdyn = {k:axis_dynamics(v) for k,v in grouped}
     
     obs = {k:{'emission_probabilities': emission[k],
            'ears_per_plant': ears_per_plant[k],
