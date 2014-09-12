@@ -62,13 +62,15 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
       
 from alinea.echap.architectural_reconstructions import reconst_db
 
+# pour homogeneite avec donnees experimentales : dose = 10000 lieu de 1 l.ha-1
 def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
     print '\n\nrepartition_at_application 3!!\n\n'
     from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
     recorder = LeafElementRecorder()
     g, adel, domain, domain_area, convUnit, nplants = setup_canopy(age=1166)
-    applications= 'date,dose, product_name\n%s 10:00:00, %f, Opus'%(appdate, dose)
+    #applications= 'date,dose, product_name\n%s 10:00:00, %f, Opus'%(appdate, dose)
+    applications= 'date,dose, product_name\n%s 10:00:00, %f, Tartrazine'%(appdate, dose)
     application_data = pesticide_applications(applications)
     g,_=pesticide_intercept(g, application_data)
     do_record(g, application_data, recorder)
@@ -79,20 +81,20 @@ def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
 
     
     # test branchement avec architecture adel
-def get_reconstruction(name='Mercia',**args):
+#def get_reconstruction(name='Mercia',**args):
+def get_reconstruction(name,**args):
     fun = reconst_db[name]
     pgen, adel, domain, domain_area, convUnit, nplants = fun(**args)
     return pgen, adel, domain, domain_area, convUnit, nplants
     
 def repartition_at_applicationArch(appdate, dose, g):
     print '\n\nrepartition_at_applicationArch 3!!\n\n'
-#    from macros_annual_loop import setup_canopy
-    
+#   from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
     recorder = LeafElementRecorder()
 #   g, adel, domain, domain_area, convUnit, nplants = setup_canopy(age=1166)
- 
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Opus'%(appdate, dose)
+    #applications= 'date,dose, product_name\n%s 10:00:00, %f, Test'%(appdate, dose)
     application_data = pesticide_applications(applications)
     g,_=pesticide_intercept(g, application_data)
     do_record(g, application_data, recorder)
