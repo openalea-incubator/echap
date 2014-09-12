@@ -80,21 +80,25 @@ def Plot_data_Mercia_Rht3_2010_2011():
     Plot data for Boigneville 2010-2011 
     
     data include :
-    - estimates of plant density at emergence (id Archi12)
+    - estimates of plant density at emergence (id Archi12). Emergence means 75% plants emerged
     - estimates of ear density at harvest (all axes, id Archi10)
     
     Notes :
     - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)
     """
     d={'Mercia': {
+        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 203, 
         'ear_density_at_harvest' : 444,
+        'raw_ear_density_at_harvest':[507,440,427,357,430,410,427,480,363, 350, 497, 410, 493, 340, 407, 467, 490, 433, 547, 450, 527, 427, 483, 493],
         'inter_row': 0.15},
         'Rht3': {
+        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 211, 
         'ear_density_at_harvest' : 384,
+        'raw_ear_density_at_harvest':[440,420,330,433,347,410,387,367,360,397,357,377,427,367,380,347,330,420,423,397,383,367,377,377],
         'inter_row': 0.15}}
     return d
 
@@ -327,11 +331,9 @@ def plant_viability(df):
   
 def axis_dynamics(df):
     grouped = df.groupby('Date')
-    s = grouped.agg('sum').ix[:,'TP':'TT']
-    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':'TT']
+    s = grouped.agg('sum').ix[:,'TP':]
+    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
     axis =  s / n
-    # add main stem to primary tillers and total tillers
-    axis.ix[:,('TP','TT')] = axis.ix[:,('TP','TT')] + 1
     res = axis.to_dict('list')
     res.update({'Date':axis.index.tolist()})
     return res
@@ -364,23 +366,24 @@ def emis(data, d, n):
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
     
+    Data are from 36 tagged plant per cultivar, followed during the complete season.
+    
     Data found in Archi11,Archi19, Archi33 were used to build a synthetic table containing :
         - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
         - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
-        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive). 
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F). 
         - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
         
     These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
         
-    Others data available in raw files, but not included yet:
-    - Number of secondary tiller with HS >=2 (Nt3f)  at date 3 (Archi33)
     
     Notes :
-    - No data at date 5
+    - No tillering data at date 4 and 5
     - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions """
     
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
+    date_code = {'d1':'2011-01-19','d2':'2011-04-18','d3':'2011-04-27', 'd4':'2011-05-26','d5':'2011-06-01','d6':'2011-06-09'}
     
     # infer emision at date 3 from Total primary present (TP)
     #add statistics for T6 as well as it may be present at date 3    
@@ -420,56 +423,54 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     grouped = data.groupby('Var',as_index=False)
     viability = grouped.apply(plant_viability).to_dict()
     
-    #compute axis dynamics (with main stem added)
+    #compute tillering dynamics 
     axdyn = grouped.apply(axis_dynamics).to_dict()
     
-    obs = {'emission_probabilities': emission,
-           'ears_per_plant': ears_per_plant,
-           'plant_viability': viability,
-           'axis_per_plant': axdyn}
+    obs = {k:{'emission_probabilities': emission[k],
+           'ears_per_plant': ears_per_plant[k],
+           'plant_viability': viability[k],
+           'tillers_per_plant': axdyn[k], 
+           'date_code' : date_code} for k in ('Mercia', 'Rht3')}
     return obs
 
 def Tillering_data_Tremie1_2011_2012():
     """Tillering data for Boigneville 2011-2012
-    Expected data are :
-    - estimates of plant density at emergence (id Archi1)
-    - estimates of ear density at harvest (all axes) (id Archi16)
-    - estimates of the number of elongated internodes on main stems
-    - estimates of tiller dynamics, with three kind of data : 
-        - presence/absence of living mainstem (column MS) and number of leaf emited
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive), and/or  total number of primary tillers (column TPE) and secondary tillers emited (dead or alive, column TSE). These data are used for fitting emission probabilities
-        - estimation of total living tillers (column TT) at the end from the counting of tillers that are alive or that bears an ear
-    Others data :
-    - Number of secondary tiller to date 1 
-    Notes :
-    - No data at date 2, 4 & 5"""
     
-    # summarise tillering data to mean number of tiller emited per plant (columns Tc->T7), mean number of leaves, and total tillers and MS present per plant at the end (column TT and MB)
-    # this table was contrusted using Archi2, Archi3, Archi14, Archi15
+    Data come from different plants than those tagged at date 1, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
+    
+    Data found in Archi2, Archi3, Archi14, Archi15 were :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive). 
+        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
+ 
+    Notes :
+    - At date 3, Mariem noted "T7 almost always present on scaned plants"
+    """
+    
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    # compute emmission probas of primary axis/ emission per plant of secondary axis 
-    edata = data[data['Date'] < 6]
+    date_code = {'d1':'2012-03-09','d2':'2012-04-02','d3':'2012-04-11', 'd4':'2012-05-09','d5':'2012-05-29','d6':'2012-06-11', 'd7':'2012-07-12'}
+    
+    # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
+    edata = data[data['Date'] == 1]
+    edata['T7'] = data['T7'][data['Date'] == 3].values
     edata = edata.reset_index()
-    grouped = edata.groupby(['Var', 'N'],as_index=False)
-    d = grouped.agg(_maxna)
-    d = d.reset_index()
-    #---
-    de = d.fillna(0)
-    grouped1 = de.groupby(['Var','Date'],as_index=False)
-    #---
-    grouped = d.groupby(['Var','Date'],as_index=False)
-    s = grouped.agg('sum')
-    n = grouped1.agg(lambda x: float(x.dropna().count())) 
-    diff(edata, s)
-    d = s
-    emis(data, d, n)
-    s = grouped.agg('sum')
-    n = grouped.agg(lambda x: x.dropna().count())
-    d['MB'] = 1.0 * s['MB'] / n['MB']
-    d['TT'] = 1.0 * s['TT'] / n['TT']
-    obs = {'plant_density_at_emergence' : {'Tremie': 278.55}, 'ear_density_at_harvest' : {'Tremie': 491}, 
-            'tillering' : d}
+    emission = emission_probabilities(edata,last='T7')
+
+    # compute ear_per_plant using data at date 7
+    eardata = data['FT'][data['Date'] == 7]
+    ears_per_plant = 1 + (eardata.sum() / eardata.dropna().count())
+    
+    # tiller dynamics
+    axdyn = axis_dynamics(data)
+    
+    obs = {'emission_probabilities': emission,
+           'ears_per_plant': ears_per_plant,
+           'tillers_per_plant': axdyn, 
+           'date_code' : date_code}
     return obs
     
 def Tillering_data_Tremie_2012_2013():
