@@ -103,9 +103,25 @@ def Plot_data_Mercia_Rht3_2010_2011():
     return d
 
 def Plot_data_Tremie_2011_2012():
-    d = {}
-    d['Tremie'] = {'plant_density_at_emergence' : 279, 'ear_density_at_harvest' : 491,
-    'inter_row':0.143
+    """
+    Plot data for Boigneville 2011-2012 
+    
+    Notes:
+    - No data found for density of emergence as this trial was followed only after winter (winter trial was on appache)
+    - plant density data at date 3 (11/04/2012) and 4 comes from axe counting/ LAI measurement data taken on  5 rank * 60 cm prelevement)
+    """
+    d = {
+    'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19'}, 
+    'sowing_density': 280,
+    'ear_density_at_harvest': 492,
+    'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
+    'inter_row':0.143,
+    'plant_density':{'2012-03-20': [238, 304, 287, 237, 290, 301, 290, 287, 273],
+                     '2012-04-11': [301, 273, 315], 
+                     '2012-05-09':[257, 301, 263]},
+    'axe_density': {'2012-04-11': [918, 956, 979],
+                    '2012-05-09':[601, 585, 506]}, 
+    'fertile_axis_density':{'2012-05-09':[545, 569, 443]} 
     }
     return d
     
@@ -334,6 +350,7 @@ def axis_dynamics(df):
     s = grouped.agg('sum').ix[:,'TP':]
     n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
     axis =  s / n
+    axis = axis.replace(numpy.inf, numpy.nan)
     res = axis.to_dict('list')
     res.update({'Date':axis.index.tolist()})
     return res
@@ -428,7 +445,7 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     
     obs = {k:{'emission_probabilities': emission[k],
            'ears_per_plant': ears_per_plant[k],
-           'plant_viability': viability[k],
+           'plant_survival': viability[k],
            'tillers_per_plant': axdyn[k], 
            'date_code' : date_code} for k in ('Mercia', 'Rht3')}
     return obs
@@ -436,7 +453,8 @@ def Tillering_data_Mercia_Rht3_2010_2011():
 def Tillering_data_Tremie1_2011_2012():
     """Tillering data for Boigneville 2011-2012
     
-    Data come from different plants than those tagged at date 1, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
+    Data come from different plants than those tagged at date 1 and date 6, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
+    Counting of axe per plant were also done at stage epis1cm on an independant set of plants, that was renamed here date 8.
     
     Data found in Archi2, Archi3, Archi14, Archi15 were :
         - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
@@ -448,13 +466,15 @@ def Tillering_data_Tremie1_2011_2012():
  
     Notes :
     - at Date 1, it was noted 'due to freezing of plants, it was difficult to determine main stem'
+    - at date 2 there were damage due to to fly on Mb , T1, T2
     - At date 3, Mariem noted "T7 almost always present on scaned plants"
     - Emission of tiller 5 and 6 were ever noted.
+    - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
     """
     
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2012-03-09','d2':'2012-04-02','d3':'2012-04-11', 'd4':'2012-05-09','d5':'2012-05-29','d6':'2012-06-11', 'd7':'2012-07-12'}
+    date_code = {'d1':'2012-03-09','d2':'2012-04-02','d3':'2012-04-11', 'd4':'2012-05-09','d5':'2012-05-29','d6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
     
     # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
     edata = data[data['Date'] == 1]
@@ -462,12 +482,16 @@ def Tillering_data_Tremie1_2011_2012():
     edata = edata.reset_index()
     emission = emission_probabilities(edata,last='T7')
 
-    # compute ear_per_plant using data at date 7
-    eardata = data['FT'][data['Date'] == 7]
-    ears_per_plant = 1 + (eardata.sum() / eardata.dropna().count())
-    
     # tiller dynamics
     axdyn = axis_dynamics(data)
+    
+    # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
+    eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
+    pdata = Plot_data_Tremie_2011_2012()
+    ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1
+    # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
+    ears_per_plant = 1 + numpy.array(ftd4.tolist() + eardata['FT'][eardata['Date'] == 6].tolist()).mean()
+
     
     obs = {'emission_probabilities': emission,
            'ears_per_plant': ears_per_plant,
