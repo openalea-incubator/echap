@@ -126,8 +126,24 @@ def Plot_data_Tremie_2011_2012():
     return d
     
 def Plot_data_Tremie_2012_2013():
-    d = {}
-    d['Tremie2'] = {'plant_density_at_emergence' : 204, 'ear_density_at_harvest' : 676,
+    """
+    Plot data for Boigneville 2012-2013 
+    
+    Notes
+    - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
+    - no date found for countings of ear density
+    - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 4 ranks * 0.6 m for LAI plots (0.36 m2) 
+    - Plant density data measured for LAI estimation seems bugy and more compatible with a 5 rank * 0.6 m plots dimension (ie density and LAI should be multiplied by 0.8)
+    """
+    d = {
+   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19'},
+   'sowing_density': 300,
+   'plant_density':{'2F': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253],
+                    'epis1cm': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], 
+                    '2012-04-22':[328, 322, 356],
+                    '2012-05-13':[272, 361, 350]},
+   'ear_density_at_harvest' : 676,
+   'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
     'inter_row':0.15
     }
     return d
@@ -459,7 +475,7 @@ def Tillering_data_Tremie1_2011_2012():
     Data found in Archi2, Archi3, Archi14, Archi15 were :
         - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
         - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
-        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive). 
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F).  
         - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
         
     These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
@@ -488,7 +504,7 @@ def Tillering_data_Tremie1_2011_2012():
     # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
     eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
     pdata = Plot_data_Tremie_2011_2012()
-    ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1
+    ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1 #remove main stem to get FT count 
     # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
     ears_per_plant = 1 + numpy.array(ftd4.tolist() + eardata['FT'][eardata['Date'] == 6].tolist()).mean()
 
@@ -501,20 +517,25 @@ def Tillering_data_Tremie1_2011_2012():
     
 def Tillering_data_Tremie_2012_2013():
     """Tillering data for Boigneville 2012-2013
-    Expected data are :
-    - estimates of plant density at emergence (id Archi-)
-    - estimates of ear density at harvest (all axes) (id Archi-)
-    - estimates of the number of elongated internodes on main stems
-    - estimates of tiller dynamics, with three kind of data : 
-        - presence/absence of living mainstem (column MS) and number of leaf emited
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive), and/or  total number of primary tillers (column TPE) and secondary tillers emited (dead or alive, column TSE). These data are used for fitting emission probabilities
-        - estimation of total living tillers (column TT) at the end from the counting of tillers that are alive or that bears an ear
-    Notes :
-    - No data to date 3 and after this date"""
     
-    # summarise tillering data to mean number of tiller emited per plant (columns Tc->T5), mean number of leaves, and total tillers and MS present per plant at the end (column TT and MB)
+    Data for presence/absence of primary tillers come from tagged plants. Data at date 3 are from other other plants.
+    
+    Data found in were :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F). 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants
+
+    Notes :
+    - No data found  for direct counting of fertile tillers per plant on tagged plants) 
+    - data from date 3 are to be included
+    """
+    
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie_2012_2013.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
+    date_code = {'d1':'2013-02-13','d2':'2013-03-29', 'd3': '2012-04-19'}
+    
     # compute emmission probas of primary axis/ emission per plant of secondary axis 
     edata = data[data['Date'] < 6]
     edata = edata.reset_index()
