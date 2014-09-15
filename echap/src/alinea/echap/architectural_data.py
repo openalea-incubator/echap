@@ -133,15 +133,15 @@ def Plot_data_Tremie_2012_2013():
     - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
     - no date found for countings of ear density
     - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 4 ranks * 0.6 m for LAI plots (0.36 m2) 
-    - Plant density data measured for LAI estimation seems bugy and more compatible with a 5 rank * 0.6 m plots dimension (ie density and LAI should be multiplied by 0.8)
+    - *** IMPORTANT ***Plant density data measured for LAI estimation seems bugy and more compatible with a 5 rank * 0.6 m plots dimension (ie density and LAI should be multiplied by 0.8)
     """
     d = {
    'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19'},
    'sowing_density': 300,
    'plant_density':{'2F': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253],
                     'epis1cm': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], 
-                    '2012-04-22':[328, 322, 356],
-                    '2012-05-13':[272, 361, 350]},
+                    '2012-04-22':[328 * 0.8, 322 * 0.8, 356 * 0.8],
+                    '2012-05-13':[272* 0.8, 361 * 0.8, 350 * 0.8]},
    'ear_density_at_harvest' : 676,
    'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
     'inter_row':0.15
@@ -372,30 +372,10 @@ def axis_dynamics(df):
     return res
     
     
- # deprecated   
-    
-def diff(edata, s):
-    e1 = edata.head(0)
-    e2 = s.head(0) 
-    e = list(set(e1) - set(e2))
-    i = 0
-    while i<(len(e)-1):
-        s [e[i]] = None
-        i = i + 1
-    return s
-    
-def emis(data, d, n):
-    res = d.ix[:,'Nff':] / n.ix[:,'Nff':] 
-    for c in d.ix[:,'Nff':].columns.values:
-        d.ix[:,c] = res.ix[:,c]
-    # update TPE and compute MB and TT
-    d['TPE'] = d.ix[:,'TC':'T5'].sum(axis=1)
-    edata = data[data['Date'] >= 6]
-    edata = edata.reset_index()
-    grouped = edata.groupby(['Var','Date'],as_index=False)
-    return grouped
-    
 #-------------------------------------------------------------------------------  
+# TO DO : remove ears_per_plant (should be part of reconstruction)
+#         compute Nff probabilities
+
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
     
@@ -536,26 +516,16 @@ def Tillering_data_Tremie_2012_2013():
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     date_code = {'d1':'2013-02-13','d2':'2013-03-29', 'd3': '2012-04-19'}
     
-    # compute emmission probas of primary axis/ emission per plant of secondary axis 
-    edata = data[data['Date'] < 6]
+    # compute emmission probability from data on tagged plants at date 1 and 2
+    edata = data[data['Date'] <= 2]
     edata = edata.reset_index()
-    grouped = edata.groupby(['Var', 'N'],as_index=False)
-    d = grouped.agg(_maxna)
-    d = d.reset_index()
-    #---
-    de = d.fillna(0)
-    grouped1 = de.groupby(['Var','Date'],as_index=False)
-    #---
-    grouped = d.groupby(['Var','Date'],as_index=False)
-    s = grouped.agg('sum')
-    n = grouped1.agg(lambda x: float(x.dropna().count())) 
-    diff(edata, s)
-    d = s
-    emis(data, d, n)
-    s = grouped.agg('sum')
-    n = grouped.agg(lambda x: x.dropna().count())
-    d['MB'] = 1.0 * s['MB'] / n['MB']
-    d['TT'] = 1.0 * s['TT'] / n['TT']
-    obs = {'plant_density_at_emergence' : {'Tremie': 204}, 'ear_density_at_harvest' : {'Tremie': 676}, 
-            'tillering' : d}
+    emission = emission_probabilities(edata,last='T5')
+    
+    # tiller dynamics
+    axdyn = axis_dynamics(data)
+
+    obs = {'emission_probabilities': emission,
+           'tillers_per_plant': axdyn, 
+           'date_code' : date_code}
+
     return obs
