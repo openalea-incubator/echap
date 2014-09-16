@@ -181,30 +181,31 @@ def Mercia_composite_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pge
     pgen2 = archidb.Mercia_2010_nff12_plantgen()
     pgen3 = archidb.Mercia_2010_nff13_plantgen()
     
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Mercia']
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
+    #tdata = tdata[tdata.Var=='Mercia'] #old
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
     shapes = archidb.leaf_curvature_data('Mercia')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
 
     if not as_pgen:
+        tdata = tdb['emission_probabilities']
         #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
         # BUG : MB is equal to 1 => should return  less than 1
-        primary_proba={k:tdata[k].values for k in ('T1','T3','T4')}
-        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
+        #primary_proba={k:tdata[k].values for k in ('T1','T3','T4')} #old
+        primary_proba={k:tdata[k] for k in ('T1','T3','T4')}
+        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values #old
+        #primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
         
         #pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)  
         #pgen['MS_leaves_number_probabilities'] = {'11':0.4,'12':0.6}    
-        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdata, pdata, dTT_stop)
+        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdb, pdata, dTT_stop)
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdata, pdata, dTT_stop)
+        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdb, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
-        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdata, pdata, dTT_stop)
+        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdb, pdata, dTT_stop)
         pgen_3['MS_leaves_number_probabilities'] = {'13':1.0}
            
     #generate reconstruction
-    #axeT, dimT, phenT = plantgen_to_devT_comp(pgen_2)
-    #devT = devCsv(axeT, dimT, phenT)
     axeT, dimT, phenT = plantgen_to_devT_comp(pgen_1)
 
     # renumerotation des colonnes communes
@@ -244,35 +245,32 @@ reconst_db['Mercia_comp'] = Mercia_composite_2010
 def Mercia_composite_2_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, aborting_tiller_reduction = 0.6, **kwds):
     from alinea.adel.AdelR import devCsv
     
-    #pgen = archidb.Mercia_2010_plantgen()
     pgen1 = archidb.Mercia_2010_nff11_plantgen()
     pgen2 = archidb.Mercia_2010_nff12_plantgen()
     pgen3 = archidb.Mercia_2010_nff13_plantgen()
     
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Mercia']
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
+    #tdata = tdata[tdata.Var=='Mercia'] #old
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+    
     shapes = archidb.leaf_curvature_data('Mercia')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
 
     if not as_pgen:
-        #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
-        # BUG : MB is equal to 1 => should return  less than 1
-        primary_proba={k:tdata[k].values for k in ('T1','T3','T4')}
-        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
-        
-        #pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)  
-        #pgen['MS_leaves_number_probabilities'] = {'11':0.4,'12':0.6}    
-        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdata, pdata, dTT_stop)
+        tdata = tdb['emission_probabilities']
+        #primary_proba={k:tdata[k].values for k in ('T1','T3','T4')} #old
+        primary_proba={k:tdata[k] for k in ('T1','T3','T4')}
+        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values #old
+        #primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
+           
+        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdb, pdata, dTT_stop)
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdata, pdata, dTT_stop)
+        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdb, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
-        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdata, pdata, dTT_stop)
+        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdb, pdata, dTT_stop)
         pgen_3['MS_leaves_number_probabilities'] = {'13':1.0}
            
     #generate reconstruction
-    #axeT, dimT, phenT = plantgen_to_devT_comp(pgen_2)
-    #devT = devCsv(axeT, dimT, phenT)
     axeT, dimT, phenT = plantgen_to_devT_comp(pgen_1)
 
     # renumerotation des colonnes communes
@@ -309,35 +307,32 @@ def Mercia_composite_2_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_p
 def Mercia_composite_3_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=500, disc_level=20, aborting_tiller_reduction = 0.6, **kwds):
     from alinea.adel.AdelR import devCsv
     
-    #pgen = archidb.Mercia_2010_plantgen()
     pgen1 = archidb.Mercia_2010_nff11_plantgen()
     pgen2 = archidb.Mercia_2010_nff12_plantgen()
     pgen3 = archidb.Mercia_2010_nff13_plantgen()
     
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Mercia']
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
+    #tdata = tdata[tdata.Var=='Mercia'] #old
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+    
     shapes = archidb.leaf_curvature_data('Mercia')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
 
     if not as_pgen:
-        #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
-        # BUG : MB is equal to 1 => should return  less than 1
-        primary_proba={k:tdata[k].values for k in ('T1','T3','T4')}
-        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
-        
-        #pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)  
-        #pgen['MS_leaves_number_probabilities'] = {'11':0.4,'12':0.6}    
-        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdata, pdata, dTT_stop)
+        tdata = tdb['emission_probabilities']
+        #primary_proba={k:tdata[k].values for k in ('T1','T3','T4')} #old
+        primary_proba={k:tdata[k] for k in ('T1','T3','T4')}
+        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values #old
+        #primary_proba['T2']= tdata['T2'].values + tdata['TC'].values
+            
+        pgen_1 = new_pgen(pgen1, 11, primary_proba, tdb, pdata, dTT_stop)
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdata, pdata, dTT_stop)
+        pgen_2 = new_pgen(pgen2, 19, primary_proba, tdb, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
-        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdata, pdata, dTT_stop)
+        pgen_3 = new_pgen(pgen3, 1, primary_proba, tdb, pdata, dTT_stop)
         pgen_3['MS_leaves_number_probabilities'] = {'13':1.0}
            
     #generate reconstruction
-    #axeT, dimT, phenT = plantgen_to_devT_comp(pgen_2)
-    #devT = devCsv(axeT, dimT, phenT)
     axeT, dimT, phenT = plantgen_to_devT_comp(pgen_1)
 
     # renumerotation des colonnes communes
@@ -371,23 +366,28 @@ def Mercia_composite_3_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_p
     
     return pgen_2, adel, domain, domain_area, convUnit, nplants
     
-def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, aborting_tiller_reduction = 1.0, **kwds):
+def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, aborting_tiller_reduction = 1.0, classic=False, **kwds):
     from alinea.adel.AdelR import devCsv
     
     pgen1 = archidb.Rht3_2010_nff11_plantgen()
     pgen2 = archidb.Rht3_2010_nff12_plantgen()
     
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Rht3']
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
+    #tdata = tdata[tdata.Var=='Rht3'] #old
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+    
     shapes = archidb.leaf_curvature_data('Rht3')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
 
     if not as_pgen:
-        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')}
+        tdata = tdb['emission_probabilities']
+        
+        #primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} "old
+        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
           
-        pgen_1 = new_pgen(pgen1, 17, primary_proba, tdata, pdata, dTT_stop)
+        pgen_1 = new_pgen(pgen1, 17, primary_proba, tdb, pdata, dTT_stop)
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        pgen_2 = new_pgen(pgen2, 7, primary_proba, tdata, pdata, dTT_stop)
+        pgen_2 = new_pgen(pgen2, 7, primary_proba, tdb, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
            
     #generate reconstruction
@@ -420,7 +420,7 @@ def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     leaves = fit_leaves(shapes, disc_level)
     
     plant_density = pgen_1['plants_density']
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, classic=classic, **kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
     
@@ -430,17 +430,22 @@ def Rht3_composite_2_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     pgen1 = archidb.Rht3_2010_nff11_plantgen()
     pgen2 = archidb.Rht3_2010_nff12_plantgen()
     
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Rht3']
+    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
+    #tdata = tdata[tdata.Var=='Rht3'] #old
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+    
     shapes = archidb.leaf_curvature_data('Rht3')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
 
     if not as_pgen:
-        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} 
+        tdata = tdb['emission_probabilities']
+        
+        #primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} 
+        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
           
-        pgen_1 = new_pgen(pgen1, 17, primary_proba, tdata, pdata, dTT_stop)
+        pgen_1 = new_pgen(pgen1, 17, primary_proba, tdb, pdata, dTT_stop)
         pgen_1['MS_leaves_number_probabilities'] = {'11':1.0}
-        pgen_2 = new_pgen(pgen2, 7, primary_proba, tdata, pdata, dTT_stop)
+        pgen_2 = new_pgen(pgen2, 7, primary_proba, tdb, pdata, dTT_stop)
         pgen_2['MS_leaves_number_probabilities'] = {'12':1.0}
            
     #generate reconstruction
