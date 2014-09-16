@@ -238,7 +238,7 @@ def test_axis_dynamics(name='Mercia'):
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    dd = range(0,3000,100)
+    dd = range(500,2500,300)
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
@@ -247,7 +247,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Rht3', name_obs='Rht3', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
+def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
     sim = simLAI(adel, domain_area, convUnit, nplants)
@@ -255,10 +255,11 @@ def compare_LAI(name='Rht3', name_obs='Rht3', dTT_stop=0, original=False, n=30, 
     sim.plot('HS','LAI_vert',color='r')
     
     #donnees obs
-    obs = archidb.PAI_data()[name_obs]       
-    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    obs.plot('HS','PAI',style='or')
-    obs.plot('HS','PAI',style='--r')
+    obs = archidb.PAI_data()[name_obs]
+    d = {'TT':pandas.Series(obs['TT_date']), 'PAI_vert':pandas.Series(obs['PAI_vert_moy_photo'])}
+    df = pandas.DataFrame(d)
+    df['HS'] = (df.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    df.plot('HS','PAI_vert',style='or'); df.plot('HS','PAI_vert',style='--r')
     
     #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
     '''sim.plot('ThermalTime','LAI_vert', color='g')
@@ -303,11 +304,11 @@ def draft_TC(g, adel, domain, zenith, rep):
     #pgl.Viewer.display(scene)
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 428, image_height = 284, getImages=True, replicate=rep)
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
     
     return gc
     
-def comp_TC(name='Rht3', name_obs='Rht3', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Mercia_maq1', name_obs='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
 
     if zenith==0:
         zen='0'; rep=1
