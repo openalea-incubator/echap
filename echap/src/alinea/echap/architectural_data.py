@@ -88,6 +88,7 @@ def Plot_data_Mercia_Rht3_2010_2011():
     """
     d={'Mercia': {
         'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
+        'TT_date': {'sowing':0, 'emergence':143, 'harvest':2109},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 203, 
         'ear_density_at_harvest' : 444,
@@ -95,6 +96,7 @@ def Plot_data_Mercia_Rht3_2010_2011():
         'inter_row': 0.15},
         'Rht3': {
         'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
+        'TT_date': {'sowing':0, 'emergence':143, 'harvest':2109},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 211, 
         'ear_density_at_harvest' : 384,
@@ -112,6 +114,7 @@ def Plot_data_Tremie_2011_2012():
     """
     d = {
     'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19'}, 
+    'TT_date': {'sowing':0, 'emergence':141, 'harvest':2135},
     'sowing_density': 280,
     'ear_density_at_harvest': 492,
     'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
@@ -137,6 +140,7 @@ def Plot_data_Tremie_2012_2013():
     """
     d = {
    'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19'},
+   'TT_date': {'sowing':0, 'emergence':140},
    'sowing_density': 300,
    'plant_density':{'2F': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253],
                     'epis1cm': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], 
