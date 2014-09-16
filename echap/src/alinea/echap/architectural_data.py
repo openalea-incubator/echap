@@ -371,6 +371,11 @@ def axis_dynamics(df):
     res.update({'Date':axis.index.tolist()})
     return res
     
+def nff_probabilities(df):
+    prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
+    d = dict(zip(range(len(prop)), prop))
+    return {k:v for k,v in d.iteritems() if v > 0}
+    
     
 #-------------------------------------------------------------------------------  
 # TO DO : remove ears_per_plant (should be part of reconstruction)
@@ -396,7 +401,8 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2011-01-19','d2':'2011-04-18','d3':'2011-04-27', 'd4':'2011-05-26','d5':'2011-06-01','d6':'2011-06-09'}
+    date_code = {'d1':'2011-01-19', 'd2':'2011-04-18', 'd3':'2011-04-27', 'd4':'2011-05-26', 'd5':'2011-06-01', 'd6':'2011-06-09'}
+    TT_code = {'d1':473, 'd2':1145, 'd3':1278, 'd4':1710, 'd5':1800, 'd6':1940}
     
     # infer emision at date 3 from Total primary present (TP)
     #add statistics for T6 as well as it may be present at date 3    
@@ -426,6 +432,10 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     grouped = edata.groupby('Var',as_index=False)
     emission = {k:emission_probabilities(v) for k,v in grouped}
     
+    # compute nff probabilities
+    grouped = data.groupby('Var',as_index=False)
+    nff_prop = {k:nff_probabilities(v) for k,v in grouped}
+    
     # compute ear_per_plante (including main stem) 
     eardata = newdata[newdata['Date'] >= 6]
     eardata = eardata.reset_index()
@@ -440,10 +450,12 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     axdyn = {k:axis_dynamics(v) for k,v in grouped}
     
     obs = {k:{'emission_probabilities': emission[k],
+           'nff_probabilities': nff_prop[k],
            'ears_per_plant': ears_per_plant[k],
            'plant_survival': viability[k],
            'tillers_per_plant': axdyn[k], 
-           'date_code' : date_code} for k in ('Mercia', 'Rht3')}
+           'date_code' : date_code,
+           'TT_code' : TT_code} for k in ('Mercia', 'Rht3')}
     return obs
 
 def Tillering_data_Tremie1_2011_2012():
@@ -470,13 +482,17 @@ def Tillering_data_Tremie1_2011_2012():
     
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2012-03-09','d2':'2012-04-02','d3':'2012-04-11', 'd4':'2012-05-09','d5':'2012-05-29','d6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
+    date_code = {'d1':'2012-03-09', 'd2':'2012-04-02', 'd3':'2012-04-11', 'd4':'2012-05-09', 'd5':'2012-05-29', 'd6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
+    TT_code = {'d1':905, 'd2':1160, 'd3':1240, 'd4':1515, 'd5':1813, 'd6':2031, 'd7':2536, 'd8':1179}
     
     # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
     edata = data[data['Date'] == 1]
     edata['T7'] = data['T7'][data['Date'] == 3].values
     edata = edata.reset_index()
     emission = emission_probabilities(edata,last='T7')
+    
+    # compute nff probabilities
+    nff_prop = nff_probabilities(data)
 
     # tiller dynamics
     axdyn = axis_dynamics(data)
@@ -490,9 +506,11 @@ def Tillering_data_Tremie1_2011_2012():
 
     
     obs = {'emission_probabilities': emission,
+           'nff_probabilities': nff_prop,
            'ears_per_plant': ears_per_plant,
            'tillers_per_plant': axdyn, 
-           'date_code' : date_code}
+           'date_code' : date_code,
+           'TT_code' : TT_code}
     return obs
     
 def Tillering_data_Tremie_2012_2013():
@@ -514,18 +532,24 @@ def Tillering_data_Tremie_2012_2013():
     
     fn = shared_data(alinea.echap, 'Tillering_data_Tremie_2012_2013.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2013-02-13','d2':'2013-03-29', 'd3': '2012-04-19'}
+    date_code = {'d1':'2013-02-13', 'd2':'2013-03-29', 'd3': '2012-04-19'}
+    TT_code = {'d1':566, 'd2':739, 'd3':915}
     
     # compute emmission probability from data on tagged plants at date 1 and 2
     edata = data[data['Date'] <= 2]
     edata = edata.reset_index()
     emission = emission_probabilities(edata,last='T5')
     
+    # compute nff probabilities
+    nff_prop = nff_probabilities(data)
+    
     # tiller dynamics
     axdyn = axis_dynamics(data)
 
     obs = {'emission_probabilities': emission,
+           'nff_probabilities': nff_prop,
            'tillers_per_plant': axdyn, 
-           'date_code' : date_code}
+           'date_code' : date_code,
+           'TT_code' : TT_code}
 
     return obs
