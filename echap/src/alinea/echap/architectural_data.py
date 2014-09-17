@@ -274,164 +274,6 @@ def dynamique_data():
       }
     return d
     
-#-------------------------------------------------------------------------------  
-# Angles      
-def leaf_curvature_data(name='Mercia'):
-    import re
-    
-    if name is 'Mercia':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
-        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
-        # XY
-        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
-        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
-        # filtre sur la variete pour Mercia/Rht3
-        dfxy = dfxy.reset_index()
-        dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
-        dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
-        dfxy = dfxy1.append(dfxy2)
-        #dfxy = dfxy[dfxy['variety']=='Mercia']
-        dfxy['rankclass'] = 1
-        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
-       
-    if name is 'Rht3':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
-        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
-        # XY
-        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
-        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
-        # filtre sur la variete Mercia seulement
-        dfxy = dfxy.reset_index()
-        dfxy = dfxy[dfxy['variety']=='Mercia'] 
-        # feuille du haut = feuille du bas pr coller a l'archi de rht3
-        dfxy['rankclass'] = 2
-            
-    if name is 'Tremie':
-        # fichier angle non dispo encore, on prend mercia en attendant
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
-        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
-        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
-        #data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonTremie2011.csv') 
-        #data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonTremie2011.csv') 
-        #header_row_xydb = ['plant','rank','ranktop','HS','inerv','x','y']
-        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
-        dfxy = dfxy.reset_index()
-        dfxy = dfxy[dfxy['variety']=='Mercia']
-        dfxy['rankclass'] = 1
-        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
-       
-    # SR
-    header_row_srdb = ['rankclass','s','r']
-    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=',', index_col=0, skiprows=1, decimal='.')
-    dfsr = dfsr.reset_index()
-    
-    # NIV1 
-    # cle = rankclass
-    
-    # test seulement rankclass 2 = (feuille du haut = feuille du bas)
-    #dfxy['rankclass'] = 2
-    # si tout =
-    #dfxy['rankclass'] = 1
-    #dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
-        
-    # creation de la colonne age
-    dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
-    #cut intervalle de 0 a 1, etc.
-    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-    dfxy['age'] = dfxy_cut
-    # remplacement intervalle par un int (ex : (x, y)=y seulement)
-    # si marche pas : bidouille = 
-    dfxy['age'] = dfxy['age'].replace("(-1, 0]", 0)
-    dfxy['age'] = dfxy['age'].replace("(0, 1]", 1)
-    dfxy['age'] = dfxy['age'].replace("(1, 2]", 2)
-    dfxy['age'] = dfxy['age'].replace("(2, 3]", 3)
-    dfxy['age'] = dfxy['age'].replace("(3, 4]", 4)
-    dfxy['age'] = dfxy['age'].replace("(4, 5]", 5)
-    dfxy['age'] = dfxy['age'].replace("(5, 6]", 6)
-    dfxy['age'] = dfxy['age'].replace("(6, 7]", 7)
-    dfxy['age'] = dfxy['age'].replace("(7, 8]", 8)
-    dfxy['age'] = dfxy['age'].replace("(8, 9]", 9)
-    dfxy['age'] = dfxy['age'].replace("(9, 10]", 10)
-    dfxy['age'] = dfxy['age'].replace("(10, 11]", 11)
-    dfxy['age'] = dfxy['age'].replace("(11, 12]", 12)
-    '''
-    # methode plus propre - ne marche pas
-    dfxy = dfxy.reset_index()
-    da = 0
-    while da < len(dfxy):
-        dfxy['age'][da] = re.sub("\(-*[0-9]{1,2}, ([0-9]{1,2})]", "\\1", dfxy['age'][da])
-        da = da + 1'''
-
-    # NIV2
-    # creation du premier dico par rankclass
-    groups = dfxy.groupby(["rankclass"])
-    dxy={n:{} for n,g in groups}
-    # creation du second dico par age
-    for n,g in groups:
-        gg = g.groupby('age')
-        dxy[n] = {k:[] for k,ggg in gg}
-    # remplissage x et y
-    groups = dfxy.groupby(["inerv"]) 
-    
-    #dfxy['age'] = dfxy['age'].astype(int)
-    for n,d in groups:
-        dxy[int(d[['rankclass']].values[0])][int(d[['age']].values[0])].append(d.ix[:,['x','y']].to_dict('list'))
-    
-    # NIV3 : ajout des s et r
-    # traitement de dfsr (creation de 2 listes) DE STRING
-    dr = 0
-    s1 = []; r1 = []
-    s2 = []; r2 = []
-    while dr<len(dfsr):
-        if dfsr['rankclass'][dr] == 1:
-            s1.append(dfsr['s'][dr])
-            r1.append(dfsr['r'][dr])
-            dr = dr + 1
-        else :
-            s2.append(dfsr['s'][dr])
-            r2.append(dfsr['r'][dr])
-            dr = dr + 1
-            
-    # ajout dans le dict de dict precedent
-    # remplissage rankclass (rankclass=2 seulement pour rht3)
-    if name is 'Rht3':
-        rank2keys = dxy[2].keys()
-        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
-        while cpt2 < len(rank2keys):
-            rank2 = rank2keys[cpt2]
-            while list2 < len(dxy[2][rank2]) :
-                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
-                list2 = list2 + 1
-            if list2 == len(dxy[2][rank2]) :
-                list2 = 0
-            rank2 = rank2 + 1
-            cpt2 = cpt2 + 1
-    else:
-        rank1keys = dxy[1].keys()
-        cpt1 = 0; rank1 = rank1keys[cpt1]; list1 = 0
-        while cpt1 < len(rank1keys):
-            rank1 = rank1keys[cpt1]
-            while list1 < len(dxy[1][rank1]) :
-                dxy[1][rank1][list1].update({'s':s1, 'r':r1})
-                list1 = list1 + 1
-            if list1 == len(dxy[1][rank1]) :
-                list1 = 0
-            rank1 = rank1 + 1
-            cpt1 = cpt1 + 1
-        rank2keys = dxy[2].keys()
-        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
-        while cpt2 < len(rank2keys):
-            rank2 = rank2keys[cpt2]
-            while list2 < len(dxy[2][rank2]) :
-                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
-                list2 = list2 + 1
-            if list2 == len(dxy[2][rank2]) :
-                list2 = 0
-            rank2 = rank2 + 1
-            cpt2 = cpt2 + 1
-        
-    
-    return dxy
     
 #-------------------------------------------------------------------------------  
 # Utilities for processing tillering data
@@ -474,7 +316,7 @@ def nff_probabilities(df):
     
 #-------------------------------------------------------------------------------  
 # TO DO : remove ears_per_plant (should be part of reconstruction)
-#         compute Nff probabilities
+
 
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
@@ -648,3 +490,163 @@ def Tillering_data_Tremie_2012_2013():
            'TT_code' : TT_code}
 
     return obs
+    
+#-------------------------------------------------------------------------------  
+# Angles      
+
+def leaf_curvature_data(name='Mercia'):
+    import re
+    
+    if name is 'Mercia':
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
+        # XY
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        # filtre sur la variete pour Mercia/Rht3
+        dfxy = dfxy.reset_index()
+        dfxy1 = dfxy[dfxy['variety']=='Mercia'] 
+        dfxy2 = dfxy[dfxy['variety']=='Rht3'] 
+        dfxy = dfxy1.append(dfxy2)
+        #dfxy = dfxy[dfxy['variety']=='Mercia']
+        dfxy['rankclass'] = 1
+        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+       
+    if name is 'Rht3':
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
+        # XY
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        # filtre sur la variete Mercia seulement
+        dfxy = dfxy.reset_index()
+        dfxy = dfxy[dfxy['variety']=='Mercia'] 
+        # feuille du haut = feuille du bas pr coller a l'archi de rht3
+        dfxy['rankclass'] = 2
+            
+    if name is 'Tremie':
+        # fichier angle non dispo encore, on prend mercia en attendant
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        #data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonTremie2011.csv') 
+        #data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonTremie2011.csv') 
+        #header_row_xydb = ['plant','rank','ranktop','HS','inerv','x','y']
+        dfxy = pandas.read_csv(data_file_xydb, names=header_row_xydb, sep=',', index_col=0, skiprows=1, decimal='.')
+        dfxy = dfxy.reset_index()
+        dfxy = dfxy[dfxy['variety']=='Mercia']
+        dfxy['rankclass'] = 1
+        dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+       
+    # SR
+    header_row_srdb = ['rankclass','s','r']
+    dfsr = pandas.read_csv(data_file_srdb, names=header_row_srdb, sep=',', index_col=0, skiprows=1, decimal='.')
+    dfsr = dfsr.reset_index()
+    
+    # NIV1 
+    # cle = rankclass
+    
+    # test seulement rankclass 2 = (feuille du haut = feuille du bas)
+    #dfxy['rankclass'] = 2
+    # si tout =
+    #dfxy['rankclass'] = 1
+    #dfxy['rankclass'][dfxy['ranktop'] <= 4] = 2
+        
+    # creation de la colonne age
+    dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
+    #cut intervalle de 0 a 1, etc.
+    dfxy_cut = pandas.cut(dfxy.age, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+    dfxy['age'] = dfxy_cut
+    # remplacement intervalle par un int (ex : (x, y)=y seulement)
+    # si marche pas : bidouille = 
+    dfxy['age'] = dfxy['age'].replace("(-1, 0]", 0)
+    dfxy['age'] = dfxy['age'].replace("(0, 1]", 1)
+    dfxy['age'] = dfxy['age'].replace("(1, 2]", 2)
+    dfxy['age'] = dfxy['age'].replace("(2, 3]", 3)
+    dfxy['age'] = dfxy['age'].replace("(3, 4]", 4)
+    dfxy['age'] = dfxy['age'].replace("(4, 5]", 5)
+    dfxy['age'] = dfxy['age'].replace("(5, 6]", 6)
+    dfxy['age'] = dfxy['age'].replace("(6, 7]", 7)
+    dfxy['age'] = dfxy['age'].replace("(7, 8]", 8)
+    dfxy['age'] = dfxy['age'].replace("(8, 9]", 9)
+    dfxy['age'] = dfxy['age'].replace("(9, 10]", 10)
+    dfxy['age'] = dfxy['age'].replace("(10, 11]", 11)
+    dfxy['age'] = dfxy['age'].replace("(11, 12]", 12)
+    '''
+    # methode plus propre - ne marche pas
+    dfxy = dfxy.reset_index()
+    da = 0
+    while da < len(dfxy):
+        dfxy['age'][da] = re.sub("\(-*[0-9]{1,2}, ([0-9]{1,2})]", "\\1", dfxy['age'][da])
+        da = da + 1'''
+
+    # NIV2
+    # creation du premier dico par rankclass
+    groups = dfxy.groupby(["rankclass"])
+    dxy={n:{} for n,g in groups}
+    # creation du second dico par age
+    for n,g in groups:
+        gg = g.groupby('age')
+        dxy[n] = {k:[] for k,ggg in gg}
+    # remplissage x et y
+    groups = dfxy.groupby(["inerv"]) 
+    
+    #dfxy['age'] = dfxy['age'].astype(int)
+    for n,d in groups:
+        dxy[int(d[['rankclass']].values[0])][int(d[['age']].values[0])].append(d.ix[:,['x','y']].to_dict('list'))
+    
+    # NIV3 : ajout des s et r
+    # traitement de dfsr (creation de 2 listes) DE STRING
+    dr = 0
+    s1 = []; r1 = []
+    s2 = []; r2 = []
+    while dr<len(dfsr):
+        if dfsr['rankclass'][dr] == 1:
+            s1.append(dfsr['s'][dr])
+            r1.append(dfsr['r'][dr])
+            dr = dr + 1
+        else :
+            s2.append(dfsr['s'][dr])
+            r2.append(dfsr['r'][dr])
+            dr = dr + 1
+            
+    # ajout dans le dict de dict precedent
+    # remplissage rankclass (rankclass=2 seulement pour rht3)
+    if name is 'Rht3':
+        rank2keys = dxy[2].keys()
+        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
+        while cpt2 < len(rank2keys):
+            rank2 = rank2keys[cpt2]
+            while list2 < len(dxy[2][rank2]) :
+                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
+                list2 = list2 + 1
+            if list2 == len(dxy[2][rank2]) :
+                list2 = 0
+            rank2 = rank2 + 1
+            cpt2 = cpt2 + 1
+    else:
+        rank1keys = dxy[1].keys()
+        cpt1 = 0; rank1 = rank1keys[cpt1]; list1 = 0
+        while cpt1 < len(rank1keys):
+            rank1 = rank1keys[cpt1]
+            while list1 < len(dxy[1][rank1]) :
+                dxy[1][rank1][list1].update({'s':s1, 'r':r1})
+                list1 = list1 + 1
+            if list1 == len(dxy[1][rank1]) :
+                list1 = 0
+            rank1 = rank1 + 1
+            cpt1 = cpt1 + 1
+        rank2keys = dxy[2].keys()
+        cpt2 = 0; rank2 = rank2keys[cpt2]; list2 = 0  
+        while cpt2 < len(rank2keys):
+            rank2 = rank2keys[cpt2]
+            while list2 < len(dxy[2][rank2]) :
+                dxy[2][rank2][list2].update({'s':s2, 'r':r2})
+                list2 = list2 + 1
+            if list2 == len(dxy[2][rank2]) :
+                list2 = 0
+            rank2 = rank2 + 1
+            cpt2 = cpt2 + 1
+        
+    
+    return dxy
