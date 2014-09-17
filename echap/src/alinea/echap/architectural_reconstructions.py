@@ -2,11 +2,14 @@
 
 Current reconstructions use fit from Mariem (pgen data) + new modification consigned here
 """
+import pandas
+import numpy
+
 import alinea.echap.architectural_data as archidb
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
 from copy import deepcopy
-import pandas as pd
+
 
 #generic function to be moved to adel
 
@@ -90,13 +93,16 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic)
+    #adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic)
+    #temp while repairing adel
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic)
     return adel, domain, domain_area, convUnit, nplants
     
     
 #---------- reconstructions 
 
-def geoLeaf(nlim=4,dazt=60,dazb=10):
+
+def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """ generate geoLeaf function for Adel """
     rcode = """
     geoLeaf <- list(
@@ -108,11 +114,25 @@ def geoLeaf(nlim=4,dazt=60,dazb=10):
             }},
      Lindex = function(a,n,nf) {{
               ntop = nf - n
-              ifelse(ntop <= {ntoplim:d}, 2, 1)
+              ifelse(ntop <= {ntoplim:d}, {top_class:d}, {base_class:d})
               }}
               )
     """
-    return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb)
+    return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb, top_class=Lindex_top, base_class= Lindex_base)
+
+def fit_leaves(dxy, disc_level=9):
+    import alinea.adel.fitting as fitting
+    for k in dxy:
+        leaves, discard = fitting.fit_leaves(dxy[k], disc_level)
+        dxy[k] = leaves
+    return dxy    
+    
+# Atteention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
+
+    # creation de la colonne age et du selecteur d'age 
+    
+    
+
 
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
@@ -136,12 +156,7 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         
 reconst_db={}
 
-def fit_leaves(dxy, disc_level=9):
-    import alinea.adel.fitting as fitting
-    for k in dxy:
-        leaves, discard = fitting.fit_leaves(dxy[k], disc_level)
-        dxy[k] = leaves
-    return dxy
+
 
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, **kwds):
 
@@ -165,7 +180,9 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     # sans angles
     #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
-    leaves = fit_leaves(shapes, disc_level)
+    # temp while repairing adel
+    leaves = None
+    #leaves = fit_leaves(shapes, disc_level)
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), **kwds)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
