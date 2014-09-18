@@ -528,10 +528,10 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
     grouped = validxy.groupby(('Lindex','age_class'))
     
     # build trajectories
-    trajectories = {k:{} for k in set(validxy['Lindex'])}
+    trajectories = {k:[] for k in set(validxy['Lindex'])}
     for i in range(ntraj):
         for k in set(validxy['Lindex']):
-            trajectories[k][i] = {}
+            trajectories[k].append({})
             for t in set(validxy['age_class']):
                 x = grouped.get_group((k,t))
                 trajectories[k][i][t] = x.ix[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
