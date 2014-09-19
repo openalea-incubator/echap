@@ -8,6 +8,7 @@ import numpy
 import alinea.echap.architectural_data as archidb
 from alinea.adel.stand.stand import agronomicplot
 from alinea.adel.astk_interface import AdelWheat
+from alinea.adel.geometric_elements import Leaves
 from copy import deepcopy
 
 
@@ -84,7 +85,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     plot_width = inter_row * nrow
     return plot_length, plot_width
    
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, dynamic_leaf_db=False, leaf_db=None, geoLeaf=None, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}, leaf_twist=0, face_up=False, aborting_tiller_reduction = 1.0, classic=False):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}, leaf_twist=0, face_up=False, aborting_tiller_reduction = 1.0, classic=False, leaves = None):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
@@ -93,14 +94,14 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    #adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, dynamic_leaf_db=dynamic_leaf_db, leaf_db=leaf_db, geoLeaf=geoLeaf, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic)
-    #temp while repairing adel
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic, leaves = leaves)
     return adel, domain, domain_area, convUnit, nplants
     
     
 #---------- reconstructions 
 
+
+# leaf geometry
 
 def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """ generate geoLeaf function for Adel """
@@ -120,13 +121,7 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """
     return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb, top_class=Lindex_top, base_class= Lindex_base)
 
-def fit_leaves(dxy, disc_level=9):
-    import alinea.adel.fitting as fitting
-    for k in dxy:
-        leaves, discard = fitting.fit_leaves(dxy[k], disc_level)
-        dxy[k] = leaves
-    return dxy    
-    
+
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
     
@@ -160,7 +155,8 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
 
     pgen = archidb.Mercia_2010_plantgen()
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
-    shapes = archidb.leaf_curvature_data('Mercia')
+    xy, sr, bins = archidb.leaf_curvature_data('Mercia')
+    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     #tdata['MB']=0.9 
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
@@ -175,13 +171,9 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
         pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
-    # sans angles
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
     # avec angles
-    # temp while repairing adel
-    leaves = None
-    #leaves = fit_leaves(shapes, disc_level)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), **kwds)
+
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, **kwds)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
