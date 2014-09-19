@@ -85,7 +85,7 @@ def plot_dimension(nplants, sowing_density, plant_density, inter_row):
     plot_width = inter_row * nrow
     return plot_length, plot_width
    
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}, leaf_twist=0, face_up=False, aborting_tiller_reduction = 1.0, classic=False, leaves = None):    
+def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}, face_up=False, aborting_tiller_reduction = 1.0, classic=False, leaves = None):    
      
     length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
     nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
@@ -94,7 +94,7 @@ def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed
                                                             plant_density=plant_density,
                                                             inter_row=inter_row)
                                                             
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, leaf_twist=leaf_twist, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic, leaves = leaves)
+    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic, leaves = leaves)
     return adel, domain, domain_area, convUnit, nplants
     
     
