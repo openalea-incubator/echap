@@ -197,16 +197,16 @@ def prep_curve(name='Tremie20122013'):
 def test_axis_dynamics(name='Mercia'):
 # todo : add comparison to primary emission
 
-    pgen = get_pgen(name, original=True)
+    #pgen = get_pgen(name, original=True)
     newpgen = get_pgen(name, original=False)
     
-    if name is 'Mercia':
-        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()[name]
-    elif name is 'Rht3':
-        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()[name]
-    elif name is 'Tremie':
+    if name is 'Mercia' or 'Mercia_maq1':
+        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
+    elif name is 'Rht3' or 'Rht3_maq1':
+        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+    elif name is 'Tremie12':
         obs = archidb.Plot_data_Tremie_2011_2012()[name]
-    elif name is 'Tremie2':
+    elif name is 'Tremie13':
         obs = archidb.Plot_data_Tremie_2012_2013()[name]
     
     def _getfit(pgen):
@@ -222,15 +222,16 @@ def test_axis_dynamics(name='Mercia'):
         return fit
     
     #fit by Mariem
-    fit = _getfit(pgen)
+    #fit = _getfit(pgen)
     #newfit
     new_fit = _getfit(newpgen)
 
-    fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
-    new_fit.plot('HS', ['total','primary','others'],style=['-r','-g','-b'])
+    #fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
+    new_fit.plot('HS', ['total','primary','others'],style=['--y','-y',':y'])
     plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob') 
     
-    return fit, new_fit
+    #return fit, new_fit
+    return new_fit
 
 #------------------------------------------------------------------------------------- 
 # LAI
@@ -247,19 +248,30 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name='Mercia_comp'
+def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
+
+    from math import *
+    import numpy as np
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
-    sim = simLAI(adel, domain_area, convUnit, nplants)
-    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    sim.plot('HS','LAI_vert',color='r')
+    #sim = simLAI(adel, domain_area, convUnit, nplants)
+    #sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    #sim.plot('HS','LAI_vert',color='r')
     
     #donnees obs
     obs = archidb.PAI_data()[name_obs]
-    d = {'TT':pandas.Series(obs['TT_date']), 'PAI_vert':pandas.Series(obs['PAI_vert_moy_photo'])}
-    df = pandas.DataFrame(d)
-    df['HS'] = (df.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    df.plot('HS','PAI_vert',style='or'); df.plot('HS','PAI_vert',style='--r')
+    obs['HS'] = (obs.TT_date - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    #photos
+    x=obs['HS']; y=obs['PAI_vert_average_photo']; err=obs['PAI_vert_SD_photo']
+    plt.errorbar(x,y,yerr=err, fmt='--o')
+    #calcul intervalle de confiance
+    s  = obs['PAI_vert_plt_photo']
+    obs['IC'] = (1.96*obs['PAI_vert_SD_photo'])/np.sqrt(s) ; erric = obs['IC']
+    plt.errorbar(x,y,yerr=erric, fmt='--om')
+    #biomasse
+    if 'LAI_vert_SD_biomasse' in obs:
+        x=obs['HS']; y=obs['LAI_vert_average_biomasse']; err=obs['LAI_vert_SD_biomasse']
+        plt.errorbar(x,y,yerr=err, fmt='--oc')
     
     #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
     '''sim.plot('ThermalTime','LAI_vert', color='g')
@@ -268,7 +280,8 @@ def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=Fals
     plt.legend(("LAI_vert", "LAI_tot"), 'best')
     plt.show()'''
     
-    return sim
+    #return sim
+    return obs
     
 #------------------------------------------------------------------------------------- 
 # Hauteur de couvert simule
@@ -304,7 +317,10 @@ def draft_TC(g, adel, domain, zenith, rep):
     #pgl.Viewer.display(scene)
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    #high resolution
+    #gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    #resolution /4
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 1072, image_height = 712, getImages=True, replicate=rep)
     
     return gc
     
