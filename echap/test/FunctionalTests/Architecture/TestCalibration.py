@@ -229,11 +229,10 @@ def test_axis_dynamics(name='Mercia', color='g'):
     new_fit = _getfit(newpgen)
 
     #fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
-    a='--'+color ; b='-'+color; c=':'+color; d='o'+color
-    new_fit.plot('HS', 'total', style=a, label='Total '+name)
-    new_fit.plot('HS', 'primary', style=b, label='Primary '+name)
-    new_fit.plot('HS', 'others', style=c, label= 'Others '+name)
-    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], d) 
+    new_fit.plot('HS', 'total', style='--'+color, label='Total '+name)
+    new_fit.plot('HS', 'primary', style='-'+color, label='Primary '+name)
+    new_fit.plot('HS', 'others', style=':'+color, label= 'Others '+name)
+    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], 'o'+color) 
         
     plt.xlabel("HS")
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
