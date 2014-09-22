@@ -23,7 +23,7 @@ def plantgen_to_devT(pgen):
     axeT_, dimT_, phenT_, phenT_abs, dimT_abs, dynT_, phenT_first, HS_GL_SSI_T, tilleringT, cardinalityT, config = gen_adel_input_data(**pgen)
     
     # verif de la sortie pour obtenir le graph de SSI
-    # HS_GL_SSI_T.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/HS_GL_SSI_T_test.csv')
+    #HS_GL_SSI_T.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/HS_GL_SSI_T_test.csv')
     
     axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
     devT = devCsv(axeT, dimT, phenT)
@@ -156,7 +156,6 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
         pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
-    # avec angles
 
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
@@ -171,6 +170,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     xy, sr, bins = archidb.leaf_curvature_data('Rht3')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
     #adapt reconstruction
     # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
@@ -182,8 +182,8 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
     
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22, face_up=face_up, classic=classic)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
    
     return pgen, adel, domain, domain_area, convUnit, nplants
     
@@ -247,8 +247,10 @@ def Mercia_composite_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pge
     #print check_primary_tillers(devT)
     
     plant_density = pgen_2['plants_density']
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
+    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'])
+    
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
     
     return pgen_2, adel, domain, domain_area, convUnit, nplants
      
@@ -428,7 +430,10 @@ def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     #print check_primary_tillers(devT)
     
     plant_density = pgen_1['plants_density']
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
+    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'])
+    
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up,**kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
 ''' 
