@@ -4,13 +4,13 @@ Current reconstructions use fit from Mariem (pgen data) + new modification consi
 """
 import pandas
 import numpy
-
-import alinea.echap.architectural_data as archidb
-from alinea.adel.stand.stand import agronomicplot
-from alinea.adel.astk_interface import AdelWheat
-from alinea.adel.geometric_elements import Leaves
 from copy import deepcopy
 
+from alinea.adel.astk_interface import AdelWheat
+from alinea.adel.geometric_elements import Leaves
+from alinea.adel.Stand import AgronomicStand
+
+import alinea.echap.architectural_data as archidb
 
 #generic function to be moved to adel
 
@@ -72,30 +72,12 @@ def sen(pgen):
     return HS_GL_SSI_T
 #---
 
-def plot_dimension(nplants, sowing_density, plant_density, inter_row):
-    """ return plot width and length to match nplants created by agronomic_plot
-    """
-    from math import sqrt
-    
-    side = sqrt(1. / sowing_density * nplants)
-    inter_plant = 1. / inter_row / sowing_density
-    nrow = max(1, round(side / inter_row))
-    plant_per_row = max(1, round(side / inter_plant)) 
-    plot_length = inter_plant * plant_per_row
-    plot_width = inter_row * nrow
-    return plot_length, plot_width
+
    
-def setAdel(nplants, nsect, devT, sowing_density, plant_density, inter_row, seed, sample, dep=7, incT=60, dinT=5,run_adel_pars = {'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30}, face_up=False, aborting_tiller_reduction = 1.0, classic=False, leaves = None):    
+def setAdel(**kwds):    
      
-    length, width = plot_dimension(nplants, sowing_density, plant_density, inter_row)
-    nplants, positions, domain, domain_area, convUnit = agronomicplot(length=length, 
-                                                            width=width, 
-                                                            sowing_density=sowing_density, 
-                                                            plant_density=plant_density,
-                                                            inter_row=inter_row)
-                                                            
-    adel = AdelWheat(nplants=nplants, positions = positions, nsect=nsect, devT=devT, seed= seed, sample=sample, dep=dep, incT=incT, dinT=dinT, run_adel_pars = run_adel_pars, face_up = face_up, aborting_tiller_reduction=aborting_tiller_reduction, classic=classic, leaves = leaves)
-    return adel, domain, domain_area, convUnit, nplants
+    adel = AdelWheat(**kwds)    
+    return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
     
 #---------- reconstructions 
@@ -157,9 +139,12 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
+    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
+    
+    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
     #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     #tdata['MB']=0.9 
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
+
     #adapt reconstruction
     # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
@@ -173,7 +158,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     devT = plantgen_to_devT(pgen)
     # avec angles
 
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
