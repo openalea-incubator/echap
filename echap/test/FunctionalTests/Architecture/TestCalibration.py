@@ -194,7 +194,7 @@ def prep_curve(name='Tremie20122013'):
 # Very strange simulation for Tremie
 #    
     
-def test_axis_dynamics(name='Mercia'):
+def test_axis_dynamics(name='Mercia', color='g'):
 # todo : add comparison to primary emission
 
     #pgen = get_pgen(name, original=True)
@@ -202,8 +202,10 @@ def test_axis_dynamics(name='Mercia'):
     
     if name is 'Mercia' or 'Mercia_maq1':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
+        print obs
     elif name is 'Rht3' or 'Rht3_maq1':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+        print obs
     elif name is 'Tremie12':
         obs = archidb.Plot_data_Tremie_2011_2012()[name]
     elif name is 'Tremie13':
@@ -227,8 +229,14 @@ def test_axis_dynamics(name='Mercia'):
     new_fit = _getfit(newpgen)
 
     #fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
-    new_fit.plot('HS', ['total','primary','others'],style=['--y','-y',':y'])
-    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']] ,'ob') 
+    a='--'+color ; b='-'+color; c=':'+color; d='o'+color
+    new_fit.plot('HS', 'total', style=a, label='Total '+name)
+    new_fit.plot('HS', 'primary', style=b, label='Primary '+name)
+    new_fit.plot('HS', 'others', style=c, label= 'Others '+name)
+    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], d) 
+        
+    plt.xlabel("HS")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     #return fit, new_fit
     return new_fit
@@ -248,30 +256,36 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
+def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, color='r', **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
 
     from math import *
     import numpy as np
 
     pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
-    #sim = simLAI(adel, domain_area, convUnit, nplants)
-    #sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    #sim.plot('HS','LAI_vert',color='r')
+    sim = simLAI(adel, domain_area, convUnit, nplants)
+    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    label = 'LAI vert simule '+name_obs
+    sim.plot('HS','LAI_vert',color=color, label=label)
     
     #donnees obs
     obs = archidb.PAI_data()[name_obs]
     obs['HS'] = (obs.TT_date - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     #photos
     x=obs['HS']; y=obs['PAI_vert_average_photo']; err=obs['PAI_vert_SD_photo']
-    plt.errorbar(x,y,yerr=err, fmt='--o')
+    label = 'PAI vert SD photo '+name_obs
+    plt.errorbar(x,y,yerr=err, fmt='--o'+color, label=label)
     #calcul intervalle de confiance
     s  = obs['PAI_vert_plt_photo']
     obs['IC'] = (1.96*obs['PAI_vert_SD_photo'])/np.sqrt(s) ; erric = obs['IC']
-    plt.errorbar(x,y,yerr=erric, fmt='--om')
+    #plt.errorbar(x,y,yerr=erric, fmt='--om', label='PAI vert IC photo')
     #biomasse
     if 'LAI_vert_SD_biomasse' in obs:
         x=obs['HS']; y=obs['LAI_vert_average_biomasse']; err=obs['LAI_vert_SD_biomasse']
-        plt.errorbar(x,y,yerr=err, fmt='--oc')
+        label = 'LAI vert SD biomasse '+name_obs
+        plt.errorbar(x,y,yerr=err, fmt='--oc', label=label)
+    
+    plt.xlabel("HS")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
     '''sim.plot('ThermalTime','LAI_vert', color='g')
