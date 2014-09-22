@@ -150,8 +150,8 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
 reconst_db={}
 
 
-
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, **kwds):
+# NORMAL
+def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
 
     pgen = archidb.Mercia_2010_plantgen()
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
@@ -179,21 +179,44 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     
 reconst_db['Mercia'] = Mercia_2010
 
+def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, face_up=True, classic=False):
 
-def Mercia_composite_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, aborting_tiller_reduction = 1.0, **kwds):
-    from alinea.adel.AdelR import devCsv
+    pgen = archidb.Rht3_2010_plantgen()
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+    xy, sr, bins = archidb.leaf_curvature_data('Rht3')
+    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
+    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+    #adapt reconstruction
+    # TO DO get nff probabilities for main stem from tillering data ?
+    if not as_pgen:
+        tdata = tdb['emission_probabilities']
+        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
+        pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
+        # plantes a 12 talles
+        # pgen['MS_leaves_number_probabilities'] = {'12':1.0}        
+    #generate reconstruction
+    devT = plantgen_to_devT(pgen)
     
-    #pgen = archidb.Mercia_2010_plantgen()
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22, face_up=face_up, classic=classic)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
+   
+    return pgen, adel, domain, domain_area, convUnit, nplants
+    
+reconst_db['Rht3'] = Rht3_2010
+
+# COMPOSITE
+def Mercia_composite_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, aborting_tiller_reduction = 1.0, **kwds):
+    from alinea.adel.AdelR import devCsv
+
     pgen1 = archidb.Mercia_2010_nff11_plantgen()
     pgen2 = archidb.Mercia_2010_nff12_plantgen()
     pgen3 = archidb.Mercia_2010_nff13_plantgen()
     
-    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
-    #tdata = tdata[tdata.Var=='Mercia'] #old
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
-    shapes = archidb.leaf_curvature_data('Mercia')
+    xy, sr, bins = archidb.leaf_curvature_data('Mercia')
+    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
-
+    
     if not as_pgen:
         tdata = tdb['emission_probabilities']
         #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
@@ -238,18 +261,16 @@ def Mercia_composite_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pge
     #print check_nff(devT)
     #print check_primary_tillers(devT)
     
-    leaves = None
-    # avec angles
-    # leaves = fit_leaves(shapes, disc_level)
-    
     plant_density = pgen_2['plants_density']
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
     
     return pgen_2, adel, domain, domain_area, convUnit, nplants
      
 reconst_db['Mercia_comp'] = Mercia_composite_2010
 
 #---Maquette interception
+'''
 def Mercia_composite_2_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, aborting_tiller_reduction = 0.6, **kwds):
     from alinea.adel.AdelR import devCsv
     
@@ -373,24 +394,21 @@ def Mercia_composite_3_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_p
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
     
     return pgen_2, adel, domain, domain_area, convUnit, nplants
-    
-def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, aborting_tiller_reduction = 1.0, classic=False, **kwds):
+''' 
+def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, face_up=True, aborting_tiller_reduction = 1.0, classic=False, **kwds):
     from alinea.adel.AdelR import devCsv
     
     pgen1 = archidb.Rht3_2010_nff11_plantgen()
     pgen2 = archidb.Rht3_2010_nff12_plantgen()
     
-    #tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering'] #old
-    #tdata = tdata[tdata.Var=='Rht3'] #old
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
-    
+    xy, sr, bins = archidb.leaf_curvature_data('Rht3')
+    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     shapes = archidb.leaf_curvature_data('Rht3')
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
 
     if not as_pgen:
         tdata = tdb['emission_probabilities']
-        
-        #primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} "old
         primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
           
         pgen_1 = new_pgen(pgen1, 17, primary_proba, tdb, pdata, dTT_stop)
@@ -421,18 +439,14 @@ def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     devT = devCsv(axeT, dimT, phenT)
 
     #verif composition devT
-    print check_nff(devT)
-    print check_primary_tillers(devT)
-    
-    leaves = None
-    # avec angles
-    #leaves = fit_leaves(shapes, disc_level)
+    #print check_nff(devT)
+    #print check_primary_tillers(devT)
     
     plant_density = pgen_1['plants_density']
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, classic=classic, **kwds)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
-    
+''' 
 def Rht3_composite_2_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, aborting_tiller_reduction = 1.0, **kwds):
     from alinea.adel.AdelR import devCsv
     
@@ -490,44 +504,16 @@ def Rht3_composite_2_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
-    
+'''
+
 # lancement simulations maquette interception Nathalie
 reconst_db['Mercia_maq1'] = Mercia_composite_2010
-reconst_db['Mercia_maq2'] = Mercia_composite_2_2010
-reconst_db['Mercia_maq3'] = Mercia_composite_3_2010
+#reconst_db['Mercia_maq2'] = Mercia_composite_2_2010
+#reconst_db['Mercia_maq3'] = Mercia_composite_3_2010
 reconst_db['Rht3_maq1'] = Rht3_composite_1_2010
-reconst_db['Rht3_maq2'] = Rht3_composite_2_2010
+#reconst_db['Rht3_maq2'] = Rht3_composite_2_2010
+
 #---
-
-
-def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, classic=True):
-
-    pgen = archidb.Rht3_2010_plantgen()
-    tdata = archidb.Tillering_data_Mercia_Rht3_2010_2011()['tillering']
-    tdata = tdata[tdata.Var=='Rht3']
-    shapes = archidb.leaf_curvature_data('Rht3')
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
-    #adapt reconstruction
-    # TO DO get nff probabilities for main stem from tillering data ?
-    if not as_pgen:
-        primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')}
-        pgen = new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop)   
-        # plantes a 12 talles
-        # pgen['MS_leaves_number_probabilities'] = {'12':1.0}        
-    #generate reconstruction
-    devT = plantgen_to_devT(pgen)
-    # sans angles
-    # adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
-    
-    leaves = None
-    # avec angles
-    #leaves = fit_leaves(shapes, disc_level)
-    
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22, face_up=face_up, classic=classic)
-   
-    return pgen, adel, domain, domain_area, convUnit, nplants
-    
-reconst_db['Rht3'] = Rht3_2010
 
 def Rht3_nomouche_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True):
 
@@ -555,38 +541,32 @@ def Rht3_nomouche_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=F
     
 reconst_db['Rht3_nomouche'] = Rht3_nomouche_2010
 
-def Tremie12(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20):
+def Tremie12(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7):
 #BUG: nplants not generated as expected for this genotype !
     pgen = archidb.Tremie_2011_plantgen()
-    #tdata = archidb.Tillering_data_Tremie1_2011_2012()['tillering'] #old
-    #tdata = tdata[tdata.Var=='Tremie'] #old
     tdb = archidb.Tillering_data_Tremie12_2011_2012()
+    xy, sr, bins = archidb.leaf_curvature_data('Tremie')
+    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     pdata = archidb.Plot_data_Tremie_2011_2012()
-    #shapes = archidb.leaf_curvature_data('Tremie')
+
     #tdata['T5']=0; tdata['T6']=0
     #adapt reconstruction
     # TO DO get nff probabilities for main stem from tillering data ?
     if not as_pgen:
         #primary_proba={k:tdata[k].values for k in ('T1','T2','T3','T4')} #old
         tdata = tdb['emission_probabilities']
-        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4','T5','T6')}
+        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
         pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)
     #generate reconstruction
     devT = plantgen_to_devT(pgen)
-    #sans angles
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample)
-    
-    leaves = None
-    # avec angles
-    #leaves = fit_leaves(shapes, disc_level)
-    
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22)
+
+    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), incT=22, dinT=22)
+    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves=leaves, incT=22, dinT=22)
     
     return pgen, adel, domain, domain_area, convUnit, nplants
     
 reconst_db['Tremie12'] = Tremie12
-
+'''
 def Tremie12_nogel(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20):
 #BUG: nplants not generated as expected for this genotype !
     pgen = archidb.Tremie_2011_plantgen()
@@ -612,7 +592,6 @@ def Tremie12_nogel(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False
     
 reconst_db['Tremie12_nogel'] = Tremie12_nogel
 
-
 def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20):
     # on prend le pgen de tremie1
     pgen = archidb.Tremie_2011_plantgen()
@@ -634,7 +613,7 @@ def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     return pgen, adel, domain, domain_area, convUnit, nplants
     
 reconst_db['Tremie13'] = Tremie13
-
+'''
  
 age_at_application = {'Mercia_2010': {'2011-04-19': 1166,
                                       '2011-05-11' : 1500}}

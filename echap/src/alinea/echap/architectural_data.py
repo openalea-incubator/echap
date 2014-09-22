@@ -494,9 +494,9 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
         # XY
-        #dfxy = xy_reader(data_file_xydb)
+        dfxy = xy_reader(data_file_xydb)
         #dfxy = dfxy[dfxy['variety'].isin(['Mercia','Rht3'])]
-        dfxy = dfxy.reset_index()
+        #dfxy = dfxy.reset_index()
         # SR
         dfsr = sr_reader(data_file_srdb)
         
