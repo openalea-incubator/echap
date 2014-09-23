@@ -59,13 +59,13 @@ def Tremie_2011_plantgen():
     dimT = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
     inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
     return plantgen_as_dict(inputs, dynT, dimT)
-'''
+
 def Tremie_2012_plantgen():
-    #dynT = shared_data(alinea.echap, 'Tremie2_dynT_user.csv')
+    dynT = shared_data(alinea.echap, 'Tremie2_dynT_user.csv')
     dimT = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
-    #inputs = shared_data(alinea.echap, 'Tremie2_plantgen_inputs_MINnew.py')
+    inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
     return plantgen_as_dict(inputs, dynT, dimT)
-'''   
+  
 def HS_data():
     fn = shared_data(alinea.echap, 'HS_data_Mercia_Rht3_2010_2011.csv')
     #fn = shared_data(alinea.echap, 'HS_data_Tremie1_2011_2012.csv')
@@ -182,6 +182,14 @@ def mat_data():
     d = {'Mercia':pandas.DataFrame({'TT':[1137,1281,1796],'light0':[],'light20':[]}),
          'Rht3': pandas.DataFrame({'TT':[1137,1281,1796],'light0':[],'light20':[]}),
          'Tremie': pandas.DataFrame({'TT':[1260,1550],'light0':[0.177,0.045],'light20':[0.633,0.141]})}
+    return d
+    
+#
+# leaf surface cm2
+#
+def surface_data():
+    d = {'Tremie12': pandas.DataFrame({'TT':[905.5,1160.1,1239.4,1514.6],'surface':[9.27,21.72,28.03,30.55]}),
+    'Tremie13': pandas.DataFrame({'TT':[941,1096.3],'surface':[9.35,13.15]})}
     return d
 
 #GL/HS/SSI
