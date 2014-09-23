@@ -63,9 +63,10 @@ def test_axis_dynamics(name='Mercia', color='g'):
         plant_density = pgen['plants_density']
         ears_density = pgen['ears_density']
         ears_per_plant = float(ears_density) / plant_density
-        v=list(pgen['MS_leaves_number_probabilities'].values())
-        k=list(pgen['MS_leaves_number_probabilities'].keys())
-        nff = int(k[v.index(max(v))]) # key of maximal value
+        #v=list(pgen['MS_leaves_number_probabilities'].values())
+        #k=list(pgen['MS_leaves_number_probabilities'].keys())
+        #nff = int(k[v.index(max(v))]) # key of maximal value
+        nff = sum([int(k)*v for k,v in pgen['MS_leaves_number_probabilities'].iteritems()]) #moyenne ponderee
         m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
         fit = m.axis_dynamics(plant_density = plant_density)
         return fit
