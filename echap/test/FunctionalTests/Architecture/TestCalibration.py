@@ -49,14 +49,12 @@ def test_axis_dynamics(name='Mercia', color='g'):
     
     if name is 'Mercia' or 'Mercia_maq1':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
-        print obs
-    elif name is 'Rht3' or 'Rht3_maq1':
+    if name is 'Rht3' or 'Rht3_maq1':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
-        print obs
-    elif name is 'Tremie12':
-        obs = archidb.Plot_data_Tremie_2011_2012()[name]
-    elif name is 'Tremie13':
-        obs = archidb.Plot_data_Tremie_2012_2013()[name]
+    if name is 'Tremie12':
+        obs = archidb.Plot_data_Tremie_2011_2012()
+    if name is 'Tremie13':
+        obs = archidb.Plot_data_Tremie_2012_2013()
     
     def _getfit(pgen):
         primary_proba = pgen['decide_child_axis_probabilities']
@@ -80,7 +78,11 @@ def test_axis_dynamics(name='Mercia', color='g'):
     new_fit.plot('HS', 'total', style='--'+color, label='Total '+name)
     new_fit.plot('HS', 'primary', style='-'+color, label='Primary '+name)
     new_fit.plot('HS', 'others', style=':'+color, label= 'Others '+name)
-    plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], 'o'+color) 
+
+    if 'plant_density_at_emergence' in obs:
+        plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], 'o'+color) 
+    else :
+        plt.plot([1,13],[obs['sowing_density'],obs['ear_density_at_harvest']], 'o'+color) 
         
     plt.xlabel("HS")
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
