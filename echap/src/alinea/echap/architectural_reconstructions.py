@@ -9,6 +9,7 @@ from copy import deepcopy
 from alinea.adel.astk_interface import AdelWheat
 from alinea.adel.geometric_elements import Leaves
 from alinea.adel.Stand import AgronomicStand
+from alinea.adel.WheatTillering import WheatTillering
 
 import alinea.echap.architectural_data as archidb
 
@@ -109,14 +110,18 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         pgenc = deepcopy(pgen)
+        #temporary hack, nff should come from data
+        nff = sum([int(k)*v for k,v in pgen['MS_leaves_number_probabilities'].iteritems()]) 
         ears_per_plant = tdata['ears_per_plant']
         plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
         #nff = float(tdata['emission_probabilities']['Nff'].values)
         # pgen adapt
-        pgenc['decide_child_axis_probabilities'] = primary_proba
-        pgenc['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
-        pgenc['plants_number'] = nplants
-        pgenc['ears_density'] = pdata['ear_density_at_harvest']
+        m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
+        pgenc.update(m.to_pgen(nplants,plant_density_at_harvest))
+        #pgenc['decide_child_axis_probabilities'] = primary_proba
+        #pgenc['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
+        #pgenc['plants_number'] = nplants
+        #pgenc['ears_density'] = pdata['ear_density_at_harvest']
         #hack for removing tillers
         pgenc['delais_TT_stop_del_axis'] -= dTT_stop
         return pgenc
