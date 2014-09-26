@@ -20,6 +20,14 @@ def Rht3_2010_fitted_dimensions():
         fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
     return dim
+    
+def Tremie12_fitted_dimensions():
+    '''dim = {}
+    for nff in [12,13]:
+        fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)'''
+    dim = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
+    return dim
 
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
