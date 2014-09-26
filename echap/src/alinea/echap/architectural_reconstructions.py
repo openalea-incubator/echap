@@ -148,14 +148,15 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     
     dimT = archidb.Mercia_2010_fitted_dimensions()[12]
     dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
-    GL = archidb.GL_number()['Mercia'].ix[:,['TT','12']].to_dict('list')
+    GL = archidb.GL_number()['Mercia'].ix[:,['TT','12']]
+    GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
     GL = dict(zip(GL['TT'],GL['12']))
     pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
     
-    #
+    # complete plantgen default
     dtt = 600
     dtt -= dTT_stop
-    pgen.update({'delais_TT_stop_del_axis':dtt})
+    pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
     
     
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
