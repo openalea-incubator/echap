@@ -22,10 +22,8 @@ plt.ion()
 
 def get_reconstruction(name='Mercia', **args):
     fun = reconst_db[name]
-    wfit, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants = fun(**args)
-    pgen = pars['config']
-    #return pgen, adel, domain, domain_area, convUnit, nplants
-    return wfit, pgen, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+    pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants = fun(**args)
+    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
 '''
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
@@ -45,7 +43,9 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     
 def test_axis_dynamics(name='Mercia', name_obs='Mercia', color='r'):
 
-    wfit, pgen, _, _, _, _, _, _ = get_reconstruction(name)
+    pars, _, _, _, _, _ = get_reconstruction(name)
+    
+    wfit = pars['tillering_model']; pgen = pars['config']
     
     if name_obs is "Mercia":
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
@@ -108,7 +108,8 @@ def compare_LAI(name='Mercia', name_obs='Mercia', dTT_stop=0, original=False, n=
     from math import *
     import numpy as np
 
-    _, pgen, pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
+    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
+    pgen = pars['config']
     sim = simLAI(adel, domain_area, convUnit, nplants)
     sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     label = 'LAI vert simule '+name_obs
