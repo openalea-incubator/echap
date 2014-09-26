@@ -13,19 +13,11 @@ from alinea.adel.WheatTillering import WheatTillering
 
 import alinea.echap.architectural_data as archidb
 
+import alinea.adel.plantgen_extensions as pgen_ext
+
 #generic function to be moved to adel
 
-def plantgen_to_devT(pgen):
-    """ Creates devT tables from plantgen dict
-    """
-    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data, plantgen2adel
-    from alinea.adel.AdelR import devCsv
-    
-    axeT_, dimT_, phenT_, phenT_abs, dimT_abs, dynT_, phenT_first, HS_GL_SSI_T, tilleringT, cardinalityT, config = gen_adel_input_data(**pgen)
-    
-    axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
-    devT = devCsv(axeT, dimT, phenT)
-    return devT
+
     
 def plantgen_to_devT_comp(pgen_pars):
     from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
@@ -133,35 +125,54 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         
 reconst_db={}
 
+dynT_MS_pars = {'a_cohort':0.009380186,
+            'TT_col_0':101.4740799,
+            'TT_col_N_phytomer_potential':1380.766379,
+            'n0':4.7,'n1':2.5,'n2':5}
+
 
 # NORMAL
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
 
-    pgen = archidb.Mercia_2010_plantgen()
+    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+    
+    ms_nff_probas = tdb['nff_probabilities']
+    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
+    ears_per_plant = tdb['ears_per_plant']
+    plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
+    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    
+    wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
+    pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
+    
+    dimT = archidb.Mercia_2010_fitted_dimensions()[12]
+    dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
+    GL = archidb.GL_number()['Mercia'].ix[:,['TT','12']].to_dict('list')
+    GL = dict(zip(GL['TT'],GL['12']))
+    pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+    
+    #
+    dtt = 600
+    dtt -= dTT_stop
+    pgen.update({'delais_TT_stop_del_axis':dtt})
+    
+    
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
+    
     
     stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
     #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
     #tdata['MB']=0.9 
 
-    #adapt reconstruction
-    # TO DO get nff probabilities for main stem from tillering data ?
-    if not as_pgen:
-        tdata = tdb['emission_probabilities']
-        #handle fly damages to MB  by reducing proba of appearance of T2 (originally equal to 1) and simplify TC
-        # BUG : MB is equal to 1 => should return  less than 1
-        primary_proba={k:tdata[k] for k in ('T1','T3','T4')}
-        #primary_proba['T2']= tdata['MB'].values + tdata['TC'].values
-        pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
     #generate reconstruction
-    devT = plantgen_to_devT(pgen)
+    devT, pars = pgen_ext.plantgen_to_devT(pgen)
+    pars.update({'tillering_model':wfit})
 
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
+    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
-    return pgen, adel, domain, domain_area, convUnit, nplants
+    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
 reconst_db['Mercia'] = Mercia_2010
 

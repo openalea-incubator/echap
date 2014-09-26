@@ -5,7 +5,14 @@ from openalea.deploy.shared_data import shared_data
 import alinea.echap
 from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
+#----------------------------------------------------- Fitted dimension
 
+def Mercia_2010_fitted_dimensions():
+    dim = {}
+    for nff in [11,12,13]:
+        fn = shared_data(alinea.echap, 'Mercia_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)
+    return dim
 
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
