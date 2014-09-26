@@ -98,7 +98,7 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     # creation de la colonne age et du selecteur d'age 
     
     
-    
+'''   
 # macros for general modification   
 def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         pgenc = deepcopy(pgen)
@@ -117,7 +117,7 @@ def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
         #hack for removing tillers
         pgenc['delais_TT_stop_del_axis'] -= dTT_stop
         return pgenc
-        
+'''     
         
 # Standard echap reconstruction protocol for plant development and axis dynamic       
 #def echap_development(nplants, pgen, primary_proba, tdata, pdata, dTT_stop)
@@ -129,7 +129,6 @@ dynT_MS_pars = {'a_cohort':0.009380186,
             'TT_col_0':101.4740799,
             'TT_col_N_phytomer_potential':1380.766379,
             'n0':4.7,'n1':2.5,'n2':5}
-
 
 # NORMAL
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
@@ -157,49 +156,60 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     dtt = 600
     dtt -= dTT_stop
     pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
-    
-    
+       
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    
-    
+        
     stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
-    #pte bidouille pour modifier MB=1 qui ne prend pas en compte les effets de la mouche
-    #tdata['MB']=0.9 
 
-    #generate reconstruction
+    #generate reconstruction   
     devT, pars = pgen_ext.plantgen_to_devT(pgen)
     pars.update({'tillering_model':wfit})
 
     adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+    return wfit, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
 reconst_db['Mercia'] = Mercia_2010
 
 def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, face_up=False, classic=False):
 
-    pgen = archidb.Rht3_2010_plantgen()
+    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+    
+    ms_nff_probas = tdb['nff_probabilities']
+    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
+    ears_per_plant = tdb['ears_per_plant']
+    plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
+    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    
+    wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
+    pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
+    
+    dimT = archidb.Rht3_2010_fitted_dimensions()[11]
+    dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
+    GL = archidb.GL_number()['Rht3'].ix[:,['TT','11']]
+    GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
+    GL = dict(zip(GL['TT'],GL['11']))
+    pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+    
+    # complete plantgen default
+    dtt = 600
+    dtt -= dTT_stop
+    pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
+       
     xy, sr, bins = archidb.leaf_curvature_data('Rht3')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
+
     stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
-    #adapt reconstruction
-    # TO DO get nff probabilities for main stem from tillering data ?
-    if not as_pgen:
-        tdata = tdb['emission_probabilities']
-        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
-        pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop)   
-        # plantes a 12 talles
-        # pgen['MS_leaves_number_probabilities'] = {'12':1.0}        
+     
     #generate reconstruction
-    devT = plantgen_to_devT(pgen)
-    
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'], inter_row=pdata['inter_row'], seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
-    adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
+    devT, pars = pgen_ext.plantgen_to_devT(pgen)
+    pars.update({'tillering_model':wfit})
+
+    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
    
-    return pgen, adel, domain, domain_area, convUnit, nplants
+    return wfit, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
 reconst_db['Rht3'] = Rht3_2010
 
@@ -616,7 +626,7 @@ def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     if not as_pgen:
         tdata = tdb['emission_probabilities']
         tdb['ears_per_plant'] = 1.*pdata['ear_density_at_harvest' ]/pdata['sowing_density']
-        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4','T5')}
+        primary_proba={k:tdata[k] for k in ('T1','T2','T3','T4')}
         pgen = new_pgen(pgen, nplants, primary_proba, tdb, pdata, dTT_stop) 
         
     pgen['MS_leaves_number_probabilities'] = {'11':0.71,'12':0.29}

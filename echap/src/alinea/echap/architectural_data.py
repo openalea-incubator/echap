@@ -13,6 +13,13 @@ def Mercia_2010_fitted_dimensions():
         fn = shared_data(alinea.echap, 'Mercia_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
     return dim
+    
+def Rht3_2010_fitted_dimensions():
+    dim = {}
+    for nff in [11,12]:
+        fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)
+    return dim
 
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
@@ -34,8 +41,7 @@ GL_Rht3 = {'GL_number' : {1732.1: 3.88352941176471, 1818.05:2.68005882352941,195
 GL_Tremie = {'GL_number' : {1483.95: 4.9025, 1568.7:4.73684210526316,
              1659.1:4.16814814814815, 1797.95:3.43777777777778,
              1905:2.35888888888889,2084.95:0.85578947368421,2150:0.00},
-            'TT_col_break' : 0.0}            
-'''  
+            'TT_col_break' : 0.0} '''  
   
 def Mercia_2010_plantgen():
     dynT = shared_data(alinea.echap, 'Mercia_dynT_user.csv')
