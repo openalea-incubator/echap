@@ -97,40 +97,53 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
     
-    
-'''   
-# macros for general modification   
-def new_pgen(pgen, nplants, primary_proba, tdata, pdata, dTT_stop):
-        pgenc = deepcopy(pgen)
-        #temporary hack, nff should come from data
-        nff = sum([int(k)*v for k,v in pgen['MS_leaves_number_probabilities'].iteritems()]) 
-        ears_per_plant = tdata['ears_per_plant']
-        plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
-        #nff = float(tdata['emission_probabilities']['Nff'].values)
-        # pgen adapt
-        m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
-        pgenc.update(m.to_pgen(nplants,plant_density_at_harvest))
-        #pgenc['decide_child_axis_probabilities'] = primary_proba
-        #pgenc['plants_density'] = plant_density_at_harvest #Mariem used plant_density_at_emergence
-        #pgenc['plants_number'] = nplants
-        #pgenc['ears_density'] = pdata['ear_density_at_harvest']
-        #hack for removing tillers
-        pgenc['delais_TT_stop_del_axis'] -= dTT_stop
-        return pgenc
-'''     
-        
+            
 # Standard echap reconstruction protocol for plant development and axis dynamic       
 #def echap_development(nplants, pgen, primary_proba, tdata, pdata, dTT_stop)
     #ici include mortality
         
 reconst_db={}
 
-dynT_MS_pars = {'a_cohort':0.009380186,
+dynT_MS = {'a_cohort':0.009380186,
             'TT_col_0':101.4740799,
-            'TT_col_N_phytomer_potential':1380.766379,
+            'TT_col_N_phytomer_potential':1380.766379, # Will be recomputed as a function of Nff
             'n0':4.7,'n1':2.5,'n2':5}
 
-# NORMAL
+def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green_leaves, dTT_stop=0):
+    """ Construct devT tables from models, considering one reconstruction per nff (ie composite)
+    """
+    from alinea.adel.AdelR import devCsv
+    
+    pgens = Tillering.to_pgen(nplants, density)
+    adelT = {}
+    pars = {}
+    
+    for k in pgens:
+        dimT = dimensions[k]
+        dynamic['TT_col_N_phytomer_potential'] = dynamic['TT_col_0'] + k * 1. / dynamic['a_cohort']
+        dynT = pgen_ext.dynT_user(dynamic, Tillering.primary_tiller_probabilities.keys())
+        GL = green_leaves.ix[:,['TT',str(k)]]
+        GL = GL.ix[GL['TT'] > dynamic['TT_col_N_phytomer_potential'],:]
+        GL = dict(zip(GL['TT'],GL[str(k)]))
+        pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+        # complete plantgen default
+        dtt = 600
+        dtt -= dTT_stop
+        pgens[k].update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
+        adelT[k], pars[k] = pgen_ext.build_tables(pgens[k])
+        axeT, dimT, phenT = adelT[k]
+        tx = k * 10000
+        axeT['id_dim'] = axeT['id_dim']+tx; dimT['id_dim'] = dimT['id_dim']+tx
+        axeT['id_phen'] = axeT['id_phen']+tx; phenT['id_phen'] = phenT['id_phen']+tx
+    
+    axeT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][0] for k in adelT])
+    dimT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][1] for k in adelT])
+    phenT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][2] for k in adelT])
+    
+    return devCsv(axeT, dimT, phenT), pars
+                
+            
+# NORMAL : composite with raw obaservations
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
 
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
@@ -143,28 +156,20 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     
     wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
-    pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
+    dimT = archidb.Mercia_2010_fitted_dimensions()
+    GL = archidb.GL_number()['Mercia']
     
-    dimT = archidb.Mercia_2010_fitted_dimensions()[12]
-    dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
-    GL = archidb.GL_number()['Mercia'].ix[:,['TT','12']]
-    GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
-    GL = dict(zip(GL['TT'],GL['12']))
-    pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
-    
-    # complete plantgen default
-    dtt = 600
-    dtt -= dTT_stop
-    pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
-       
+    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
+
+    pars.update({'tillering':wfit})
+        
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
         
-    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
+    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pdata['plant_density_at_emergence'],inter_row=pdata['inter_row'])
 
-    #generate reconstruction   
-    devT, pars = pgen_ext.plantgen_to_devT(pgen)
-    pars.update({'tillering_model':wfit})
+    
+
 
     adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
@@ -187,7 +192,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
     
     dimT = archidb.Rht3_2010_fitted_dimensions()[11]
-    dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
+    dynT = pgen_ext.dynT_user(dynT_MS, primary_emission.keys())
     GL = archidb.GL_number()['Rht3'].ix[:,['TT','11']]
     GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
     GL = dict(zip(GL['TT'],GL['11']))

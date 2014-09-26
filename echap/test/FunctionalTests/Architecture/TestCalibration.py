@@ -109,7 +109,7 @@ def compare_LAI(name='Mercia', name_obs='Mercia', dTT_stop=0, original=False, n=
     import numpy as np
 
     pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
-    pgen = pars['config']
+    pgen = pars[12]['config']
     sim = simLAI(adel, domain_area, convUnit, nplants)
     sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     label = 'LAI vert simule '+name_obs
