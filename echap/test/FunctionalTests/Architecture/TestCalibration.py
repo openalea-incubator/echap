@@ -22,14 +22,16 @@ plt.ion()
 
 def get_reconstruction(name='Mercia', **args):
     fun = reconst_db[name]
-    pgen, adel, domain, domain_area, convUnit, nplants = fun(**args)
-    return pgen, adel, domain, domain_area, convUnit, nplants
-
+    wfit, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants = fun(**args)
+    pgen = pars['config']
+    #return pgen, adel, domain, domain_area, convUnit, nplants
+    return wfit, pgen, pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+'''
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
-    pgen, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
-    return pgen
-
+    wfit, _, _, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
+    return wfit
+'''
 #-------------------------------------------------------------------------------------   
 # test new tillering parametrisation against original one by Mariem and data
 #
@@ -41,29 +43,25 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
 # Very strange simulation for Tremie
 #    
     
-def test_axis_dynamics(name='Mercia', color='g'):
-# todo : add comparison to primary emission
+def test_axis_dynamics(name='Mercia', name_obs='Mercia', color='r'):
 
-    #pgen = get_pgen(name, original=True)
-    newpgen = get_pgen(name, original=False)
+    wfit, pgen, _, _, _, _, _, _ = get_reconstruction(name)
     
-    if name is 'Mercia' or 'Mercia_maq1':
+    if name_obs is "Mercia":
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
-    if name is 'Rht3' or 'Rht3_maq1':
+    elif name_obs is 'Rht3':
         obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
-    if name is 'Tremie12':
+    elif name_obs is 'Tremie12':
         obs = archidb.Plot_data_Tremie_2011_2012()
-    if name is 'Tremie13':
+    else:
         obs = archidb.Plot_data_Tremie_2012_2013()
-    
+
+    '''
     def _getfit(pgen):
         primary_proba = pgen['decide_child_axis_probabilities']
         plant_density = pgen['plants_density']
         ears_density = pgen['ears_density']
         ears_per_plant = float(ears_density) / plant_density
-        #v=list(pgen['MS_leaves_number_probabilities'].values())
-        #k=list(pgen['MS_leaves_number_probabilities'].keys())
-        #nff = int(k[v.index(max(v))]) # key of maximal value
         nff = sum([int(k)*v for k,v in pgen['MS_leaves_number_probabilities'].iteritems()]) #moyenne ponderee
         m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
         fit = m.axis_dynamics(plant_density = plant_density)
@@ -73,11 +71,12 @@ def test_axis_dynamics(name='Mercia', color='g'):
     #fit = _getfit(pgen)
     #newfit
     new_fit = _getfit(newpgen)
-
-    #fit.plot('HS', ['total','primary','others'], style=['--r','--g','--b'])
-    new_fit.plot('HS', 'total', style='--'+color, label='Total '+name)
-    new_fit.plot('HS', 'primary', style='-'+color, label='Primary '+name)
-    new_fit.plot('HS', 'others', style=':'+color, label= 'Others '+name)
+    '''
+    plant_density = pgen['plants_density']
+    fit = wfit.axis_dynamics(plant_density = plant_density)
+    fit.plot('HS', 'total', style='--'+color, label='Total '+name)
+    fit.plot('HS', 'primary', style='-'+color, label='Primary '+name)
+    fit.plot('HS', 'others', style=':'+color, label= 'Others '+name)
 
     if 'plant_density_at_emergence' in obs:
         plt.plot([1,13],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], 'o'+color) 
@@ -86,9 +85,8 @@ def test_axis_dynamics(name='Mercia', color='g'):
         
     plt.xlabel("HS")
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-    
-    #return fit, new_fit
-    return new_fit
+
+    return fit
 
 #------------------------------------------------------------------------------------- 
 # LAI
@@ -105,12 +103,12 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=False, n=30, color='r', **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
+def compare_LAI(name='Mercia', name_obs='Mercia', dTT_stop=0, original=False, n=30, color='r', **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
 
     from math import *
     import numpy as np
 
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
+    _, pgen, pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
     sim = simLAI(adel, domain_area, convUnit, nplants)
     sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     label = 'LAI vert simule '+name_obs
@@ -136,15 +134,7 @@ def compare_LAI(name='Mercia_maq1', name_obs='Mercia', dTT_stop=0, original=Fals
     plt.xlabel("HS")
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
-    #Graph LAI_vert et LAI_tot en fonction des TT pour Corinne
-    '''sim.plot('ThermalTime','LAI_vert', color='g')
-    sim.plot('ThermalTime','LAI_tot', color='r')
-    plt.title('Mercia 2010/2011')
-    plt.legend(("LAI_vert", "LAI_tot"), 'best')
-    plt.show()'''
-    
-    #return sim
-    return obs
+    return sim
     
 #------------------------------------------------------------------------------------- 
 # Hauteur de couvert simule
