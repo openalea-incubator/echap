@@ -29,6 +29,25 @@ def Tremie12_fitted_dimensions():
     dim = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
     return dim
 
+# ---------------------------------------------------- Fitted HS = f(TT)
+
+class HaunStage(object):
+    """ Handle HaunStage = f (ThermalTime) fits
+    """
+    
+    def __init__(self, a_cohort = 1. / 110., TT_col_0 = 0):
+        self.a_cohort = a_cohort
+        self.TT_col_0 = TT_col_0
+        
+    def __call__(self, TT):
+        return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
+
+HS_converter = {'Mercia': HaunStage(0.009380186, 101.4740799),
+                'Rht3': HaunStage(0.008323522,65.00120875),
+                'Tremie12': HaunStage(0.010736,236.2589295),
+                'Tremie13': HaunStage(0.009380186, 101.4740799) # not fitted, use Mercia Fit
+                }
+
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
     d={}
@@ -457,6 +476,8 @@ def Tillering_data_Tremie13_2012_2013():
 
 # Processing of raw database to get data reabale or adel
 
+# TO DO : automatic selection of tol_med = f(ntraj), based on histogram approx of normal distribution
+
 
 def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1):
     """
@@ -556,5 +577,34 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
     return xy, sr, bins
     
 
-       
-
+#
+# Elaborated data
+#
+def PlantDensity():
+    # Mercia /rht3
+    ld = []
+    for g in ('Mercia','Rht3'):
+        pdata = Plot_data_Mercia_Rht3_2010_2011()[g]
+        tdata = Tillering_data_Mercia_Rht3_2010_2011()[g]
+        hs_conv = HS_converter[g]
+        date,TT, density = [],[], []
+        events = ['sowing', 'emergence', 'harvest']
+        density = [pdata['sowing_density'], 
+                   pdata['plant_density_at_emergence'],
+                   pdata['ear_density_at_harvest'] / tdata['ears_per_plant']]
+        for w in events:
+            date.append(pdata['code_date'][w])
+            TT.append(pdata['TT_date'][pdata['code_date'][w]])
+        # add survival data
+        for i,d in enumerate(tdata['plant_survival']['Date']):
+            lab = 'd%d'%(d)
+            events.append(lab)
+            date.append(tdata['date_code'][lab])
+            TT.append(tdata['TT_code'][lab])
+            density.append(pdata['plant_density_at_emergence'] * tdata['plant_survival']['viability'][i])
+        df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+        df['Var'] = g
+        df['HS'] = hs_conv(TT)
+        df = df.sort('TT')
+        ld.append(df)
+    return ld
