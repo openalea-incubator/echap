@@ -47,7 +47,7 @@ def check_primary_tillers(devT):
     probas = {n:tillers.count(n) * 1.0 / len(ms) for n in set(tillers)}
     return counts, probas
     
-#---
+'''
 def sen(pgen):
     """ Creates devT tables from plantgen dict
     """
@@ -60,18 +60,15 @@ def sen(pgen):
     # HS_GL_SSI_T.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/HS_GL_SSI_T_test.csv')
     
     return HS_GL_SSI_T
-#---
-
-
+'''
    
 def setAdel(**kwds):    
      
     adel = AdelWheat(**kwds)    
     return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
-    
-#---------- reconstructions 
 
+#---------- reconstructions 
 
 # leaf geometry
 
@@ -108,18 +105,39 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 #
 #
 # use mean plant density and/or density at the end as fits
+import matplotlib.pyplot as plt
+plt.ion()
+
 density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],                                           'density':[203,203,153,153]}),
                 'Rht3': pandas.DataFrame({'HS':[0,6,13,20],                                  'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],                                  'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],                                      'density':[233,233]})}
 
 def density_plot():
-    density = archidb.PlantDensity()
+    
+    density = archidb.PlantDensity()  
     grouped = density.groupby('Var')
-    grouped.plot('HS','density', ylim=[0,350],style='p')
-    for g in density_fits:
-        density_fits[g].plot('HS', 'density', style='-')
 
+    df_mercia = density['Var'] == 'Mercia'; df_rht3 = density['Var'] == 'Rht3'; df_tremie12 = density['Var'] == 'Tremie12'; df_tremie13 = density['Var'] == 'Tremie13'; dens_mercia = density[df_mercia]; dens_rht3 = density[df_rht3]; dens_tremie12 = density[df_tremie12]; dens_tremie13 = density[df_tremie13]
+
+    plt.errorbar(dens_mercia['HS'], dens_mercia['density'], yerr=dens_mercia['SD'], fmt='or', label = 'Mercia density')
+    plt.errorbar(dens_rht3['HS'], dens_rht3['density'], yerr=dens_rht3['SD'], fmt='og', label = 'Rht3 density')
+    plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
+    plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
+   
+    for g in density_fits:
+        if g=='Mercia':
+            color='r'
+        elif g=='Rht3':
+            color='g'
+        elif g=='Tremie12':
+            color='b'
+        else:
+            color='m'
+        density_fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
+      
+    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
     
 reconst_db={}
@@ -188,9 +206,6 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
         
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pdata['plant_density_at_emergence'],inter_row=pdata['inter_row'])
 
-    
-
-
     adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
     return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
@@ -209,28 +224,18 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     
     wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
-    pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
+    dimT = archidb.Rht3_2010_fitted_dimensions()
+    GL = archidb.GL_number()['Rht3']
     
-    dimT = archidb.Rht3_2010_fitted_dimensions()[11]
-    dynT = pgen_ext.dynT_user(dynT_MS, primary_emission.keys())
-    GL = archidb.GL_number()['Rht3'].ix[:,['TT','11']]
-    GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
-    GL = dict(zip(GL['TT'],GL['11']))
-    pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
     
-    # complete plantgen default
-    dtt = 600
-    dtt -= dTT_stop
-    pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
+    pars.update({'tillering':wfit})
        
     xy, sr, bins = archidb.leaf_curvature_data('Rht3')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
 
-    stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
-     
-    #generate reconstruction
-    devT, pars = pgen_ext.plantgen_to_devT(pgen)
-    pars.update({'tillering_model':wfit})
+    #stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
+    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pdata['plant_density_at_emergence'],inter_row=pdata['inter_row'])
 
     adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up)
    
@@ -430,7 +435,7 @@ def Mercia_composite_3_2010(nplants=31, nsect=3, seed=1, sample='sequence', as_p
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
     
     return pgen_2, adel, domain, domain_area, convUnit, nplants
-''' 
+
 def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, face_up=False, aborting_tiller_reduction = 1.0, classic=False, **kwds):
     from alinea.adel.AdelR import devCsv
     
@@ -485,7 +490,7 @@ def Rht3_composite_1_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves=leaves, aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up,**kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
-''' 
+
 def Rht3_composite_2_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True, aborting_tiller_reduction = 1.0, **kwds):
     from alinea.adel.AdelR import devCsv
     
@@ -543,7 +548,7 @@ def Rht3_composite_2_2010(nplants=24, nsect=3, seed=1, sample='sequence', as_pge
     adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, sowing_density=pdata['plant_density_at_emergence'], plant_density=plant_density, inter_row=pdata['inter_row'], seed=seed, sample=sample, dynamic_leaf_db=True, leaf_db=leaves, geoLeaf=geoLeaf(), aborting_tiller_reduction=aborting_tiller_reduction, incT=22, dinT=22, face_up=face_up, **kwds)
     
     return pgen_1, adel, domain, domain_area, convUnit, nplants
-'''
+
 
 # lancement simulations maquette interception Nathalie
 reconst_db['Mercia_maq1'] = Mercia_composite_2010
@@ -551,7 +556,7 @@ reconst_db['Mercia_maq1'] = Mercia_composite_2010
 #reconst_db['Mercia_maq3'] = Mercia_composite_3_2010
 reconst_db['Rht3_maq1'] = Rht3_composite_1_2010
 #reconst_db['Rht3_maq2'] = Rht3_composite_2_2010
-
+'''
 #---
 
 def Rht3_nomouche_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=20, face_up=True):
@@ -592,34 +597,19 @@ def Tremie12(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     
     wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
-    pgen = wfit.to_pgen(nplants,plant_density_at_harvest)
-    
-    #dimT = archidb.Tremie12_fitted_dimensions()[13]
     dimT = archidb.Tremie12_fitted_dimensions()
-    dynT = pgen_ext.dynT_user(dynT_MS_pars, primary_emission.keys())
-    
-    GL = archidb.GL_number()['Tremie12'].ix[:,['TT','13']]
-    GL = GL.ix[GL['TT'] > dynT_MS_pars['TT_col_N_phytomer_potential'],:]
-    GL = dict(zip(GL['TT'],GL['13']))
-    pgen.update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
-    
-    # complete plantgen default
-    dtt = 600
-    dtt -= dTT_stop
-    pgen.update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
-    
+    GL = archidb.GL_number()['Tremie12']
+
+    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
+
+    pars.update({'tillering':wfit})    
+      
     xy, sr, bins = archidb.leaf_curvature_data('Tremie')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     
-    #stand = AgronomicStand(sowing_density=pdata['plant_density_at_emergence'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row']) # => pas de pdata['plant_density_at_emergence']
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
 
-    #generate reconstruction
-    devT, pars = pgen_ext.plantgen_to_devT(pgen)
-    pars.update({'tillering_model':wfit})
-
-    #adel, domain, domain_area, convUnit, nplants = setAdel(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22)
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22)
+    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22)
     
     return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     

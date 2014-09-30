@@ -132,6 +132,19 @@ def HS_data():
 #
 # Plot data
 #
+from math import sqrt
+def valSD(listeVal):
+    nombre = 0
+    sommeValeurs = 0.0
+    sommeCarres = 0.0
+    for x in listeVal:
+        nombre += 1
+        sommeValeurs += x
+        sommeCarres += x * x
+    mean = sommeValeurs / nombre
+    SD = sqrt(sommeCarres / nombre - mean * mean)
+    return SD
+
 def Plot_data_Mercia_Rht3_2010_2011():
     """
     Plot data for Boigneville 2010-2011 
@@ -159,6 +172,7 @@ def Plot_data_Mercia_Rht3_2010_2011():
         'inter_row': 0.15}}
     for g in ('Mercia','Rht3'):
         d[g]['ear_density_at_harvest'] = numpy.mean(d[g]['raw_ear_density_at_harvest'])
+        d[g]['ear_density_at_harvest_SD'] = valSD(d[g]['raw_ear_density_at_harvest'])
     return d
 
 def Plot_data_Tremie_2011_2012():
@@ -207,7 +221,8 @@ def Plot_data_Tremie_2012_2013():
    'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
     'inter_row':0.15
     }
-    d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
+    d['ear_density_at_harvest'] = numpy.mean(d['raw_ear_density_at_harvest'])
+    d['ear_density_at_harvest_SD'] = valSD(d['raw_ear_density_at_harvest'])
     d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
    
@@ -581,7 +596,7 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
 
 #
 # Elaborated data
-#
+#    
 def PlantDensity():
     # Mercia /rht3
     ld = []
@@ -589,11 +604,18 @@ def PlantDensity():
         pdata = Plot_data_Mercia_Rht3_2010_2011()[g]
         tdata = Tillering_data_Mercia_Rht3_2010_2011()[g]
         hs_conv = HS_converter[g]
-        date,TT, density = [],[], []
+        date,TT,density,SD = [],[],[],[]
         events = ['sowing', 'emergence', 'harvest']
         density = [pdata['sowing_density'], 
                    pdata['plant_density_at_emergence'],
                    pdata['ear_density_at_harvest'] / tdata['ears_per_plant']]
+                   
+        ear_density_new=[]
+        for i,item in enumerate(pdata['raw_ear_density_at_harvest']):
+            lab = pdata['raw_ear_density_at_harvest'][i]/tdata['ears_per_plant']
+            ear_density_new.append(lab)
+        SD = [0,0,valSD(ear_density_new)]
+             
         for w in events:
             date.append(pdata['code_date'][w])
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
@@ -604,16 +626,18 @@ def PlantDensity():
             date.append(tdata['date_code'][lab])
             TT.append(tdata['TT_code'][lab])
             density.append(pdata['plant_density_at_emergence'] * tdata['plant_survival']['viability'][i])
-        df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+            SD.append(0)
+        df = pandas.DataFrame({'event': events, 'date':date, 'TT':TT, 'density':density})
         df['Var'] = g
         df['HS'] = hs_conv(TT)
+        df['SD'] = SD
         df = df.sort('TT')
         ld.append(df)
     # Tremie12
     pdata = Plot_data_Tremie_2011_2012()
     tdata = Tillering_data_Tremie12_2011_2012()
     hs_conv = HS_converter['Tremie12']
-    date,TT, density = [],[], []
+    date,TT,density,SD = [],[],[],[]
     events = ['sowing', 'harvest', 'd3', 'd4', 'arvalis']
     density = [pdata['sowing_density'], 
                pdata['ear_density_at_harvest'] / tdata['ears_per_plant'],
@@ -621,19 +645,29 @@ def PlantDensity():
                numpy.mean(pdata['plant_density'][pdata['code_date']['d4']]),
                numpy.mean(pdata['plant_density'][pdata['code_date']['arvalis']])
                ]
+    ear_density_new=[]
+    for i,item in enumerate(pdata['raw_ear_density_at_harvest']):
+        lab = pdata['raw_ear_density_at_harvest'][i]/tdata['ears_per_plant']
+        ear_density_new.append(lab)
+    SD = [0, valSD(ear_density_new),
+         valSD(pdata['plant_density'][pdata['code_date']['d3']]), 
+         valSD(pdata['plant_density'][pdata['code_date']['d4']]), 
+         valSD(pdata['plant_density'][pdata['code_date']['arvalis']])
+         ]
     for w in events:
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
     df['Var'] = 'Tremie12'
     df['HS'] = hs_conv(TT)
+    df['SD'] = SD
     df = df.sort('TT')
     ld.append(df)
     # Tremie13
     pdata = Plot_data_Tremie_2012_2013()
     tdata = Tillering_data_Tremie13_2012_2013()
     hs_conv = HS_converter['Tremie13']
-    date,TT, density = [],[], []
+    date,TT,density,SD = [],[],[],[]
     events = ['sowing', '2F', 'epis1cm', 'LAI1', 'LAI2']
     density = [pdata['sowing_density'], 
                numpy.mean(pdata['plant_density'][pdata['code_date']['2F']]),
@@ -641,12 +675,19 @@ def PlantDensity():
                numpy.mean(pdata['plant_density'][pdata['code_date']['LAI1']]),
                numpy.mean(pdata['plant_density'][pdata['code_date']['LAI2']])
                ]
+    SD = [0,
+         valSD(pdata['plant_density'][pdata['code_date']['2F']]), 
+         valSD(pdata['plant_density'][pdata['code_date']['epis1cm']]), 
+         valSD(pdata['plant_density'][pdata['code_date']['LAI1']]),
+         valSD(pdata['plant_density'][pdata['code_date']['LAI2']])
+         ]
     for w in events:
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
     df['Var'] = 'Tremie13'
     df['HS'] = hs_conv(TT)
+    df['SD'] = SD
     df = df.sort('TT')
     ld.append(df)
     return reduce(lambda x,y : pandas.concat([x,y]), ld)
