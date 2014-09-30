@@ -101,7 +101,18 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 # Standard echap reconstruction protocol for plant development and axis dynamic       
 #def echap_development(nplants, pgen, primary_proba, tdata, pdata, dTT_stop)
     #ici include mortality
-        
+
+
+#
+# Parametres communs / Pre-traitement des donnees
+#
+def density_plot():
+    density = archidb.PlantDensity()
+    grouped = density.groupby('Var')
+    grouped.plot('HS','density', ylim=[0,350],style='p')
+
+
+    
 reconst_db={}
 
 dynT_MS = {'a_cohort':0.009380186,

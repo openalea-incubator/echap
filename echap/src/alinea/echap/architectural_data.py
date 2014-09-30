@@ -148,7 +148,6 @@ def Plot_data_Mercia_Rht3_2010_2011():
         'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 203, 
-        'ear_density_at_harvest' : 444,
         'raw_ear_density_at_harvest':[507,440,427,357,430,410,427,480,363, 350, 497, 410, 493, 340, 407, 467, 490, 433, 547, 450, 527, 427, 483, 493],
         'inter_row': 0.15},
         'Rht3': {
@@ -156,9 +155,10 @@ def Plot_data_Mercia_Rht3_2010_2011():
         'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
         'sowing_density': 220, 
         'plant_density_at_emergence' : 211, 
-        'ear_density_at_harvest' : 384,
         'raw_ear_density_at_harvest':[440,420,330,433,347,410,387,367,360,397,357,377,427,367,380,347,330,420,423,397,383,367,377,377],
         'inter_row': 0.15}}
+    for g in ('Mercia','Rht3'):
+        d[g]['ear_density_at_harvest'] = numpy.mean(d[g]['raw_ear_density_at_harvest'])
     return d
 
 def Plot_data_Tremie_2011_2012():
@@ -170,10 +170,9 @@ def Plot_data_Tremie_2011_2012():
     - plant density data at date 3 (11/04/2012) and 4 comes from axe counting/ LAI measurement data taken on  5 rank * 60 cm prelevement)
     """
     d = {
-    'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19'}, 
+    'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19', 'd3': '2012-04-11', 'd4': '2012-05-09', 'arvalis':'2012-03-20'}, 
     'TT_date': {'2011-10-21':0, '2011-11-03':141, '2012-06-19':2135, '2012-03-20':1006, '2012-04-11':1240, '2012-05-09':1515},
     'sowing_density': 280,
-    'ear_density_at_harvest': 492,
     'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
     'inter_row':0.143,
     'plant_density':{'2012-03-20': [238, 304, 287, 237, 290, 301, 290, 287, 273],
@@ -183,6 +182,8 @@ def Plot_data_Tremie_2011_2012():
                     '2012-05-09':[601, 585, 506]}, 
     'fertile_axis_density':{'2012-05-09':[545, 569, 443]} 
     }
+    d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
     
 def Plot_data_Tremie_2012_2013():
@@ -192,21 +193,22 @@ def Plot_data_Tremie_2012_2013():
     Notes
     - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
     - no date found for countings of ear density
-    - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 4 ranks * 0.6 m for LAI plots (0.36 m2) 
-    - *** IMPORTANT ***Plant density data measured for LAI estimation seems bugy and more compatible with a 5 rank * 0.6 m plots dimension (ie density and LAI should be multiplied by 0.8)
+    - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 5 ranks * 0.6 m for LAI plots (0.45 m2) 
+    - *** IMPORTANT ***Plant density data measured for LAI estimation in excell fiiles have considere 4 ranks instead of 5 (confirmed by benjamin) (ie density and LAI should be multiplied by 0.8)
     """
     d = {
-   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19'},
+   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13'},
    'TT_date': {'2012-10-29':0, '2012-11-19':140, '2013-04-22':941, '2013-05-13':1185, '2013-01-03':421, '2013-04-09':811},
    'sowing_density': 300,
    'plant_density':{'2013-01-03': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253], #'2F'
                     '2013-04-09': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], #'epis1cm'
                     '2013-04-22':[328 * 0.8, 322 * 0.8, 356 * 0.8],
                     '2013-05-13':[272* 0.8, 361 * 0.8, 350 * 0.8]},
-   'ear_density_at_harvest' : 676,
    'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
     'inter_row':0.15
     }
+    d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
    
 #
@@ -607,4 +609,44 @@ def PlantDensity():
         df['HS'] = hs_conv(TT)
         df = df.sort('TT')
         ld.append(df)
-    return ld
+    # Tremie12
+    pdata = Plot_data_Tremie_2011_2012()
+    tdata = Tillering_data_Tremie12_2011_2012()
+    hs_conv = HS_converter['Tremie12']
+    date,TT, density = [],[], []
+    events = ['sowing', 'harvest', 'd3', 'd4', 'arvalis']
+    density = [pdata['sowing_density'], 
+               pdata['ear_density_at_harvest'] / tdata['ears_per_plant'],
+               numpy.mean(pdata['plant_density'][pdata['code_date']['d3']]),
+               numpy.mean(pdata['plant_density'][pdata['code_date']['d4']]),
+               numpy.mean(pdata['plant_density'][pdata['code_date']['arvalis']])
+               ]
+    for w in events:
+        date.append(pdata['code_date'][w])
+        TT.append(pdata['TT_date'][pdata['code_date'][w]])
+    df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+    df['Var'] = 'Tremie12'
+    df['HS'] = hs_conv(TT)
+    df = df.sort('TT')
+    ld.append(df)
+    # Tremie13
+    pdata = Plot_data_Tremie_2012_2013()
+    tdata = Tillering_data_Tremie13_2012_2013()
+    hs_conv = HS_converter['Tremie13']
+    date,TT, density = [],[], []
+    events = ['sowing', '2F', 'epis1cm', 'LAI1', 'LAI2']
+    density = [pdata['sowing_density'], 
+               numpy.mean(pdata['plant_density'][pdata['code_date']['2F']]),
+               numpy.mean(pdata['plant_density'][pdata['code_date']['epis1cm']]),
+               numpy.mean(pdata['plant_density'][pdata['code_date']['LAI1']]),
+               numpy.mean(pdata['plant_density'][pdata['code_date']['LAI2']])
+               ]
+    for w in events:
+        date.append(pdata['code_date'][w])
+        TT.append(pdata['TT_date'][pdata['code_date'][w]])
+    df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+    df['Var'] = 'Tremie13'
+    df['HS'] = hs_conv(TT)
+    df = df.sort('TT')
+    ld.append(df)
+    return reduce(lambda x,y : pandas.concat([x,y]), ld)
