@@ -108,8 +108,8 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 #
 #
 # use mean plant density and/or density at the end as fits
-density_fits = {'Mercia':pandas.DataFrame({'HS':[0,7,14,20],                                           'density':[203,203,153,153]}),
-                'Rht3': pandas.DataFrame({'HS':[0,7,14,20],                                  'density':[211,211,146,146]}),
+density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],                                           'density':[203,203,153,153]}),
+                'Rht3': pandas.DataFrame({'HS':[0,6,13,20],                                  'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],                                  'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],                                      'density':[233,233]})}
 
