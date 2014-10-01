@@ -1,0 +1,106 @@
+"""
+ Ploting function companion module for architectural reconstructions
+"""
+import matplotlib.pyplot as plt
+import pandas
+
+def density_plot(density_data, fits):
+    plt.ion()
+    grouped = density_data.groupby('Var')
+    
+    dens_mercia = grouped.get_group('Mercia'); dens_rht3 = grouped.get_group('Rht3')
+    dens_tremie12 = grouped.get_group('Tremie12'); dens_tremie13 = grouped.get_group('Tremie13')
+
+    plt.errorbar(dens_mercia['HS'], dens_mercia['density'], yerr=dens_mercia['SD'], fmt='or', label = 'Mercia density')
+    plt.errorbar(dens_rht3['HS'], dens_rht3['density'], yerr=dens_rht3['SD'], fmt='og', label = 'Rht3 density')
+    plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
+    plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
+   
+    for g in fits:       
+        if g=='Mercia':
+            color='r'
+        elif g=='Rht3':
+            color='g'
+        elif g=='Tremie12':
+            color='b'
+        else:
+            color='m'
+        fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
+      
+    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    
+    '''
+def plot_tillering(name='Mercia', delta_stop_del=2.5):
+    fits = tillering_fits(delta_stop_del)
+    fit = fits[name].axis_dynamics(include_MS = False)
+    fit.plot('HS', 'total', style='--r', label='Total '+name)
+    fit.plot('HS', 'primary', style='-b', label='Primary '+name)
+    fit.plot('HS', 'others', style=':g', label= 'Others '+name)
+
+    obs = archidb.tillers_per_plant()
+    grouped = obs.groupby('Var')
+    obs = grouped.get_group(name)
+    obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
+'''    
+def multi_plot_tillering(obs_data, fits, delta_stop_del):
+    plt.ion()
+    
+    if not isinstance(delta_stop_del,dict):
+        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
+    
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    ax0, ax1, ax2, ax3 = axes.flat
+    
+    varieties = [['Mercia',ax0,delta_stop_del['Mercia']],['Rht3',ax1,delta_stop_del['Rht3']],['Tremie12',ax2,delta_stop_del['Tremie12']],['Tremie13',ax3,delta_stop_del['Tremie13']]]
+    
+    for name,ax,delta_stop_del in varieties :
+
+        fit = fits[name].axis_dynamics(include_MS = False)
+        ax.plot(fit['HS'], fit['total'], '--r', label='Total')
+        ax.plot(fit['HS'], fit['primary'], '-b', label='Primary')
+        ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
+
+        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
+        ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
+        ax.plot(obs['HS'], obs['TPS'], 'pr', label='TPS')
+        color='#FFFF00'; ax.plot(obs['HS'], obs['TT3F'], 'p', color=color, label='TT3F')
+        ax.plot(obs['HS'], obs['FT'], 'pm', label='FT')
+        
+        if name is 'Mercia':
+            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
+        elif name is 'Rht3':
+            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
+        else :
+            ax.set_xlim([0, 18]); ax.set_ylim([0, 7]) 
+            
+        ax.set_title(name+', delta_stop_del : '+str(delta_stop_del), fontsize=10)
+    
+    ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
+    fig.suptitle("Tillering")
+   
+def graph_primary_emission(archidb):
+    plt.ion()
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    
+    for name,color in varieties :
+        if name is 'Mercia' :
+            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+        elif name is 'Rht3' :
+            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+        elif name is 'Tremie12' :
+            tdb_name = archidb.Tillering_data_Tremie12_2011_2012()
+        else :
+            tdb_name = archidb.Tillering_data_Tremie13_2012_2013()
+
+        primary_emission_name = {k[1:]:v for k,v in tdb_name['emission_probabilities'].iteritems() if k != 'TC'}
+        df_name = pandas.DataFrame.from_dict(primary_emission_name, orient='index')
+        df_name = df_name.reset_index(); df_name.columns = ['talle', 'proba']
+            
+        df_name = df_name.sort(columns='talle')
+        df_name.plot('talle', 'proba', style='--o'+color, label=name)
+    
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.xlabel("Talle"); plt.ylabel("%")
+    #plt.title("Emissions probabilities")

@@ -12,11 +12,11 @@ from alinea.adel.Stand import AgronomicStand
 from alinea.adel.WheatTillering import WheatTillering
 
 import alinea.echap.architectural_data as archidb
+import alinea.echap.architectural_reconstructions_plot as archi_plot
 
 import alinea.adel.plantgen_extensions as pgen_ext
 
-import matplotlib.pyplot as plt
-plt.ion()
+run_plots = False # prevent ipython %run to make plots
 
 #generic function to be moved to adel
   
@@ -115,35 +115,10 @@ def density_fits():
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
     return density_fits
-        
-def density_plot():
-    
-    density = archidb.PlantDensity()  
-    fits = density_fits()
-    grouped = density.groupby('Var')
-    
-    dens_mercia = grouped.get_group('Mercia'); dens_rht3 = grouped.get_group('Rht3')
-    dens_tremie12 = grouped.get_group('Tremie12'); dens_tremie13 = grouped.get_group('Tremie13')
-
-    plt.errorbar(dens_mercia['HS'], dens_mercia['density'], yerr=dens_mercia['SD'], fmt='or', label = 'Mercia density')
-    plt.errorbar(dens_rht3['HS'], dens_rht3['density'], yerr=dens_rht3['SD'], fmt='og', label = 'Rht3 density')
-    plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
-    plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
-   
-    for g in fits:       
-        if g=='Mercia':
-            color='r'
-        elif g=='Rht3':
-            color='g'
-        elif g=='Tremie12':
-            color='b'
-        else:
-            color='m'
-        fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
-      
-    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-
+#
+if run_plots:
+    archi_plot.density_plot(archidb.PlantDensity(), density_fits())
+ 
 #
 # Fit tillering
 #
@@ -156,89 +131,29 @@ def _tfit(tdb, delta_stop_del):
     
 def tillering_fits(delta_stop_del=2.5):
     t_fits={}
+    if not isinstance(delta_stop_del,dict):
+        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()
-    t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del)
-    t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del)
+    t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del['Mercia'])
+    t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del['Rht3'])
     tdb = archidb.Tillering_data_Tremie12_2011_2012()
-    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del)
-    #t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del/5.)#effect of gel
+    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del['Tremie12'])
     tdb = archidb.Tillering_data_Tremie13_2012_2013()
     pdata = archidb.Plot_data_Tremie_2012_2013()
     tdb['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-    t_fits['Tremie13'] = _tfit(tdb, delta_stop_del=delta_stop_del)
+    t_fits['Tremie13'] = _tfit(tdb, delta_stop_del=delta_stop_del['Tremie13'])
     return t_fits
-'''
-def plot_tillering(name='Mercia', delta_stop_del=2.5):
-    fits = tillering_fits(delta_stop_del)
-    fit = fits[name].axis_dynamics(include_MS = False)
-    fit.plot('HS', 'total', style='--r', label='Total '+name)
-    fit.plot('HS', 'primary', style='-b', label='Primary '+name)
-    fit.plot('HS', 'others', style=':g', label= 'Others '+name)
 
+if run_plots:
+    #delta_stop_del = 2.5
+    delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
+    fits = tillering_fits(delta_stop_del=delta_stop_del)
     obs = archidb.tillers_per_plant()
-    grouped = obs.groupby('Var')
-    obs = grouped.get_group(name)
-    obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
-'''    
-def multi_plot_tillering():
-    fig, axes = plt.subplots(nrows=2, ncols=2)
-    ax0, ax1, ax2, ax3 = axes.flat
-    
-    #varieties = [['Mercia',ax0,2.5],['Rht3',ax1,2.5],['Tremie12',ax2,2.5],['Tremie13',ax3,2.5]]
-    varieties = [['Mercia',ax0,3.5],['Rht3',ax1,2.5],['Tremie12',ax2,0.5],['Tremie13',ax3,2.5]]
-    
-    for name,ax,delta_stop_del in varieties :
-
-        fits = tillering_fits(delta_stop_del)
-        fit = fits[name].axis_dynamics(include_MS = False)
-        ax.plot(fit['HS'], fit['total'], '--r', label='Total')
-        ax.plot(fit['HS'], fit['primary'], '-b', label='Primary')
-        ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
-
-        obs = archidb.tillers_per_plant()
-        grouped = obs.groupby('Var'); obs = grouped.get_group(name)
-        ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
-        ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
-        ax.plot(obs['HS'], obs['TPS'], 'pr', label='TPS')
-        color='#FFFF00'; ax.plot(obs['HS'], obs['TT3F'], 'p', color=color, label='TT3F')
-        ax.plot(obs['HS'], obs['FT'], 'pm', label='FT')
-        
-        if name is 'Mercia':
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
-        elif name is 'Rht3':
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
-        else :
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 7]) 
-            
-        ax.set_title(name+', delta_stop_del : '+str(delta_stop_del), fontsize=10)
-    
-    ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
-    fig.suptitle("Tillering")
+    archi_plot.multi_plot_tillering(obs, fits, delta_stop_del)
    
-def graph_primary_proba():
+if run_plots:
+    archi_plot.graph_primary_emission(archidb)
 
-    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
-    
-    for name,color in varieties :
-        if name is 'Mercia' :
-            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
-        elif name is 'Rht3' :
-            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
-        elif name is 'Tremie12' :
-            tdb_name = archidb.Tillering_data_Tremie12_2011_2012()
-        else :
-            tdb_name = archidb.Tillering_data_Tremie13_2012_2013()
-
-        primary_emission_name = {k[1:]:v for k,v in tdb_name['emission_probabilities'].iteritems() if k != 'TC'}
-        df_name = pandas.DataFrame.from_dict(primary_emission_name, orient='index')
-        df_name = df_name.reset_index(); df_name.columns = ['talle', 'proba']
-            
-        df_name = df_name.sort(columns='talle')
-        df_name.plot('talle', 'proba', style='--o'+color, label=name)
-    
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-    plt.xlabel("Talle"); plt.ylabel("%")
-    #plt.title("Emissions probabilities")
     
 reconst_db={}
 
