@@ -195,8 +195,7 @@ def multi_plot_tillering(delta_stop_del=2.5):
         ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
 
         obs = archidb.tillers_per_plant()
-        grouped = obs.groupby('Var')
-        obs = grouped.get_group(name)
+        grouped = obs.groupby('Var'); obs = grouped.get_group(name)
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
         ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
         ax.plot(obs['HS'], obs['TPS'], 'pr', label='TPS')

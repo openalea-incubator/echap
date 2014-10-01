@@ -5,6 +5,8 @@ from openalea.deploy.shared_data import shared_data
 import alinea.echap
 from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
+from math import sqrt
+
 #----------------------------------------------------- Fitted dimension
 
 def Mercia_2010_fitted_dimensions():
@@ -27,6 +29,15 @@ def Tremie12_fitted_dimensions():
     for nff in [12,13]:
         fn = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
+    return dim
+    
+def Tremie13_fitted_dimensions():
+    dim = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
+    '''
+    dim = {}
+    for nff in [11,12]:
+        fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)'''
     return dim
 
 # ---------------------------------------------------- Fitted HS = f(TT)
@@ -68,8 +79,10 @@ GL_Rht3 = {'GL_number' : {1732.1: 3.88352941176471, 1818.05:2.68005882352941,195
 GL_Tremie = {'GL_number' : {1483.95: 4.9025, 1568.7:4.73684210526316,
              1659.1:4.16814814814815, 1797.95:3.43777777777778,
              1905:2.35888888888889,2084.95:0.85578947368421,2150:0.00},
-            'TT_col_break' : 0.0} '''  
-  
+            'TT_col_break' : 0.0}
+     
+#---
+     
 def Mercia_2010_plantgen():
     dynT = shared_data(alinea.echap, 'Mercia_dynT_user.csv')
     dimT = shared_data(alinea.echap, 'Mercia_dimT_user.csv')
@@ -122,18 +135,18 @@ def Tremie_2012_plantgen():
     dimT = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
     inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
     return plantgen_as_dict(inputs, dynT, dimT)
-  
+
 def HS_data():
     fn = shared_data(alinea.echap, 'HS_data_Mercia_Rht3_2010_2011.csv')
     #fn = shared_data(alinea.echap, 'HS_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     grouped = data.groupby(['variety'],as_index=False)
     return grouped.aggregate('mean')
+'''  
 #
 # Plot data
 #
-from math import sqrt
-def valSD(listeVal):
+def valSD(listeVal): #calcul moyenne/ecart type
     nombre = 0
     sommeValeurs = 0.0
     sommeCarres = 0.0
