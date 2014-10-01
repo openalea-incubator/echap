@@ -29,7 +29,7 @@ def plantgen_to_devT_comp(pgen_pars):
     
     
 def check_nff(devT):
-    """ Count the probailitiy of occurence of MS with given nff
+    """ Count the probability of occurence of MS with given nff
     """
     nffs = devT['axeT']['N_phytomer'][devT['axeT']['id_axis']=='MS']
     counts = {n:nffs.tolist().count(n) for n in set(nffs)}
@@ -67,7 +67,6 @@ def setAdel(**kwds):
      
     adel = AdelWheat(**kwds)    
     return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-    
 
 #---------- reconstructions 
 
@@ -161,7 +160,8 @@ def tillering_fits(delta_stop_del=2.5):
     t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del)
     t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del)
     tdb = archidb.Tillering_data_Tremie12_2011_2012()
-    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del/5.)#effect of gel
+    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del)
+    #t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del/5.)#effect of gel
     tdb = archidb.Tillering_data_Tremie13_2012_2013()
     pdata = archidb.Plot_data_Tremie_2012_2013()
     tdb['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
@@ -180,13 +180,14 @@ def plot_tillering(name='Mercia', delta_stop_del=2.5):
     obs = grouped.get_group(name)
     obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
 '''    
-def multi_plot_tillering(delta_stop_del=2.5):
+def multi_plot_tillering():
     fig, axes = plt.subplots(nrows=2, ncols=2)
     ax0, ax1, ax2, ax3 = axes.flat
     
-    varieties = [['Mercia',ax0],['Rht3',ax1],['Tremie12',ax2],['Tremie13',ax3]]
+    #varieties = [['Mercia',ax0,2.5],['Rht3',ax1,2.5],['Tremie12',ax2,2.5],['Tremie13',ax3,2.5]]
+    varieties = [['Mercia',ax0,3.5],['Rht3',ax1,2.5],['Tremie12',ax2,0.5],['Tremie13',ax3,2.5]]
     
-    for name,ax in varieties :
+    for name,ax,delta_stop_del in varieties :
 
         fits = tillering_fits(delta_stop_del)
         fit = fits[name].axis_dynamics(include_MS = False)
@@ -199,7 +200,7 @@ def multi_plot_tillering(delta_stop_del=2.5):
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
         ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
         ax.plot(obs['HS'], obs['TPS'], 'pr', label='TPS')
-        ax.plot(obs['HS'], obs['TT3F'], 'py', label='TT3F')
+        color='#FFFF00'; ax.plot(obs['HS'], obs['TT3F'], 'p', color=color, label='TT3F')
         ax.plot(obs['HS'], obs['FT'], 'pm', label='FT')
         
         if name is 'Mercia':
@@ -209,7 +210,7 @@ def multi_plot_tillering(delta_stop_del=2.5):
         else :
             ax.set_xlim([0, 18]); ax.set_ylim([0, 7]) 
             
-        ax.set_title(name, fontsize=10)
+        ax.set_title(name+', delta_stop_del : '+str(delta_stop_del), fontsize=10)
     
     ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Tillering")
@@ -356,13 +357,17 @@ def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     
     ms_nff_probas = tdb['nff_probabilities']
     nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    ears_per_plant = tdb['ears_per_plant']
+    
+    #ears_per_plant = tdb['ears_per_plant']
+    ears_per_plant = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
+    
     plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     
     wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
     
-    dimT = archidb.Tremie13_fitted_dimensions()
+    #dimT = archidb.Tremie13_fitted_dimensions()
+    dimT = archidb.Rht3_2010_fitted_dimensions()
     GL = archidb.GL_number()['Tremie13']
 
     devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
@@ -372,9 +377,10 @@ def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     xy, sr, bins = archidb.leaf_curvature_data('Tremie')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
     
+    pgen = pars[12]['config']
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
     
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand , seed=seed, sample=sample, leaves = leaves)
+    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves = leaves)
     
     return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
