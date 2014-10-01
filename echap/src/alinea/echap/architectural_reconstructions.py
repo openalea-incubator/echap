@@ -215,6 +215,31 @@ def multi_plot_tillering():
     ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Tillering")
    
+def graph_primary_proba():
+
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    
+    for name,color in varieties :
+        if name is 'Mercia' :
+            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+        elif name is 'Rht3' :
+            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
+        elif name is 'Tremie12' :
+            tdb_name = archidb.Tillering_data_Tremie12_2011_2012()
+        else :
+            tdb_name = archidb.Tillering_data_Tremie13_2012_2013()
+
+        primary_emission_name = {k[1:]:v for k,v in tdb_name['emission_probabilities'].iteritems() if k != 'TC'}
+        df_name = pandas.DataFrame.from_dict(primary_emission_name, orient='index')
+        df_name = df_name.reset_index(); df_name.columns = ['talle', 'proba']
+            
+        df_name = df_name.sort(columns='talle')
+        df_name.plot('talle', 'proba', style='--o'+color, label=name)
+    
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.xlabel("Talle"); plt.ylabel("%")
+    #plt.title("Emissions probabilities")
+    
 reconst_db={}
 
 dynT_MS = {'a_cohort':0.009380186,

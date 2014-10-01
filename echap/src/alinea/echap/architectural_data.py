@@ -221,7 +221,7 @@ def Plot_data_Tremie_2012_2013():
     - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
     - no date found for countings of ear density
     - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 5 ranks * 0.6 m for LAI plots (0.45 m2) 
-    - *** IMPORTANT ***Plant density data measured for LAI estimation in excell fiiles have considere 4 ranks instead of 5 (confirmed by benjamin) (ie density and LAI should be multiplied by 0.8)
+    - *** IMPORTANT ***Plant density data measured for LAI estimation in excel files have consider 4 ranks instead of 5 (confirmed by Benjamin) (ie density and LAI should be multiplied by 0.8)
     """
     d = {
    'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13', 'harvest': '2013-06-09'},
@@ -734,7 +734,7 @@ def tillers_per_plant():
     df = _add_ghs(df, 'Tremie12')
     ld.append(df)
     #
-    tdb =  Tillering_data_Tremie13_2012_2013()
+    tdb = Tillering_data_Tremie13_2012_2013()
     df = _axdyn_df(tdb)
     # add ears per plant, to get a point after regression
     pdata = Plot_data_Tremie_2012_2013()
