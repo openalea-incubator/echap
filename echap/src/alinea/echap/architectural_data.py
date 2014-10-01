@@ -22,11 +22,11 @@ def Rht3_2010_fitted_dimensions():
     return dim
     
 def Tremie12_fitted_dimensions():
-    '''dim = {}
+    #dim = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
+    dim = {}
     for nff in [12,13]:
-        fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)'''
-    dim = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
+        fn = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)
     return dim
 
 # ---------------------------------------------------- Fitted HS = f(TT)
