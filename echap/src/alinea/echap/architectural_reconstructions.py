@@ -103,19 +103,23 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 #
 # Parametres communs / Pre-traitement des donnees
 #
+# Fit plant density
 #
 # use mean plant density and/or density at the end as fits
-import matplotlib.pyplot as plt
-plt.ion()
-
-density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],                                           'density':[203,203,153,153]}),
-                'Rht3': pandas.DataFrame({'HS':[0,6,13,20],                                  'density':[211,211,146,146]}),
-                'Tremie12': pandas.DataFrame({'HS':[0,15,20],                                  'density':[281,281,251]}),
-                'Tremie13': pandas.DataFrame({'HS':[0,20],                                      'density':[233,233]})}
-
+def density_fits():
+    """
+    Manual fit of plant density based on mean plant density and estimate of plant density at harvest
+    """
+    density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],                                           'density':[203,203,153,153]}),
+                'Rht3': pandas.DataFrame({'HS':[0,6,13,20],'density':[211,211,146,146]}),
+                'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
+                'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
+    return density_fits
+        
 def density_plot():
     
     density = archidb.PlantDensity()  
+    fits = density_fits()
     grouped = density.groupby('Var')
 
     df_mercia = density['Var'] == 'Mercia'; df_rht3 = density['Var'] == 'Rht3'; df_tremie12 = density['Var'] == 'Tremie12'; df_tremie13 = density['Var'] == 'Tremie13'; dens_mercia = density[df_mercia]; dens_rht3 = density[df_rht3]; dens_tremie12 = density[df_tremie12]; dens_tremie13 = density[df_tremie13]
@@ -125,21 +129,43 @@ def density_plot():
     plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
     plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
    
-    for g in density_fits:
-        if g=='Mercia':
-            color='r'
-        elif g=='Rht3':
-            color='g'
-        elif g=='Tremie12':
-            color='b'
-        else:
-            color='m'
-        density_fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
-      
-    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-
+    for g in fits:
+        fits[g].plot('HS', 'density', style='-')
+#
+# Fit tillering
+#
+def _tfit(tdb, delta_stop_del):
+    ms_nff_probas = tdb['nff_probabilities']
+    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
+    ears_per_plant = tdb['ears_per_plant']
+    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del)
     
+def tillering_fits(delta_stop_del=3.4):
+    t_fits={}
+    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()
+    t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del)
+    t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del)
+    tdb = archidb.Tillering_data_Tremie12_2011_2012()
+    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del)
+    tdb = archidb.Tillering_data_Tremie13_2012_2013()
+    pdata = archidb.Plot_data_Tremie_2012_2013()
+    tdb['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
+    t_fits['Tremie13'] = _tfit(tdb, delta_stop_del=delta_stop_del)
+    return t_fits
+#
+def plot_tillering(name='Mercia', delta_stop_del=3.4):
+    fits = tillering_fits(delta_stop_del)
+    fit = fits[name].axis_dynamics(include_MS = False)
+    fit.plot('HS', 'total', style='--r', label='Total '+name)
+    fit.plot('HS', 'primary', style='-b', label='Primary '+name)
+    fit.plot('HS', 'others', style=':g', label= 'Others '+name)
+
+    obs = archidb.tillers_per_plant()
+    grouped = obs.groupby('Var')
+    obs = grouped.get_group(name)
+    obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
+ 
 reconst_db={}
 
 dynT_MS = {'a_cohort':0.009380186,
@@ -194,6 +220,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     
     wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
+    
     dimT = archidb.Mercia_2010_fitted_dimensions()
     GL = archidb.GL_number()['Mercia']
     

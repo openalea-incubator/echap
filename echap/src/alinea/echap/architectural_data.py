@@ -211,8 +211,8 @@ def Plot_data_Tremie_2012_2013():
     - *** IMPORTANT ***Plant density data measured for LAI estimation in excell fiiles have considere 4 ranks instead of 5 (confirmed by benjamin) (ie density and LAI should be multiplied by 0.8)
     """
     d = {
-   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13'},
-   'TT_date': {'2012-10-29':0, '2012-11-19':140, '2013-04-22':941, '2013-05-13':1185, '2013-01-03':421, '2013-04-09':811},
+   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13', 'harvest': '2013-06-09'},
+   'TT_date': {'2012-10-29':0, '2012-11-19':140, '2013-04-22':941, '2013-05-13':1185, '2013-01-03':421, '2013-04-09':811, '2013-06-09': 1548},
    'sowing_density': 300,
    'plant_density':{'2013-01-03': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253], #'2F'
                     '2013-04-09': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], #'epis1cm'
@@ -410,7 +410,7 @@ def Tillering_data_Tremie12_2011_2012():
     - at Date 1, it was noted 'due to freezing of plants, it was difficult to determine main stem'
     - at date 2 there were damage due to to fly on Mb , T1, T2
     - At date 3, Mariem noted "T7 almost always present on scaned plants"
-    - Emission of tiller 5 and 6 were ever noted.
+    - Emission of tiller 5 and 6 were never noted.
     - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
     """
     
@@ -597,13 +597,20 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
 #
 # Elaborated data
 #    
+
+def _add_ghs(df, g):
+    hs_conv = HS_converter[g]
+    df['Var'] = g
+    df['HS'] = hs_conv(df['TT'])
+    df = df.sort('TT')
+    return df
+
 def PlantDensity():
     # Mercia /rht3
     ld = []
     for g in ('Mercia','Rht3'):
         pdata = Plot_data_Mercia_Rht3_2010_2011()[g]
         tdata = Tillering_data_Mercia_Rht3_2010_2011()[g]
-        hs_conv = HS_converter[g]
         date,TT,density,SD = [],[],[],[]
         events = ['sowing', 'emergence', 'harvest']
         density = [pdata['sowing_density'], 
@@ -628,10 +635,7 @@ def PlantDensity():
             density.append(pdata['plant_density_at_emergence'] * tdata['plant_survival']['viability'][i])
             SD.append(0)
         df = pandas.DataFrame({'event': events, 'date':date, 'TT':TT, 'density':density})
-        df['Var'] = g
-        df['HS'] = hs_conv(TT)
-        df['SD'] = SD
-        df = df.sort('TT')
+        df = _add_ghs(df, g)
         ld.append(df)
     # Tremie12
     pdata = Plot_data_Tremie_2011_2012()
@@ -658,10 +662,7 @@ def PlantDensity():
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
-    df['Var'] = 'Tremie12'
-    df['HS'] = hs_conv(TT)
-    df['SD'] = SD
-    df = df.sort('TT')
+    df = _add_ghs(df, 'Tremie12')
     ld.append(df)
     # Tremie13
     pdata = Plot_data_Tremie_2012_2013()
@@ -685,9 +686,55 @@ def PlantDensity():
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
-    df['Var'] = 'Tremie13'
-    df['HS'] = hs_conv(TT)
-    df['SD'] = SD
-    df = df.sort('TT')
+    df = _add_ghs(df, 'Tremie13')
     ld.append(df)
+    return reduce(lambda x,y : pandas.concat([x,y]), ld)
+
+# converter axis_dyn output -> df
+def _axdyn_df(tdb):
+    date, TT = [], []
+    for i,d in enumerate(tdb['tillers_per_plant']['Date']):
+        lab = 'd%d'%(d)
+        date.append(tdb['date_code'][lab])
+        TT.append(tdb['TT_code'][lab])
+    til = tdb['tillers_per_plant']
+    return pandas.DataFrame({'date': date, 'TT': TT, 'TP' : til['TP'], 'TS':til['TS'], 'TPS': til['TT'], 'FT':til['FT'], 'TT3F':til['TT3F']})
+
+def tillers_per_plant():
+    """ Synthetic tables for tiller counting data
+    """
+    ld=[]
+    for g in ('Mercia','Rht3'):
+        tdb = Tillering_data_Mercia_Rht3_2010_2011()[g]
+        df = _axdyn_df(tdb)
+        df = _add_ghs(df, g)
+        ld.append(df)
+    #
+    tdb =  Tillering_data_Tremie12_2011_2012()
+    df = _axdyn_df(tdb)
+    df = df[~df['TPS'].isnull()]#remove d3 where no data are available
+    # add axe counts from plot data
+    pdata = Plot_data_Tremie_2011_2012()
+    axd = pdata['axe_density']
+    faxd = pdata['fertile_axis_density']
+    dfp= pandas.DataFrame({'date' : axd.keys(), 
+                'TT': [pdata['TT_date'][k] for k in axd],
+                'TPS': [numpy.mean(axd[k]) / numpy.mean(pdata['plant_density'][k]) - 1 for k in axd]})
+    dfp['FT'] = numpy.nan
+    d = faxd.keys()[0]
+    dfp.ix[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
+    df = pandas.concat([df, dfp])
+    df = _add_ghs(df, 'Tremie12')
+    ld.append(df)
+    #
+    tdb =  Tillering_data_Tremie13_2012_2013()
+    df = _axdyn_df(tdb)
+    # add ears per plant, to get a point after regression
+    pdata = Plot_data_Tremie_2012_2013()
+    dfp= pandas.DataFrame({'date' :pdata['code_date']['harvest'],
+                           'TT': pdata['TT_date'][pdata['code_date']['harvest']],
+                           'FT': pdata['ear_density_at_harvest'] / pdata['mean_plant_density'] - 1}, index=[0])
+    df = pandas.concat([df, dfp])
+    df = _add_ghs(df, 'Tremie13')
+    ld.append(df)    
     return reduce(lambda x,y : pandas.concat([x,y]), ld)
