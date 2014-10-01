@@ -32,7 +32,7 @@ def Tremie12_fitted_dimensions():
     return dim
     
 def Tremie13_fitted_dimensions():
-    dim = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
+    dim = shared_data(alinea.echap, 'Tremie13_dimT_user.csv') #nff12
     '''
     dim = {}
     for nff in [11,12]:
@@ -516,7 +516,6 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
     - dfxy and srdb are dataframe containing the data
     - bins is None if leaf are static or define age clas otherwise
     - ntraj and tol_med control  the number of trajectory to sample among leaves of a given Lindex and of given age that have mean_angle +/- tol*med
-    
     """
                    
     import random
@@ -552,8 +551,6 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
     
     return trajectories, srdb, bins
     
-
-
 def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1):
 
     def xy_reader(file):
@@ -574,8 +571,7 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
         #dfxy = dfxy.reset_index()
         # SR
         dfsr = sr_reader(data_file_srdb)
-        
-        
+
     if name is 'Rht3':
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
@@ -631,7 +627,6 @@ def PlantDensity():
                    pdata['ear_density_at_harvest'] / tdata['ears_per_plant']]
         ear_data = numpy.array(pdata['raw_ear_density_at_harvest']) / tdata['ears_per_plant']
         SD = [0,0,valSD(ear_data)]           
-    
         for w in events:
             date.append(pdata['code_date'][w])
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
