@@ -122,16 +122,16 @@ def density_plot():
     density = archidb.PlantDensity()  
     fits = density_fits()
     grouped = density.groupby('Var')
-
-    df_mercia = density['Var'] == 'Mercia'; df_rht3 = density['Var'] == 'Rht3'; df_tremie12 = density['Var'] == 'Tremie12'; df_tremie13 = density['Var'] == 'Tremie13'; dens_mercia = density[df_mercia]; dens_rht3 = density[df_rht3]; dens_tremie12 = density[df_tremie12]; dens_tremie13 = density[df_tremie13]
+    
+    dens_mercia = grouped.get_group('Mercia'); dens_rht3 = grouped.get_group('Rht3')
+    dens_tremie12 = grouped.get_group('Tremie12'); dens_tremie13 = grouped.get_group('Tremie13')
 
     plt.errorbar(dens_mercia['HS'], dens_mercia['density'], yerr=dens_mercia['SD'], fmt='or', label = 'Mercia density')
     plt.errorbar(dens_rht3['HS'], dens_rht3['density'], yerr=dens_rht3['SD'], fmt='og', label = 'Rht3 density')
     plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
     plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
    
-    for g in fits:
-        
+    for g in fits:       
         if g=='Mercia':
             color='r'
         elif g=='Rht3':
@@ -212,7 +212,7 @@ def multi_plot_tillering(delta_stop_del=2.5):
             
         ax.set_title(name, fontsize=10)
     
-    ax1.legend(bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
+    ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Tillering")
    
 reconst_db={}
@@ -344,7 +344,7 @@ def Tremie12(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_
     
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
 
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22)
+    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves = leaves)
     
     return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
     
