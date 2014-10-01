@@ -616,13 +616,9 @@ def PlantDensity():
         density = [pdata['sowing_density'], 
                    pdata['plant_density_at_emergence'],
                    pdata['ear_density_at_harvest'] / tdata['ears_per_plant']]
-                   
-        ear_density_new=[]
-        for i,item in enumerate(pdata['raw_ear_density_at_harvest']):
-            lab = pdata['raw_ear_density_at_harvest'][i]/tdata['ears_per_plant']
-            ear_density_new.append(lab)
-        SD = [0,0,valSD(ear_density_new)]
-             
+        ear_data = numpy.array(pdata['raw_ear_density_at_harvest']) / tdata['ears_per_plant']
+        SD = [0,0,valSD(ear_data)]           
+    
         for w in events:
             date.append(pdata['code_date'][w])
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
@@ -635,6 +631,7 @@ def PlantDensity():
             density.append(pdata['plant_density_at_emergence'] * tdata['plant_survival']['viability'][i])
             SD.append(0)
         df = pandas.DataFrame({'event': events, 'date':date, 'TT':TT, 'density':density})
+        df['SD']=SD
         df = _add_ghs(df, g)
         ld.append(df)
     # Tremie12
@@ -662,6 +659,7 @@ def PlantDensity():
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+    df['SD']=SD
     df = _add_ghs(df, 'Tremie12')
     ld.append(df)
     # Tremie13
@@ -686,6 +684,7 @@ def PlantDensity():
         date.append(pdata['code_date'][w])
         TT.append(pdata['TT_date'][pdata['code_date'][w]])
     df = pandas.DataFrame({'event': events, 'date' :date, 'TT':TT, 'density':density})
+    df['SD']=SD
     df = _add_ghs(df, 'Tremie13')
     ld.append(df)
     return reduce(lambda x,y : pandas.concat([x,y]), ld)

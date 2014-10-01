@@ -15,10 +15,11 @@ import alinea.echap.architectural_data as archidb
 
 import alinea.adel.plantgen_extensions as pgen_ext
 
+import matplotlib.pyplot as plt
+plt.ion()
+
 #generic function to be moved to adel
-
-
-    
+  
 def plantgen_to_devT_comp(pgen_pars):
     from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
     
@@ -130,7 +131,20 @@ def density_plot():
     plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
    
     for g in fits:
-        fits[g].plot('HS', 'density', style='-')
+        
+        if g=='Mercia':
+            color='r'
+        elif g=='Rht3':
+            color='g'
+        elif g=='Tremie12':
+            color='b'
+        else:
+            color='m'
+        fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
+      
+    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+
 #
 # Fit tillering
 #
@@ -141,20 +155,20 @@ def _tfit(tdb, delta_stop_del):
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del)
     
-def tillering_fits(delta_stop_del=3.4):
+def tillering_fits(delta_stop_del=2.5):
     t_fits={}
     tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()
     t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del)
     t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del)
     tdb = archidb.Tillering_data_Tremie12_2011_2012()
-    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del)
+    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del/5.)#effect of gel
     tdb = archidb.Tillering_data_Tremie13_2012_2013()
     pdata = archidb.Plot_data_Tremie_2012_2013()
     tdb['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
     t_fits['Tremie13'] = _tfit(tdb, delta_stop_del=delta_stop_del)
     return t_fits
 #
-def plot_tillering(name='Mercia', delta_stop_del=3.4):
+def plot_tillering(name='Mercia', delta_stop_del=2.5):
     fits = tillering_fits(delta_stop_del)
     fit = fits[name].axis_dynamics(include_MS = False)
     fit.plot('HS', 'total', style='--r', label='Total '+name)
@@ -207,7 +221,7 @@ def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green
     return devCsv(axeT, dimT, phenT), pars
                 
             
-# NORMAL : composite with raw obaservations
+# NORMAL : composite with raw observations
 def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
 
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
