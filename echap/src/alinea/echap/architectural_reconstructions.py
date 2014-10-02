@@ -122,31 +122,32 @@ if run_plots:
 #
 # Fit tillering
 #
-def _tfit(tdb, delta_stop_del):
+def _tfit(tdb, delta_stop_del, n_elongated_internode):
     ms_nff_probas = tdb['nff_probabilities']
     nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
-    return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del)
+    return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode)
     
-def tillering_fits(delta_stop_del=2.5):
-    t_fits={}
-    if not isinstance(delta_stop_del,dict):
-        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()
-    t_fits['Mercia'] = _tfit(tdb['Mercia'], delta_stop_del=delta_stop_del['Mercia'])
-    t_fits['Rht3'] = _tfit(tdb['Rht3'], delta_stop_del=delta_stop_del['Rht3'])
-    tdb = archidb.Tillering_data_Tremie12_2011_2012()
-    t_fits['Tremie12'] = _tfit(tdb, delta_stop_del=delta_stop_del['Tremie12'])
-    tdb = archidb.Tillering_data_Tremie13_2012_2013()
+def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 5, 'Tremie13':4} ):
+        
+    tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
-    tdb['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-    t_fits['Tremie13'] = _tfit(tdb, delta_stop_del=delta_stop_del['Tremie13'])
+    tdb['Tremie13']['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
+    
+    if not isinstance(delta_stop_del,dict):
+        delta_stop_del = {k:delta_stop_del for k in tdb}
+        
+    if not isinstance(n_elongated_internode,dict):
+        n_elongated_internode = {k:n_elongated_internode for k in tdb}   
+    
+    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k]) for k in tdb}
+
     return t_fits
 
 if run_plots:
-    #delta_stop_del = 2.5
-    delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
+    delta_stop_del = 2.8
+    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
     fits = tillering_fits(delta_stop_del=delta_stop_del)
     obs = archidb.tillers_per_plant()
     archi_plot.multi_plot_tillering(obs, fits, delta_stop_del)

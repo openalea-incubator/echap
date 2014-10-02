@@ -500,6 +500,13 @@ def Tillering_data_Tremie13_2012_2013():
            'TT_code' : TT_code}
 
     return obs
+ 
+
+def Tillering_data():
+    d = Tillering_data_Mercia_Rht3_2010_2011()
+    d.update({'Tremie12': Tillering_data_Tremie12_2011_2012(),
+             'Tremie13': Tillering_data_Tremie13_2012_2013()})
+    return d
     
 #-------------------------------------------------------------------------------  
 # Angles / formes a plat  
