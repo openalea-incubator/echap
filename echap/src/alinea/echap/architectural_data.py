@@ -52,6 +52,9 @@ class HaunStage(object):
         
     def __call__(self, TT):
         return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
+        
+    def TT(self, HS):
+        return self.TT_col_0 + numpy.array(HS) / self.a_cohort
 
 HS_converter = {'Mercia': HaunStage(0.009380186, 101.4740799),
                 'Rht3': HaunStage(0.008323522,65.00120875),
@@ -238,7 +241,13 @@ def Plot_data_Tremie_2012_2013():
     d['ear_density_at_harvest_SD'] = valSD(d['raw_ear_density_at_harvest'])
     d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
-   
+
+def Plot_data():
+    d = Plot_data_Mercia_Rht3_2010_2011()
+    d.update({'Tremie12':Plot_data_Tremie_2011_2012(),
+              'Tremie13':Plot_data_Tremie_2012_2013()})
+    return d
+    
 #
 # LAI data
 #

@@ -114,6 +114,10 @@ def density_fits():
                 'Rht3': pandas.DataFrame({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
+    conv = archidb.HS_converter
+    for k in density_fits:
+        df = density_fits[k]
+        df['TT'] = conv[k].TT(df['HS'])
     return density_fits
 #
 if run_plots:
@@ -163,7 +167,10 @@ dynT_MS = {'a_cohort':0.009380186,
             'TT_col_N_phytomer_potential':1380.766379, # Will be recomputed as a function of Nff
             'n0':4.7,'n1':2.5,'n2':5}
 
-def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green_leaves, dTT_stop=0):
+
+            
+            
+def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green_leaves):
     """ Construct devT tables from models, considering one reconstruction per nff (ie composite)
     """
     from alinea.adel.AdelR import devCsv
@@ -180,10 +187,7 @@ def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green
         GL = GL.ix[GL['TT'] > dynamic['TT_col_N_phytomer_potential'],:]
         GL = dict(zip(GL['TT'],GL[str(k)]))
         pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
-        # complete plantgen default
-        dtt = 600
-        dtt -= dTT_stop
-        pgens[k].update({'delais_TT_stop_del_axis':dtt,'TT_col_break': 0.0,})
+
         adelT[k], pars[k] = pgen_ext.build_tables(pgens[k])
         axeT, dimT, phenT = adelT[k]
         tx = k * 10000
@@ -198,30 +202,32 @@ def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green
                 
             
 # NORMAL : composite with raw observations
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, **kwds):
+def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, disc_level=7, **kwds):
 
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
-    tdb = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
+    pdata = archidb.Plot_data()['Mercia']
+    density = density_fits()['Mercia']
+    density_at_emergence = density['density'][density['HS'] == 0]
     
-    ms_nff_probas = tdb['nff_probabilities']
-    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    ears_per_plant = tdb['ears_per_plant']
-    plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence,inter_row=pdata['inter_row'])
     
-    wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
+    wfit = tillering_fits()['Mercia']
     
     dimT = archidb.Mercia_2010_fitted_dimensions()
     GL = archidb.GL_number()['Mercia']
     
-    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
-
-    pars.update({'tillering':wfit})
+    devT, pars = echap_reconstruction(nplants,density_at_emergence,wfit, dimT, dynT_MS, GL)
+    
+    #adjust density according to density fit
+    if density['density'].iloc[-1] < density['density'].iloc[0] and nplants > 1:
+        pgen_ext.adjust_density(devT, density)
+        
+    
+    #pars.update({'tillering':wfit})
         
     xy, sr, bins = archidb.leaf_curvature_data('Mercia')
     leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-        
-    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pdata['plant_density_at_emergence'],inter_row=pdata['inter_row'])
+    
+
 
     adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, **kwds)
     
