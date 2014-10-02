@@ -103,9 +103,9 @@ def multi_plot_tillering(obs_data, fits, delta_stop_del):
         ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
 
         em = fits[name].emited_cohort_density()
-        ax.stem(em['delay'],em['total_axis'], markerfmt='xr', linefmt='--r')
-        ax.stem(em['delay'],em['other_axis'], markerfmt='xg', linefmt='--g')
-        ax.stem(em['delay'],em['primary_axis'], markerfmt='xb', linefmt='--b')
+        ax.stem(em['delay'],em['total_axis'], markerfmt='xr', linefmt='--r', basefmt='k', label='Total emited cohort density')
+        ax.stem(em['delay'],em['other_axis'], markerfmt='xg', linefmt='--g', basefmt='k', label='Others emited cohort density')
+        ax.stem(em['delay'],em['primary_axis'], markerfmt='xb', linefmt='--b', basefmt='k', label='Primary emited cohort density')
 
         grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
