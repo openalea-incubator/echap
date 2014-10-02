@@ -57,10 +57,15 @@ def multi_plot_tillering(obs_data, fits, delta_stop_del):
     for name,ax,delta_stop_del in varieties :
 
         fit = fits[name].axis_dynamics(include_MS = False)
+
+        
         ax.plot(fit['HS'], fit['total'], '--r', label='Total')
         ax.plot(fit['HS'], fit['primary'], '-b', label='Primary')
         ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
 
+        em = fits[name].emited_cohort_density()
+        ax.stem(em['delay'],em['total_axis'])#other_axis  primary_axis  total_axis
+        
         grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
         ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
