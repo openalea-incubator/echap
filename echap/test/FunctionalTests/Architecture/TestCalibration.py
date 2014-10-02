@@ -18,6 +18,7 @@ import openalea.plantgl.all as pgl
 from alinea.adel.mtg_interpreter import *
 from alinea.echap.weather_data import *
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
+from alinea.adel.astk_interface import AdelWheat
 
 plt.ion()
 
@@ -44,90 +45,15 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     
 def test_axis_dynamics(name='Mercia', color='r'):
 
-    pars, _, _, _, _, _ = get_reconstruction(name)
-    
-    wfit = pars['tillering']
-    
-    if name is "Mercia":
-        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Mercia']
-        pgen = pars[12]['config']
-    elif name is 'Rht3':
-        obs = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
-        pgen = pars[11]['config']
-    elif name is 'Tremie12':
-        obs = archidb.Plot_data_Tremie_2011_2012()
-        pgen = pars[13]['config']
-    else:
-        obs = archidb.Plot_data_Tremie_2012_2013()
+    dates = range(500,2500,100)
+    adel = AdelWheat()
+    res = AdelWheat.checkAxeDyn(adel, dates, density=1)
 
-    '''
-    def _getfit(pgen):
-        primary_proba = pgen['decide_child_axis_probabilities']
-        plant_density = pgen['plants_density']
-        ears_density = pgen['ears_density']
-        ears_per_plant = float(ears_density) / plant_density
-        nff = sum([int(k)*v for k,v in pgen['MS_leaves_number_probabilities'].iteritems()]) #moyenne ponderee
-        m = WheatTillering(primary_tiller_probabilities=primary_proba, ears_per_plant = ears_per_plant, nff=nff)
-        fit = m.axis_dynamics(plant_density = plant_density)
-        return fit
+    hs_conv = archidb.HS_converter[name]
+    res['HS'] = hs_conv(res['TT'])
     
-    #fit by Mariem
-    #fit = _getfit(pgen)
-    #newfit
-    new_fit = _getfit(newpgen)
-    '''
-    plant_density = pgen['plants_density']
-    fit = wfit.axis_dynamics(plant_density = plant_density)
+    res.plot('HS', 'nbaxes_present', style='--o'+color, label='nbaxes_present')
 
-    fit.plot('HS', 'total', style='--'+color, label='Total '+name)
-    fit.plot('HS', 'primary', style='-'+color, label='Primary '+name)
-    fit.plot('HS', 'others', style=':'+color, label= 'Others '+name)
-
-    if 'plant_density_at_emergence' in obs:
-        plt.plot([1,18],[obs['plant_density_at_emergence'],obs['ear_density_at_harvest']], 'o'+color) 
-    else :
-        plt.plot([1,18],[obs['sowing_density'],obs['ear_density_at_harvest']], 'o'+color) 
-        
-    plt.xlabel("HS")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-
-    return obs, fit
-    
-'''
-def multi_test_axis_dynamics():  
-    
-    fig, axes = plt.subplots(nrows=2, ncols=2)
-    ax0, ax1, ax2, ax3 = axes.flat
-    
-    obsM, fitM = test_axis_dynamics(name='Mercia')
-    ax0.plot(fitM['HS'], fitM['total'], color='r', label='Total')
-    ax0.plot(fitM['HS'], fitM['primary'], color='b', label='Primary')
-    ax0.plot(fitM['HS'], fitM['others'], color='y', label='Others')
-    ax0.plot([1,19],[obsM['plant_density_at_emergence'],obsM['ear_density_at_harvest']], 'om', label='Obs')
-    ax0.set_xlim([0, 20]); ax0.set_ylim([0, 1600])
-    ax0.set_title('Mercia',fontsize=10)
-
-    obsR, fitR = test_axis_dynamics(name='Rht3')
-    ax1.plot(fitR['HS'], fitR['total'], color='r', label='Total')
-    ax1.plot(fitR['HS'], fitR['primary'], color='b', label='Primary')
-    ax1.plot(fitR['HS'], fitR['others'], color='y', label='Others')
-    ax1.plot([1,19],[obsR['plant_density_at_emergence'],obsR['ear_density_at_harvest']], 'om', label='Obs')
-    ax1.set_xlim([0, 20]); ax1.set_ylim([0, 1600])
-    ax1.legend(bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
-    ax1.set_title('Rht3',fontsize=10)
-    
-    obsT1, fitT1 = test_axis_dynamics(name='Mercia')
-    ax2.plot(fitT1['HS'], fitT1['primary'], color='b')
-    ax2.set_xlim([0, 20]); ax2.set_ylim([0, 1600])
-    ax2.set_title('Tremie12',fontsize=10)
-
-    obsT2, fitT2 = test_axis_dynamics(name='Rht3')
-    ax3.plot(fitT2['HS'], fitT2['primary'], color='b')
-    ax3.set_xlim([0, 20]); ax3.set_ylim([0, 1600])
-    ax3.set_title('Tremie13',fontsize=10)
-    
-    fig.suptitle("Axis dynamics")
-'''
 
 #------------------------------------------------------------------------------------- 
 # LAI
@@ -144,21 +70,23 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', name_obs='Mercia', dTT_stop=0, original=False, n=30, color='r', **kwds): #name_obs = Mercia/Rht3/Tremie12/Tremie13
+def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_reduction = 1, **kwds): 
 
-    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, dTT_stop=dTT_stop, as_pgen=original, **kwds)
+    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, as_pgen=original, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
     pgen = pars[12]['config']
     sim = simLAI(adel, domain_area, convUnit, nplants)
     sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    label = 'LAI vert simule '+name_obs
-    sim.plot('HS','LAI_vert',color=color, label=label)
+    sim.plot('HS','LAI_vert',color=color, label='LAI vert simule '+name)
+    
+    #sim['nbr_axe_tot'] = (( sim['Nbr.axe.tot.m2'] * sim['aire du plot']) / sim['Nbr.plant.perplot']) - 1
+    #sim.plot('HS','nbr_axe_tot', style='--oy', label='Nbr axe tot '+name) 
     
     #donnees obs
-    obs = archidb.PAI_data()[name_obs]
+    obs = archidb.PAI_data()[name]
     obs['HS'] = (obs.TT_date - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
     #photos
     x=obs['HS']; y=obs['PAI_vert_average_photo']; err=obs['PAI_vert_SD_photo']
-    label = 'PAI vert SD photo '+name_obs
+    label = 'PAI vert SD photo '+name
     plt.errorbar(x,y,yerr=err, fmt='--o'+color, label=label)
     #calcul intervalle de confiance
     s  = obs['PAI_vert_plt_photo']
@@ -167,11 +95,11 @@ def compare_LAI(name='Mercia', name_obs='Mercia', dTT_stop=0, original=False, n=
     #biomasse
     if 'LAI_vert_SD_biomasse' in obs:
         x=obs['HS']; y=obs['LAI_vert_average_biomasse']; err=obs['LAI_vert_SD_biomasse']
-        label = 'LAI vert SD biomasse '+name_obs
+        label = 'LAI vert SD biomasse '+name
         plt.errorbar(x,y,yerr=err, fmt='--oc', label=label)
     
     plt.xlabel("HS")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return sim
     
