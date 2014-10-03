@@ -292,18 +292,19 @@ class EchapReconstructions(object):
     
     def get_reconstruction(self, name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', **kwds):
     
-        density = density_fits()[name]
+        density = self.density_fits[name]
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
         density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0]
         
         pdata = self.plot_data[name]
         stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence, inter_row=pdata['inter_row'])        
-        n_emerged, _, _, _ = stand.stand(nplants, aspect)
+        n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
         pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence,force_start_reg=False)#force_start_reg remains to be tested , but setting to True is needed for tremie12
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
+        axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
