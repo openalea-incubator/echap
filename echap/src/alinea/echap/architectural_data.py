@@ -40,6 +40,13 @@ def Tremie13_fitted_dimensions():
         dim[nff] = pandas.read_csv(fn)'''
     return dim
 
+def dimension_fits():
+    d = {'Mercia': Mercia_2010_fitted_dimensions(),
+        'Rht3': Rht3_2010_fitted_dimensions(),
+        'Tremie12': Tremie12_fitted_dimensions(),
+        'Tremie13': Tremie13_fitted_dimensions()}
+    return d
+    
 # ---------------------------------------------------- Fitted HS = f(TT)
 
 class HaunStage(object):
@@ -613,7 +620,18 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
         # SR : use same as Mercia ???
         dfsr = sr_reader(data_file_srdb)
         
-    if name is 'Tremie':
+    if name is 'Tremie12':
+        # fichier angle non dispo encore, on prend mercia en attendant
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
+        # XY
+        dfxy = xy_reader(data_file_xydb)
+        #dfxy = dfxy[dfxy['variety'].isin(['Mercia','Rht3'])]
+        #dfxy = dfxy.reset_index()
+        # SR
+        dfsr = sr_reader(data_file_srdb)
+        
+    if name is 'Tremie13':
         # fichier angle non dispo encore, on prend mercia en attendant
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
@@ -633,7 +651,6 @@ def leaf_curvature_data(name='Mercia', bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj 
     
     return xy, sr, bins
     
-
 #
 # Elaborated data
 #    
