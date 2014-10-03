@@ -24,8 +24,8 @@ plt.ion()
 
 def get_reconstruction(name='Mercia', **args):
     fun = reconst_db[name]
-    pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants = fun(**args)
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+    pars, adel, domain, domain_area, convUnit, nplants = fun(**args)
+    return pars, adel, domain, domain_area, convUnit, nplants
 '''
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]

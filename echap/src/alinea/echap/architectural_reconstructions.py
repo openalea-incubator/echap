@@ -152,7 +152,7 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order):
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order)
     
-def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 6, 'Tremie13':4} , max_order=None):
+def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 7, 'Tremie13':4} , max_order=None):
         
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
@@ -187,12 +187,12 @@ dynT_MS = {'a_cohort':0.009380186,
                 'TT_col_N_phytomer_potential':1380.766379, # Will be recomputed as a function of Nff
                 'n0':4.764532295,'n1':2.523833441,'n2':5.083739846} #Mercia dynT_user
         
-def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green_leaves):
+def echap_reconstruction(nplants, density_at_emergence, density_at_harvest, Tillering, dimensions, dynamic, green_leaves):
     """ Construct devT tables from models, considering one reconstruction per nff (ie composite)
     """
     from alinea.adel.AdelR import devCsv
     
-    pgens = Tillering.to_pgen(nplants, density)
+    pgens = Tillering.to_pgen(nplants, density_at_emergence, density_at_harvest)
     adelT = {}
     pars = {}
     
@@ -204,6 +204,11 @@ def echap_reconstruction(nplants, density, Tillering, dimensions, dynamic, green
         GL = GL.ix[GL['TT'] > dynamic['TT_col_N_phytomer_potential'],:]
         GL = dict(zip(GL['TT'],GL[str(k)]))
         pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+        
+        if 'hs_deb_reg' in pgens[k]:
+            hs_deb_reg = pgens[k].pop('hs_deb_reg')
+            TT_start_reg = dynamic['TT_col_0'] + hs_deb_reg * 1. / dynamic['a_cohort']
+            pgens[k].update({'TT_start_reg_user': TT_start_reg})
 
         adelT[k], pars[k] = pgen_ext.build_tables(pgens[k])
         axeT, dimT, phenT = adelT[k]
@@ -223,7 +228,8 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
 
     pdata = archidb.Plot_data()['Mercia']
     density = density_fits()['Mercia']
-    density_at_emergence = density['density'][density['HS'] == 0]
+    density_at_emergence = density['density'][density['HS'] == 0][0]
+    density_at_harvest = density['density'][density['HS'] == max(density['HS'])][0]
     
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence,inter_row=pdata['inter_row'])
     
@@ -232,7 +238,7 @@ def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, d
     dimT = archidb.Mercia_2010_fitted_dimensions()
     GL = archidb.GL_number()['Mercia']
     
-    devT, pars = echap_reconstruction(nplants, density_at_emergence, wfit, dimT, dynT_MS, GL)
+    devT, pars = echap_reconstruction(nplants, density_at_emergence, density_at_harvest, wfit, dimT, dynT_MS, GL)
     
     #adjust density according to density fit
     if density['density'].iloc[-1] < density['density'].iloc[0] and nplants > 1:
@@ -253,7 +259,7 @@ def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT
 
     pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
     density = density_fits()['Rht3']
-    density_at_emergence = density['density'][density['HS'] == 0]
+    density_at_emergence = density['density'][density['HS'] == 0][0]
 
     stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence,inter_row=pdata['inter_row'])
     
