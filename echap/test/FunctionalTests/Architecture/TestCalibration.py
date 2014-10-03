@@ -9,7 +9,7 @@ import csv
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
 
-from alinea.echap.architectural_reconstructions import reconst_db
+from alinea.echap.architectural_reconstructions import EchapReconstructions
 
 from multiprocessing import Pool,freeze_support
 import itertools
@@ -22,10 +22,11 @@ from alinea.adel.astk_interface import AdelWheat
 
 plt.ion()
 
+Reconst = EchapReconstructions()
+
 def get_reconstruction(name='Mercia', **args):
-    fun = reconst_db[name]
-    pars, adel, domain, domain_area, convUnit, nplants = fun(**args)
-    return pars, adel, domain, domain_area, convUnit, nplants
+    adel = Reconst.get_reconstruction(name, **args)
+    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
 '''
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
