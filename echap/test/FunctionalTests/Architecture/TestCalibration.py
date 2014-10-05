@@ -23,10 +23,11 @@ from alinea.adel.astk_interface import AdelWheat
 plt.ion()
 
 Reconst = EchapReconstructions()
+HSconv = archidb.HS_converter
 
 def get_reconstruction(name='Mercia', **args):
     adel = Reconst.get_reconstruction(name, **args)
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+    return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
 '''
 def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     fun = reconst_db[name]
@@ -73,10 +74,10 @@ def simLAI(adel, domain_area, convUnit, nplants):
 
 def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_reduction = 1, **kwds): 
 
-    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, as_pgen=original, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
-    pgen = pars[12]['config']
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
+    conv = HSconv[name]
     sim = simLAI(adel, domain_area, convUnit, nplants)
-    sim['HS'] = (sim.ThermalTime - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    sim['HS'] = conv(sim.ThermalTime)
     sim.plot('HS','LAI_vert',color=color, label='LAI vert simule '+name)
     
     #sim['nbr_axe_tot'] = (( sim['Nbr.axe.tot.m2'] * sim['aire du plot']) / sim['Nbr.plant.perplot']) - 1
@@ -84,7 +85,7 @@ def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_
     
     #donnees obs
     obs = archidb.PAI_data()[name]
-    obs['HS'] = (obs.TT_date - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    obs['HS'] = conv(obs.TT_date)
     #photos
     x=obs['HS']; y=obs['PAI_vert_average_photo']; err=obs['PAI_vert_SD_photo']
     label = 'PAI vert SD photo '+name
