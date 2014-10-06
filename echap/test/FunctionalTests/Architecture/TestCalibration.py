@@ -3,7 +3,6 @@ import numpy
 import os
 import matplotlib.pyplot as plt
 import math
-#from math import *
 import csv
 
 from alinea.adel.WheatTillering import WheatTillering
@@ -47,15 +46,54 @@ def get_pgen(name='Mercia', original = False, dTT_stop = 0):
     
 def test_axis_dynamics(name='Mercia', color='r'):
 
-    dates = range(500,2500,100)
+    dates = range(0,2500,100)
     adel = AdelWheat()
     res = AdelWheat.checkAxeDyn(adel, dates, density=1)
 
-    hs_conv = archidb.HS_converter[name]
-    res['HS'] = hs_conv(res['TT'])
+    conv = HSconv[name]
+    res['HS'] = conv(res['TT'])
     
-    res.plot('HS', 'nbaxes_present', style='--o'+color, label='nbaxes_present')
+    res.plot('HS', 'nbaxes_present', style='--o'+color, label='nbaxes_present '+name)
+    plt.ylim(ymin=0); plt.xlabel("HS")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    
+#------------------------------------------------------------------------------------- 
+# Intervalle de confiance
+def mean(lst):
+    # μ = 1/N Σ(xi)
+    return sum(lst) / float(len(lst))
 
+def variance(lst):
+    """
+    Uses standard variance formula (sum of each (data point - mean) squared)
+    all divided by number of data points
+    """
+    # σ² = 1/N Σ((xi-μ)²)
+    mu = mean(lst)
+    return 1.0/len(lst) * sum([(i-mu)**2 for i in lst])
+
+def conf_int(lst, perc_conf=95):
+    """
+    Confidence interval - given a list of values compute the square root of
+    the variance of the list (v) divided by the number of entries (n)
+    multiplied by a constant factor of (c). This means that I can
+    be confident of a result +/- this amount from the mean.
+    The constant factor can be looked up from a table, for 95% confidence
+    on a reasonable size sample (>=500) 1.96 is used.
+    """
+    if perc_conf == 95:
+        c = 1.96
+    elif perc_conf == 90:
+        c = 1.64
+    elif perc_conf == 99:
+        c = 2.58
+    else:
+        c = 1.96
+        #print 'Only 90, 95 or 99 % are allowed for, using default 95%'
+    n, v = len(lst), variance(lst)
+    #if n < 1000:
+        #print 'WARNING: constant factor may not be accurate for n < ~1000'
+    return math.sqrt(v/n) * c
 
 #------------------------------------------------------------------------------------- 
 # LAI
@@ -72,7 +110,16 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_reduction = 1, **kwds): 
+def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds): 
+
+    if name is 'Mercia':
+        color='r'
+    elif name is 'Rht3':
+        color='g'
+    elif name is 'Tremie12':
+        color='b'
+    else:
+        color = 'm'
 
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
     conv = HSconv[name]
@@ -83,22 +130,43 @@ def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_
     #sim['nbr_axe_tot'] = (( sim['Nbr.axe.tot.m2'] * sim['aire du plot']) / sim['Nbr.plant.perplot']) - 1
     #sim.plot('HS','nbr_axe_tot', style='--oy', label='Nbr axe tot '+name) 
     
-    #donnees obs
-    obs = archidb.PAI_data()[name]
+    #donnees photo
+    obs = archidb.PAI_photo_data()[name]
     obs['HS'] = conv(obs.TT_date)
-    #photos
-    x=obs['HS']; y=obs['PAI_vert_average_photo']; err=obs['PAI_vert_SD_photo']
-    label = 'PAI vert SD photo '+name
-    plt.errorbar(x,y,yerr=err, fmt='--o'+color, label=label)
-    #calcul intervalle de confiance
-    s  = obs['PAI_vert_plt_photo']
-    obs['IC'] = (1.96*obs['PAI_vert_SD_photo'])/numpy.sqrt(s) ; erric = obs['IC']
-    #plt.errorbar(x,y,yerr=erric, fmt='--om', label='PAI vert IC photo')
-    #biomasse
-    if 'LAI_vert_SD_biomasse' in obs:
-        x=obs['HS']; y=obs['LAI_vert_average_biomasse']; err=obs['LAI_vert_SD_biomasse']
-        label = 'LAI vert SD biomasse '+name
-        plt.errorbar(x,y,yerr=err, fmt='--oc', label=label)
+        #mean
+    obs_new = obs.groupby('HS').mean(); obs_new = obs_new.reset_index()
+        #IC 
+    IC = []
+    lst_HS = obs['HS'].unique()
+    grouped = obs.groupby('HS')
+    for HS in lst_HS :
+        obs_HS = grouped.get_group(HS)
+        IC.append(conf_int(obs_HS['PAI_vert_photo'], perc_conf=95))
+    obs_new['IC'] = IC
+        #plot mean with IC
+    plt.errorbar(obs_new['HS'], obs_new['PAI_vert_photo'], yerr=obs_new['IC'], fmt='--o'+color, label = 'PAI vert photo mean+IC '+name)
+    
+    #donnees biomasse
+    var = ['Tremie12', 'Tremie13']
+    if name in var :
+        obs = archidb.LAI_biomasse_data()[name]
+        obs['HS'] = conv(obs.TT_date)
+            #mean
+        obs_new = obs.groupby('HS').mean(); obs_new = obs_new.reset_index()
+                #IC 
+        IC = []
+        lst_HS = obs['HS'].unique()
+        grouped = obs.groupby('HS')
+        for HS in lst_HS :
+            obs_HS = grouped.get_group(HS)
+            IC.append(conf_int(obs_HS['LAI_vert_biomasse'], perc_conf=95))
+        obs_new['IC'] = IC
+            #plot mean with IC
+        if name is 'Tremie12':
+            color = 'c'
+        else:
+            color = '#F5A9F2'
+        plt.errorbar(obs_new['HS'], obs_new['LAI_vert_biomasse'], yerr=obs_new['IC'], fmt='--o', color=color, label = 'LAI vert biomasse mean+IC '+name)
     
     plt.xlabel("HS")
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
@@ -108,13 +176,23 @@ def compare_LAI(name='Mercia', original=False, n=30, color='r', aborting_tiller_
 #------------------------------------------------------------------------------------- 
 # Hauteur de couvert simule
 
-def height(name='Mercia', dTT_stop=0, original=False, n=30):
+def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     from alinea.astk.plantgl_utils import get_height
-
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)
-    dd = range(400,3000,100); max_h = []
-    sim = [adel.setup_canopy(age) for age in dd]
     
+    if name is 'Mercia':
+        color='r'
+    elif name is 'Rht3':
+        color='g'
+    elif name is 'Tremie12':
+        color='b'
+    else:
+        color='m'
+
+    dd = range(500,2500,100)
+    
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
+    sim = [adel.setup_canopy(age) for age in dd]
+    max_h = []
     for g in sim:
         #scene = plot3d(g)
         #pgl.Viewer.display(scene)
@@ -124,7 +202,12 @@ def height(name='Mercia', dTT_stop=0, original=False, n=30):
         max_h.append(max_height)
 
     h = pandas.DataFrame({'tt':dd, 'height':max_h})
-    h['HS'] = (h.tt - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
+    conv = HSconv[name]
+    h['HS'] = conv(h['tt'])
+    
+    h.plot('HS', 'height', style='--o'+color, label = 'Height '+name)
+    plt.xlabel("HS")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return h
         
@@ -140,24 +223,23 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     #high resolution
-    #gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
-    #resolution /4
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 1072, image_height = 712, getImages=True, replicate=rep)
-    
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+
     return gc
     
-def comp_TC(name='Mercia_maq1', name_obs='Mercia', original=False, n=30, zenith=0, dTT_stop=0): #zenith = 0 or 57
+def comp_TC(name='Mercia', n=30, zenith=0, aborting_tiller_reduction=1, **kwds): #zenith = 0 or 57
+    conv = HSconv[name]
 
     if zenith==0:
         zen='0'; rep=1
     else:
-        zen='57';rep=2
+        zen='57'; rep=2
 
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n)  
     dd = range(400,2600,100)
+    
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
     sim = [adel.setup_canopy(age) for age in dd]
     TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
-    obs = archidb.TC_data()[name_obs+'_'+zen]
 
     n=0; tc=[]; tc_sen=[]
     while n<len(TC_sim):
@@ -166,13 +248,30 @@ def comp_TC(name='Mercia_maq1', name_obs='Mercia', original=False, n=30, zenith=
         n = n + 1
 
     sim_green = pandas.DataFrame({'tt':dd, 'TCgreen':tc, 'TCsen':tc_sen})
-    sim_green['HS'] = (sim_green.tt - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    obs['HS'] = (obs.TT - pgen['dynT_user'].TT_col_0[0]) * pgen['dynT_user'].a_cohort[0]
-    
-    # Tracer TC_tot, TC_green et senescence sur le meme graph
+    sim_green['HS'] = conv(sim_green.tt)
+
+    # plot sim TC_tot, TC_green et senescence sur le meme graph
     sim_green['TCtot'] = sim_green['TCgreen'] + sim_green['TCsen']
-    sim_green.plot('HS','TCtot',color='b'); sim_green.plot('HS','TCgreen',color='g'); sim_green.plot('HS','TCsen',color='y')
-    obs.plot('HS','TC',style='or')
+    sim_green.plot('HS','TCtot',style='-ob', label='TC total sim '+name); sim_green.plot('HS','TCgreen',style='-og', label = 'TC green sim '+name); sim_green.plot('HS','TCsen',style='-oy', label = 'TC senescent sim '+name)
+    
+    #obs    
+    obs = archidb.TC_data()[name+'_'+zen]
+    obs['HS'] = conv(obs.TT)
+        #mean
+    obs_new = obs.groupby('HS').mean(); obs_new = obs_new.reset_index()
+        #IC 
+    IC = []
+    lst_HS = obs['HS'].unique()
+    grouped = obs.groupby('HS')
+    for HS in lst_HS :
+        obs_HS = grouped.get_group(HS)
+        IC.append(conf_int(obs_HS['TC'], perc_conf=95))
+    obs_new['IC'] = IC
+        #plot mean with IC
+    plt.errorbar(obs_new['HS'], obs_new['TC'], yerr=obs_new['IC'], fmt='or', label = 'TC mean+IC '+name)
+    
+    plt.xlabel("HS")
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     # Tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
     #sim_green['1-TC']=1-sim_green['TCgreen']
@@ -275,7 +374,7 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
         # groupe par date
         seq = pandas.date_range(start="2010-10-15", end="2011-07-18")
         bid = bid[seq]
-    if name is 'Tremie': #Tremie 2011/2012
+    if name is 'Tremie12': #Tremie 2011/2012
         data_file = 'METEO_stationINRA_20112012.csv'
         # correspondance entre date et TT
         met = Boigneville_2011_2012()
@@ -298,41 +397,36 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
     # PARTIE SIM ------------------------------------------------------------------------------------------------------------
-    pgen, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, dTT_stop=dTT_stop, as_pgen=original, nplants=n) 
+    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, as_pgen=original)
+    pgen = pars[12]['config']
     tx = pgen['dynT_user'].a_cohort[0]    
-    #dd = range(900,2200,100)
-    dd = range(400,2600,100)
+    dd = range(500,2500,500) #dd = range(400,2600,300)
     sim = [adel.setup_canopy(age) for age in dd]
-    #sim=adel.setup_canopy(1380)
 
-    light_sim_0 = [draft_light(g, adel, domain, z_level=0) for g in sim]
-    #light_sim_5 = [draft_light(g, adel, domain, z_level=5) for g in sim]
-    #light_sim_20 = [draft_light(g, adel, domain, z_level=20) for g in sim]
-    #light_sim_25 = [draft_light(g, adel, domain, z_level=25) for g in sim]
-
-    sim0 = pandas.DataFrame({'TT':dd, 'light0':light_sim_0})
-    sim0['HS'] = sim0.TT*tx
-    #sim5 = pandas.DataFrame({'TT':dd, 'light5':light_sim_5})
-    #sim20 = pandas.DataFrame({'TT':dd, 'light20':light_sim_20})
-    #sim25 = pandas.DataFrame({'TT':dd, 'light25':light_sim_25})
+    #list_level = [[0,'g'],[5,'y'],[20,'m'],[25,'r']]
+    list_level = [[0,'g']]
+    for level,c in list_level : 
+        light_sim = 'light_sim_'+str(level); res_sim = 'sim_'+str(level)
+        light_sim = [draft_light(g, adel, domain, z_level=level) for g in sim]
+        res_sim = pandas.DataFrame({'TT':dd, 'light':light_sim})
+        res_sim['HS'] = res_sim.TT*tx
+        #plot
+        res_sim.plot('HS', 'light', color = c, label = 'Light sim level = '+str(level)) #linewidth=2
+    plt.xlabel("HS"); plt.ylabel("%")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
     # GRAPHES ---------------------------------------------------------------------------------------------------------------
     #obs tous les points
-    dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
+    #dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
         #niveau du sol (point rouge)
     #dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
         #20cm du sol (point bleu)
     #dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
     #obs moyennes
-    tab0['HS'] = tab0.TT*tx; tab0.plot('TT','%',color='m')
+    #tab0['HS'] = tab0.TT*tx; tab0.plot('TT','%',color='m')
     #tab20['HS'] = tab20.TT*tx; tab20.plot('HS','%',color='c')
-    #sim
-    #sim0.plot('HS','light0',color='b',linewidth=2)  
-    #sim5.plot('TT','light5',color='r',linestyle='--',linewidth=2)     
-    #sim20.plot('TT','light20',color='b',linewidth=2)
-    #sim25.plot('TT','light25',color='b',linestyle='--',linewidth=2)
     
-    return sim0
+    #return sim
  
 #-------------------------------------------------------------------------------------
 

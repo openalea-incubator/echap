@@ -241,7 +241,7 @@ class EchapReconstructions(object):
     def __init__(self):
         
         self.density_fits = density_fits()
-        self.tillering_fits = tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 7, 'Tremie13':4} , max_order=None)
+        self.tillering_fits = tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12':7, 'Tremie13':4} , max_order=None)
         self.dimension_fits = archidb.dimension_fits()
         self.GL_fits = GL_fits()
         self.leaf_shape_fits = leaf_shape_fits(bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
@@ -249,7 +249,7 @@ class EchapReconstructions(object):
     
     
     
-    def get_pars(self, name='Mercia',nplants=1, density = 1, force_start_reg = False):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = False):
 
         """ Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
@@ -290,7 +290,7 @@ class EchapReconstructions(object):
         
 
     
-    def get_reconstruction(self, name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', **kwds):
     
         density = self.density_fits[name]
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
@@ -300,7 +300,7 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence, inter_row=pdata['inter_row'])        
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence,force_start_reg=False)#force_start_reg remains to be tested , but setting to True is needed for tremie12
+        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, force_start_reg=False)#force_start_reg remains to be tested , but setting to True is needed for tremie12
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
