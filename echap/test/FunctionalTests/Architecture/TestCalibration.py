@@ -7,6 +7,7 @@ import csv
 
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
+import alinea.echap.architectural_reconstructions as rec
 
 from alinea.echap.architectural_reconstructions import EchapReconstructions
 
@@ -22,17 +23,12 @@ from alinea.adel.astk_interface import AdelWheat
 plt.ion()
 
 Reconst = EchapReconstructions()
-HSconv = archidb.HS_converter
+HSconv = rec.HS_converter
 
 def get_reconstruction(name='Mercia', **args):
     adel = Reconst.get_reconstruction(name, **args)
     return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-'''
-def get_pgen(name='Mercia', original = False, dTT_stop = 0):
-    fun = reconst_db[name]
-    wfit, _, _, _, _, _, _, _ = fun(nplants=1,nsect=1,as_pgen=original, dTT_stop=dTT_stop)
-    return wfit
-'''
+
 #-------------------------------------------------------------------------------------   
 # test new tillering parametrisation against original one by Mariem and data
 #

@@ -7,6 +7,7 @@ from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
 from math import sqrt
 
+
 #----------------------------------------------------- Fitted dimension
 
 def Mercia_2010_fitted_dimensions():
@@ -46,27 +47,6 @@ def dimension_fits():
         'Tremie13': Tremie13_fitted_dimensions()}
     return d
     
-# ---------------------------------------------------- Fitted HS = f(TT)
-
-class HaunStage(object):
-    """ Handle HaunStage = f (ThermalTime) fits
-    """
-    
-    def __init__(self, a_cohort = 1. / 110., TT_col_0 = 0):
-        self.a_cohort = a_cohort
-        self.TT_col_0 = TT_col_0
-        
-    def __call__(self, TT):
-        return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
-        
-    def TT(self, HS):
-        return self.TT_col_0 + numpy.array(HS) / self.a_cohort
-
-HS_converter = {'Mercia': HaunStage(0.009380186, 101.4740799),
-                'Rht3': HaunStage(0.008323522,65.00120875),
-                'Tremie12': HaunStage(0.010736,236.2589295),
-                'Tremie13': HaunStage(0.009380186, 101.4740799) # not fitted, use Mercia Fit
-                }
 
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
@@ -94,6 +74,8 @@ def HS_number():
          'Tremie12': pandas.DataFrame({'TT':[928.9,1044.25,1190.95,1268.7,1392.15,1483.95,1568.7,1659.1,1797.95,1905,2084.95], '12':[7.6,8.5,10.1,11,12,12.6,12.6,12.7,12.7,12.7,12.6], '13':[7.5,8.5,10.2,11.0,12.5,12.7,12.6,12.9,12.9,12.9,12.6], 'mediane':[7.55,8.5,10.15,11,12.25,12.65,12.6,12.8,12.8,12.8,12.6]}),
          'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[4.3,8.1,9.6,11,11,11,11,11,11,11], '12':[4.5,8.8,10,12,12,12,12,12,12,12], 'mediane':[4.4,8.45,9.8,11.5,11.5,11.5,11.5,11.5,11.5,11.5]})}
     return SSI
+
+
     
 '''   
 GL_Mercia = {'GL_number' : {1732.1: 4.03631578947369, 1818.05:3.01047368421053,1959.55:1.90263157894737, 2108.65:0.0},
@@ -549,6 +531,12 @@ def Tillering_data():
 # Angles / formes a plat  
 
 
+def mean_nff():
+    def _nff(ms_nff_probas):
+        return sum([int(k)*v for k,v in ms_nff_probas.iteritems()])
+    return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().iteritems()}
+   
+
     
 def leaf_curvature_data(name='Mercia'):
 
@@ -610,6 +598,22 @@ def leaf_curvature_data(name='Mercia'):
 # Elaborated data
 #    
 
+# add mean dynamic point to HS, SSI, GL data using nff proba from tillering
+
+def _meanDyn(name):
+    df_GL = GL_number()[name]; df_HS = HS_number()[name]; df_SSI = SSI_number()[name]
+    nff_proba = Tillering_data()[name]['nff_probabilities']
+    df_GL['mean_pond'] = sum([df_GL[str(k)] * nff_proba[k] for k in nff_proba])
+    df_HS['mean_pond'] = sum([df_HS[str(k)] * nff_proba[k] for k in nff_proba])
+    df_SSI['mean_pond'] = sum([df_SSI[str(k)] * nff_proba[k] for k in nff_proba])
+    return {'GL':df_GL, 'HS':df_HS, 'SSI':df_SSI}
+    
+def HS_GL_SSI_data():
+    d={}
+    for name in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
+        d[name] = _meanDyn(name)
+    return d
+    
 def _add_ghs(df, g):
     hs_conv = HS_converter[g]
     df['Var'] = g

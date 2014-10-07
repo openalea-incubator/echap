@@ -4,24 +4,23 @@
 import matplotlib.pyplot as plt
 import pandas
 
-def dynamique_plot(GL_data, SSI_data, HS_data, dynT_MS):
+def dynamique_plot_nff(HS_GL_SSI_data, dynT_MS):
     plt.ion()
     
     varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
     for name, color in varieties :
-        df_GL = GL_data[name]; df_HS = HS_data[name]; df_SSI = SSI_data[name]
+        df_GL = HS_GL_SSI_data[name]['GL']
+        df_HS = HS_GL_SSI_data[name]['HS']
+        df_SSI = HS_GL_SSI_data[name]['SSI']
         if '11' in df_GL.columns:
             df_GL.plot('TT', '11', style=':o'+color, label='GL ' +name+', nff 11')
             df_HS.plot('TT', '11', style='--o'+color, label='HS ' +name+', nff 11')
-            #df_SSI.plot('TT', '11', style='-o'+color, label='SSI ' +name+', nff 11')
         if '12' in df_GL.columns:
             df_GL.plot('TT', '12', style=':^'+color, label='GL ' +name+', nff 12')
             df_HS.plot('TT', '12', style='--^'+color, label='HS ' +name+', nff 12')
-            #df_SSI.plot('TT', '12', style='-^'+color, label='SSI ' +name+', nff 12')
         if '13' in df_GL.columns:
             df_GL.plot('TT', '13', style=':p'+color, label='GL ' +name+', nff 13')
             df_HS.plot('TT', '13', style='--p'+color, label='HS ' +name+', nff 13')
-            #df_SSI.plot('TT', '13', style='-p'+color, label='SSI ' +name+', nff 13')
   
     vars = [['Others','c'],['Tremie13','y']]
     for name, color in vars :
@@ -42,6 +41,27 @@ def dynamique_plot(GL_data, SSI_data, HS_data, dynT_MS):
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     plt.xlabel("HS")
     
+def dynamique_plot(HS_GL_SSI_data, converter = None):
+    plt.ion()
+    
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    
+    for name,color in varieties :
+        df_GL = HS_GL_SSI_data[name]['GL']
+        df_HS = HS_GL_SSI_data[name]['HS']
+        df_SSI = HS_GL_SSI_data[name]['SSI']
+        
+        if converter is None:
+            df_GL.plot('TT', 'mean_pond', style=':o'+color, label='Moyenne pond GL ' +name)
+            df_HS.plot('TT', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
+        else:
+            conv = converter[name]
+            hsgl = conv(df_GL['TT'])
+            hshs = conv(df_HS['TT'])
+            plt.plot(hsgl, df_GL['mean_pond'], ':o'+color)
+            plt.plot(hshs, df_HS['mean_pond'], '--o'+color)
+    plt.xlabel("TT")
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
 def density_plot(density_data, fits):
     plt.ion()
@@ -114,6 +134,9 @@ def multi_plot_tillering(obs_data, fits, delta_stop_del):
         color='#FFFF00'; ax.plot(obs['HS'], obs['TT3F'], 'p', color=color, label='TT3F')
         ax.plot(obs['HS'], obs['FT'], 'pm', label='FT')
         
+        hs_debreg = fits[name].hs_debreg()
+        ax.annotate('', xy=(hs_debreg, 0), xytext=(hs_debreg, 1), arrowprops=dict(facecolor='#FE9A2E', shrink=0.00))
+
         if name is 'Mercia':
             ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
         elif name is 'Rht3':

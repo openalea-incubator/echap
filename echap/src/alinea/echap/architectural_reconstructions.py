@@ -4,6 +4,7 @@ Current reconstructions use fit from Mariem (pgen data) + new modification consi
 """
 import pandas
 import numpy
+import scipy.stats as stats
 from copy import deepcopy
 
 from alinea.adel.astk_interface import AdelWheat
@@ -176,7 +177,9 @@ def density_fits():
                 'Rht3': pandas.DataFrame({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
-    conv = archidb.HS_converter
+                
+    conv = HS_converter
+    
     for k in density_fits:
         df = density_fits[k]
         df['TT'] = conv[k].TT(df['HS'])
@@ -227,6 +230,59 @@ reconst_db={}
 #
 # Fit dynamique
 #
+# ---------------------------------------------------- Fitted HS = f(TT)
+#
+class HaunStage(object):
+    """ Handle HaunStage = f (ThermalTime) fits
+    """
+    
+    def __init__(self, a_cohort = 1. / 110., TT_col_0 = 0):
+        self.a_cohort = a_cohort
+        self.TT_col_0 = TT_col_0
+        
+    def __call__(self, TT):
+        return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
+        
+    def TT(self, HS):
+        return self.TT_col_0 + numpy.array(HS) / self.a_cohort
+
+# linear reg on HS data : on cherche fit meme pente
+hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
+nff = archidb.mean_nff()
+for k in nff:
+    df = hsd[k]
+    hsd[k] = df[df['mean_pond'] < int(nff[k])]
+#compute mean slope 
+sl = numpy.mean([stats.linregress(df['TT'], df['mean_pond'])[0] for df in hsd.values()])
+#dec at origin considering common slope
+dec = {k:numpy.mean(df['mean_pond'] - sl * df['TT']) / sl for k,df in hsd.iteritems()}
+hsdec = hsd
+for k in hsd:
+    hsdec[k]['TTdec'] = hsd[k]['TT'] + dec[k]
+hsdec = reduce(lambda x,y: pandas.concat([x,y]), hsdec.values())
+# common fit
+a_cohort = stats.linregress(hsdec['TTdec'], hsdec['mean_pond'])[0]
+TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
+#
+HS_converter = {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
+#
+if run_plots:
+    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter)
+#
+def GL_fits():
+    # Maxwell values (read on mariem paper) : n0 : 4..4, n1: 3.34, n2: 5.83
+    # common fit mercia, rht3, Tremie12
+    conv = HS_converter['Tremie12']
+    xref = conv(archidb.GL_number()['Tremie12']['TT'])
+    yref = archidb.GL_number()['Tremie12']['mediane']
+    nff = archidb.mean_nff()
+    coefs  = {k:{'n0': 4.4,'n1':1.9,'n2':numpy.interp(nff[k],xref, yref), 'hs_t1': 8, 'hs_t2':nff[k]} for k in nff}
+    coefs['Tremie13']=coefs['Tremie13'].update({'n1':2.66, 'n2':4})
+    #
+    fits = {k:{'HS_fit': HS_converter[k], 'coefs': coefs[k], 'GL': v} for k,v in archidb.GL_number().iteritems()}
+    # Mercai, Rht3, use Tremie 12 data instead ?
+    return fits
+          
 def dynamique_fits():
 
     dynT_MS = {'Others': {'a_cohort':0.009380186,
@@ -236,30 +292,28 @@ def dynamique_fits():
         'Tremie13': {'a_cohort':0.009380186,
                 'TT_col_0':101.4740799,
                 'TT_col_N_phytomer_potential':1254, # Will be recomputed as a function of Nff
-                'n0':4.2,'n1':2.6,'n2':3.6}} # a_cohort et TT_col_0 de Mercia
-                
+                'n0':4.2,'n1':2.6,'n2':3.6}} # a_cohort et TT_col_0 de Mercia           
     return dynT_MS
-                    
-              
+
+def HS_GL_SSI_data_HS():
+    df = archidb.HS_GL_SSI_data()
+    for g in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
+        HS_GL_SSI_data = archidb._add_ghs(df, g)
+    return HS_GL_SSI_data_HS
 #
 if run_plots:
-    archi_plot.dynamique_plot(archidb.GL_number(), archidb.SSI_number(), archidb.HS_number(), dynamique_fits())
-    
+    archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
+     
+if run_plots:
+    archi_plot.dynamique_plot(HS_GL_SSI_data())
 
-                
- 
-def GL_fits():
-    
-    coefs  = [('n0',4.764532295),('n1',2.523833441),('n2',5.083739846)]    
-    fits = {k:{'HS_fit': archidb.HS_converter[k], 'coefs': dict(coefs), 'GL': v} for k,v in archidb.GL_number().iteritems()}
-    return fits
-    
+
+
     
 
 class EchapReconstructions(object):
     
     def __init__(self):
-        
         self.density_fits = density_fits()
         self.tillering_fits = tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12':7, 'Tremie13':4} , max_order=None)
         self.dimension_fits = archidb.dimension_fits()
@@ -267,13 +321,10 @@ class EchapReconstructions(object):
         self.leaf_shapes = leaf_shapes()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    
-    
     def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = False):
-
-        """ Construct devT tables from models, considering one reconstruction per nff (ie composite)
+        """ 
+        Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
-    
         Tillering = self.tillering_fits[name]
         pgens = Tillering.to_pgen(nplants, density)
         pars = {}
@@ -307,9 +358,7 @@ class EchapReconstructions(object):
             axeT['id_phen'] = axeT['id_phen']+tx; phenT['id_phen'] = phenT['id_phen']+tx
         
         return pars
-        
-
-    
+   
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', **kwds):
     
         density = self.density_fits[name]
@@ -336,8 +385,4 @@ class EchapReconstructions(object):
         leaves = Leaves(xy, sr, geoLeaf=geoLeaf, dynamic_bins = bins, discretisation_level = disc_level)
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
-   
-            
-
-
-                                   
+                             
