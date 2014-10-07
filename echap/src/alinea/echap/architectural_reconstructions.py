@@ -321,6 +321,8 @@ class EchapReconstructions(object):
                        'TT_col_0': conv.TT_col_0,
                        'TT_col_N_phytomer_potential': conv.TT(k)}
             dynpars.update(glfit['coefs'])
+            hs_t1 = dynpars.pop('hs_t1', None)
+            hs_t2 = dynpars.pop('hs_t2', None)
             dynT = pgen_ext.dynT_user(dynpars, Tillering.primary_tiller_probabilities.keys())
             
             GL = glfit['GL'].ix[:,['TT',str(k)]]
