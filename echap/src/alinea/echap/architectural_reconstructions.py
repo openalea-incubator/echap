@@ -309,7 +309,11 @@ class EchapReconstructions(object):
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
         Tillering = self.tillering_fits[name]
-        pgens = Tillering.to_pgen(nplants, density)
+        if name == 'Tremie12':
+            force_start_reg = True
+        else:
+            force_start_reg = False
+        pgens = Tillering.to_pgen(nplants, density,force_start_reg=force_start_reg)
         pars = {}
         
         for k in pgens:
@@ -334,7 +338,11 @@ class EchapReconstructions(object):
             if 'hs_deb_reg' in pgens[k]:
                 hs_deb_reg = pgens[k].pop('hs_deb_reg')
                 TT_start_reg = conv.TT(hs_deb_reg)
-                pgens[k].update({'TT_start_reg_user': TT_start_reg})
+                pgens[k].update({'TT_regression_start_user': TT_start_reg})
+                
+            if hs_t1 is not None:
+                TT_t1 = conv.TT(hs_t1)
+                pgens[k].update({'TT_t1_user':TT_t1})
 
             pars[k] = pgen_ext.pgen_tables(pgens[k])
             axeT, dimT, phenT = pars[k]['adelT']
