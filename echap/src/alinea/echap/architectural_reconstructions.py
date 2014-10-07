@@ -73,6 +73,55 @@ def setAdel(**kwds):
 
 # leaf geometry
 
+# Processing of raw database to get data reabale or adel
+
+# TO DO : automatic selection of tol_med = f(ntraj), based on histogram approx of normal distribution
+
+
+def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1):
+    """
+    Return a dynamic leaf database compatible with adel and appropriate dynamic key selecting functions ({Lindex:{num_traj:{age_class:xy_dict}}})
+    
+    - dfxy and srdb are dataframe containing the data
+    - bins is None if leaf are static or define age clas otherwise
+    - ntraj and tol_med control  the number of trajectory to sample among leaves of a given Lindex and of given age that have mean_angle +/- tol*med
+    """
+                   
+    import random
+          
+    dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
+    #cut intervalle de 0 a 1, etc.
+    dfxy_cut = pandas.cut(dfxy.age, bins)
+    dfxy['age_class'] = dfxy_cut
+    
+    # use mean_angle to filter / group leaves
+    mean_angle = dfxy.groupby('inerv').apply(lambda x: numpy.mean(abs(numpy.arctan2(numpy.diff(x['y'].values),numpy.diff(x['x'].values)))))
+
+    #filter leaves that are above/below med*tol
+    def filter_leaves(x):
+        angles = mean_angle[set(x['inerv'])]
+        med = angles.median()
+        valid_angles = angles[(angles >= (1 - tol_med) * med) & (angles <= (1 + tol_med) * med)]
+        return x[x['inerv'].isin(set(valid_angles.index))]
+    
+    validxy = dfxy.groupby(('Lindex','age_class'), group_keys=False).apply(filter_leaves)
+    grouped = validxy.groupby(('Lindex','age_class'))
+    
+    # build trajectories
+    trajectories = {k:[] for k in set(validxy['Lindex'])}
+    for i in range(ntraj):
+        for k in set(validxy['Lindex']):
+            trajectories[k].append({})
+            for t in set(validxy['age_class']):
+                x = grouped.get_group((k,t))
+                trajectories[k][i][t] = x.ix[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
+    
+    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
+    
+    return trajectories, srdb, bins
+
+# azimuth, lindex as function of rankclass (class 1 basal leaves, class 2 upper leaves)    
+   
 def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """ generate geoLeaf function for Adel """
     rcode = """
@@ -91,8 +140,15 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """
     return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb, top_class=Lindex_top, base_class= Lindex_base)
 
-def leaf_shape_fits(bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1):
-    d = {k: {'shapes' : archidb.leaf_curvature_data(k,bins=bins, ntraj=ntraj, tol_med=tol_med),
+def _addLindex(dfxy, dfsr): 
+    dfxy['Lindex'] = 1
+    dfxy['Lindex'][dfxy['ranktop'] <= 4] = 2
+    dfsr['Lindex'] = dfsr['rankclass']
+    return dfxy, dfsr
+    
+    
+def leaf_shapes():
+    d = {k: {'shapes' : _addLindex(*archidb.leaf_curvature_data(k)),
             'geoLeaf' : geoLeaf()} for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']}
     return d
     
@@ -199,42 +255,6 @@ def GL_fits():
     return fits
     
     
-    
-"""   
-def _pgen_reconstruction(nplants, density_at_harvest, Tillering, dimensions, dynamic, green_leaves, force_start_reg = False):
-
-    from alinea.adel.AdelR import devCsv
-    
-    pgens = Tillering.to_pgen(nplants, density_at_harvest)
-    adelT = {}
-    pars = {}
-    
-    for k in pgens:
-        dimT = dimensions[k]
-        dynamic['TT_col_N_phytomer_potential'] = dynamic['TT_col_0'] + k * 1. / dynamic['a_cohort']
-        dynT = pgen_ext.dynT_user(dynamic, Tillering.primary_tiller_probabilities.keys())
-        GL = green_leaves.ix[:,['TT',str(k)]]
-        GL = GL.ix[GL['TT'] > dynamic['TT_col_N_phytomer_potential'],:]
-        GL = dict(zip(GL['TT'],GL[str(k)]))
-        pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
-        
-        if 'hs_deb_reg' in pgens[k]:
-            hs_deb_reg = pgens[k].pop('hs_deb_reg')
-            TT_start_reg = dynamic['TT_col_0'] + hs_deb_reg * 1. / dynamic['a_cohort']
-            pgens[k].update({'TT_start_reg_user': TT_start_reg})
-
-        adelT[k], pars[k] = pgen_ext.build_tables(pgens[k])
-        axeT, dimT, phenT = adelT[k]
-        tx = k * 10000
-        axeT['id_dim'] = axeT['id_dim']+tx; dimT['id_dim'] = dimT['id_dim']+tx
-        axeT['id_phen'] = axeT['id_phen']+tx; phenT['id_phen'] = phenT['id_phen']+tx
-    
-    axeT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][0] for k in adelT])
-    dimT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][1] for k in adelT])
-    phenT = reduce(lambda x,y : pandas.concat([x,y]),[adelT[k][2] for k in adelT])
-    
-    return devCsv(axeT, dimT, phenT), pars
-"""     
 
 class EchapReconstructions(object):
     
@@ -244,7 +264,7 @@ class EchapReconstructions(object):
         self.tillering_fits = tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12':7, 'Tremie13':4} , max_order=None)
         self.dimension_fits = archidb.dimension_fits()
         self.GL_fits = GL_fits()
-        self.leaf_shape_fits = leaf_shape_fits(bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
+        self.leaf_shapes = leaf_shapes()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
     
@@ -310,142 +330,14 @@ class EchapReconstructions(object):
         if density_at_harvest  < density_at_emergence and nplants > 1:
             devT = pgen_ext.adjust_density(devT, density)
         
-        xy, sr, bins = self.leaf_shape_fits[name]['shapes']
-        geoLeaf = self.leaf_shape_fits[name]['geoLeaf']
+        dfxy, dfsr = self.leaf_shapes[name]['shapes']
+        xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
+        geoLeaf = self.leaf_shapes[name]['geoLeaf']
         leaves = Leaves(xy, sr, geoLeaf=geoLeaf, dynamic_bins = bins, discretisation_level = disc_level)
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
    
             
-# NORMAL : composite with raw observations
-"""
-def Mercia_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, disc_level=7, aborting_tiller_reduction=1, **kwds):
-
-    
-    density = density_fits()['Mercia']
-    density_at_emergence = density['density'][density['HS'] == 0][0]
-    density_at_harvest = density['density'][density['HS'] == max(density['HS'])][0]
-    
-
-    
-    wfit = tillering_fits()['Mercia']
-    
-    dimT = archidb.Mercia_2010_fitted_dimensions()
-    GL = archidb.GL_number()['Mercia']
-    
-    devT, pars = echap_reconstruction(nplants, density_at_emergence, density_at_harvest, wfit, dimT, dynT_MS, GL)
-    #adjust density according to density fit
-    if density['density'].iloc[-1] < density['density'].iloc[0] and nplants > 1:
-        devT = pgen_ext.adjust_density(devT, density)
-     
-
-        
-    xy, sr, bins = archidb.leaf_curvature_data('Mercia')
-    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    
-    pdata = archidb.Plot_data()['Mercia']
-    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence,inter_row=pdata['inter_row'])
-    
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
-    
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-    
-
-
-def Rht3_2010(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7, face_up=False, classic=False, aborting_tiller_reduction=1):
-
-    pdata = archidb.Plot_data_Mercia_Rht3_2010_2011()['Rht3']
-    density = density_fits()['Rht3']
-    density_at_emergence = density['density'][density['HS'] == 0][0]
-
-    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence,inter_row=pdata['inter_row'])
-    
-    wfit = tillering_fits()['Rht3']
-    
-    dimT = archidb.Rht3_2010_fitted_dimensions()
-    GL = archidb.GL_number()['Rht3']
-    
-    devT, pars = echap_reconstruction(nplants, density_at_emergence, wfit, dimT, dynT_MS, GL)
-    
-    #adjust density according to density fit
-    if density['density'].iloc[-1] < density['density'].iloc[0] and nplants > 1:
-        pgen_ext.adjust_density(devT, density)
-    
-    xy, sr, bins = archidb.leaf_curvature_data('Rht3')
-    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, incT=22, dinT=22, face_up=face_up, aborting_tiller_reduction = aborting_tiller_reduction)
-   
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-    
-
-
-def Tremie12(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7):
-#BUG: nplants not generated as expected for this genotype !
-    pdata = archidb.Plot_data_Tremie_2011_2012()
-    tdb = archidb.Tillering_data_Tremie12_2011_2012()
-    
-    ms_nff_probas = tdb['nff_probabilities']
-    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    ears_per_plant = tdb['ears_per_plant']
-    plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
-    
-    wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
-    
-    dimT = archidb.Tremie12_fitted_dimensions()
-    GL = archidb.GL_number()['Tremie12']
-
-    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
-
-    pars.update({'tillering':wfit})    
-      
-    xy, sr, bins = archidb.leaf_curvature_data('Tremie')
-    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    
-    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
-
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves = leaves)
-    
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-    
-
-
-def Tremie13(nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, disc_level=7):
-
-    pdata = archidb.Plot_data_Tremie_2012_2013()
-    tdb = archidb.Tillering_data_Tremie13_2012_2013()
-    
-    ms_nff_probas = tdb['nff_probabilities']
-    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    
-    #ears_per_plant = tdb['ears_per_plant']
-    ears_per_plant = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-    
-    plant_density_at_harvest = float(pdata['ear_density_at_harvest']) / ears_per_plant
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
-    
-    wfit = WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff)
-    
-    #dimT = archidb.Tremie13_fitted_dimensions()
-    dimT = archidb.Rht3_2010_fitted_dimensions()
-    GL = archidb.GL_number()['Tremie13']
-
-    devT, pars = echap_reconstruction(nplants,plant_density_at_harvest,wfit, dimT, dynT_MS, GL, dTT_stop = dTT_stop)
-
-    pars.update({'tillering':wfit})  
-    
-    xy, sr, bins = archidb.leaf_curvature_data('Tremie')
-    leaves = Leaves(xy, sr, geoLeaf=geoLeaf(), dynamic_bins = bins, discretisation_level = disc_level)
-    
-    pgen = pars[12]['config']
-    stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=pgen['plants_density'],inter_row=pdata['inter_row'])
-    
-    adel = AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand=stand, seed=seed, sample=sample, leaves = leaves)
-    
-    return pars, adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
-    
-"""
 
 
                                    
