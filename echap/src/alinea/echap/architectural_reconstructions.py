@@ -286,7 +286,7 @@ def GL_fits():
     yref = archidb.GL_number()['Tremie12']['mediane']
     nff = archidb.mean_nff()
     coefs  = {k:{'n0': 4.4,'n1':1.9,'n2':numpy.interp(nff[k],xref, yref), 'hs_t1': 8, 'hs_t2':nff[k]} for k in nff}
-    coefs['Tremie13']=coefs['Tremie13'].update({'n1':2.66, 'n2':4})
+    coefs['Tremie13'].update({'n1':2.66, 'n2':4})
     #
     fits = {k:{'HS_fit': HS_converter[k], 'coefs': coefs[k], 'GL': v} for k,v in archidb.GL_number().iteritems()}
     # Mercai, Rht3, use Tremie 12 data instead ?
