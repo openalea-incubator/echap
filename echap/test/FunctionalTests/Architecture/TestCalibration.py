@@ -60,7 +60,6 @@ def test_axis_dynamics(name='Mercia', color='r'):
 #------------------------------------------------------------------------------------- 
 # Intervalle de confiance
 def mean(lst):
-    # μ = 1/N Σ(xi)
     return sum(lst) / float(len(lst))
 
 def variance(lst):
@@ -68,9 +67,8 @@ def variance(lst):
     Uses standard variance formula (sum of each (data point - mean) squared)
     all divided by number of data points
     """
-    # σ² = 1/N Σ((xi-μ)²)
     mu = mean(lst)
-    return 1.0/len(lst) * sum([(i-mu)**2 for i in lst])
+    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst])
 
 def conf_int(lst, perc_conf=95):
     """
@@ -78,21 +76,14 @@ def conf_int(lst, perc_conf=95):
     the variance of the list (v) divided by the number of entries (n)
     multiplied by a constant factor of (c). This means that I can
     be confident of a result +/- this amount from the mean.
-    The constant factor can be looked up from a table, for 95% confidence
+    The constant factor can be looked up from a table, for 95pcent confidence
     on a reasonable size sample (>=500) 1.96 is used.
     """
-    if perc_conf == 95:
-        c = 1.96
-    elif perc_conf == 90:
-        c = 1.64
-    elif perc_conf == 99:
-        c = 2.58
-    else:
-        c = 1.96
-        #print 'Only 90, 95 or 99 % are allowed for, using default 95%'
+    from scipy.stats import t
+    
     n, v = len(lst), variance(lst)
-    #if n < 1000:
-        #print 'WARNING: constant factor may not be accurate for n < ~1000'
+    c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
+    
     return math.sqrt(v/n) * c
 
 #------------------------------------------------------------------------------------- 
@@ -141,6 +132,7 @@ def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     grouped = obs.groupby('HS')
     for HS in lst_HS :
         obs_HS = grouped.get_group(HS)
+        print 'HS = ', obs_HS
         IC.append(conf_int(obs_HS['PAI_vert_photo'], perc_conf=95))
     obs_new['IC'] = IC
         #plot mean with IC
@@ -361,8 +353,9 @@ def draft_light(g, adel, domain, z_level):
     return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
-def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
+def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
+    conv = HSconv[name]
     
     # PARTIE OBS ------------------------------------------------------------------------------------------------------------
     if name is 'Mercia' or 'Rht3': #Mercia & Rht3 2010/2011
@@ -396,11 +389,10 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
     tab0 = tab0.merge(bid); tab20 = tab20.merge(bid)
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
-    # PARTIE SIM ------------------------------------------------------------------------------------------------------------
-    pars, adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, as_pgen=original)
-    pgen = pars[12]['config']
-    tx = pgen['dynT_user'].a_cohort[0]    
-    dd = range(500,2500,500) #dd = range(400,2600,300)
+    dd = range(500,2500,1000) #dd = range(400,2600,300)
+    
+    # PARTIE SIM --------------------------------------------------------------------------------
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
     sim = [adel.setup_canopy(age) for age in dd]
 
     #list_level = [[0,'g'],[5,'y'],[20,'m'],[25,'r']]
@@ -409,40 +401,47 @@ def graph_meteo(name='Mercia', dTT_stop=0, original=False, n=30):
         light_sim = 'light_sim_'+str(level); res_sim = 'sim_'+str(level)
         light_sim = [draft_light(g, adel, domain, z_level=level) for g in sim]
         res_sim = pandas.DataFrame({'TT':dd, 'light':light_sim})
-        res_sim['HS'] = res_sim.TT*tx
+        res_sim['HS'] = conv(res_sim.TT)
         #plot
-        res_sim.plot('HS', 'light', color = c, label = 'Light sim level = '+str(level)) #linewidth=2
+        res_sim.plot('HS', 'light', style = '-'+c, linewidth=2, label = 'Light sim level = '+str(level)) #linewidth=2
+
+
+    # PARTIE DONNEES ----------------------------------------------------------------------------
+    #obs tous les points
+    dfa = dfa.merge(bid); dfa['HS'] = conv(dfa.TT); dfa = dfa.sort(['HS'])
+    if name is 'Mercia':
+        for col in [1,2,3,4]:
+            colf = '%SE'+str(col)
+            dfa.plot('HS', colf, style='+g', label = 'Capteurs PAR sol') #markersize=4
+        tab0['HS'] = conv(tab0.TT); tab0.plot('HS','%',color='g', label = 'Moyenne capteurs PAR sol')
+        print tab0
+    elif name is 'Rht3':
+        for col in [5,6,7,8]:
+            colf = '%SE'+str(col)
+            dfa.plot('HS', colf, style='+g', label = 'Capteurs PAR sol') #markersize=4
+        tab20['HS'] = conv(tab20.TT); tab20.plot('HS','%',color='g', label = 'Moyenne capteurs PAR sol')
+    elif name is 'Tremie12':
+        for col in [1,2,3,4]:
+            colf = '%SE'+str(col)
+            dfa.plot('HS', colf, style='+b',label=None) #markersize=4
+        for col in [5,6,7,8]:
+            colf = '%SE'+str(col)
+            dfa.plot('HS', colf, style='+c',label=None) #markersize=4
+        tab0['HS'] = conv(tab0.TT); tab0.plot('HS','%',color='b', label = 'Moyenne capteurs PAR sol')
+        tab20['HS'] = conv(tab20.TT); tab20.plot('HS','%',color='c', label = 'Moyenne capteurs PAR 20cm')
+    
     plt.xlabel("HS"); plt.ylabel("%")
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-
-    # GRAPHES ---------------------------------------------------------------------------------------------------------------
-    #obs tous les points
-    #dfa = dfa.merge(bid); dfa = dfa.sort(['TT']); print dfa.head()
-        #niveau du sol (point rouge)
-    #dfa.plot('TT','%SE1',style='om',markersize=4); dfa.plot('TT','%SE2',style='om',markersize=4); dfa.plot('TT','%SE3',style='om',markersize=4); dfa.plot('TT','%SE4',style='om',markersize=4)
-        #20cm du sol (point bleu)
-    #dfa.plot('TT','%SE5',style='oc',markersize=4); dfa.plot('TT','%SE6',style='oc',markersize=4); dfa.plot('TT','%SE7',style='oc',markersize=4); dfa.plot('TT','%SE8',style='oc',markersize=4)
-    #obs moyennes
-    #tab0['HS'] = tab0.TT*tx; tab0.plot('TT','%',color='m')
-    #tab20['HS'] = tab20.TT*tx; tab20.plot('HS','%',color='c')
+    
+    # BOITE DE PETRI ----------------------------------------------------------------------------
+    if name is 'Tremie12':
+        data_file1 = 'T1_20112012.csv'; data_file2 = 'T2_20112012.csv'
+        header_row=['PETRI','Volume','Niveau','Bloc','ABSORBANCE','DILUTION','concentration(mg/l)','ConcentrationArrondie(mg/l)','quantiteRetenue(mg)','quantite(g/ha)','rapportPoucentage(sol/emis)']
+        df1 = pandas.read_csv(data_file1, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal=',')
+        df2 = pandas.read_csv(data_file2, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal=',')
+        df1['TT'] = 1278; df2['TT'] = 1589
+        print df1
+        #df1['HS'] = conv(df1.TT); df2['HS'] = df2(res_sim.TT)
+    
     
     #return sim
- 
-#-------------------------------------------------------------------------------------
-
-# test parallelisation
-'''
-def func_star(a_b):
-    return test_adel(*a_b)
-def main():
-    p = Pool()
-    TT_stop=[0,600,400,200]
-    #var = "Mercia"
-    var = "Rht3"
-    #var = "Tremie"
-    p.map(func_star, itertools.izip(TT_stop, itertools.repeat(var)))
-# if __name__=="__main__":
-    # freeze_support()
-    # main()
-'''
-
