@@ -246,31 +246,40 @@ class HaunStage(object):
     def TT(self, HS):
         return self.TT_col_0 + numpy.array(HS) / self.a_cohort
 
-# linear reg on HS data : on cherche fit meme pente
-hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
-nff = archidb.mean_nff()
-for k in nff:
-    df = hsd[k]
-    hsd[k] = df[df['mean_pond'] < int(nff[k])]
-#compute mean slope 
-sl = numpy.mean([stats.linregress(df['TT'], df['mean_pond'])[0] for df in hsd.values()])
-#dec at origin considering common slope
-dec = {k:numpy.mean(df['mean_pond'] - sl * df['TT']) / sl for k,df in hsd.iteritems()}
-hsdec = hsd
-for k in hsd:
-    hsdec[k]['TTdec'] = hsd[k]['TT'] + dec[k]
-hsdec = reduce(lambda x,y: pandas.concat([x,y]), hsdec.values())
-# common fit
-a_cohort = stats.linregress(hsdec['TTdec'], hsdec['mean_pond'])[0]
-TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
+if run_plots:
+    archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
+     
+if run_plots:
+    archi_plot.dynamique_plot(HS_GL_SSI_data()) # weighted (frequency of nff modalities) mean 
+        
+def fit_HS():
+       
+    # linear reg on HS data : on cherche fit meme pente
+    hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
+    nff = archidb.mean_nff()
+    for k in nff:
+        df = hsd[k]
+        hsd[k] = df[df['mean_pond'] < int(nff[k])]
+    #compute mean slope 
+    sl = numpy.mean([stats.linregress(df['TT'], df['mean_pond'])[0] for df in hsd.values()])
+    #dec at origin considering common slope
+    dec = {k:numpy.mean(df['mean_pond'] - sl * df['TT']) / sl for k,df in hsd.iteritems()}
+    hsdec = hsd
+    for k in hsd:
+        hsdec[k]['TTdec'] = hsd[k]['TT'] + dec[k]
+    hsdec = reduce(lambda x,y: pandas.concat([x,y]), hsdec.values())
+    # common fit
+    a_cohort = stats.linregress(hsdec['TTdec'], hsdec['mean_pond'])[0]
+    TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
+    return {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
 #
-HS_converter = {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
+HS_converter = fit_HS()
 #
 if run_plots:
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter)
 #
 def GL_fits():
-    # Maxwell values (read on mariem paper) : n0 : 4..4, n1: 3.34, n2: 5.83
+    # Maxwell values (read on mariem paper) : n0 : 4.4, n1: 3.34, n2: 5.83
     # common fit mercia, rht3, Tremie12
     conv = HS_converter['Tremie12']
     xref = conv(archidb.GL_number()['Tremie12']['TT'])
@@ -282,34 +291,8 @@ def GL_fits():
     fits = {k:{'HS_fit': HS_converter[k], 'coefs': coefs[k], 'GL': v} for k,v in archidb.GL_number().iteritems()}
     # Mercai, Rht3, use Tremie 12 data instead ?
     return fits
-          
-def dynamique_fits():
-
-    dynT_MS = {'Others': {'a_cohort':0.009380186,
-                'TT_col_0':101.4740799,
-                'TT_col_N_phytomer_potential':1380.766379, # Will be recomputed as a function of Nff
-                'n0':4.764532295,'n1':2.523833441,'n2':5.083739846}, #Mercia dynT_user
-        'Tremie13': {'a_cohort':0.009380186,
-                'TT_col_0':101.4740799,
-                'TT_col_N_phytomer_potential':1254, # Will be recomputed as a function of Nff
-                'n0':4.2,'n1':2.6,'n2':3.6}} # a_cohort et TT_col_0 de Mercia           
-    return dynT_MS
-
-def HS_GL_SSI_data_HS():
-    df = archidb.HS_GL_SSI_data()
-    for g in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
-        HS_GL_SSI_data = archidb._add_ghs(df, g)
-    return HS_GL_SSI_data_HS
 #
-if run_plots:
-    archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
-     
-if run_plots:
-    archi_plot.dynamique_plot(HS_GL_SSI_data())
 
-
-
-    
 
 class EchapReconstructions(object):
     
