@@ -368,7 +368,10 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     
     Notes :
     - No tillering data at date 4 and 5
-    - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions """
+    - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions 
+    - at date 3 , we invert column 'total primary' and 'total secondary' as it makes data much more consistent with date 2
+    - TO DO : at date 2 and for the 12 measured plants at date 3 : estimate missing T1/T2
+"""
     
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
@@ -382,7 +385,7 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
         TP = g['TP']
         date = g['Date']
-        if all(TP[date==3].notnull()):
+        if all(TP[date==3].notnull()) and all(pandas.isnull(g.ix[date==3,'TC':'T6'])):
             infer = g.ix[date==2,'TC':'T6'] 
             if all(TP[date==3] > TP[date==2]):
                 d = int(TP[date==3].values - TP[date==2].values)
