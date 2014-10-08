@@ -219,7 +219,7 @@ if run_plots:
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
     fits = tillering_fits(delta_stop_del=delta_stop_del, max_order=None)
     obs = archidb.tillers_per_plant()
-    archi_plot.multi_plot_tillering(obs, fits, delta_stop_del)
+    archi_plot.multi_plot_tillering(obs, fits, HS_converter, delta_stop_del)
    
 if run_plots:
     archi_plot.graph_primary_emission(archidb)

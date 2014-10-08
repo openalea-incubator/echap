@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import pandas
 
+
 def dynamique_plot_nff(HS_GL_SSI_data, dynT_MS):
     plt.ion()
     
@@ -103,7 +104,7 @@ def plot_tillering(name='Mercia', delta_stop_del=2.5):
     obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
 '''  
   
-def multi_plot_tillering(obs_data, fits, delta_stop_del):
+def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
     plt.ion()
     
     if not isinstance(delta_stop_del,dict):
@@ -128,6 +129,7 @@ def multi_plot_tillering(obs_data, fits, delta_stop_del):
         ax.stem(em['delay'],em['primary_axis'], markerfmt='xb', linefmt='--b', basefmt='k', label='Primary emited cohort density')
 
         grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs['HS'] = HS_converter[name](obs['TT'])
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
         ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
         ax.plot(obs['HS'], obs['TPS'], 'pr', label='TPS')

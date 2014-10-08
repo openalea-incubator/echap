@@ -615,9 +615,9 @@ def HS_GL_SSI_data():
     return d
     
 def _add_ghs(df, g):
-    hs_conv = HS_converter[g]
+    #hs_conv = HS_converter[g]
     df['Var'] = g
-    df['HS'] = hs_conv(df['TT'])
+    #df['HS'] = hs_conv(df['TT'])
     df = df.sort('TT')
     return df
 
