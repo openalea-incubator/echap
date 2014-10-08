@@ -69,7 +69,7 @@ def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
     plt.ion()
     
     #varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
-    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b']]
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b']] #pb Tremie13
     
     for name,color in varieties :
         df_GL = HS_GL_SSI_data[name]['GL']

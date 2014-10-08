@@ -283,7 +283,7 @@ def mat_ray_obs(data_file):
     header_row = ['DATE','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
     #data = pandas.read_csv(data_file, parse_dates={'datetime':[0,1]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
     df = pandas.read_csv(data_file, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
-     
+
     #filtre seulement heure entre 9h et 19h pour chaque journee
     df = df[df['H']>9]; df = df[df['H']<19]
     
@@ -353,8 +353,8 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
     conv = HSconv[name]
     
-    # PARTIE OBS ------------------------------------------------------------------------------------------------------------
-    if name is 'Mercia' or 'Rht3': #Mercia & Rht3 2010/2011
+    # PARTIE OBS ------------------------------------------
+    if name is 'Mercia' or name is 'Rht3': 
         data_file = 'METEO_stationINRA_20102011.csv'
         # correspondance entre date et TT
         met = Boigneville_2010_2011()
@@ -363,7 +363,7 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
         # groupe par date
         seq = pandas.date_range(start="2010-10-15", end="2011-07-18")
         bid = bid[seq]
-    if name is 'Tremie12': #Tremie 2011/2012
+    if name is 'Tremie12': 
         data_file = 'METEO_stationINRA_20112012.csv'
         # correspondance entre date et TT
         met = Boigneville_2011_2012()
@@ -371,6 +371,15 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
         bid = thermal_time(seq, met.data)
         # groupe par date
         seq = pandas.date_range(start="2011-10-21", end="2012-07-18")
+        bid = bid[seq]
+    if name is 'Tremie13': 
+        data_file = 'METEO_stationINRA_20122013.csv'
+        # correspondance entre date et TT
+        met = Boigneville_2012_2013()
+        seq = pandas.date_range(start="2012-10-29", end="2013-08-01", freq='H')
+        bid = thermal_time(seq, met.data)
+        # groupe par date
+        seq = pandas.date_range(start="2012-10-29", end="2013-08-01")
         bid = bid[seq]
         
     dfa, tab0, tab20 = mat_ray_obs(data_file)
@@ -387,57 +396,72 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     
     dd = range(500,2500,1000) #dd = range(400,2600,300)
     
-    # PARTIE SIM --------------------------------------------------------------------------------
-    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
-    sim = [adel.setup_canopy(age) for age in dd]
-
-    #list_level = [[0,'g'],[5,'y'],[20,'m'],[25,'r']]
-    list_level = [[0,'g']]
-    for level,c in list_level : 
-        light_sim = 'light_sim_'+str(level); res_sim = 'sim_'+str(level)
-        light_sim = [draft_light(g, adel, domain, z_level=level) for g in sim]
-        res_sim = pandas.DataFrame({'TT':dd, 'light':light_sim})
-        res_sim['HS'] = conv(res_sim.TT)
-        #plot
-        res_sim.plot('HS', 'light', style = '-'+c, linewidth=2, label = 'Light sim level = '+str(level)) #linewidth=2
-
-
     # PARTIE DONNEES ----------------------------------------------------------------------------
     #obs tous les points
     dfa = dfa.merge(bid); dfa['HS'] = conv(dfa.TT); dfa = dfa.sort(['HS'])
     if name is 'Mercia':
         for col in [1,2,3,4]:
             colf = '%SE'+str(col)
-            dfa.plot('HS', colf, style='+g', label = 'Capteurs PAR sol') #markersize=4
+            dfa.plot('HS', colf, style='+g', label = '_nolegend_') #markersize=4
         tab0['HS'] = conv(tab0.TT); tab0.plot('HS','%',color='g', label = 'Moyenne capteurs PAR sol')
-        print tab0
+        list_level = [[0,'g']]
     elif name is 'Rht3':
         for col in [5,6,7,8]:
             colf = '%SE'+str(col)
-            dfa.plot('HS', colf, style='+g', label = 'Capteurs PAR sol') #markersize=4
+            dfa.plot('HS', colf, style='+g', label = '_nolegend_') #markersize=4
         tab20['HS'] = conv(tab20.TT); tab20.plot('HS','%',color='g', label = 'Moyenne capteurs PAR sol')
-    elif name is 'Tremie12':
+        list_level = [[0,'g']]
+    elif name is 'Tremie12' or name is 'Tremie13':
         for col in [1,2,3,4]:
             colf = '%SE'+str(col)
-            dfa.plot('HS', colf, style='+b',label=None) #markersize=4
+            dfa.plot('HS', colf, style='+g', label = '_nolegend_') #markersize=4
         for col in [5,6,7,8]:
             colf = '%SE'+str(col)
-            dfa.plot('HS', colf, style='+c',label=None) #markersize=4
-        tab0['HS'] = conv(tab0.TT); tab0.plot('HS','%',color='b', label = 'Moyenne capteurs PAR sol')
+            dfa.plot('HS', colf, style='+c', label = '_nolegend_') #markersize=4
+        tab0['HS'] = conv(tab0.TT); tab0.plot('HS','%',color='g', label = 'Moyenne capteurs PAR sol')
         tab20['HS'] = conv(tab20.TT); tab20.plot('HS','%',color='c', label = 'Moyenne capteurs PAR 20cm')
-    
-    plt.xlabel("HS"); plt.ylabel("%")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+        list_level = [[0,'g'],[20,'c']]
     
     # BOITE DE PETRI ----------------------------------------------------------------------------
-    if name is 'Tremie12':
-        data_file1 = 'T1_20112012.csv'; data_file2 = 'T2_20112012.csv'
+    if name is 'Tremie12' or name is 'Tremie13':    
+        if name is 'Tremie12':
+            data_file_T1 = 'T1_20112012.csv'; data_file_T2 = 'T2_20112012.csv'
+            date_T1 = 1277.8; date_T2 = 1589.4
+        if name is 'Tremie13':
+            data_file_T1 = 'T1_20122013.csv'; data_file_T2 = 'T2_20122013.csv'
+            date_T1 = 1041.8; date_T2 = 1309.4
         header_row=['PETRI','Volume','Niveau','Bloc','ABSORBANCE','DILUTION','concentration(mg/l)','ConcentrationArrondie(mg/l)','quantiteRetenue(mg)','quantite(g/ha)','rapportPoucentage(sol/emis)']
-        df1 = pandas.read_csv(data_file1, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal=',')
-        df2 = pandas.read_csv(data_file2, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal=',')
-        df1['TT'] = 1278; df2['TT'] = 1589
-        print df1
-        #df1['HS'] = conv(df1.TT); df2['HS'] = df2(res_sim.TT)
-    
-    
-    #return sim
+        df1 = pandas.read_csv(data_file_T1, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
+        df2 = pandas.read_csv(data_file_T2, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
+        # bon format pourcentage
+        df1['rapportPoucentage(sol/emis)'] = df1['rapportPoucentage(sol/emis)'] / 100.
+        df2['rapportPoucentage(sol/emis)'] = df2['rapportPoucentage(sol/emis)'] / 100.
+        # ajout TT et conversion en HS
+        df1['TT'] = date_T1; df2['TT'] = date_T2
+        df1['HS'] = conv(df1.TT); df2['HS'] = conv(df2.TT)
+        # on filtre sur niveau = sol
+        grouped1 = df1.groupby('Niveau'); grouped2 = df2.groupby('Niveau')
+        petri1 = grouped1.get_group('sol'); petri2 = grouped2.get_group('sol')
+        # calcul mean et IC
+        lst1 = petri1['rapportPoucentage(sol/emis)']; lst2 = petri2['rapportPoucentage(sol/emis)']
+        mean1 = mean(lst1); mean2 = mean(lst2)
+        IC1 = conf_int(lst1, perc_conf=95); IC2 =conf_int(lst2, perc_conf=95)
+        plt.errorbar(df1['HS'][1], mean1, yerr=IC1, fmt='or', label = 'Petri T1, mean+IC, '+name)
+        plt.errorbar(df2['HS'][1], mean2, yerr=IC2, fmt='^r', label = 'Petri T2, mean+IC, '+name)
+    else :
+        print '--Pas de donnees de boites de Petri pour '+name+'--'
+        
+    # PARTIE SIM --------------------------------------------------------------------------------
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
+    sim = [adel.setup_canopy(age) for age in dd]
+
+    for level,c in list_level : 
+        light_sim = 'light_sim_'+str(level); res_sim = 'sim_'+str(level)
+        light_sim = [draft_light(g, adel, domain, z_level=level) for g in sim]
+        res_sim = pandas.DataFrame({'TT':dd, 'light':light_sim})
+        res_sim['HS'] = conv(res_sim.TT)
+        #plot
+        res_sim.plot('HS', 'light', style = '-'+c, linewidth=2, label = 'Light sim level = '+str(level))
+ 
+    plt.ylim(ymax=1.); plt.xlabel("HS"); plt.ylabel("%")
+    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})

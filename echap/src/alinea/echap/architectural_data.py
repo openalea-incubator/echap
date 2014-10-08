@@ -530,14 +530,12 @@ def Tillering_data():
 #-------------------------------------------------------------------------------  
 # Angles / formes a plat  
 
-
 def mean_nff():
     def _nff(ms_nff_probas):
         return sum([int(k)*v for k,v in ms_nff_probas.iteritems()])
     return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().iteritems()}
    
-
-    
+   
 def leaf_curvature_data(name='Mercia'):
 
     def xy_reader(file):
