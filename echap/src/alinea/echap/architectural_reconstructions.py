@@ -186,7 +186,7 @@ def density_fits():
     return density_fits
 #
 if run_plots:
-    archi_plot.density_plot(archidb.PlantDensity(), density_fits())
+    archi_plot.density_plot(archidb.PlantDensity(), density_fits(), HS_converter)
  
 #
 # Fit tillering
@@ -245,15 +245,12 @@ class HaunStage(object):
         
     def TT(self, HS):
         return self.TT_col_0 + numpy.array(HS) / self.a_cohort
-
+'''
 if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
-     
-if run_plots:
-    archi_plot.dynamique_plot(HS_GL_SSI_data()) # weighted (frequency of nff modalities) mean 
-        
-def fit_HS():
-       
+'''    
+   
+def fit_HS():    
     # linear reg on HS data : on cherche fit meme pente
     hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
     nff = archidb.mean_nff()
@@ -274,9 +271,10 @@ def fit_HS():
     return {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
 #
 HS_converter = fit_HS()
-#
+
 if run_plots:
-    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter)
+    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
+
 #
 def GL_fits():
     # Maxwell values (read on mariem paper) : n0 : 4.4, n1: 3.34, n2: 5.83
@@ -285,14 +283,40 @@ def GL_fits():
     xref = conv(archidb.GL_number()['Tremie12']['TT'])
     yref = archidb.GL_number()['Tremie12']['mediane']
     nff = archidb.mean_nff()
-    coefs  = {k:{'n0': 4.4,'n1':1.9,'n2':numpy.interp(nff[k],xref, yref), 'hs_t1': 8, 'hs_t2':nff[k]} for k in nff}
+    coefs  = {k:{'n0': 4.4,'n1':1.9,'n2':numpy.interp(nff[k],xref, yref), 'hs_t1': 8, 'hs_t2':min(nff[k],12)} for k in nff}
     coefs['Tremie13'].update({'n1':2.66, 'n2':4})
     #
     fits = {k:{'HS_fit': HS_converter[k], 'coefs': coefs[k], 'GL': v} for k,v in archidb.GL_number().iteritems()}
-    # Mercai, Rht3, use Tremie 12 data instead ?
+    # Mercia, Rht3 : use Tremie 12 data instead ?
     return fits
 #
+if run_plots:
+    archi_plot.dynamique_plot_GL_fits(archidb.HS_GL_SSI_data(), GL_fits(), abs='HS')
+    
 
+def pars():
+    sim_all={}
+    for name in ('Mercia','Rht3','Tremie12'):
+        e = EchapReconstructions()
+        pars = e.get_pars(name=name, nplants=30)
+        nff_lst = pars.keys()
+        nff_proba = archidb.Tillering_data()[name]['nff_probabilities']
+
+        for nff in nff_lst:
+            select = pandas.Series([111,112,113,1111,1112,1113,10111,10112,10113])
+            pars[nff]['HS_GL_SSI_T'] = pars[nff]['HS_GL_SSI_T'][pars[nff]['HS_GL_SSI_T'].id_phen.isin(select)]
+            TT = pars[nff]['HS_GL_SSI_T']['TT']
+        
+        GL = sum([pars[k]['HS_GL_SSI_T']['GL'] * nff_proba[k] for k in nff_lst])
+        HS = sum([pars[k]['HS_GL_SSI_T']['HS'] * nff_proba[k] for k in nff_lst])
+        SSI = sum([pars[k]['HS_GL_SSI_T']['SSI'] * nff_proba[k] for k in nff_lst])
+        df = pandas.DataFrame({'TT':TT, 'GL':GL, 'HS':HS, 'SSI':SSI})
+        sim_all.update({name:df})
+    return sim_all
+    
+if run_plots:
+    archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
+    
 
 class EchapReconstructions(object):
     

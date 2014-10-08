@@ -652,7 +652,7 @@ def PlantDensity():
     # Tremie12
     pdata = Plot_data_Tremie_2011_2012()
     tdata = Tillering_data_Tremie12_2011_2012()
-    hs_conv = HS_converter['Tremie12']
+    #hs_conv = HS_converter['Tremie12']
     date,TT,density,SD = [],[],[],[]
     events = ['sowing', 'harvest', 'd3', 'd4', 'arvalis']
     density = [pdata['sowing_density'], 
@@ -680,7 +680,7 @@ def PlantDensity():
     # Tremie13
     pdata = Plot_data_Tremie_2012_2013()
     tdata = Tillering_data_Tremie13_2012_2013()
-    hs_conv = HS_converter['Tremie13']
+    #hs_conv = HS_converter['Tremie13']
     date,TT,density,SD = [],[],[],[]
     events = ['sowing', '2F', 'epis1cm', 'LAI1', 'LAI2']
     density = [pdata['sowing_density'], 

@@ -55,26 +55,87 @@ def dynamique_plot(HS_GL_SSI_data, converter = None):
         if converter is None:
             df_GL.plot('TT', 'mean_pond', style=':o'+color, label='Moyenne pond GL ' +name)
             df_HS.plot('TT', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
+            plt.xlabel("TT")
         else:
             conv = converter[name]
             hsgl = conv(df_GL['TT'])
             hshs = conv(df_HS['TT'])
-            plt.plot(hsgl, df_GL['mean_pond'], ':o'+color)
-            plt.plot(hshs, df_HS['mean_pond'], '--o'+color)
-    plt.xlabel("TT")
+            plt.plot(hsgl, df_GL['mean_pond'], ':o'+color, label='Moyenne pond GL ' +name)
+            plt.plot(hshs, df_HS['mean_pond'], '--o'+color, label='Moyenne pond HS ' +name)
+            plt.xlabel("HS")
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    
+def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
+    plt.ion()
+    
+    #varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b']]
+    
+    for name,color in varieties :
+        df_GL = HS_GL_SSI_data[name]['GL']
+        df_HS = HS_GL_SSI_data[name]['HS']
+        df_SSI = HS_GL_SSI_data[name]['SSI']
+        sim = pars[name]
+        
+        if converter is None:
+            df_GL.plot('TT', 'mean_pond', style='o'+color, label='Moyenne pond GL ' +name)
+            df_HS.plot('TT', 'mean_pond', style='^'+color, label='Moyenne pond HS ' +name)
+            df_SSI.plot('TT', 'mean_pond', style='<'+color, label='Moyenne pond SSI ' +name)
+            sim.plot('TT', 'GL', style='-o'+color, label='Sim GL ' +name)
+            sim.plot('TT', 'HS', style='-^'+color, label='Sim HS ' +name)
+            sim.plot('TT', 'SSI', style='-<'+color, label='Sim SSI ' +name)
+            plt.xlabel("TT")
+        else:
+            conv = converter[name]
+            hsgl = conv(df_GL['TT']); hshs = conv(df_HS['TT']); hsssi = conv(df_SSI['TT'])
+            hssim = conv(sim['TT'])
+            plt.plot(hsgl, df_GL['mean_pond'], 'o'+color, label='Moyenne pond GL ' +name)
+            plt.plot(hshs, df_HS['mean_pond'], '^'+color, label='Moyenne pond HS ' +name)
+            plt.plot(hsssi, df_SSI['mean_pond'], '<'+color, label='Moyenne pond SSI ' +name)
+            plt.plot(hssim, sim['GL'], '-'+color, label='Sim GL ' +name)
+            plt.plot(hssim, sim['HS'], '-'+color, label='Sim HS ' +name)
+            plt.plot(hssim, sim['SSI'], '-'+color, label='Sim SSI ' +name)
+            plt.xlabel("HS")
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    
+def dynamique_plot_GL_fits(HS_GL_SSI_data, GL_fit, abs='TT'):
+    plt.ion()
+    
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    
+    for name,color in varieties :
+        df_GL = GL_fit[name]['GL']
+        df_HS = HS_GL_SSI_data[name]['HS']
+        GL_med = pandas.DataFrame({'HS':[GL_fit[name]['coefs']['n0'],GL_fit[name]['coefs']['hs_t1'],GL_fit[name]['coefs']['hs_t2']], 'abs':[GL_fit[name]['coefs']['n0'],GL_fit[name]['coefs']['n1'],GL_fit[name]['coefs']['n2']]})
+        #converter
+        conv = GL_fit[name]['HS_fit']
+        df_GL['HS'] = conv(df_GL['TT'])
+        df_HS['HS'] = conv(df_HS['TT'])
+        GL_med['TT'] = conv.TT(GL_med['HS'])
+        #---
+        if abs is 'TT':
+            df_GL.plot('TT', 'mediane', style=':o'+color, label='Mediane GL ' +name)
+            df_HS.plot('TT', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
+            GL_med.plot('TT','abs', style='-^'+color, label='GL_fits ' +name)
+            plt.xlabel("TT")
+        else :
+            df_GL.plot('HS', 'mediane', style=':o'+color, label='Mediane GL ' +name)
+            df_HS.plot('HS', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
+            GL_med.plot('HS','abs', style='-^'+color, label='GL_fits ' +name)
+            plt.xlabel("HS")
+    
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
-def density_plot(density_data, fits):
+def density_plot(density_data, fits, HS_converter):
     plt.ion()
     grouped = density_data.groupby('Var')
     
-    dens_mercia = grouped.get_group('Mercia'); dens_rht3 = grouped.get_group('Rht3')
-    dens_tremie12 = grouped.get_group('Tremie12'); dens_tremie13 = grouped.get_group('Tremie13')
-
-    plt.errorbar(dens_mercia['HS'], dens_mercia['density'], yerr=dens_mercia['SD'], fmt='or', label = 'Mercia density')
-    plt.errorbar(dens_rht3['HS'], dens_rht3['density'], yerr=dens_rht3['SD'], fmt='og', label = 'Rht3 density')
-    plt.errorbar(dens_tremie12['HS'], dens_tremie12['density'], yerr=dens_tremie12['SD'], fmt='ob', label = 'Tremie12 density')
-    plt.errorbar(dens_tremie13['HS'], dens_tremie13['density'], yerr=dens_tremie13['SD'], fmt='om', label = 'Tremie13 density')
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    
+    for name,color in varieties:
+        dens = grouped.get_group(name)
+        dens['HS'] = HS_converter[name](dens['TT'])
+        plt.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o'+color, label = name+' density')
    
     for g in fits:       
         if g=='Mercia':
@@ -87,7 +148,7 @@ def density_plot(density_data, fits):
             color='m'
         fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
       
-    plt.title("Plant density"); plt.xlabel("HS"); plt.ylim(ymin=0); plt.ylim(ymax=350)
+    plt.title("Plant density"); plt.xlabel("HS"); plt.xlim(xmax=25); plt.ylim(ymin=0); plt.ylim(ymax=350)
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
 '''
