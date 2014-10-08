@@ -7,6 +7,13 @@ from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
 from math import sqrt
 
+#----------------------------------------------------- dimension
+def dimensions_data():
+    dim = {}
+    for var in ['Mercia','Rht3','Tremie12','Tremie13']:
+        fn = shared_data(alinea.echap, var+'_dimT_user_base.csv')
+        dim[var] = pandas.read_csv(fn)
+    return dim
 
 #----------------------------------------------------- Fitted dimension
 
@@ -25,7 +32,6 @@ def Rht3_2010_fitted_dimensions():
     return dim
     
 def Tremie12_fitted_dimensions():
-    #dim = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
     dim = {}
     for nff in [12,13]:
         fn = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
@@ -35,8 +41,7 @@ def Tremie12_fitted_dimensions():
 def Tremie13_fitted_dimensions():
     dim = {}
     for nff in [11,12]:
-        #fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
-        fn = shared_data(alinea.echap, 'Tremie13_dimT_user.csv') #nff12
+        fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
     return dim
 
