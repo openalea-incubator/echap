@@ -198,7 +198,7 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order):
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order)
     
-def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 7, 'Tremie13':4} , max_order=None):
+def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 7, 'Tremie13':5.5} , max_order=None):
         
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
@@ -215,7 +215,7 @@ def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3'
     return t_fits
 
 if run_plots:
-    delta_stop_del = 2.8
+    #delta_stop_del = 2.8
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
     fits = tillering_fits(delta_stop_del=delta_stop_del, max_order=None)
     obs = archidb.tillers_per_plant()
@@ -228,7 +228,7 @@ if run_plots:
 reconst_db={}
 
 #
-# Fit dynamique
+# Fit dynamique of median plant
 #
 # ---------------------------------------------------- Fitted HS = f(TT)
 #
@@ -240,11 +240,14 @@ class HaunStage(object):
         self.a_cohort = a_cohort
         self.TT_col_0 = TT_col_0
         
-    def __call__(self, TT):
+    def __call__(self, TT):# HS
         return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
         
     def TT(self, HS):
         return self.TT_col_0 + numpy.array(HS) / self.a_cohort
+        
+    def TTem(self, TT):
+        return numpy.array(TT) - self.TT_col_0
 '''
 if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
@@ -276,23 +279,36 @@ if run_plots:
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 #
-def GL_fits():
-    # Maxwell values (read on mariem paper) : n0 : 4.4, n1: 3.34, n2: 5.83
+def HS_GL_fits():
+    HS_converter = fit_HS()
     # common fit mercia, rht3, Tremie12
     conv = HS_converter['Tremie12']
-    xref = conv(archidb.GL_number()['Tremie12']['TT'])
-    yref = archidb.GL_number()['Tremie12']['mediane']
+    HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])
+    GL_ref = archidb.GL_number()['Tremie12']['mediane']
+    conv = HS_converter['Tremie13']
+    HS_T13 = conv(archidb.GL_number()['Tremie13']['TT'])
+    GL_T13 = archidb.GL_number()['Tremie13']['mediane']
+    HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
+    GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
     nff = archidb.mean_nff()
-    coefs  = {k:{'n0': 4.4,'n1':1.9,'n2':numpy.interp(nff[k],xref, yref), 'hs_t1': 8, 'hs_t2':min(nff[k],12)} for k in nff}
-    coefs['Tremie13'].update({'n1':2.66, 'n2':4})
+    coefs = {'n0': 4.4, 'hs_t1': 8.1}#n0=4.4 : Maxwell value
+    n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.3}
+    n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4}
+    fits = {k:pgen_ext.GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
     #
-    fits = {k:{'HS_fit': HS_converter[k], 'coefs': coefs[k], 'GL': v} for k,v in archidb.GL_number().iteritems()}
-    # Mercia, Rht3 : use Tremie 12 data instead ?
-    return fits
+    hsgl_fits = {k:{'HS': HS_converter[k], 'GL': fits[k]} for k in nff}
+    return hsgl_fits
 #
 if run_plots:
-    archi_plot.dynamique_plot_GL_fits(archidb.HS_GL_SSI_data(), GL_fits(), abs='HS')
-    
+    #
+    data = archidb.HS_GL_SSI_data()
+    fits = HS_GL_fits()
+    #
+    archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
+    #
+    archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
+    archi_plot.dynamique_plot_nff(data)
+    # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
 
 def pars():
     sim_all={}
@@ -325,52 +341,49 @@ class EchapReconstructions(object):
     
     def __init__(self):
         self.density_fits = density_fits()
-        self.tillering_fits = tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12':7, 'Tremie13':4} , max_order=None)
+        self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
-        self.GL_fits = GL_fits()
+        self.HS_GL_fits = HS_GL_fits()
         self.leaf_shapes = leaf_shapes()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = False):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
         Tillering = self.tillering_fits[name]
-        if name == 'Tremie12':
-            force_start_reg = True
-        else:
-            force_start_reg = False
         pgens = Tillering.to_pgen(nplants, density,force_start_reg=force_start_reg)
         pars = {}
         
         for k in pgens:
             dimT = self.dimension_fits[name][k]
             
-            glfit = self.GL_fits[name]
-            conv = glfit['HS_fit']
-            dynpars = {'a_cohort': conv.a_cohort, 
+            nff = k
+            glfit = self.HS_GL_fits[name]['GL']
+            conv = self.HS_GL_fits[name]['HS']
+            TT_t1 = conv.TT(glfit.hs_t1)
+            TT_t2 = conv.TT(glfit.hs_t2)
+            a_nff = nff * 1.0 / (TT_t2 - conv.TT_col_0)
+            dynpars = {'a_cohort': a_nff, 
                        'TT_col_0': conv.TT_col_0,
-                       'TT_col_N_phytomer_potential': conv.TT(k)}
-            dynpars.update(glfit['coefs'])
-            hs_t1 = dynpars.pop('hs_t1', None)
-            hs_t2 = dynpars.pop('hs_t2', None)
+                       'TT_col_N_phytomer_potential': TT_t2,
+                       'n0': glfit.n0,
+                       'n1': glfit.n1,
+                       'n2': glfit.n2}
+                                   
             dynT = pgen_ext.dynT_user(dynpars, Tillering.primary_tiller_probabilities.keys())
             
-            GL = glfit['GL'].ix[:,['TT',str(k)]]
-            GL = GL.ix[GL['TT'] > dynpars['TT_col_N_phytomer_potential'],:]
-            GL = dict(zip(GL['TT'],GL[str(k)]))
+            GL = glfit.GL_number()
+            GL['TT'] = conv.TT(GL['HS'])
+            GL = dict(zip(GL['TT'],GL['GL']))
             
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL})
+            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1})
             
             if 'hs_deb_reg' in pgens[k]:
                 hs_deb_reg = pgens[k].pop('hs_deb_reg')
                 TT_start_reg = conv.TT(hs_deb_reg)
                 pgens[k].update({'TT_regression_start_user': TT_start_reg})
                 
-            if hs_t1 is not None:
-                TT_t1 = conv.TT(hs_t1)
-                pgens[k].update({'TT_t1_user':TT_t1})
-
             pars[k] = pgen_ext.pgen_tables(pgens[k])
             axeT, dimT, phenT = pars[k]['adelT']
             tx = k * 10000
@@ -389,7 +402,7 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence, inter_row=pdata['inter_row'])        
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, force_start_reg=False)#force_start_reg remains to be tested , but setting to True is needed for tremie12
+        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])

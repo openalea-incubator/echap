@@ -33,7 +33,7 @@ def dimension_plot(dimension_data, fits):
     ax2.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Dimension data / Dimension fits")
 
-def dynamique_plot_nff(HS_GL_SSI_data, dynT_MS):
+def dynamique_plot_nff(HS_GL_SSI_data):
     plt.ion()
     
     varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
@@ -42,33 +42,18 @@ def dynamique_plot_nff(HS_GL_SSI_data, dynT_MS):
         df_HS = HS_GL_SSI_data[name]['HS']
         df_SSI = HS_GL_SSI_data[name]['SSI']
         if '11' in df_GL.columns:
-            df_GL.plot('TT', '11', style=':o'+color, label='GL ' +name+', nff 11')
-            df_HS.plot('TT', '11', style='--o'+color, label='HS ' +name+', nff 11')
+            df_GL.plot('TT', '11', style='o'+color, label='GL ' +name+', nff 11')
+            df_HS.plot('TT', '11', style='o'+color, label='HS ' +name+', nff 11')
         if '12' in df_GL.columns:
-            df_GL.plot('TT', '12', style=':^'+color, label='GL ' +name+', nff 12')
-            df_HS.plot('TT', '12', style='--^'+color, label='HS ' +name+', nff 12')
+            df_GL.plot('TT', '12', style='^'+color, label='GL ' +name+', nff 12')
+            df_HS.plot('TT', '12', style='^'+color, label='HS ' +name+', nff 12')
         if '13' in df_GL.columns:
-            df_GL.plot('TT', '13', style=':p'+color, label='GL ' +name+', nff 13')
-            df_HS.plot('TT', '13', style='--p'+color, label='HS ' +name+', nff 13')
+            df_GL.plot('TT', '13', style='p'+color, label='GL ' +name+', nff 13')
+            df_HS.plot('TT', '13', style='p'+color, label='HS ' +name+', nff 13')
   
-    vars = [['Others','c'],['Tremie13','y']]
-    for name, color in vars :
-        a = dynT_MS[name]['a_cohort']*500; b = dynT_MS[name]['a_cohort']*1300
-        dynT = pandas.DataFrame({'HS':[500,1300,1900],'dyn':[a, b, b]})
-        dynT.plot('HS', 'dyn', style = '-o'+color, linewidth=2, label = 'pente de la droite ' + name)
-    
-        #T0 = TT_col0 + n0 / a_cohort [TT pr HS=n0]
-        #T1 = TT_col0 + dec_internode_elongated_nbr / a_cohort [TT pr HS=n1]
-        #c = -((nff - dec_elongated_internode_nbr)-(n2 - n1)) / (TT_col_n_phytomer - T1)
-        T0 = dynT_MS[name]['TT_col_0'] + dynT_MS[name]['n0'] / dynT_MS[name]['a_cohort']
-        T1 = dynT_MS[name]['TT_col_0'] + (12 - 4.) / dynT_MS[name]['a_cohort']
-        C = dynT_MS[name]['TT_col_N_phytomer_potential']
-    
-        dynT = pandas.DataFrame({'HS':[T0, T1, C],'dyn':[dynT_MS[name]['n0'], dynT_MS[name]['n1'], dynT_MS[name]['n2']]})
-        dynT.plot('HS', 'dyn', style = '-^'+color, linewidth=2, label = 'Global '+name)
 
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
-    plt.xlabel("HS")
+    plt.xlabel("TT")
     
 def dynamique_plot(HS_GL_SSI_data, converter = None):
     plt.ion()
@@ -126,32 +111,33 @@ def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
             plt.xlabel("HS")
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
-def dynamique_plot_GL_fits(HS_GL_SSI_data, GL_fit, abs='TT'):
+def dynamique_plot_GL_fits(HS_GL_SSI_data, HS_GL_fit, abs='TT', obs=True):
     plt.ion()
     
     varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
     
     for name,color in varieties :
-        df_GL = GL_fit[name]['GL']
-        df_HS = HS_GL_SSI_data[name]['HS']
-        GL_med = pandas.DataFrame({'HS':[GL_fit[name]['coefs']['n0'],GL_fit[name]['coefs']['hs_t1'],GL_fit[name]['coefs']['hs_t2']], 'abs':[GL_fit[name]['coefs']['n0'],GL_fit[name]['coefs']['n1'],GL_fit[name]['coefs']['n2']]})
-        #converter
-        conv = GL_fit[name]['HS_fit']
-        df_GL['HS'] = conv(df_GL['TT'])
-        df_HS['HS'] = conv(df_HS['TT'])
-        GL_med['TT'] = conv.TT(GL_med['HS'])
+        conv = HS_GL_fit[name]['HS']
+        gl_fit = HS_GL_fit[name]['GL']
+        hs_obs = HS_GL_SSI_data[name]['HS']
+        gl_obs = HS_GL_SSI_data[name]['GL']
+        gl_mod = gl_fit.curve()
+        #
+        hs_obs['HS'] = conv(hs_obs['TT'])
+        gl_obs['HS'] = conv(gl_obs['TT'])
+        gl_mod['TT'] = conv.TT(gl_mod['HS'])
+        #
+        hs_obs['TTem'] = conv.TTem(hs_obs['TT'])
+        gl_obs['TTem'] = conv.TTem(gl_obs['TT'])
+        gl_mod['TTem'] = conv.TTem(gl_mod['TT'])
+
         #---
-        if abs is 'TT':
-            df_GL.plot('TT', 'mediane', style=':o'+color, label='Mediane GL ' +name)
-            df_HS.plot('TT', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
-            GL_med.plot('TT','abs', style='-^'+color, label='GL_fits ' +name)
-            plt.xlabel("TT")
-        else :
-            df_GL.plot('HS', 'mediane', style=':o'+color, label='Mediane GL ' +name)
-            df_HS.plot('HS', 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
-            GL_med.plot('HS','abs', style='-^'+color, label='GL_fits ' +name)
-            plt.xlabel("HS")
-    
+        if obs:
+            gl_obs.plot(abs, 'mean_pond', style='o'+color, label='Mediane GL ' +name)
+            hs_obs.plot(abs, 'mean_pond', style='--o'+color, label='Moyenne pond HS ' +name)
+        gl_mod.plot(abs,'GL', style='-'+color, label='GL_fits ' +name)
+        
+    plt.xlabel(abs)
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
 def density_plot(density_data, fits, HS_converter):
