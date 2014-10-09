@@ -3,7 +3,35 @@
 """
 import matplotlib.pyplot as plt
 import pandas
+import numpy as np
 
+def dimension_plot(dimension_data, fits):
+    plt.ion()
+    
+    fig, axes = plt.subplots(nrows=2, ncols=3)
+    ax0, ax1, ax2, ax3, ax4, ax5 = axes.flat
+    
+    varieties = [['Mercia','r',12],['Rht3','g',11],['Tremie12','b',13],['Tremie13','m',11]]
+    for name,color,nff in varieties :
+        d_data = dimension_data[name]
+        dim_data = d_data.where((pandas.notnull(d_data)), None)
+        ax0.plot(dim_data['index_phytomer'], dim_data['L_blade'], '-^'+color, label = '_nolegend_')
+        ax1.plot(dim_data['index_phytomer'], dim_data['L_sheath'], '--o'+color, label = '_nolegend_')
+        ax2.plot(dim_data['index_phytomer'], dim_data['L_internode'], ':<'+color, label=name)
+        #ax0.plot(dim_data['index_phytomer'], dim_data['W_blade'], style='--p'+color, label='W_blade ' +name)
+        
+        dim_fit = fits[name][nff]
+        ax3.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-^'+color, label = '_nolegend_')
+        ax4.plot(dim_fit['index_phytomer'], dim_fit['L_sheath'], '--o'+color, label = '_nolegend_')
+        ax5.plot(dim_fit['index_phytomer'], dim_fit['L_internode'], ':<'+color, label = '_nolegend_')
+        #ax1.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], style='--p'+color, label='W_blade ' +name)
+        
+        ax0.set_title('L_blade', fontsize=10)
+        ax1.set_title('L_sheath', fontsize=10)
+        ax2.set_title('L_internode', fontsize=10)
+    
+    ax2.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
+    fig.suptitle("Dimension data / Dimension fits")
 
 def dynamique_plot_nff(HS_GL_SSI_data, dynT_MS):
     plt.ion()

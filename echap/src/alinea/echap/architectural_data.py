@@ -40,9 +40,24 @@ def Tremie12_fitted_dimensions():
     
 def Tremie13_fitted_dimensions():
     dim = {}
-    for nff in [11,12]:
+    for nff in [12]:
         fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
+        # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
+        fn_tremie12 = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
+        dim_tremie12 = pandas.read_csv(fn_tremie12)
+        dim[nff]['L_sheath'] = dim_tremie12['L_sheath']
+        dim[nff]['L_internode'] = dim_tremie12['L_internode']
+        dim[nff]['W_blade'] = dim_tremie12['W_blade']
+        dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
+        dim[nff]['W_internode'] = dim_tremie12['W_internode']
+        # on complete la colonne L_internode
+        dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
+        
+        # on cree le fichier nff11 (nff12 - ligne12)
+        dim[nff-1] = dim[nff].loc[0:10]
+        #dim[11]['L_internode'] = [0,0,0,0,0,0,0,9.85,16.56,16.17,16.21]
+        
     return dim
 
 def dimension_fits():

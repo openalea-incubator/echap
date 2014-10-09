@@ -173,7 +173,7 @@ def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
-    density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],                                           'density':[203,203,153,153]}),
+    density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],'density':[203,203,153,153]}),
                 'Rht3': pandas.DataFrame({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
                 'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
@@ -316,6 +316,9 @@ def pars():
     
 if run_plots:
     archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
+    
+if run_plots:
+    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits())
     
 
 class EchapReconstructions(object):
