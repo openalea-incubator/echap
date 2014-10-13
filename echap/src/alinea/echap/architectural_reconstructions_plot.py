@@ -197,6 +197,7 @@ def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
         ax.plot(fit['HS'], fit['total'], '--r', label='Total')
         ax.plot(fit['HS'], fit['primary'], '-b', label='Primary')
         ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
+        ax.plot(fit['HS'], fit['3F'], '--y', label= 'TT3F')
 
         em = fits[name].emited_cohort_density()
         ax.stem(em['delay'],em['total_axis'], markerfmt='xr', linefmt='--r', basefmt='k', label='Total emited cohort density')
