@@ -384,8 +384,9 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     Notes :
     - No tillering data at date 4 and 5
     - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions 
-    - at date 3 , we invert column 'total primary' and 'total secondary' as it makes data much more consistent with date 2
-    - TO DO : at date 2 and for the 12 measured plants at date 3 : estimate missing T1/T2
+    - at date 3 , for the 2x 24 plants not measured in details, we invert column 'total primary' and 'total secondary' as it makes data much more consistent with date 2
+    - at date 3 TT3F was estimated as total primary  + delta secondary
+    - at date 3, on the 2 x 12 plants measured in details, it was possble to count presence/absence of living primary tillers (T1->T5). Living wes defined as Green leaves > 2 (minimal value of the GL model). 
 """
     
     fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')

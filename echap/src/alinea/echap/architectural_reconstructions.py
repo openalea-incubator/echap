@@ -215,7 +215,7 @@ def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3'
     return t_fits
 
 if run_plots:
-    #delta_stop_del = 2.8
+    delta_stop_del = 2.8
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
     fits = tillering_fits(delta_stop_del=delta_stop_del, max_order=None)
     obs = archidb.tillers_per_plant()
@@ -408,9 +408,12 @@ class EchapReconstructions(object):
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
+        
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
             devT = pgen_ext.adjust_density(devT, density)
+            
+        # for Mercia/Rht3, simulate fly damage by killing 25% of primary tillers (cf living tiller data at date 3)
         
         dfxy, dfsr = self.leaf_shapes[name]['shapes']
         xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
