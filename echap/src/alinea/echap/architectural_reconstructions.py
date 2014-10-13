@@ -185,6 +185,18 @@ def density_fits():
         df['TT'] = conv[k].TT(df['HS'])
     return density_fits
 #
+# Tiller survival to handl fly effects
+#    
+def tiller_survival():
+    d = density_fits()
+    survivals = {'Mercia': {T:d['Mercia'].iloc[1:-1] for T in ('T1','T2','T3','T4')},
+                  'Rht3':  {T:d['Rht3'].iloc[1:-1] for T in ('T1','T2','T3','T4')},
+                  'Tremie12': None,
+                  'Tremie13': None}
+    return survivals
+                    
+                
+#
 if run_plots:
     archi_plot.density_plot(archidb.PlantDensity(), density_fits(), HS_converter)
  
@@ -198,7 +210,7 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order):
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order)
     
-def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':4, 'Rht3':4, 'Tremie12': 7, 'Tremie13':5.5} , max_order=None):
+def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':3.5, 'Rht3':3.5, 'Tremie12': 7, 'Tremie13':4.5} , max_order=None):
         
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
@@ -341,6 +353,7 @@ class EchapReconstructions(object):
     
     def __init__(self):
         self.density_fits = density_fits()
+        self.tiller_survival = tiller_survival()
         self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits()
@@ -411,9 +424,12 @@ class EchapReconstructions(object):
         
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
-            devT = pgen_ext.adjust_density(devT, density)
+            d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
+            devT = pgen_ext.adjust_density(devT, d)
             
-        # for Mercia/Rht3, simulate fly damage by killing 25% of primary tillers (cf living tiller data at date 3)
+        # adjust tiller survival
+        if self.tiller_survival[name] is not None:
+            devT = pgen_ext.adjust_tiller_survival(devT, self.tiller_survival[name])
         
         dfxy, dfsr = self.leaf_shapes[name]['shapes']
         xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
