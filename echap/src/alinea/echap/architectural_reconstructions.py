@@ -176,7 +176,7 @@ def density_fits():
     density_fits = {'Mercia':pandas.DataFrame({'HS':[0,6,13,20],'density':[203,203,153,153]}),
                 'Rht3': pandas.DataFrame({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': pandas.DataFrame({'HS':[0,15,20],'density':[281,281,251]}),
-                'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[233,233]})}
+                'Tremie13': pandas.DataFrame({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
                 
     conv = HS_converter
     
@@ -318,7 +318,7 @@ if run_plots:
     #
     archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
     #
-    archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
+    #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
     archi_plot.dynamique_plot_nff(data)
     # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
 
@@ -365,7 +365,7 @@ class EchapReconstructions(object):
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
         Tillering = self.tillering_fits[name]
-        pgens = Tillering.to_pgen(nplants, density,force_start_reg=force_start_reg)
+        pgens = Tillering.to_pgen(nplants, density, force_start_reg=force_start_reg)
         pars = {}
         
         for k in pgens:
