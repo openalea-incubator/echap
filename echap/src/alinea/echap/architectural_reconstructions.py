@@ -188,11 +188,22 @@ def density_fits():
 # Tiller survival to handl fly effects
 #    
 def tiller_survival():
-    d = density_fits()
-    survivals = {'Mercia': {T:d['Mercia'].iloc[1:-1] for T in ('T1','T2','T3','T4')},
-                  'Rht3':  {T:d['Rht3'].iloc[1:-1] for T in ('T1','T2','T3','T4')},
+    conv = HS_converter
+    sfly = pandas.DataFrame({'HS':[4,5], 'density':[1,0.6 * 0.75]})# 0.6 is survival among living plants, 0.75 is survival of plants
+    sfly_Mercia = sfly.copy()
+    sfly_Mercia['TT'] = conv['Mercia'].TT(sfly['HS'])
+    sfly_Rht3 = sfly.copy()
+    sfly_Rht3['TT'] = conv['Rht3'].TT(sfly['HS'])
+    survivals = {'Mercia': {T:sfly_Mercia for T in ('T1','T2','T3','T4','T5')},
+                  'Rht3':  {T:sfly_Rht3 for T in ('T1','T2','T3','T4')},
                   'Tremie12': None,
                   'Tremie13': None}
+    #hack
+    survivals = {'Mercia': None,
+              'Rht3':  None,
+              'Tremie12': None,
+              'Tremie13': None}
+   
     return survivals
                     
                 
@@ -210,7 +221,7 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order):
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order)
     
-def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':3.5, 'Rht3':3.5, 'Tremie12': 7, 'Tremie13':4.5} , max_order=None):
+def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':3.5, 'Rht3':3.5, 'Tremie12': 5, 'Tremie13':4} , max_order=None):
         
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
@@ -405,7 +416,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 1, 'Tremie13':1}, dec_density={'Mercia':2.8, 'Rht3':2.8, 'Tremie12': 0, 'Tremie13':0}, freeze_damage ={'Mercia':None, 'Rht3':None, 'Tremie12': {'T1':0.1}, 'Tremie13':None}, **kwds):
     
         density = self.density_fits[name]
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
@@ -414,6 +425,11 @@ class EchapReconstructions(object):
         pdata = self.plot_data[name]
         stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence, inter_row=pdata['inter_row'])        
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
+        
+        if freeze_damage[name] is not None:
+            for k in freeze_damage[name]:
+                self.tillering_fits[name].primary_tiller_probabilities[k] = freeze_damage[name][k]
+            a=1/0
         
         pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
@@ -425,6 +441,10 @@ class EchapReconstructions(object):
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
             d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
+            d['density'].iloc[1] = int(d.iloc[1]['density'] * adjust_density[name])
+            conv = self.HS_GL_fits[name]['HS']
+            d['HS'] -= dec_density[name]
+            d['TT'] = conv.TT(d['HS'])
             devT = pgen_ext.adjust_density(devT, d)
             
         # adjust tiller survival
