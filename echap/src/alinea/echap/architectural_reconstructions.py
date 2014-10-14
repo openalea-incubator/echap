@@ -364,7 +364,6 @@ class EchapReconstructions(object):
     
     def __init__(self):
         self.density_fits = density_fits()
-        self.tiller_survival = tiller_survival()
         self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits()
@@ -439,18 +438,18 @@ class EchapReconstructions(object):
         
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
+            #to do test for 4 lines table only
             d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
             devT = pgen_ext.adjust_density(devT, d)
             if adjust_density[name] is not None:
-                d['density'].iloc[1] = int(d.iloc[1]['density'] * adjust_density[name])
+                d['density'].iloc[0] = 1
+                d['density'].iloc[1] = adjust_density[name]
                 conv = self.HS_GL_fits[name]['HS']
                 d['HS'] -= dec_density[name]
                 d['TT'] = conv.TT(d['HS'])
-                devT = pgen_ext.adjust_density(devT, d, keep_MS = True)
+                devT = pgen_ext.adjust_tiller_survival(devT, d)
             
-        # adjust tiller survival
-        if self.tiller_survival[name] is not None:
-            devT = pgen_ext.adjust_tiller_survival(devT, self.tiller_survival[name])
+
         
         dfxy, dfsr = self.leaf_shapes[name]['shapes']
         xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
