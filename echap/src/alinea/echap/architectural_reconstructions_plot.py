@@ -81,8 +81,8 @@ def dynamique_plot(HS_GL_SSI_data, converter = None):
 def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
     plt.ion()
     
-    #varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
-    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b']] #pb Tremie13
+    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    #varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b']] #pb Tremie13
     
     for name,color in varieties :
         df_GL = HS_GL_SSI_data[name]['GL']
@@ -94,10 +94,11 @@ def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
             df_GL.plot('TT', 'mean_pond', style='o'+color, label='Moyenne pond GL ' +name)
             df_HS.plot('TT', 'mean_pond', style='^'+color, label='Moyenne pond HS ' +name)
             df_SSI.plot('TT', 'mean_pond', style='<'+color, label='Moyenne pond SSI ' +name)
-            sim.plot('TT', 'GL', style='-o'+color, label='Sim GL ' +name)
-            sim.plot('TT', 'HS', style='-^'+color, label='Sim HS ' +name)
-            sim.plot('TT', 'SSI', style='-<'+color, label='Sim SSI ' +name)
+            sim.plot('TT', 'GL', style='--'+color, label='Sim GL ' +name)
+            sim.plot('TT', 'HS', style='-'+color, label='Sim HS ' +name)
+            sim.plot('TT', 'SSI', style=':'+color, label='Sim SSI ' +name)
             plt.xlabel("TT")
+            plt.ylim(ymin=0); plt.ylim(ymax=14)
         else:
             conv = converter[name]
             hsgl = conv(df_GL['TT']); hshs = conv(df_HS['TT']); hsssi = conv(df_SSI['TT'])
@@ -105,10 +106,11 @@ def dynamique_plot_sim(HS_GL_SSI_data, pars, converter = None):
             plt.plot(hsgl, df_GL['mean_pond'], 'o'+color, label='Moyenne pond GL ' +name)
             plt.plot(hshs, df_HS['mean_pond'], '^'+color, label='Moyenne pond HS ' +name)
             plt.plot(hsssi, df_SSI['mean_pond'], '<'+color, label='Moyenne pond SSI ' +name)
-            plt.plot(hssim, sim['GL'], '-'+color, label='Sim GL ' +name)
+            plt.plot(hssim, sim['GL'], '--'+color, label='Sim GL ' +name)
             plt.plot(hssim, sim['HS'], '-'+color, label='Sim HS ' +name)
-            plt.plot(hssim, sim['SSI'], '-'+color, label='Sim SSI ' +name)
+            plt.plot(hssim, sim['SSI'], ':'+color, label='Sim SSI ' +name)
             plt.xlabel("HS")
+            plt.ylim(ymin=0); plt.ylim(ymax=14)
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
 def dynamique_plot_GL_fits(HS_GL_SSI_data, HS_GL_fit, abs='TT', obs=True):
