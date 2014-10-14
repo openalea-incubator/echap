@@ -416,7 +416,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 1, 'Tremie13':1}, dec_density={'Mercia':2.8, 'Rht3':2.8, 'Tremie12': 0, 'Tremie13':0}, freeze_damage ={'Mercia':None, 'Rht3':None, 'Tremie12': {'T1':0.1}, 'Tremie13':None}, **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': None, 'Tremie13':None}, dec_density={'Mercia':2.8, 'Rht3':2.8, 'Tremie12': None, 'Tremie13':None}, freeze_damage ={'Mercia':None, 'Rht3':None, 'Tremie12': {'T1':0.1}, 'Tremie13':None}, **kwds):
     
         density = self.density_fits[name]
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
@@ -429,7 +429,6 @@ class EchapReconstructions(object):
         if freeze_damage[name] is not None:
             for k in freeze_damage[name]:
                 self.tillering_fits[name].primary_tiller_probabilities[k] = freeze_damage[name][k]
-            a=1/0
         
         pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
@@ -441,10 +440,11 @@ class EchapReconstructions(object):
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
             d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
-            d['density'].iloc[1] = int(d.iloc[1]['density'] * adjust_density[name])
-            conv = self.HS_GL_fits[name]['HS']
-            d['HS'] -= dec_density[name]
-            d['TT'] = conv.TT(d['HS'])
+            if adjust_density[name] is not None:
+                d['density'].iloc[1] = int(d.iloc[1]['density'] * adjust_density[name])
+                conv = self.HS_GL_fits[name]['HS']
+                d['HS'] -= dec_density[name]
+                d['TT'] = conv.TT(d['HS'])
             devT = pgen_ext.adjust_density(devT, d)
             
         # adjust tiller survival
