@@ -440,12 +440,13 @@ class EchapReconstructions(object):
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
             d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
+            devT = pgen_ext.adjust_density(devT, d)
             if adjust_density[name] is not None:
                 d['density'].iloc[1] = int(d.iloc[1]['density'] * adjust_density[name])
                 conv = self.HS_GL_fits[name]['HS']
                 d['HS'] -= dec_density[name]
                 d['TT'] = conv.TT(d['HS'])
-            devT = pgen_ext.adjust_density(devT, d)
+                devT = pgen_ext.adjust_density(devT, d, keep_MS = True)
             
         # adjust tiller survival
         if self.tiller_survival[name] is not None:
