@@ -51,10 +51,10 @@ recorder.plt.show()
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # VERSION SIMPLE (prend une date TT en entree)
-def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence'):
+def g_constr(name='Mercia',nplants=30):
 
     # Appel a la fonction get_reconstruction
-    adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants, nsect=nsect, seed=seed, sample=sample)
+    adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
     # Appel a la fonction repartition_at_application lié à l'architecture
     age=1166
     #age = 1500
@@ -63,9 +63,9 @@ def g_constr(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence'):
     #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
     return df
 
-def treatment(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence'): 
+def treatment(name='Mercia',nplants=30): 
    
-    df = g_constr(name, nplants, nsect, seed, sample)
+    df = g_constr(name=name, nplants=nplants)
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
