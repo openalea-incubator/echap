@@ -293,22 +293,28 @@ def LAI_biomasse_data():
     
 def scan_dep_Tremie12():
     '''
-    Scan leaf for 2011-2012
+    Leaf scan data for Tremie 2011-2012
     
-    Notes
-    -> Boigneville
-    Scan des feuilles aux dates 09/03/2012, 11/04/2012 et 09/05/2013
-    C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
-    C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
-    Avec fichier de notations associe
-    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
-    bonne numerotation des feuilles
+    Found data are:
+        - Manip 'archi/silhouette': Scan des feuilles aux dates 09/03/2012 (HS 7.4)
+                                                     11/04/2012 (HS 10.5)
+                                                     09/05/2013 (HS 13.06)
+                                files : C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
+                                C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
+                                Avec fichier de notations associe
+                                C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
     
-    -> Arvalis - scan non depouillees
-    Scan des feuilles aux dates 22/04/2012 et 03/05/2012
-    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
-    Avec fichier de notations associe a chaque fois 
-    !!! Mauvaise numerotation des feuilles (du type -1,0,1,2)
+            numerotation des feuilles coherente avec photos
+            donnes dispo dans share/data raw_srdb_BoignevilleTremie12.csv. 
+    
+        - Arvalis - scan non depouillees (manque la nuerotation des feuilles)
+        Scan des feuilles aux dates 22/04/2012  et 03/05/2012
+        C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+        
+    notes:
+    -target dates of interception are 13/04 (HS 10.67) and 11/05 (HS 13.4)
+    - Pour avoir les donnnes utilisees dans le fichier interception, il faut exclure les feueuille stat=3 et appliquer fraction HS a la deniere feuille emergee
+
     '''
     data_file = shared_data(alinea.echap, 'raw_srdb_BoignevilleTremie12.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')
@@ -331,7 +337,19 @@ def plot_scan():
         plt.suptitle("scan "+date)
         plt.xlabel("num feuille")
     return dfe
+def scan_dep_Tremie12():
+    '''
+    Leaf scan data for Tremie 2012-2013
     
+    Found data are:
+     
+        - Arvalis - scan non depouillees (manque la nuerotation des feuilles? (a voir avec nouveaux fichier
+        Scan des feuilles aux dates 22/04/2013  et 03/05/2013
+        C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+        
+
+
+    '''  
 #
 # TC data
 #   
