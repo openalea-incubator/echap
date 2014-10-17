@@ -16,7 +16,12 @@ import alinea.septo3d
 
 from alinea.echap.tests_nodes import plot_pesticide
 
-from alinea.echap.architectural_reconstructions import *
+#from alinea.echap.architectural_reconstructions import *
+
+import alinea.echap.architectural_reconstructions as rec
+
+from alinea.echap.architectural_reconstructions import EchapReconstructions
+
 
 
 def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, freq='H', TB=0, delayH=1, delayDD=15, applications=""" """):
@@ -82,11 +87,17 @@ def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
     
     # test branchement avec architecture adel
 #def get_reconstruction(name='Mercia',**args):
-def get_reconstruction(name,**args):
-    fun = reconst_db[name]
-    adel, domain, domain_area, convUnit, nplants = fun(**args)
-    return adel, domain, domain_area,convUnit, nplants
-    
+#def get_reconstruction(name,**args):
+#    adel, domain, domain_area, convUnit, nplants = (**args)
+#    return adel, domain, domain_area,convUnit, nplants
+
+Reconst = EchapReconstructions()
+HSconv = rec.HS_converter
+
+def get_reconstruction(name='Mercia', nplants=30):
+    adel = Reconst.get_reconstruction(name,nplants)
+    return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
+
 def repartition_at_applicationArch(appdate, dose, g):
     print '\n\nrepartition_at_applicationArch 3!!\n\n'
 #   from macros_annual_loop import setup_canopy
