@@ -304,7 +304,7 @@ def scan_dep_Tremie12():
                                 Avec fichier de notations associe
                                 C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
     
-            numerotation des feuilles coherente avec photos
+            numerotation des feuilles coherente avec photos et vrai numero determine (plantes baguees)
             donnes dispo dans share/data raw_srdb_BoignevilleTremie12.csv. 
     
         - Arvalis - scan non depouillees (manque la nuerotation des feuilles)
@@ -347,7 +347,8 @@ def scan_dep_Tremie12():
         Scan des feuilles aux dates 22/04/2013  et 03/05/2013
         C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
         
-
+    notes : 
+    
 
     '''  
 #
