@@ -84,8 +84,8 @@ def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
 #def get_reconstruction(name='Mercia',**args):
 def get_reconstruction(name,**args):
     fun = reconst_db[name]
-    pgen, adel, domain, domain_area, convUnit, nplants = fun(**args)
-    return pgen, adel, domain, domain_area, convUnit, nplants
+    adel, domain, domain_area, nplants = fun(**args)
+    return adel, domain, domain_area, nplants
     
 def repartition_at_applicationArch(appdate, dose, g):
     print '\n\nrepartition_at_applicationArch 3!!\n\n'
