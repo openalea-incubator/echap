@@ -56,15 +56,15 @@ def g_constr(name='Mercia',nplants=30):
     # Appel a la fonction get_reconstruction
     adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
     # Appel a la fonction repartition_at_application lié à l'architecture
-    age=1166
+    age=1569
     #age = 1500
     g = adel.setup_canopy(age)
-    df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
     #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
     return df
 
 def treatment(name='Mercia',nplants=30): 
-   
+
     df = g_constr(name=name, nplants=nplants)
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
