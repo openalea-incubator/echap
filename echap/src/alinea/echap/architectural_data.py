@@ -7,6 +7,9 @@ from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
 from math import sqrt
 
+import matplotlib.pyplot as plt
+plt.ion()
+
 #----------------------------------------------------- dimension
 def dimensions_data():
     dim = {}
@@ -287,6 +290,47 @@ def LAI_biomasse_data():
     'Tremie13': pandas.DataFrame({'TT_date':[941,941,941,1060,1060,1060], 'LAI_vert_biomasse':[(4.45*0.8),(4.59*0.8),(5.27*0.8),(5.63*0.8),(5.29*0.8),(6.55*0.8)]})
     }
     return d
+    
+def scan_dep_Tremie12():
+    '''
+    Scan leaf for 2011-2012
+    
+    Notes
+    -> Boigneville
+    Scan des feuilles aux dates 09/03/2012, 11/04/2012 et 09/05/2013
+    C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
+    C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
+    Avec fichier de notations associe
+    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
+    bonne numerotation des feuilles
+    
+    -> Arvalis - scan non depouillees
+    Scan des feuilles aux dates 22/04/2012 et 03/05/2012
+    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+    Avec fichier de notations associe a chaque fois 
+    !!! Mauvaise numerotation des feuilles (du type -1,0,1,2)
+    '''
+    data_file = shared_data(alinea.echap, 'raw_srdb_BoignevilleTremie12.csv')
+    df = pandas.read_csv(data_file, decimal=',', sep=';')
+    return df
+
+def plot_scan():
+    df = scan_dep_Tremie12()
+    df = df[df['id_Axe']=='MB']
+    # on filtre les stat=3 car pas dans les obs de Nathalie
+    df = df[df['stat']<3]
+    df = df.sort(['date prelev','id_Feuille'])
+    dfe = df.groupby(['date prelev','id_Feuille'], as_index=False).mean()
+    for date in ['lundi 2 avril 2012', 'mercredi 11 avril 2012', 'mercredi 9 mai 2012', 'vendredi 9 mars 2012']: 
+        plt.figure()
+        dt = dfe[dfe['date prelev']==date]
+        dt.plot('id_Feuille', 'A_bl', '-or', label = 'A_bl')
+        dt.plot('id_Feuille', 'A_bl_green', '-og', label = 'A_bl_green')
+        #titre, legende et titre axe x
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+        plt.suptitle("scan "+date)
+        plt.xlabel("num feuille")
+    return dfe
     
 #
 # TC data
