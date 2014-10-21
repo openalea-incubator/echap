@@ -8,16 +8,15 @@ import matplotlib.pyplot as plt
 from alinea.echap.weather_data import *
 import time 
 from alinea.echap.recorder import *
-
+import alinea.echap.architectural_reconstructions as reconstructions
 
 from itertools import cycle, islice
 from pylab import *
 
 plt.ion()
 
-# import pandas
-# from openalea.deploy.shared_data import shared_data
 
+# from openalea.deploy.shared_data import shared_data
 # from alinea.astk.Weather import Weather
 # from alinea.astk.TimeControl import *
 # from alinea.caribu.caribu_star import rain_and_light_star
@@ -49,38 +48,70 @@ recorder.plt.show()
 # df = repartition_at_application(appdate = '2011-04-19', dose = 0.5, age = 1166)
 #print 'df.columns after = ', df.columns
 
-# -----------------------------------------------------------------------------------------------------------------------------------
-# VERSION SIMPLE (prend une date TT en entree)
-def g_constr(name='Tremie12',nplants=30):
+# -------------------------------------------------
+# VERSION SIMPLE (prend un HS en entree)
+HSconv = reconstructions.HS_converter
 
+def g_constr(name, sim, nplants):
     # Appel a la fonction get_reconstruction
     adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
-    # Appel a la fonction repartition_at_application lié à l'architecture
-    # stade 2N et DFE pour Mercia et Rht3
-    #age=1166
-    #age = 1501
-    #stade 2N et DFE pour Tremie12
-    #age = 1269
-    #age = 1569
-    #stade 2N et DFE pour Tremie13
-    #age = 1006
-    age = 1254
+    
+    if sim is 'Mercia_T1':
+        HS = 9.74 #HS mesure au 18/04 au lieu du 19/04
+    elif sim is 'Mercia_T2'':
+        HS = 12.8 #HS convert car pas de HS mesure +/- 15j
+    elif sim is 'Rht3_T1':
+        HS = 9.15 #HS mesure au 18/04 au lieu du 19/04
+    elif sim is 'Rht3_T2':
+        HS = 12.48 #HS convert car pas de HS mesure +/- 15j
+    elif sim is 'Tremie12_T1':
+        HS = 10.98 #HS mesure
+    elif sim is 'Tremie12_T2':
+        HS = 12.63 #HS mesure
+    elif sim is 'Tremie13_T1':
+        HS = 8.33 #HS mesure au 19/04 au lieu du 22/04 (8.36 avec HS convert)
+    elif sim is 'Tremie13_T2':
+        HS = 11.04 #HS convert
+    else :
+        print 'Warning = PB name or sim'
+    
+    #conversion du HS en TT necessaire a setup_canopy
+    conv = HSconv[name]
+    age = conv.TT(HS)
     g = adel.setup_canopy(age)
+    
+    if sim is 'Mercia_T1' or name is 'Rht3_T1':
+        df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
+    elif sim is 'Mercia_T2' or name is 'Rht3_T2':
+        df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    elif sim is 'Tremie12_T1':
+        df = repartition_at_applicationArch(appdate = '2012-04-11', dose = 1, g=g)
+    elif sim is 'Tremie12_T2':
+        df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
+    elif sim is 'Tremie13_T1':
+        df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
+    elif sim is 'Tremie13_T2':
+        df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
+    else :
+        print 'Warning = PB name or sim'
+    return df
+        
+    # A supprimer si tt fonctionne au dessus
     # stade 2N et DFE pour Mercia et Rht3
     #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
     #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
     # stade 2N et DFE pour Tremie12
     #df = repartition_at_applicationArch(appdate = '2012-04-11', dose = 1, g=g)
     #df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
-    # stade 2N et DFE pour Tremie12
+    # stade 2N et DFE pour Tremie13
     #df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
-    df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
+    #df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
 
-    return df
+    
+def treatment(name='Tremie12', sim='T1', nplants=30): 
 
-def treatment(name='Tremie12',nplants=30): 
-
-    df = g_constr(name=name, nplants=nplants)
+    simul = name+'_'+sim
+    df = g_constr(name = name, sim = simul, nplants = nplants)
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
@@ -90,7 +121,6 @@ def treatment(name='Tremie12',nplants=30):
     data = gr.apply(_fun)
     
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
-
 
     data = data.convert_objects() # conversion des objets en types numpy
 
@@ -224,8 +254,7 @@ def treatment(name='Tremie12',nplants=30):
     gr3=dmp.groupby(['date'],as_index=False)
     ## calcul, pour chaque date et ntop_cur<4 de la surface totale verte et senecente et de l'interception totale
     grtest3 = gr3.sum()
-    
-    
+       
     return grtest4,grtest3
 
 #plot des donnees obs
