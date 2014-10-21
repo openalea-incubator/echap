@@ -51,19 +51,19 @@ recorder.plt.show()
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # VERSION SIMPLE (prend une date TT en entree)
-def g_constr(name='Mercia',nplants=30):
+def g_constr(name='Tremie12',nplants=30):
 
     # Appel a la fonction get_reconstruction
     adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
     # Appel a la fonction repartition_at_application lié à l'architecture
-    age=1569
-    #age = 1500
+    #age=1166
+    age = 1501
     g = adel.setup_canopy(age)
-    df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
-    #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
     return df
 
-def treatment(name='Mercia',nplants=30): 
+def treatment(name='Tremie12',nplants=30): 
 
     df = g_constr(name=name, nplants=nplants)
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
@@ -75,37 +75,53 @@ def treatment(name='Mercia',nplants=30):
     data = gr.apply(_fun)
     
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
-#Calcul surface foliaire
-    data['Foliar_Surface']=data['green_area']+data['senesced_area']
+
+
     data = data.convert_objects() # conversion des objets en types numpy
-    data.to_csv('data1.csv')
+
+    data.to_csv('dataALL.csv')
     data = data[(data.ntop_cur <= 4)&(data.axe=='MS')]
     data.to_csv('data_ntop_cur4.csv')
     
- 
+    #Calcul surface foliaire : est egale à la sommme de toutes les surfaces par metamer
+    dataSF=data.groupby(['plant', 'date', 'metamer','ntop_cur'],as_index=False)
+#    dataSF['Foliar_Surface']=dataSF['green_area']+dataSF['senesced_area']
+    dataSFsum=dataSF['area'].agg({'area_sum':np.sum,'area_std':np.std})
+
+#    dataSFsum = dataSF['area'].agg({'area_sum' : np.sum})
+    dataSFsum.to_csv('dataSFsum.csv')
 #    if data['axe'] is 'MS' : 
 
-    dataCB=data.groupby(['date'],as_index=False)
+#    dataCB=data.groupby(['date'],as_index=False)
     # calcul, pour chaque date de la surface totale verte et senecente et de l'interception totale
-    grCB= dataCB.sum()
-    grCB.to_csv('grCB.csv')
+#    grCB= dataCB.sum()
+#    grCB.to_csv('grCB.csv')
     #grCBm=grCB.groupby(['ntop_cur', 'date', 'axe'],as_index=False)
     #grCFmean = grCBm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
     #grCBmean.to_csv('grCBmean.csv')
     
 
     #calcul pour sortir donnees interception sur leaf 1 et metamer A CONFIRMER
-    dataCF=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+    dataCF=data.groupby(['plant', 'ntop_cur', 'date','metamer'], as_index=False)
+    dataCF.to_csv('dataCF.csv')
+#    grCFmeanSF = dataCF['Foliar_Surface'].agg({'Foliar_Surface_sum' : np.sum, 'Foliar_Surface_std':np.max})
     grCF= dataCF.sum()
     grCF.to_csv('grCF.csv')
     grCFm=grCF.groupby(['ntop_cur','date'],as_index=False)
+    grCFm.to_csv('grCFm.csv')
 
-# ajout intervalle de confiance (, 'surfacic_doses_IC':np.(mean+((1.96*np.std)** n))
+# essai ajout intervalle de confiance (, 'surfacic_doses_IC':np.(mean+((1.96*np.std)** n))
     grCFmeanSDE = grCFm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std':np.std})
-    grCFmeanSF = grCFm['Foliar_Surface'].agg({'Foliar_Surface_mean' : np.mean, 'Foliar_Surface_std':np.std})
+#    grCFarea= grCFm['area']
+
+    grCFmeanSF = grCFm['area'].agg({'area_mean' : np.mean, 'area_std':np.std})
 #    grCFmean = pandas.concat([grCFmeanSDE, grCFmeanSF])
     grCFmean = pandas.merge(grCFmeanSDE,grCFmeanSF)
-    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFmean['Foliar_Surface_mean']
+#    grCFmean = pandas.merge(grCFmeanSDE,grCFarea)
+#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*dataSFsum['area_sum']
+#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFm['area']
+    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFmean['area_mean']
+
 #    grCFmean = grCFm.agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std,'Foliar_Surface_mean' : np.mean,'Foliar_Surface_std':np.std})
     grCFmean['name'] = name
 
