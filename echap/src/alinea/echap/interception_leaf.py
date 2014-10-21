@@ -56,7 +56,7 @@ def product_dose(product_name, dose, productsDB):
     for prod, sub in productsDB.iteritems():
         if prod == product_name:
             for compound_name, compound_dose in sub.iteritems():
-                active_dose = (compound_dose * dose) * 10**-4
+                active_dose = (compound_dose * dose) * 1
     return compound_name, active_dose
 
 
