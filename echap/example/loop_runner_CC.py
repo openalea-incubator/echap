@@ -56,11 +56,26 @@ def g_constr(name='Tremie12',nplants=30):
     # Appel a la fonction get_reconstruction
     adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
     # Appel a la fonction repartition_at_application lié à l'architecture
+    # stade 2N et DFE pour Mercia et Rht3
     #age=1166
-    age = 1501
+    #age = 1501
+    #stade 2N et DFE pour Tremie12
+    #age = 1269
+    #age = 1569
+    #stade 2N et DFE pour Tremie13
+    #age = 1006
+    age = 1254
     g = adel.setup_canopy(age)
+    # stade 2N et DFE pour Mercia et Rht3
     #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
-    df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
+    # stade 2N et DFE pour Tremie12
+    #df = repartition_at_applicationArch(appdate = '2012-04-11', dose = 1, g=g)
+    #df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
+    # stade 2N et DFE pour Tremie12
+    #df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 1, g=g)
+
     return df
 
 def treatment(name='Tremie12',nplants=30): 
