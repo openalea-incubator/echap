@@ -426,6 +426,7 @@ class EchapReconstructions(object):
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
         if freeze_damage[name] is not None:
+            self.tillering_fits = tillering_fits()
             for k in freeze_damage[name]:
                 self.tillering_fits[name].primary_tiller_probabilities[k] = freeze_damage[name][k]
         
