@@ -74,7 +74,7 @@ def g_constr(name='Tremie12',nplants=30):
     #df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
     # stade 2N et DFE pour Tremie12
     #df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
-    df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 1, g=g)
+    df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
 
     return df
 
