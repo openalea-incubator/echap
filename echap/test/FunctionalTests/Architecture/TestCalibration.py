@@ -41,7 +41,6 @@ def get_reconstruction(name='Mercia', **args):
 #    
     
 def test_axis_dynamics(name='Mercia', color='r'):
-
     dates = range(0,2500,100)
     adel = AdelWheat()
     res = AdelWheat.checkAxeDyn(adel, dates, density=1)
@@ -49,9 +48,25 @@ def test_axis_dynamics(name='Mercia', color='r'):
     conv = HSconv[name]
     res['HS'] = conv(res['TT'])
     
-    res.plot('HS', 'nbaxes_present', style='--o'+color, label='nbaxes_present '+name)
-    plt.ylim(ymin=0); plt.xlabel("HS")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    return res
+    
+    #res.plot('HS', 'nbaxes_present', style='--o'+color, label='nbaxes_present '+name)
+    #plt.ylim(ymin=0); plt.xlabel("HS")
+    #plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    
+def multi_plot_test_axis_dynamics():
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    ax0, ax1, ax2, ax3 = axes.flat
+    
+    varieties = [['Mercia',ax0],['Rht3',ax1],['Tremie12',ax2],['Tremie13',ax3]]
+    for name,ax in varieties :
+        res = test_axis_dynamics(name=name)
+        ax.plot(res['HS'], res['nbaxes_present'], '-ob', label = 'nbaxes_present '+name)
+        ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
+        ax.legend(numpoints=1, bbox_to_anchor=(1.1,1.1), prop={'size': 9})
+        
+    fig.suptitle("Axis dynamics")
+        
     
 #------------------------------------------------------------------------------------- 
 # Intervalle de confiance
@@ -198,7 +213,35 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return h
-        
+    
+#------------------------------------------------------------------------------------- 
+# Image plante
+def silhouette(name='Mercia', n=1, aborting_tiller_reduction=1, **kwds):   
+    if name is 'Mercia':
+        HS = [10.9, 15.73]
+    elif name is 'Rht3':
+        HS = [10.57, 15.4]
+    elif name is 'Tremie12':
+        HS = [7.42, 10.52, 13.06, 17.85]
+    else :
+        HS = [8.36, 9.1, 9.46]
+    # conversion HS en TT
+    conv = HSconv[name]
+    TT = conv.TT(HS)
+    
+    #freeze_damage ={'Mercia':{'T1':0.01, 'T2':0.01}, 'Rht3':{'T1':0.01, 'T2':0.01}, 'Tremie12': {'T1':0.01}, 'Tremie13':{'T1':0.01}}
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
+    
+    for age in TT :
+        sim = adel.setup_canopy(age)
+        HS = conv(age)
+        scene = plot3d(sim)
+        fname = 'plot_'+name+'_'+str(HS)+'.png'
+        print fname
+        pgl.Viewer.display(scene)
+        #pgl.Viewer.camera.lookAt((0,150,0),(0,0,0))
+        pgl.Viewer.frameGL.saveImage(fname)
+
 #------------------------------------------------------------------------------------- 
 # Taux de couverture
 
@@ -211,7 +254,8 @@ def draft_TC(g, adel, domain, zenith, rep):
     
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     #high resolution
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    #gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 2144, image_height = 1424, getImages=True, replicate=rep)
 
     return gc
     
@@ -240,7 +284,9 @@ def comp_TC(name='Mercia', n=30, zenith=0, aborting_tiller_reduction=1, **kwds):
 
     # plot sim TC_tot, TC_green et senescence sur le meme graph
     sim_green['TCtot'] = sim_green['TCgreen'] + sim_green['TCsen']
-    sim_green.plot('HS','TCtot',style='-ob', label='TC total sim '+name); sim_green.plot('HS','TCgreen',style='-og', label = 'TC green sim '+name); sim_green.plot('HS','TCsen',style='-oy', label = 'TC senescent sim '+name)
+    sim_green.plot('HS','TCtot',style='-ob', label='TC total sim '+name)
+    sim_green.plot('HS','TCgreen',style='-og', label = 'TC green sim '+name)
+    sim_green.plot('HS','TCsen',style='-oy', label = 'TC senescent sim '+name)
     
     #obs    
     obs = archidb.TC_data()[name+'_'+zen]
@@ -394,7 +440,7 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     tab0 = tab0.merge(bid); tab20 = tab20.merge(bid)
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
-    dd = range(500,2500,1000) #dd = range(400,2600,300)
+    dd = range(500,2500,100) #dd = range(400,2600,300)
     
     # PARTIE DONNEES ----------------------------------------------------------------------------
     #obs tous les points
