@@ -344,17 +344,20 @@ def plot_scan(name='Tremie12', stat='all'): #Tremie13, pas de colonne stat => st
     def _fun(sub):
         sub['nmax'] = sub['id_Feuille'].max()
         return sub
-    #tableau avec notation depuis le bas puis le haut
+
     grouped = df.groupby(['Date','N plante'], as_index=False)
     df = grouped.apply(_fun)
     df['ntop_cur'] = df['nmax'] - df['id_Feuille'] + 1
     
-    #tableau avec notation depuis le haut (ntop_cur) et moyenne notation depuis le bas (moyenne id_Feuille)
     dater = []; moy_feuille = []; ntop = []; A_bl = []
     lst_date = df['Date'].unique()
     for date in lst_date:
         dt = df[df['Date']==date]
-        data = dt.groupby(['ntop_cur'], as_index=False).mean()    
+        
+        # tableau avec notation depuis le haut (ntop_cur) et moyenne notation depuis le bas (moyenne id_Feuille)
+        data = dt.groupby(['ntop_cur'], as_index=False).mean()  
+        # tableau avec notation depuis le bas (id_Feuille) et moyenne notation depuis le haut (moyenne ntop_cur)     
+        # data = dt.groupby(['id_Feuille'], as_index=False).mean()    
 
         nbr = data['ntop_cur'].count(); cpt = 0
         while cpt<nbr:
