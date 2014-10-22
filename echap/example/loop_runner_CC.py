@@ -58,7 +58,7 @@ def g_constr(name, sim, nplants):
     
     if sim is 'Mercia_T1':
         HS = 9.74 #HS mesure au 18/04 au lieu du 19/04
-    elif sim is 'Mercia_T2'':
+    elif sim is 'Mercia_T2':
         HS = 12.8 #HS convert car pas de HS mesure +/- 15j
     elif sim is 'Rht3_T1':
         HS = 9.15 #HS mesure au 18/04 au lieu du 19/04
