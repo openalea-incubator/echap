@@ -417,7 +417,7 @@ class EchapReconstructions(object):
    
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':None, 'Tremie12': None, 'Tremie13':None}, **kwds):
     
-        density = self.density_fits[name]
+        density = self.density_fits[name].deepcopy()
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
         density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0]
         
