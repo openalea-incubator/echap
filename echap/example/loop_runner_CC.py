@@ -54,64 +54,54 @@ HSconv = reconstructions.HS_converter
 
 def g_constr(name, sim, nplants):
     # Appel a la fonction get_reconstruction
-    adel,domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=name, nplants=nplants)
     
-    if sim is 'Mercia_T1':
+    if sim == 'Mercia_T1':
         HS = 9.74 #HS mesure au 18/04 au lieu du 19/04
-    elif sim is 'Mercia_T2':
+    elif sim == 'Mercia_T2':
         HS = 12.8 #HS convert car pas de HS mesure +/- 15j
-    elif sim is 'Rht3_T1':
+    elif sim == 'Rht3_T1':
         HS = 9.15 #HS mesure au 18/04 au lieu du 19/04
-    elif sim is 'Rht3_T2':
+    elif sim == 'Rht3_T2':
         HS = 12.48 #HS convert car pas de HS mesure +/- 15j
-    elif sim is 'Tremie12_T1':
+    elif sim == 'Tremie12_T1':
         HS = 10.98 #HS mesure
-    elif sim is 'Tremie12_T2':
+    elif sim == 'Tremie12_T2':
         HS = 12.63 #HS mesure
-    elif sim is 'Tremie13_T1':
+    elif sim == 'Tremie13_T1':
         HS = 8.33 #HS mesure au 19/04 au lieu du 22/04 (8.36 avec HS convert)
-    elif sim is 'Tremie13_T2':
+    elif sim == 'Tremie13_T2':
         HS = 11.04 #HS convert
     else :
-        print 'Warning = PB name or sim'
+        print 'Warning = PB sim - pas de HS'
     
     #conversion du HS en TT necessaire a setup_canopy
     conv = HSconv[name]
     age = conv.TT(HS)
     g = adel.setup_canopy(age)
     
-    if sim is 'Mercia_T1' or name is 'Rht3_T1':
+    if sim == 'Mercia_T1' or sim == 'Rht3_T1':
         df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
-    elif sim is 'Mercia_T2' or name is 'Rht3_T2':
+    elif sim == 'Mercia_T2' or sim == 'Rht3_T2':
         df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
-    elif sim is 'Tremie12_T1':
+    elif sim == 'Tremie12_T1':
         df = repartition_at_applicationArch(appdate = '2012-04-11', dose = 1, g=g)
-    elif sim is 'Tremie12_T2':
+    elif sim == 'Tremie12_T2':
         df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
-    elif sim is 'Tremie13_T1':
+    elif sim == 'Tremie13_T1':
         df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
-    elif sim is 'Tremie13_T2':
+    elif sim == 'Tremie13_T2':
         df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
     else :
-        print 'Warning = PB name or sim'
-    return df
+        print 'Warning = PB sim - pas de return df'
         
-    # A supprimer si tt fonctionne au dessus
-    # stade 2N et DFE pour Mercia et Rht3
-    #df = repartition_at_applicationArch(appdate = '2011-04-19', dose = 1, g=g)
-    #df = repartition_at_applicationArch(appdate = '2011-05-11', dose = 1, g=g)
-    # stade 2N et DFE pour Tremie12
-    #df = repartition_at_applicationArch(appdate = '2012-04-11', dose = 1, g=g)
-    #df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
-    # stade 2N et DFE pour Tremie13
-    #df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
-    #df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
+    return df
 
     
 def treatment(name='Tremie12', sim='T1', nplants=30): 
 
     simul = name+'_'+sim
-    df = g_constr(name = name, sim = simul, nplants = nplants)
+    df = g_constr(name, simul, nplants)
     gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
     def _fun(sub):
