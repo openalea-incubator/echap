@@ -306,11 +306,7 @@ def scan_dep_Tremie12():
     
             numerotation des feuilles coherente avec photos et vrai numero determine (plantes baguees)
             donnes dispo dans share/data raw_srdb_BoignevilleTremie12.csv. 
-    
-        - Arvalis - scan non depouillees (manque la nuerotation des feuilles)
-        Scan des feuilles aux dates 22/04/2012  et 03/05/2012
-        C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
-        
+
     notes:
     -target dates of interception are 13/04 (HS 10.67) and 11/05 (HS 13.4)
     - Pour avoir les donnnes utilisees dans le fichier interception, il faut exclure les feueuille stat=3 et appliquer fraction HS a la deniere feuille emergee
@@ -319,14 +315,72 @@ def scan_dep_Tremie12():
     data_file = shared_data(alinea.echap, 'raw_srdb_BoignevilleTremie12.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')
     return df
+    
+def scan_dep_Tremie13():
+    '''
+    Scan des feuilles non depouillees pour le 22/04/2012 et le 03/05/2012
+    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+    '''
+    data_file = shared_data(alinea.echap, 'Tremie13_scan.csv')
+    df = pandas.read_csv(data_file, decimal=',', sep=';')
+    return df
 
-def plot_scan():
-    df = scan_dep_Tremie12()
+def plot_scan(name='Tremie12', stat='all'): #Tremie13, pas de colonne stat => stat='all'
+
+    if name is 'Tremie12':
+        df = scan_dep_Tremie12()
+    elif name is 'Tremie13':
+        df = scan_dep_Tremie13()
+
+    # on filtre les MB stat=3 car pas dans les obs de Nathalie
     df = df[df['id_Axe']=='MB']
-    # on filtre les stat=3 car pas dans les obs de Nathalie
-    df = df[df['stat']<3]
-    df = df.sort(['date prelev','id_Feuille'])
-    dfe = df.groupby(['date prelev','id_Feuille'], as_index=False).mean()
+    if stat is 'all':
+        print 'On prend l\'ensemble des donnees => statuts 1, 2 ou 3'
+    else:
+        df = df[df['stat']<3]
+        print 'On prend seulement les donnees ayant les statuts 1 ou 2'
+        
+    df = df.sort(['Date','id_Feuille'])
+    def _fun(sub):
+        sub['nmax'] = sub['id_Feuille'].max()
+        return sub
+    #tableau avec notation depuis le bas puis le haut
+    grouped = df.groupby(['Date','N plante'], as_index=False)
+    df = grouped.apply(_fun)
+    df['ntop_cur'] = df['nmax'] - df['id_Feuille'] + 1
+    
+    #tableau avec notation depuis le haut (ntop_cur) et moyenne notation depuis le bas (moyenne id_Feuille)
+    dater = []; moy_feuille = []; ntop = []; A_bl = []
+    lst_date = df['Date'].unique()
+    for date in lst_date:
+        dt = df[df['Date']==date]
+        data = dt.groupby(['ntop_cur'], as_index=False).mean()    
+
+        nbr = data['ntop_cur'].count(); cpt = 0
+        while cpt<nbr:
+            dater.append(date)
+            moy_feuille.append(data['id_Feuille'][cpt])
+            ntop.append(data['ntop_cur'][cpt])
+            A_bl.append(data['A_bl'][cpt])
+            cpt += 1
+    surfSet = zip(dater,moy_feuille,ntop,A_bl)
+    df_fin = pandas.DataFrame(data = surfSet, columns=['date', 'moyenne id_Feuille', 'ntop_cur', 'Area A_bl'])
+    return df_fin    
+    
+    # barplot chaque feuille par date
+    '''for date in ['mercredi 9 mai 2012']:
+        dt = df[df['date prelev']==date] 
+        for leaf in dt['id_Feuille'].unique():  
+            plt.figure()
+            dy = dt[dt['id_Feuille']==leaf] 
+            #dt.plot('id_Feuille', 'A_bl', label='A_bl', kind='bar')
+            dy['A_bl'].hist()
+            #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+            plt.suptitle("scan "+date+", num leaf : "+str(leaf))
+            #plt.xlabel("num feuille")'''
+        
+    # plot moyenne feuille par date
+    '''dfe = df.groupby(['date prelev','id_Feuille'], as_index=False).mean()
     for date in ['lundi 2 avril 2012', 'mercredi 11 avril 2012', 'mercredi 9 mai 2012', 'vendredi 9 mars 2012']: 
         plt.figure()
         dt = dfe[dfe['date prelev']==date]
@@ -335,22 +389,9 @@ def plot_scan():
         #titre, legende et titre axe x
         plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
         plt.suptitle("scan "+date)
-        plt.xlabel("num feuille")
-    return dfe
-def scan_dep_Tremie12():
-    '''
-    Leaf scan data for Tremie 2012-2013
-    
-    Found data are:
-     
-        - Arvalis - scan non depouillees (manque la nuerotation des feuilles? (a voir avec nouveaux fichier
-        Scan des feuilles aux dates 22/04/2013  et 03/05/2013
-        C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
-        
-    notes : 
-    
+        plt.xlabel("num feuille")'''
 
-    '''  
+    
 #
 # TC data
 #   
