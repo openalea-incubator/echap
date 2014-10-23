@@ -8,18 +8,25 @@ from openalea.deploy.shared_data import shared_data
 def dye_interception():
     """ Dye interception data
     
-    data are compiled mean/sd from dye interception.
+    data are  mean/sd deposit per leaf compiled from all sprayed volume experiment.
+    To get comparable value, deposits are expressed relative to quantity sprayed
     
-    units : deposit per leaf (g per g.cm-2 applied)
-    
-    All volume mixed
-    
+    units :  g per g.cm-2 applied
+        
     Raw data are in ECHAP_ARVALIS/Interception/Donnees brutes 3 annee
+    original units : microg per g.ha-1 (converted in g per g.cm-2 by multiplying original data by 100)
     
-    original units : microg. per g.ha-1 (converted in g : g.cm-2 by multiplying by 100)
+    Note:
+        - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
     """
     data_file = shared_data(alinea.echap, 'dye_interception.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')
+    # shift leaf numbers at date 1
+    decfeu = {'Mercia':'19/04/2011', 'Rht3':'19/04/2011', 'Tremie12':'11/04/2012', 'Tremie13':'25/04/2013'}
+    for name,d in decfeu.iteritems():
+        sel = (df['name'] == name) & (df['date'] == d) & (map(lambda x: x.startswith('F'),df['feuille']))
+        df['feuille'][sel] = ('F2','F3','F4','F5')
+        df['N feuille'][sel] = (2,3,4,5)
     return df
     
 def dye_applications():
