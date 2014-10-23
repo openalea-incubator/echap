@@ -58,7 +58,7 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     data = data.convert_objects() # conversion des objets en types numpy
 
     data.to_csv('dataALL.csv')
-    data = data[(data.ntop_cur <= 4)&(data.axe=='MS')]
+    data = data[(data.ntop_cur <= 5)&(data.axe=='MS')]
     data.to_csv('data_ntop_cur4.csv')
     
     #Calcul surface foliaire : est egale à la sommme de toutes les surfaces par metamer
@@ -89,7 +89,7 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     grCFm.to_csv('grCFm.csv')
 
 # essai ajout intervalle de confiance (, 'surfacic_doses_IC':numpy.(mean+((1.96*numpy.std)** n))
-    grCFmeanSDE = grCFm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std':numpy.std})
+    grCFmeanSDE = grCFm['surfacic_doses_Tartrazine'].agg({'surfacic_doses_Tartrazine_mean' : numpy.mean, 'surfacic_doses_Tartrazine_std':numpy.std})
 #    grCFarea= grCFm['area']
 
     grCFmeanSF = grCFm['area'].agg({'area_mean' : numpy.mean, 'area_std':numpy.std})
@@ -98,8 +98,8 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
 #    grCFmean = pandas.merge(grCFmeanSDE,grCFarea)
 #    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*dataSFsum['area_sum']
 #    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFm['area']
-    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFmean['area_mean']
-
+    grCFmean['SDESF']= grCFmean['surfacic_doses_Tartrazine_mean']*grCFmean['area_mean']
+    print grCFmean['SDESF']
 #    grCFmean = grCFm.agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std' : numpy.std,'Foliar_Surface_mean' : numpy.mean,'Foliar_Surface_std':numpy.std})
     grCFmean['name'] = name
 
@@ -170,7 +170,8 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     
     return math.sqrt(v/n) * c
     """
-    data = data[data.ntop_cur <= 4]
+    """
+    data = data[data.ntop_cur <= 5]
     gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
     dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
                  # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
@@ -178,24 +179,24 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
 
     gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
     # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
-    grtest = gr['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std' : numpy.std})
+    grtest = gr['surfacic_doses_Tartrazine'].agg({'surfacic_doses_Tartrazine_mean' : numpy.mean, 'surfacic_doses_Tartrazine_std' : numpy.std})
 
     gr2 = dmp.groupby(['ntop_cur','date'],as_index=False)
     # calcul, pour chaque doublon ('ntop_cur','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
-    grtest4 = gr2['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std' : numpy.std})
+    grtest4 = gr2['surfacic_doses_Tartrazine'].agg({'surfacic_doses_Tartrazine_mean' : numpy.mean, 'surfacic_doses_Tartrazine_std' : numpy.std})
 
     gr3=dmp.groupby(['date'],as_index=False)
     ## calcul, pour chaque date et ntop_cur<4 de la surface totale verte et senecente et de l'interception totale
     grtest3 = gr3.sum()
-       
-    return grtest4,grtest3
+    """   
+    return grCFmean_global
 
 #plot des donnees obs
 def plot(name='Mercia'):
 
     if name is 'Mercia' or 'Rht3' :
 #        data_file = 'ObsData2011.csv'
-         data_file = 'ObsdataFinal.csv'
+         data_file = 'grCFmean_global.csv'
     df_obs = pandas.read_csv(data_file, sep=';')
     #df_obs = df_obs[df_obs['feuille']<5]
     df_obs['var_stade'] = df_obs['name'] + "_" + df_obs['date']
@@ -209,7 +210,8 @@ def plot(name='Mercia'):
 
     for x, var_stade in enumerate(val):
         dat = df_obs[(df_obs['var_stade'] == var_stade)]
-        data = dat.groupby(['feuille']).moy_intercepte.sum()
+    #    data = dat.groupby(['feuille']).moy_intercepte.sum()
+        data = dat.groupby(['ntop_cur']).SDESF()
         print (data)
         print type(data.index)
         left = [k[0] for k in enumerate(data)]
