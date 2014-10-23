@@ -69,7 +69,12 @@ def g_constr(name, sim, nplants):
     elif sim == 'Tremie12_T2':
         HS = 12.63 #HS mesure
     elif sim == 'Tremie13_T1':
-        HS = 8.33 #HS mesure au 19/04 au lieu du 22/04 (8.36 avec HS convert)
+        # 22/04
+        # HS = 8.36 #HS convert (HS mesure 8.33 au 19/04 au lieu du 22/04)
+        # 25/04
+        HS = 8.7
+    elif sim == 'Tremie13_int':
+        HS = 9.7 #HS mesure au 02/05 au lieu du 03/05 (date intermediaire pour surfaces Steph)
     elif sim == 'Tremie13_T2':
         HS = 11.04 #HS convert
     else :
@@ -90,120 +95,20 @@ def g_constr(name, sim, nplants):
         df = repartition_at_applicationArch(appdate = '2012-05-09', dose = 1, g=g)
     elif sim == 'Tremie13_T1':
         df = repartition_at_applicationArch(appdate = '2013-04-25', dose = 1, g=g)
+    elif sim == 'Tremie13_int':
+        df = repartition_at_applicationArch(appdate = '2013-05-03', dose = 1, g=g)
     elif sim == 'Tremie13_T2':
-        df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 10000, g=g)
+        df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 1, g=g)
     else :
         print 'Warning = PB sim - pas de return df'
         
     return df
-
     
-def treatment(name='Tremie12', sim='T1', nplants=30): 
-
-    simul = name+'_'+sim
-    df = g_constr(name, simul, nplants)
-    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
-    
-    def _fun(sub):
-        sub['n_max'] = sub['metamer'].max()
-        return sub
-        
-    data = gr.apply(_fun)
-    
-    data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
-
-    data = data.convert_objects() # conversion des objets en types numpy
-
-    data.to_csv('dataALL.csv')
-    data = data[(data.ntop_cur <= 4)&(data.axe=='MS')]
-    data.to_csv('data_ntop_cur4.csv')
-    
-    #Calcul surface foliaire : est egale à la sommme de toutes les surfaces par metamer
-    dataSF=data.groupby(['plant', 'date', 'metamer','ntop_cur'],as_index=False)
-#    dataSF['Foliar_Surface']=dataSF['green_area']+dataSF['senesced_area']
-    dataSFsum=dataSF['area'].agg({'area_sum':np.sum,'area_std':np.std})
-
-#    dataSFsum = dataSF['area'].agg({'area_sum' : np.sum})
-    dataSFsum.to_csv('dataSFsum.csv')
-#    if data['axe'] is 'MS' : 
-
-#    dataCB=data.groupby(['date'],as_index=False)
-    # calcul, pour chaque date de la surface totale verte et senecente et de l'interception totale
-#    grCB= dataCB.sum()
-#    grCB.to_csv('grCB.csv')
-    #grCBm=grCB.groupby(['ntop_cur', 'date', 'axe'],as_index=False)
-    #grCFmean = grCBm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
-    #grCBmean.to_csv('grCBmean.csv')
-    
-
-    #calcul pour sortir donnees interception sur leaf 1 et metamer A CONFIRMER
-    dataCF=data.groupby(['plant', 'ntop_cur', 'date','metamer'], as_index=False)
-    dataCF.to_csv('dataCF.csv')
-#    grCFmeanSF = dataCF['Foliar_Surface'].agg({'Foliar_Surface_sum' : np.sum, 'Foliar_Surface_std':np.max})
-    grCF= dataCF.sum()
-    grCF.to_csv('grCF.csv')
-    grCFm=grCF.groupby(['ntop_cur','date'],as_index=False)
-    grCFm.to_csv('grCFm.csv')
-
-# essai ajout intervalle de confiance (, 'surfacic_doses_IC':np.(mean+((1.96*np.std)** n))
-    grCFmeanSDE = grCFm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std':np.std})
-#    grCFarea= grCFm['area']
-
-    grCFmeanSF = grCFm['area'].agg({'area_mean' : np.mean, 'area_std':np.std})
-#    grCFmean = pandas.concat([grCFmeanSDE, grCFmeanSF])
-    grCFmean = pandas.merge(grCFmeanSDE,grCFmeanSF)
-#    grCFmean = pandas.merge(grCFmeanSDE,grCFarea)
-#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*dataSFsum['area_sum']
-#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFm['area']
-    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFmean['area_mean']
-
-#    grCFmean = grCFm.agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std,'Foliar_Surface_mean' : np.mean,'Foliar_Surface_std':np.std})
-    grCFmean['name'] = name
-
-#old
-    grCFmean.to_csv('grCFmean'+name+'.csv')
-    
-    global_grCFmean_filename = 'grCFmean_global.csv'
-    
-    if os.path.isfile(global_grCFmean_filename):
-        grCFmean_global = pandas.read_csv(global_grCFmean_filename, index_col=False)
-        grCFmean_global = pandas.concat([grCFmean_global, grCFmean], ignore_index=True)
-    else:
-        grCFmean_global = grCFmean
-    
-    grCFmean_global = grCFmean_global.to_csv(global_grCFmean_filename, index=False)
-
-    #ficname = list(grCFmean.to_csv('grCFmean'+name+'.csv'))
-    #concatenation des fichiers plutot que de les lire/ecrire (pb car beoins de liste or ici traitement de dataframe
-    #import shutil
-    #fichier_final = open("ficname[0]",'w')
-    #for i in ficname.count:
-    #      shutil.copyfileobj(open(i, 'r'), fichier_final)
-    #fichier_final.close()
-
-
-    #new ci-dessous a peaufiner
-    #
-    #import csv
-    #c = csv.writer(open('grCFmean.csv',"w"))
-    #list= list(
-    #n=0
-    #while grCFmean.loc[n+1]<grCFmean.len:
-    #    c.writerow(grCFmean.loc[n])
-    
-    #grCFmean.plot('ntop_cur','surfacic_doses_Epoxiconazole_mean' )
-    
-
-    #test groupby by multiple apres avoir fait calcul sur data
-    """data = data[data.ntop_cur <= 4]
-    f = {'surfacic_doses_Epoxiconazole':['sum','mean']}
-    dftest = fdf.groupby(['plant', 'ntop_cur', 'date', 'axe']).agg(f)
-    """
-    """script calcul intervalle de confiance
-    def mean(lst):
+#script calcul intervalle de confiance
+def mean(lst):
     return sum(lst) / float(len(lst))
 
-    def variance(lst):
+def variance(lst):
     """
     #Uses standard variance formula (sum of each (data point - mean) squared)
     #all divided by number of data points
@@ -211,7 +116,7 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     mu = mean(lst)
     return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst])
 
-    def conf_int(lst, perc_conf=95):
+def conf_int(lst, perc_conf=95):
     """
     #Confidence interval - given a list of values compute the square root of
     #the variance of the list (v) divided by the number of entries (n)
@@ -226,14 +131,63 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
     
     return math.sqrt(v/n) * c
-    """
-    data = data[data.ntop_cur <= 4]
-    gr=data.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
+    
+    
+def save_csv(name, data, data2, dataSFsum, dataCF, grCF, grCFm, grCFmean):
+        data.to_csv('dataALL.csv')
+        data2.to_csv('data_ntop_cur4.csv')
+        dataSFsum.to_csv('dataSFsum.csv')
+        dataCF.to_csv('dataCF.csv')
+        grCF.to_csv('grCF.csv')
+        grCFm.to_csv('grCFm.csv')
+        grCFmean.to_csv('grCFmean'+name+'.csv')
+        if os.path.isfile('grCFmean_global.csv'):
+            grCFmean_global = pandas.read_csv('grCFmean_global.csv', index_col=False)
+            grCFmean_global = pandas.concat([grCFmean_global, grCFmean], ignore_index=True)
+        else:
+            grCFmean_global = grCFmean
+        grCFmean_global.to_csv('grCFmean_global.csv', index=False)
+
+    
+def treatment(name='Tremie12', sim='T1', nplants=30, save=True): 
+
+    simul = name+'_'+sim
+    df = g_constr(name, simul, nplants)
+    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
+    
+    def _fun(sub):
+        sub['n_max'] = sub['metamer'].max()
+        return sub        
+    data = gr.apply(_fun)
+    
+    data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
+    data = data.convert_objects() # conversion des objets en types numpy
+    data2 = data[(data.ntop_cur <= 4)&(data.axe=='MS')]
+
+    #Calcul surface foliaire : est egale à la sommme de toutes les surfaces par metamer
+    dataSF=data2.groupby(['plant', 'date', 'metamer','ntop_cur'],as_index=False)
+    dataSFsum=dataSF['area'].agg({'area_sum':np.sum,'area_std':np.std})
+
+    #calcul pour sortir donnees interception sur leaf 1 et metamer A CONFIRMER
+    dataCF = data2.groupby(['plant', 'ntop_cur', 'date','metamer'], as_index=False)
+    grCF = dataCF.sum()
+    grCFm = grCF.groupby(['ntop_cur','date'],as_index=False)
+    
+    grCFmeanSDE = grCFm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std':np.std})
+
+    grCFmeanSF = grCFm['area'].agg({'area_mean' : np.mean, 'area_std':np.std})
+    grCFmean = pandas.merge(grCFmeanSDE,grCFmeanSF)
+    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFmean['area_mean']
+
+    grCFmean['name'] = name
+
+    data3 = data[data.ntop_cur <= 4]
+    gr=data3.groupby(['plant', 'ntop_cur', 'date', 'axe'], as_index=False)
     dmp=gr.sum() # dmp contient, pour chaque quadruplet ('plant', 'ntop_cur', 'date', 'axe'), 
                  # la somme des area, green_area, id, length, metamer, ntop, penetrated_doses_Epoxiconazole, 
                  # senesced_area, surfacic_doses_Epoxiconazole, n_max
 
-    gr = dmp.groupby(['ntop_cur','plant','date'],as_index=False)
+    gr = dmp.groupby(['ntop_cur','plant','date'], as_index=False)
     # calcul, pour chaque triplet ('ntop_cur','plant','date'), de la moyenne et de l ecart type de surfacic_doses_Epoxiconazole
     grtest = gr['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : np.mean, 'surfacic_doses_Epoxiconazole_std' : np.std})
 
@@ -244,8 +198,13 @@ def treatment(name='Tremie12', sim='T1', nplants=30):
     gr3=dmp.groupby(['date'],as_index=False)
     ## calcul, pour chaque date et ntop_cur<4 de la surface totale verte et senecente et de l'interception totale
     grtest3 = gr3.sum()
-       
-    return grtest4,grtest3
+          
+    if save is True:
+        save_csv(name, data, data2, dataSFsum, dataCF, grCF, grCFm, grCFmean)
+    else:
+        print 'Pas de sauvegarde de fichiers sous forme csv'
+  
+    return grtest4, grtest3
 
 #plot des donnees obs
 def plot(name='Mercia'):
@@ -301,6 +260,7 @@ def plot(name='Mercia'):
     axes[x].text(6, 14, '5', style='italic', bbox={'facecolor':'#765081', 'alpha':0.6, 'pad':10})
     plt.show()
 
+'''
 # -----------------------------------------------------------------------------------------------------------------------------------
 # IDEM mais gestion d'un range de date  
 def g_constr_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', as_pgen=False, dTT_stop=0, dose=0.5, age=1166):
@@ -384,149 +344,4 @@ def treatment_age(name='Mercia',nplants=30, nsect=3, seed=1, sample='sequence', 
     grtest4.to_csv('grtest_treatment_age')
 
     return grtest4   											 
-	
-#grtest = dmp.groupby('ntop_cur','date').apply(lambda x: 
-#             Series({'r': (x.y + x.z).sum() / x.z.sum(), 
-#                     's': (x.y + x.z ** 2).sum() / x.z.sum()}))
-
-#gr=dmp.groupby(['ntop_cur','date'])
-#dms=gr.agg(numpy.mean)
-
-
-#NG ajout ecart type
-#dmserr=gr.agg(numpy.std)
-#dms=dms.reset_index()
-#dmserr=dmserr.reset_index()
-
-#plt.figure()
-#plt = grtest.plot('ntop_cur','surfacic_doses_Epoxiconazole_mean',kind="bar")
-#plt.show()
-
-'''mise en forme sous format barplot
-fig = p.figure()
-ax = fig.add_subplot(1,1,1)
-#N = len(ntop_cur)
-
-#err = [1.2, 1.5, 2.5, 1.2]
-#ax.bar('ntop_cur', 'n_max', facecolor='#777777',
-#       align='center', yerr=err, ecolor='black')
-ax.bar(dms.ntop_cur, dms.n_max, facecolor='#777777',
-       align='center', ecolor='black')
-#Create a y label
-ax.set_ylabel('Intercepted dose (?/?)')
- 
-# Create a title, in italics
-ax.set_title('Intercepted dose, by ntop_cur',fontstyle='italic')
- 
-# This sets the ticks on the x axis to be exactly where we put
-# the center of the bars.
-ax.set_xticks(dms.ntop_cur)
- 
-# Labels for the ticks on the x axis.  It needs to be the same length
-# as y (one label for each bar)
-group_labels = ['1', '2',
-                 '3', '4']
- 
-# Set the x tick labels to the group_labels defined above.
-ax.set_xticklabels(group_labels)
- 
-# Extremely nice function to auto-rotate the x axis labels.
-# It was made for dates (hence the name) but it works
-# for any long x tick labels
-fig.autofmt_xdate()
- 
-p.show()
-
-#
-# OK autre solution pour les barplots
-#
-
-#definition du nombre de groupe : correspond ici à la dose de pesticide epandu
-n_groups = 3
-
-fig, ax = plt.subplots()
-
-#index = np.arange(n_groups)
-bar_width = 1
-
-opacity = 0.4
-error_config = {'ecolor': '0.3'}
-
-#for i in range (0,n_groups):
-rects1 = plt.bar(grtest2.ntop_cur[0], grtest2.surfacic_doses_Epoxiconazole_mean[0], bar_width,
-                 alpha=opacity,
-                 color='b',
-                 yerr=grtest2.surfacic_doses_Epoxiconazole_std[0],
-                 error_kw=error_config,
-                 label='leaf 1')
-
-
-
-
-                 
-plt.xlabel('Dose 0.5')
-plt.ylabel('Quantite retenue')
-plt.title('Quantite de pesticide par feuille')
-plt.xticks(grtest2.ntop_cur, (' '))
-plt.legend()
-
-plt.tight_layout()
-plt.show()
-
-#solution 3 : probleme avec non reconnaissance DataFrame
-
-#df2 = DataFrame(dms.n_max[1], columns=['1', '2', '3', '4'])
-plt.figure();
-#grplot = DataFrame(grtest2.surfacic_doses_Epoxiconazole_mean,columns=['1','2','3','4'])
-grplot = grtest2.surfacic_doses_Epoxiconazole_mean
-grplot.plot(kind='bar',yerr=grtest2.surfacic_doses_Epoxiconazole_std,grid=False)
-plt.show()
-
-"""autre solution"""
-fig = plt.figure()
-ax1 = plt.subplot(111,ylabel='A')
-#ax2 = gcf().add_axes(ax1.get_position(), sharex=ax1, frameon=False, ylabel='axes2')
-#ax2 =ax1.twinx()
-#ax2.set_ylabel('B')
-ax1.bar(grtest2.ntop_cur.values,grtest2.surfacic_doses_Epoxiconazole_mean.values, width =0.4, color ='g', align = 'center')
-#ax2.bar(drtest2.index,df.B.values, width = 0.4, color='r', align = 'edge')
-ax1.legend(['A'], loc = 'upper left')
-#ax2.legend(['B'], loc = 'upper right')
-fig.show()
-
-N = 1
-ind = np.arange(N)  # the x locations for the groups dans echap = nombre de doses = N
-width = 0.2    # the width of the bars
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-
-yvals = [grtest2.surfacic_doses_Epoxiconazole_mean[0]]
-rects1 = ax.bar(ind, yvals, width, color='r')
-zvals = [grtest2.surfacic_doses_Epoxiconazole_mean[1]]
-rects2 = ax.bar(ind+width, zvals, width, color='g')
-kvals = [grtest2.surfacic_doses_Epoxiconazole_mean[2]]
-rects3 = ax.bar(ind+width*2, kvals, width, color='b')
-mvals =  [grtest2.surfacic_doses_Epoxiconazole_mean[3]]
-rects4 = ax.bar(ind+width*3, mvals, width, color='y',yerr=grtest2.surfacic_doses_Epoxiconazole_std[3])
-
-ax.set_ylabel('Depot pesticides par etage foliaire')
-ax.set_xticks(ind+width)
-ax.set_xticklabels( ('etage 1', 'etage 2', 'etage 3','etage 4') )
-#ax.legend( (rects1[0], rects2[0], rects3[0],rects4[0]), ('1', '2', '3','4') )
-ax.legend( (yvals, zvals, kvals,mvals), ('1', '2', '3','4') )
-
-def autolabel(rects):
-    for rect in rects:
-        h = rect.get_height()
-        ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, '%d'%int(h),
-                ha='center', va='bottom')
-
-autolabel(rects1)
-autolabel(rects2)
-autolabel(rects3)
-autolabel(rects4)
-
-plt.show()
-
 '''
