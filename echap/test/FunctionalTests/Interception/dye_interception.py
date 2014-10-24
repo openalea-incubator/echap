@@ -96,8 +96,7 @@ def treatment(name='Tremie12', sim='T1', nplants=30, axis='MS', to_csv=False):
     
 #lancement simulation et concatenation des sorties pour obtenir un fichier de donnees simulees
 def simulation():
-    #lst = [['Mercia','T1'], ['Mercia','T2'], ['Rht3','T1'], ['Rht3','T2'], ['Tremie12','T1'], ['Tremie12','T2'], ['Tremie13','T1'], ['Tremie13','T2']]
-    lst = [['Tremie12','date1'], ['Tremie12','date2'], ['Tremie12','T1'], ['Tremie12','T2'], ['Tremie13','date1'], ['Tremie13','T1'],['Tremie13','date2'], ['Tremie13','T2']]
+    lst = [['Mercia','T1'], ['Mercia','T2'], ['Rht3','T1'], ['Rht3','T2'], ['Tremie12','date1'], ['Tremie12','date2'], ['Tremie12','T1'], ['Tremie12','T2'], ['Tremie13','date1'], ['Tremie13','T1'], ['Tremie13','date2'], ['Tremie13','T2']]
     df_sim = pandas.DataFrame()
     for var, stade in lst :
         dfmoy, dfsd = treatment(name=var, sim=stade, nplants=30, axis='MS', to_csv=False)
@@ -106,10 +105,11 @@ def simulation():
     return df_sim
 
 #plot des donnees obs
-def plot(plot1=False, plot2=True):
+def plot(plot1=False, plot2=False, plot3=True):
     '''
-    Plot 1 = 
-    Plot 2 = Plot de controle 'area' versus scan data (avec la colone area de dfmoy)
+    Plot 1 =  Barplot observation / simulation avec ntop_cur en abscisse et (dfmoy['deposit_Tartrazin']  versus obs 'moyenne' par genotype et par date interception
+    Plot 2 = Barplot de controle 'area' versus scan data (avec la colone area de dfmoy)
+    Plot 3 = Barplot observation/simulation de deposit/area et obs/area
     '''
     
     #base
@@ -119,6 +119,44 @@ def plot(plot1=False, plot2=True):
     df_obs = idata.dye_interception()
     df_sim = simulation()
     
+    # PLOT 1
+    if plot1 is True :
+        for var in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']:
+            df_obs_var = df_obs[df_obs['name']==var]
+            df_obs_var['ntop_cur'] = df_obs_var['N feuille']
+            df_sim_var = df_sim[df_sim['var']==var]
+            df_obs_var.HS=map(str,df_obs_var.HS)
+            df_sim_var.HS=map(str,df_sim_var.HS)
+            df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
+            df_all = df_all[df_all['ntop_cur']<=5]
+            print df_all
+            #plot
+            bar_width = 0.4; opacity = 0.4
+            fig, axes = plt.subplots(nrows=1, ncols=len(df_all['HS'].unique()))
+            val = df_all['HS'].unique()
+            for x, HS in enumerate(val):
+                print HS
+                df_fin = df_all[df_all['HS']==HS]
+                n_groups = len(df_fin['ntop_cur'].unique())
+                index = numpy.arange(n_groups)      
+                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width,
+                             alpha=opacity,
+                             color='g')
+                rects2 = axes[x].bar(index + bar_width, df_fin['mean'], bar_width,
+                             alpha=opacity,
+                             color='y')   
+                # Mise en forme
+                axes[x].set_ylim(0, 6.5)
+                axes[x].set_xlim(0, df_all['ntop_cur'].max())          
+                axes[x].set_xticks(index+bar_width)
+                leg = map(int, df_fin['ntop_cur'].tolist() )
+                axes[x].set_xticklabels( leg )
+                if x == 0:
+                    axes[x].set_xlabel('ntop_cur')
+                axes[x].text(0.4, 6, 'HS : '+HS, bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
+                fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] pour '+var, fontsize=10)
+            axes[x].legend((rects1[0], rects2[0]), ('sim', 'obs') )
+    
     # PLOT 2
     if plot2 is True :
         for var in ['Tremie12', 'Tremie13']:
@@ -126,12 +164,12 @@ def plot(plot1=False, plot2=True):
             df_sim_var = df_sim[df_sim['var']==var]
             df_scan_var.HS=map(str,df_scan_var.HS)
             df_sim_var.HS=map(str,df_sim_var.HS)
-            df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']])
-            print df_all
+            df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
+            df_all = df_all[df_all['ntop_cur']<=5]
             #plot
             bar_width = 0.4; opacity = 0.4
-            fig, axes = plt.subplots(nrows=1, ncols=len(df_scan_var['HS'].unique()))
-            val = df_scan_var['HS'].unique()
+            fig, axes = plt.subplots(nrows=1, ncols=len(df_all['HS'].unique()))
+            val = df_all['HS'].unique()
             for x, HS in enumerate(val):
                 print HS
                 df_fin = df_all[df_all['HS']==HS]
@@ -147,12 +185,52 @@ def plot(plot1=False, plot2=True):
                 axes[x].set_ylim(0, 35)
                 axes[x].set_xlim(0, df_all['ntop_cur'].max())          
                 axes[x].set_xticks(index+bar_width)
-                axes[x].set_xticklabels( ('1', '2', '3', '4', '5', '6') )
+                axes[x].set_xticklabels( df_fin['ntop_cur'].tolist() )
                 if x == 0:
                     axes[x].set_xlabel('ntop_cur'); axes[x].set_ylabel('area (cm2)')
                 axes[x].text(0.4, 33, 'HS : '+str(HS), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
                 fig.suptitle('Surface scan/sim pour '+var, fontsize=10)
             axes[x].legend((rects1[0], rects2[0]), ('Scan', 'Sim') )
+            
+    # PLOT 3
+    if plot3 is True :
+        for var in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']:
+            df_obs_var = df_obs[df_obs['name']==var]
+            df_obs_var['ntop_cur'] = df_obs_var['N feuille']
+            df_sim_var = df_sim[df_sim['var']==var]
+            df_obs_var.HS=map(str,df_obs_var.HS)
+            df_sim_var.HS=map(str,df_sim_var.HS)
+            df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
+            df_all = df_all[df_all['ntop_cur']<=5]
+            df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
+            df_all['mean/area'] = df_all['mean']/df_all['area']
+            print df_all
+            #plot
+            bar_width = 0.4; opacity = 0.4
+            fig, axes = plt.subplots(nrows=1, ncols=len(df_all['HS'].unique()))
+            val = df_all['HS'].unique()
+            for x, HS in enumerate(val):
+                print HS
+                df_fin = df_all[df_all['HS']==HS]
+                n_groups = len(df_fin['ntop_cur'].unique())
+                index = numpy.arange(n_groups)      
+                rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width,
+                             alpha=opacity,
+                             color='c')
+                rects2 = axes[x].bar(index + bar_width, df_fin['mean/area'], bar_width,
+                             alpha=opacity,
+                             color='m')   
+                # Mise en forme
+                axes[x].set_ylim(0, 0.5)
+                axes[x].set_xlim(0, df_all['ntop_cur'].max())          
+                axes[x].set_xticks(index+bar_width)
+                leg = map(int, df_fin['ntop_cur'].tolist() )
+                axes[x].set_xticklabels( leg )
+                if x == 0:
+                    axes[x].set_xlabel('ntop_cur')
+                axes[x].text(0.4, 0.48, 'HS : '+HS, bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
+                fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] pour '+var, fontsize=10)
+            axes[x].legend((rects1[0], rects2[0]), ('sim', 'obs') )
     
     return df_scan, df_obs, df_sim
 
