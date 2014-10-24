@@ -291,6 +291,10 @@ def LAI_biomasse_data():
     }
     return d
     
+def _nmax(sub):
+    sub['nmax'] = sub['id_Feuille'].max()
+    return sub
+    
 def scan_dep_Tremie12():
     '''
     Leaf scan data for Tremie 2011-2012
@@ -314,6 +318,19 @@ def scan_dep_Tremie12():
     '''
     data_file = shared_data(alinea.echap, 'raw_srdb_BoignevilleTremie12.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')
+    df = df.loc[:,:'stat']
+
+    df = df[df['id_Axe']=='MB']
+    df = df.sort(['HS','id_Feuille'])
+    grouped = df.groupby(['HS','N plante'], as_index=False)
+    df = grouped.apply(_nmax)
+    df['ntop_cur'] = df['nmax'] - df['id_Feuille'] + 1
+    
+    # pas de donnees observees pour la feuille 11 a HS = 10.15
+    # on cree donc une copie de id_feuille=10 pour ce HS que l'on change par id_Feuille=11 et les autres colonnes vides
+    # ajout ligne id_feuille 11 pour HS 10.15
+    df.ntop_cur[df.HS==10.15] = df.ntop_cur+1
+    
     return df
     
 def scan_dep_Tremie13():
@@ -323,51 +340,50 @@ def scan_dep_Tremie13():
     '''
     data_file = shared_data(alinea.echap, 'Tremie13_scan.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')
+    
+    df = df[df['id_Axe']=='MB']
+    df = df.sort(['HS','id_Feuille'])
+    grouped = df.groupby(['HS','N plante'], as_index=False)
+    df = grouped.apply(_nmax)
+    df['ntop_cur'] = df['nmax'] - df['id_Feuille'] + 1
+    
     return df
 
-def plot_scan(name='Tremie12', stat='all'): #Tremie13, pas de colonne stat => stat='all'
+def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all'
 
     if name is 'Tremie12':
         df = scan_dep_Tremie12()
     elif name is 'Tremie13':
         df = scan_dep_Tremie13()
 
-    # on filtre les MB stat=3 car pas dans les obs de Nathalie
-    df = df[df['id_Axe']=='MB']
-    if stat is 'all':
+    # on prend maintenant tjrs stat 1, 2 ou 3, plus besoin du parametre stat='all'
+    '''if stat is 'all':
         print 'On prend l\'ensemble des donnees => statuts 1, 2 ou 3'
     else:
         df = df[df['stat']<3]
         print 'On prend seulement les donnees ayant les statuts 1 ou 2'
-        
-    df = df.sort(['Date','id_Feuille'])
-    def _fun(sub):
-        sub['nmax'] = sub['id_Feuille'].max()
-        return sub
-
-    grouped = df.groupby(['Date','N plante'], as_index=False)
-    df = grouped.apply(_fun)
-    df['ntop_cur'] = df['nmax'] - df['id_Feuille'] + 1
+    '''    
     
     dater = []; moy_feuille = []; ntop = []; A_bl = []
-    lst_date = df['Date'].unique()
-    for date in lst_date:
-        dt = df[df['Date']==date]
+    lst_date = df['HS'].unique()
+    for HS in lst_date:
+        dt = df[df['HS']==HS]
         
         # tableau avec notation depuis le haut (ntop_cur) et moyenne notation depuis le bas (moyenne id_Feuille)
         data = dt.groupby(['ntop_cur'], as_index=False).mean()  
         # tableau avec notation depuis le bas (id_Feuille) et moyenne notation depuis le haut (moyenne ntop_cur)     
-        # data = dt.groupby(['id_Feuille'], as_index=False).mean()    
+        #data = dt.groupby(['id_Feuille'], as_index=False).mean()    
 
         nbr = data['ntop_cur'].count(); cpt = 0
         while cpt<nbr:
-            dater.append(date)
+            dater.append(HS)
             moy_feuille.append(data['id_Feuille'][cpt])
             ntop.append(data['ntop_cur'][cpt])
             A_bl.append(data['A_bl'][cpt])
             cpt += 1
+            
     surfSet = zip(dater,moy_feuille,ntop,A_bl)
-    df_fin = pandas.DataFrame(data = surfSet, columns=['date', 'moyenne id_Feuille', 'ntop_cur', 'Area A_bl'])
+    df_fin = pandas.DataFrame(data = surfSet, columns=['HS', 'moyenne id_Feuille', 'ntop_cur', 'Area A_bl'])
     return df_fin    
     
     # barplot chaque feuille par date
