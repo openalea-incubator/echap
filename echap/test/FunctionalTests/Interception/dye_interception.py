@@ -4,6 +4,7 @@ import numpy
 from itertools import cycle, islice
 
 import alinea.echap.architectural_reconstructions as reconstructions
+import alinea.echap.architectural_data as archidb
 from alinea.echap.interception_leaf import InterceptModel, pesticide_applications
 from alinea.echap.interfaces import pesticide_interception
 import alinea.echap.interception_data as idata
@@ -92,8 +93,70 @@ def treatment(name='Tremie12', sim='T1', nplants=30, axis='MS', to_csv=False):
         dfsd.to_csv(''.join(('std_',name,'_',sim,'_',axis,'.csv')))
              
     return dfmoy, dfsd
+    
+#lancement simulation et concatenation des sorties pour obtenir un fichier de donnees simulees
+def simulation():
+    #lst = [['Mercia','T1'], ['Mercia','T2'], ['Rht3','T1'], ['Rht3','T2'], ['Tremie12','T1'], ['Tremie12','T2'], ['Tremie13','T1'], ['Tremie13','T2']]
+    lst = [['Tremie12','date1'], ['Tremie12','date2'], ['Tremie12','T1'], ['Tremie12','T2'], ['Tremie13','date1'], ['Tremie13','T1'],['Tremie13','date2'], ['Tremie13','T2']]
+    df_sim = pandas.DataFrame()
+    for var, stade in lst :
+        dfmoy, dfsd = treatment(name=var, sim=stade, nplants=30, axis='MS', to_csv=False)
+        dfmoy['var'] = var
+        df_sim = df_sim.append(dfmoy)
+    return df_sim
 
 #plot des donnees obs
+def plot(plot1=False, plot2=True):
+    '''
+    Plot 1 = 
+    Plot 2 = Plot de controle 'area' versus scan data (avec la colone area de dfmoy)
+    '''
+    
+    #base
+    df_scan_tremie12 = archidb.treatment_scan('Tremie12'); df_scan_tremie12['var']='Tremie12'
+    df_scan_tremie13 = archidb.treatment_scan('Tremie13'); df_scan_tremie13['var']='Tremie13'
+    df_scan = df_scan_tremie12.append(df_scan_tremie13)
+    df_obs = idata.dye_interception()
+    df_sim = simulation()
+    
+    # PLOT 2
+    if plot2 is True :
+        for var in ['Tremie12', 'Tremie13']:
+            df_scan_var = df_scan[df_scan['var']==var]
+            df_sim_var = df_sim[df_sim['var']==var]
+            df_scan_var.HS=map(str,df_scan_var.HS)
+            df_sim_var.HS=map(str,df_sim_var.HS)
+            df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']])
+            print df_all
+            #plot
+            bar_width = 0.4; opacity = 0.4
+            fig, axes = plt.subplots(nrows=1, ncols=len(df_scan_var['HS'].unique()))
+            val = df_scan_var['HS'].unique()
+            for x, HS in enumerate(val):
+                print HS
+                df_fin = df_all[df_all['HS']==HS]
+                n_groups = len(df_fin['ntop_cur'].unique())
+                index = numpy.arange(n_groups)      
+                rects1 = axes[x].bar(index, df_fin['Area A_bl'], bar_width,
+                             alpha=opacity,
+                             color='b')
+                rects2 = axes[x].bar(index + bar_width, df_fin['area'], bar_width,
+                             alpha=opacity,
+                             color='r')   
+                # Mise en forme
+                axes[x].set_ylim(0, 35)
+                axes[x].set_xlim(0, df_all['ntop_cur'].max())          
+                axes[x].set_xticks(index+bar_width)
+                axes[x].set_xticklabels( ('1', '2', '3', '4', '5', '6') )
+                if x == 0:
+                    axes[x].set_xlabel('ntop_cur'); axes[x].set_ylabel('area (cm2)')
+                axes[x].text(0.4, 33, 'HS : '+str(HS), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
+                fig.suptitle('Surface scan/sim pour '+var, fontsize=10)
+            axes[x].legend((rects1[0], rects2[0]), ('Scan', 'Sim') )
+    
+    return df_scan, df_obs, df_sim
+
+'''
 def plot(name='Mercia'):
 
     if name is 'Mercia' or 'Rht3' :
@@ -147,4 +210,4 @@ def plot(name='Mercia'):
     axes[x].text(6, 15.5, '4', style='italic', bbox={'facecolor':'#F3F781', 'alpha':0.6, 'pad':10})
     axes[x].text(6, 14, '5', style='italic', bbox={'facecolor':'#765081', 'alpha':0.6, 'pad':10})
     plt.show()
-
+'''
