@@ -7,6 +7,7 @@ import csv
 
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
+import alinea.echap.interception_data as interceptdb
 import alinea.echap.architectural_reconstructions as rec
 
 from alinea.echap.architectural_reconstructions import EchapReconstructions
@@ -103,7 +104,7 @@ def conf_int(lst, perc_conf=95):
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    dd = range(500,2500,300)
+    dd = range(500,700,200)
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
@@ -228,19 +229,103 @@ def silhouette(name='Mercia', n=1, aborting_tiller_reduction=1, **kwds):
     # conversion HS en TT
     conv = HSconv[name]
     TT = conv.TT(HS)
-    
-    #freeze_damage ={'Mercia':{'T1':0.01, 'T2':0.01}, 'Rht3':{'T1':0.01, 'T2':0.01}, 'Tremie12': {'T1':0.01}, 'Tremie13':{'T1':0.01}}
+
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, **kwds)
     
     for age in TT :
-        sim = adel.setup_canopy(age)
+        g = adel.setup_canopy(age)
         HS = conv(age)
-        scene = plot3d(sim)
+        #scene = plot3d(g)
+        gms = adel.get_axis(g, 'plant1')
+        scene = adel.plot(gms)
         fname = 'plot_'+name+'_'+str(HS)+'.png'
-        print fname
         pgl.Viewer.display(scene)
         #pgl.Viewer.camera.lookAt((0,150,0),(0,0,0))
         pgl.Viewer.frameGL.saveImage(fname)
+        
+def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie13
+    #fichier obs
+    df_obs = archidb.treatment_scan(name)
+    
+    #simulation
+    #if name is 'Mercia':
+    #    HS = [9.74, 12.8]
+    #elif name is 'Rht3':
+    #    HS = [9.15, 12.48]
+    if name is 'Tremie12':
+        HS = [7.55, 10.15, 10.98, 12.63]
+    else:
+        HS = [8.36, 9.7]
+    #conversion HS en TT
+    conv = HSconv[name]
+    dd = conv.TT(HS)  
+    #sim pour chacun des TT
+    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n)    
+    outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
+    new_outs = [df for df in outs if not df.empty]
+    out = reduce(lambda x,y: pandas.concat([x,y],ignore_index=True), new_outs)
+    out = out[out['axe_id']=='MS']; out = out[out['Slv']>0]
+    def _fun(sub):
+        sub['nmax'] = sub['numphy'].max()
+        return sub
+    grouped = out.groupby(['TT','plant'], as_index=False)
+    df = grouped.apply(_fun)
+    df['ntop_cur'] = df['nmax'] - df['numphy'] + 1
+    lst_TT = df['TT'].unique()
+    date = []; moy_numphy = []; ntop = []; Slv = []; Slvgreen = []
+    for TT in lst_TT:
+        dt = df[df['TT']==TT]
+        data = dt.groupby(['ntop_cur'], as_index=False).mean()   
+        nbr = data['ntop_cur'].count(); cpt = 0
+        hs = conv(TT)
+        while cpt<nbr:
+            date.append(hs)
+            moy_numphy.append(data['numphy'][cpt])
+            ntop.append(data['ntop_cur'][cpt])
+            Slv.append(data['Slv'][cpt])
+            Slvgreen.append(data['Slvgreen'][cpt])
+            cpt += 1
+    surfSet = zip(date, moy_numphy, ntop, Slv, Slvgreen)
+    df_fin = pandas.DataFrame(data = surfSet, columns=['HS', 'moyenne numphy', 'ntop_cur', 'Slv', 'Slvgreen'])
+
+    #plot obs/sim sur le meme diagramme
+    df_fin.HS=map(str,df_fin.HS)
+    df_obs.HS=map(str,df_obs.HS)
+    df_all = df_fin.merge(df_obs.ix[:,['HS','ntop_cur','Area A_bl']])
+
+    bar_width = 0.4; opacity = 0.4
+    fig, axes = plt.subplots(nrows=1, ncols=len(df_all['HS'].unique()))
+    val = df_all['HS'].unique()
+        
+    for x, HS in enumerate(val):
+        print HS
+        df_fin = df_all[df_all['HS']==HS]
+        n_groups = len(df_fin['ntop_cur'].unique())
+        index = numpy.arange(n_groups)      
+        rects1 = axes[x].bar(index, df_fin['Area A_bl'], bar_width,
+                     alpha=opacity,
+                     color='b')
+        rects2 = axes[x].bar(index + bar_width, df_fin['Slv'], bar_width,
+                     alpha=opacity,
+                     color='r')   
+        # Si on veut ajouter Slvgreen au graph, attention de modifier bar_width par 0.33
+        #rects3 = axes[x].bar(index + bar_width*2, df_fin['Slvgreen'], bar_width,alpha=opacity,color='y')
+        
+        # Mise en forme
+        axes[x].set_ylim(0, 35); axes[x].set_xlim(0, df_all['ntop_cur'].max())          
+        axes[x].set_xticks(index+bar_width)
+        axes[x].set_xticklabels( ('1', '2', '3', '4', '5', '6') )
+        if x == 0:
+            axes[x].set_xlabel('ntop_cur'); axes[x].set_ylabel('area (cm2)')
+        axes[x].text(0.4, 33, 'HS : '+HS, bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
+        fig.suptitle('Surface obs/sim pour '+name, fontsize=10)
+   
+    #axes[x].legend( (rects1[0], rects2[0], rects3[0]), ('Obs', 'Sim Slv', 'Sim Slvgreen') )
+    axes[x].legend((rects1[0], rects2[0]), ('Obs', 'Sim') )
+    
+    
+    return df_all
+
 
 #------------------------------------------------------------------------------------- 
 # Taux de couverture
