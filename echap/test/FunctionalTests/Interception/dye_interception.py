@@ -35,88 +35,63 @@ def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30):
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Tartrazine'%(date, dose)
     application_data = pesticide_applications(applications)
     g,_ = pesticide_interception(g, interceptor, application_data)
-    do_record(g, application_data, recorder)
+    do_record(g, application_data, recorder, header={'TT':age, 'HS':hs})
     df =  recorder.get_records()
     print 'repartition_at_application df.columns before ', df.columns
     return df
 
-
+def aggregate_by_leaf(df):
+    """
+    Aggregate interceptioin data by leaf and add colmun 'deposits' (= area * surfacic doses)
+    """
+    def first_val(x):
+        return x[x.first_valid_index()]
+        
+    df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
+    df = df.convert_objects()
+    gr = df.groupby(['HS', 'plant','axe','metamer'], as_index=False)
+    return gr.agg({'TT': first_val, 
+                   'area': numpy.sum,
+                   'date': first_val,
+                   'green_area': numpy.sum,
+                   'senesced_area': numpy.sum,
+                   'id':lambda(x): '_'.join(map(str,x)),
+                   'length':numpy.sum,
+                   'ntop':first_val,
+                   'organ':first_val,
+                   'penetrated_doses_Tartrazine': numpy.mean,
+                   'surfacic_doses_Tartrazine':numpy.mean,
+                   'deposit_Tartrazine': numpy.sum
+                   })
     
-def treatment(name='Tremie12', sim='T1', nplants=30): 
+def treatment(name='Tremie12', sim='T1', nplants=30, axis='MS', to_csv=False): 
 
     df = repartition_at_application(name,sim,nplants=nplants)
-    gr=df.groupby(['plant', 'date', 'axe'], group_keys=False)
     
+    if axis == 'MS':
+        df = df[df['axe'] == 'MS']
+    
+    data = aggregate_by_leaf(df)
+        
+    # compute ntop_cur
+    gr = data.groupby(['HS','plant','axe'], group_keys=False)
     def _fun(sub):
         sub['n_max'] = sub['metamer'].max()
         return sub
-        
     data = gr.apply(_fun)
-    
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
 
-    data = data.convert_objects() # conversion des objets en types numpy
+    # aggregation by ntop cur
+    sub = data.ix[:,('HS','TT','axe','metamer','ntop','ntop_cur','length','area','green_area','deposit_Tartrazine')]
+    dfmoy = sub.groupby(['HS','axe','ntop_cur']).mean().reset_index()
+    dfsd = sub.groupby(['HS','axe','ntop_cur']).std().reset_index()
 
-    data.to_csv('dataALL.csv')
-    data = data[(data.ntop_cur <= 5)&(data.axe=='MS')]
-    data.to_csv('data_ntop_cur4.csv')
-    
-    #Calcul surface foliaire : est egale à la sommme de toutes les surfaces par metamer
-    dataSF=data.groupby(['plant', 'date', 'metamer','ntop_cur'],as_index=False)
-#    dataSF['Foliar_Surface']=dataSF['green_area']+dataSF['senesced_area']
-    dataSFsum=dataSF['area'].agg({'area_sum':numpy.sum,'area_std':numpy.std})
-
-#    dataSFsum = dataSF['area'].agg({'area_sum' : numpy.sum})
-    dataSFsum.to_csv('dataSFsum.csv')
-#    if data['axe'] is 'MS' : 
-
-#    dataCB=data.groupby(['date'],as_index=False)
-    # calcul, pour chaque date de la surface totale verte et senecente et de l'interception totale
-#    grCB= dataCB.sum()
-#    grCB.to_csv('grCB.csv')
-    #grCBm=grCB.groupby(['ntop_cur', 'date', 'axe'],as_index=False)
-    #grCFmean = grCBm['surfacic_doses_Epoxiconazole'].agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std' : numpy.std})
-    #grCBmean.to_csv('grCBmean.csv')
-    
-
-    #calcul pour sortir donnees interception sur leaf 1 et metamer A CONFIRMER
-    dataCF=data.groupby(['plant', 'ntop_cur', 'date','metamer'], as_index=False)
-    dataCF.to_csv('dataCF.csv')
-#    grCFmeanSF = dataCF['Foliar_Surface'].agg({'Foliar_Surface_sum' : numpy.sum, 'Foliar_Surface_std':numpy.max})
-    grCF= dataCF.sum()
-    grCF.to_csv('grCF.csv')
-    grCFm=grCF.groupby(['ntop_cur','date'],as_index=False)
-    grCFm.to_csv('grCFm.csv')
-
-# essai ajout intervalle de confiance (, 'surfacic_doses_IC':numpy.(mean+((1.96*numpy.std)** n))
-    grCFmeanSDE = grCFm['surfacic_doses_Tartrazine'].agg({'surfacic_doses_Tartrazine_mean' : numpy.mean, 'surfacic_doses_Tartrazine_std':numpy.std})
-#    grCFarea= grCFm['area']
-
-    grCFmeanSF = grCFm['area'].agg({'area_mean' : numpy.mean, 'area_std':numpy.std})
-#    grCFmean = pandas.concat([grCFmeanSDE, grCFmeanSF])
-    grCFmean = pandas.merge(grCFmeanSDE,grCFmeanSF)
-#    grCFmean = pandas.merge(grCFmeanSDE,grCFarea)
-#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*dataSFsum['area_sum']
-#    grCFmean['SDESF']= grCFmean['surfacic_doses_Epoxiconazole_mean']*grCFm['area']
-    grCFmean['SDESF']= grCFmean['surfacic_doses_Tartrazine_mean']*grCFmean['area_mean']
-    print grCFmean['SDESF']
-#    grCFmean = grCFm.agg({'surfacic_doses_Epoxiconazole_mean' : numpy.mean, 'surfacic_doses_Epoxiconazole_std' : numpy.std,'Foliar_Surface_mean' : numpy.mean,'Foliar_Surface_std':numpy.std})
-    grCFmean['name'] = name
-
-#old
-    grCFmean.to_csv('grCFmean'+name+'.csv')
-    
-    global_grCFmean_filename = 'grCFmean_global.csv'
-    
-    if os.path.isfile(global_grCFmean_filename):
-        grCFmean_global = pandas.read_csv(global_grCFmean_filename, index_col=False)
-        grCFmean_global = pandas.concat([grCFmean_global, grCFmean], ignore_index=True)
-    else:
-        grCFmean_global = grCFmean
-    
-    grCFmean_global = grCFmean_global.to_csv(global_grCFmean_filename, index=False)
-    
-    return grCFmean_global
+    if to_csv:
+        data.to_csv(''.join(('data_',name,'_',sim,'_',axis,'.csv')))
+        dfmoy.to_csv(''.join(('moy_',name,'_',sim,'_',axis,'.csv')))
+        dfsd.to_csv(''.join(('std_',name,'_',sim,'_',axis,'.csv')))
+             
+    return dfmoy, dfsd
 
 #plot des donnees obs
 def plot(name='Mercia'):

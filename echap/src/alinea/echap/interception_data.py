@@ -18,6 +18,7 @@ def dye_interception():
     
     Note:
         - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
+        - sd seems to be in original unit
     """
     data_file = shared_data(alinea.echap, 'dye_interception.csv')
     df = pandas.read_csv(data_file, decimal=',', sep=';')

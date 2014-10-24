@@ -56,7 +56,7 @@ def product_dose(product_name, dose, productsDB):
     for prod, sub in productsDB.iteritems():
         if prod == product_name:
             for compound_name, compound_dose in sub.iteritems():
-                active_dose = (compound_dose * dose) * 10e-4
+                active_dose = (compound_dose * dose) * 1e-4
     return compound_name, active_dose
 
 
@@ -131,13 +131,13 @@ class InterceptModel(object):
     def intercept(self, g, product_name, dose, domain = None, convUnit = 0.01, label='LeafElement'):
         compound_name, active_dose = product_dose(product_name, dose, self.productsDB)
         doses={}
-        if not 'rain_exposed_area' in g.properties():
+        if not 'rain_star' in g.properties():
             g = caribu_rain_star(g, output_by_triangle = False, domain = domain, convUnit = convUnit, dt = 1)
-        rain_exposed_area = g.property('rain_exposed_area')
+        rain_star = g.property('rain_star')
         for vid in g:
             if g.label(vid).startswith(label):
-                if vid in rain_exposed_area:
-                    doses[vid] = {compound_name: rain_exposed_area[vid] * active_dose}
+                if vid in rain_star:
+                    doses[vid] = {compound_name: rain_star[vid] * active_dose}
         return doses
 
 
