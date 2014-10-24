@@ -255,7 +255,7 @@ def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie1
     if name is 'Tremie12':
         HS = [7.55, 10.15, 10.98, 12.63]
     else:
-        HS = [8.36, 9.7]
+        HS = [8.36, 8.7, 9.7, 11.04]
     #conversion HS en TT
     conv = HSconv[name]
     dd = conv.TT(HS)  
@@ -291,7 +291,8 @@ def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie1
     #plot obs/sim sur le meme diagramme
     df_fin.HS=map(str,df_fin.HS)
     df_obs.HS=map(str,df_obs.HS)
-    df_all = df_fin.merge(df_obs.ix[:,['HS','ntop_cur','Area A_bl']])
+    df_all = df_fin.merge(df_obs.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
+    df_all = df_all[df_all['ntop_cur']<=5]
 
     bar_width = 0.4; opacity = 0.4
     fig, axes = plt.subplots(nrows=1, ncols=len(df_all['HS'].unique()))
@@ -314,7 +315,7 @@ def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie1
         # Mise en forme
         axes[x].set_ylim(0, 35); axes[x].set_xlim(0, df_all['ntop_cur'].max())          
         axes[x].set_xticks(index+bar_width)
-        axes[x].set_xticklabels( ('1', '2', '3', '4', '5', '6') )
+        axes[x].set_xticklabels( df_fin['ntop_cur'].tolist() )
         if x == 0:
             axes[x].set_xlabel('ntop_cur'); axes[x].set_ylabel('area (cm2)')
         axes[x].text(0.4, 33, 'HS : '+HS, bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10})
