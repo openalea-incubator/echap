@@ -93,24 +93,7 @@ def treatment(name='Tremie12', sim='T1', nplants=200, axis='MS', to_csv=False, d
              
     return adel.nplants, dfmoy, dfsd
    
-#lancement simulation et concatenation des sorties pour obtenir un fichier de donnees simulees
-def verif_sim(name='Mercia'):
-    lst = [[name,'T1'], [name,'T2']]
-    df_sim = pandas.DataFrame()
-    for var, stade in lst :
-        for nbr_plt in [30,60,100,200]:
-            x = 1
-            while x<=5 :
-                print 'ETAPE = '+var+' '+stade+' '+str(nbr_plt)+' '+str(x)
-                npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=nbr_plt, axis='MS', to_csv=False)
-                dfmoy['var'] = var
-                dfmoy['nbre plt simulees'] = npl
-                df_sim = df_sim.append(dfmoy)
-                x += 1
-    df_sim.to_csv('verif_sim.csv')
-    return df_sim
 
- 
 def simulation_dimension(name='Tremie12', stade_dim='div2', csv=True): 
     # pour faire graph T2 de Tremie12 contre T2 de Tremie13, moyenne de 5 simulations
     # pas de param dim => à changer directement dans architectural_data.py
