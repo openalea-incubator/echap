@@ -147,12 +147,16 @@ def _addLindex(dfxy, dfsr):
     dfsr['Lindex'] = dfsr['rankclass']
     return dfxy, dfsr
     
-    
-def leaf_shapes():
-    d = {k: {'shapes' : _addLindex(*archidb.leaf_curvature_data(k)),
-            'geoLeaf' : geoLeaf()} for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']}
+def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level=7):
+    d = {}
+    gL = geoLeaf()
+    for k in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
+        dfxy, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
+        xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = bins, ntraj = ntraj, tol_med = tol_med)
+        d[k] = Leaves(xy, sr, geoLeaf=geoLeaf, dynamic_bins = bins, discretisation_level = disc_level)
     return d
-    
+
+ 
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
     
@@ -373,7 +377,7 @@ class EchapReconstructions(object):
         self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits()
-        self.leaf_shapes = leaf_shapes()
+        self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
     def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True):
@@ -456,12 +460,7 @@ class EchapReconstructions(object):
                 d['TT'] = conv.TT(d['HS'])
                 devT = pgen_ext.adjust_tiller_survival(devT, d)
             
-
-        
-        dfxy, dfsr = self.leaf_shapes[name]['shapes']
-        xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10, tol_med = 0.1)
-        geoLeaf = self.leaf_shapes[name]['geoLeaf']
-        leaves = Leaves(xy, sr, geoLeaf=geoLeaf, dynamic_bins = bins, discretisation_level = disc_level)
+        leaves = self.leaf_fits[k] 
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
                              
