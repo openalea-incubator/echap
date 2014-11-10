@@ -17,17 +17,26 @@ def dimensions_data():
         fn = shared_data(alinea.echap, var+'_dimT_user_base.csv')
         dim[var] = pandas.read_csv(fn)
     return dim
+    
+# blade dimension data from Corinne/Tino scans in 2009/2010
+
+def blade_dimensions_MerciaRht3_2009_2010():
+    """ blade dimenstion from field experiment at Grignon in 2009-2010.
+        Computed by R script (Christian) from scaned leaves database
+    """
+    fn = shared_data(alinea.echap, 'blade_dimensions_MerciaRht3_2010.csv')
+    return pandas.read_csv(fn,na_values=('NA'),sep=' ')
 
 #----------------------------------------------------- Fitted dimension
 
-def Mercia_2010_fitted_dimensions():
+def Mercia_2011_fitted_dimensions():
     dim = {}
     for nff in [11,12,13]:
         fn = shared_data(alinea.echap, 'Mercia_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
     return dim
     
-def Rht3_2010_fitted_dimensions():
+def Rht3_2011_fitted_dimensions():
     dim = {}
     for nff in [11,12]:
         fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
@@ -64,8 +73,8 @@ def Tremie13_fitted_dimensions():
     return dim
 
 def dimension_fits():
-    d = {'Mercia': Mercia_2010_fitted_dimensions(),
-        'Rht3': Rht3_2010_fitted_dimensions(),
+    d = {'Mercia': Mercia_2011_fitted_dimensions(),
+        'Rht3': Rht3_2011_fitted_dimensions(),
         'Tremie12': Tremie12_fitted_dimensions(),
         'Tremie13': Tremie13_fitted_dimensions()}
     return d
