@@ -150,10 +150,10 @@ def _addLindex(dfxy, dfsr):
 def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level=7):
     d = {}
     gL = geoLeaf()
-    for k in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
+    for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
         dfxy, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
         xy, sr, bins = leaf_trajectories(dfxy, dfsr , bins = bins, ntraj = ntraj, tol_med = tol_med)
-        d[k] = Leaves(xy, sr, geoLeaf=geoLeaf, dynamic_bins = bins, discretisation_level = disc_level)
+        d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
  
@@ -460,7 +460,7 @@ class EchapReconstructions(object):
                 d['TT'] = conv.TT(d['HS'])
                 devT = pgen_ext.adjust_tiller_survival(devT, d)
             
-        leaves = self.leaf_fits[k] 
+        leaves = self.leaf_fits[name] 
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
                              
