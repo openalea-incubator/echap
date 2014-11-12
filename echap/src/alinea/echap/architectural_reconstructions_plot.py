@@ -5,33 +5,137 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
-def dimension_plot(dimension_data, fits):
+def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
     plt.ion()
     
     fig, axes = plt.subplots(nrows=2, ncols=3)
     ax0, ax1, ax2, ax3, ax4, ax5 = axes.flat
     
-    varieties = [['Mercia','r',12],['Rht3','g',11],['Tremie12','b',13],['Tremie13','m',11]]
-    for name,color,nff in varieties :
-        d_data = dimension_data[name]
+    varieties = [['Mercia','y',[11,12]],['Rht3','g',[11,12]],['Tremie12','b',[12,13]],['Tremie13','m',[12,13]]]
+    for name, color, nff_lst in varieties :
+        #premier nff, ligne du haut
+        d_data = dimension_data[name, nff_lst[0]]
+        dim_data = d_data.where((pandas.notnull(d_data)), None)
+        ax0.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = 'Obs '+name)
+        ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        dim_fit = fits[name][nff_lst[0]]
+        ax0.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-'+color, label = '_nolegend_')
+        ax1.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-'+color, label = '_nolegend_')
+        #FF
+        form_factor_bas = leaf_fits[name].form_factor()[1]
+        form_factor_haut = leaf_fits[name].form_factor()[2]
+        dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
+        if name=='Tremie12' or name=='Tremie13':
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8,9]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([10,11,12,13]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
+        else:
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut 
+        ax2.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = '_nolegend_')
+        #second nff, ligne du bas
+        d_data = dimension_data[name, nff_lst[1]]
+        dim_data = d_data.where((pandas.notnull(d_data)), None)
+        ax3.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = '_nolegend_')
+        ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        dim_fit = fits[name][nff_lst[1]]
+        ax3.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-'+color, label = '_nolegend_')
+        ax4.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-'+color, label = '_nolegend_')
+        #FF
+        dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
+        if name=='Tremie12' or name=='Tremie13':
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8,9]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([10,11,12,13]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
+        else:
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut
+        ax5.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = 'Wfit*Lfit*FF '+name)
+        
+        #scan obs
+        if name=='Tremie12' or name=='Tremie13':
+            scan_var = scan[scan['var']==name]
+            scaned = scan_var.groupby('moyenne id_Feuille')
+            res = scaned['Area A_bl'].agg([np.mean, np.std])
+            res = res.reset_index()
+            '''if name=='Tremie12':
+                color2='b'
+            else:
+                color2='m'''
+            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color, label='scan + sd '+name)
+            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color)
+            
+        #scan_old
+        if name=='Mercia' or name=='Rht3':
+            scan_var = scan_old[scan_old['variety']==name]
+            scaned = scan_var.groupby('nmax')
+            scaned = scaned.reset_index()
+            for nmaxindex in [11,12]:
+                res = scaned[scaned['nmax']==nmaxindex]
+                if nmaxindex==11:
+                    ax2.errorbar(res['rank'], res['A_bl'], yerr=res['sd_A_bl'], fmt='o'+color, label='scan 2009 + sd '+name)
+                else :
+                    ax5.errorbar(res['rank'], res['A_bl'], yerr=res['sd_A_bl'], fmt='o'+color, label='scan 2009 + sd '+name)
+            
+        
+        ax0.set_ylim(0, 30); ax3.set_ylim(0, 30)
+        ax1.set_ylim(0, 2.5); ax4.set_ylim(0, 2.5)
+        ax2.set_ylim(0, 40); ax5.set_ylim(0, 40)
+        ax0.set_xlim(0, 14); ax1.set_xlim(0, 14); ax2.set_xlim(0, 14)
+        ax3.set_xlim(0, 14); ax4.set_xlim(0, 14); ax5.set_xlim(0, 14)
+        
+        #legende
+        ax0.set_title('L_blade nff min', fontsize=9); ax3.set_title('L_blade nff max', fontsize=9)
+        ax1.set_title('W_blade nff min', fontsize=9); ax4.set_title('W_blade nff max', fontsize=9)
+        ax2.set_title('L_blade*W_blade nff min + scan', fontsize=9); ax5.set_title('L_blade*W_blade nff max + scan', fontsize=9)
+        ax0.legend(numpoints=1, bbox_to_anchor=(1.1, 1.2), prop={'size': 9})
+        ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
+    '''
+    varieties = [['Mercia','y',12],['Rht3','g',11],['Tremie12','b',13],['Tremie13','m',12]]
+    for name, color, nff in varieties :   
+        d_data = dimension_data[name,nff]
         dim_data = d_data.where((pandas.notnull(d_data)), None)
         ax0.plot(dim_data['index_phytomer'], dim_data['L_blade'], '-^'+color, label = '_nolegend_')
-        ax1.plot(dim_data['index_phytomer'], dim_data['L_sheath'], '--o'+color, label = '_nolegend_')
-        ax2.plot(dim_data['index_phytomer'], dim_data['L_internode'], ':<'+color, label=name)
-        #ax0.plot(dim_data['index_phytomer'], dim_data['W_blade'], style='--p'+color, label='W_blade ' +name)
-        
+        ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], '-o'+color, label = '_nolegend_')
+        dim_data['L*W_blade'] = dim_data['L_blade'] * dim_data['W_blade']
+        ax2.plot(dim_data['index_phytomer'], dim_data['L*W_blade'], '-x'+color, label=name)
+
         dim_fit = fits[name][nff]
         ax3.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-^'+color, label = '_nolegend_')
-        ax4.plot(dim_fit['index_phytomer'], dim_fit['L_sheath'], '--o'+color, label = '_nolegend_')
-        ax5.plot(dim_fit['index_phytomer'], dim_fit['L_internode'], ':<'+color, label = '_nolegend_')
-        #ax1.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], style='--p'+color, label='W_blade ' +name)
+        ax4.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-o'+color, label = '_nolegend_')
+        form_factor_bas = leaf_fits[name].form_factor()[1]
+        form_factor_haut = leaf_fits[name].form_factor()[2]
         
-        ax0.set_title('L_blade', fontsize=10)
-        ax1.set_title('L_sheath', fontsize=10)
-        ax2.set_title('L_internode', fontsize=10)
-    
+        dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
+        if name=='Tremie12' or name=='Tremie13':
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8,9]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([10,11,12,13]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
+        else:
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut
+            
+        ax5.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = '_nolegend_')
+        
+        #scan obs
+        if name=='Tremie12' or name=='Tremie13':
+            scan_var = scan[scan['var']==name]
+            if name=='Tremie12':
+                color2='c'
+            else:
+                color2='r'
+            ax5.plot(scan_var['moyenne id_Feuille'], scan_var['Area A_bl'], 'o'+color2, label='scan '+name)
+
+        ax0.set_title('L_blade', fontsize=10); ax3.set_title('L_blade fit', fontsize=10)
+        ax1.set_title('W_blade', fontsize=10); ax4.set_title('W_blade fit', fontsize=10)
+        ax2.set_title('L_blade * W_blade', fontsize=10)
+        ax5.set_title('L_blade * W_blade * FF + scan', fontsize=10)
+        ax0.set_ylim(0, 30); ax3.set_ylim(0, 30)
+        ax1.set_ylim(0, 2.5); ax4.set_ylim(0, 2.5)
+        ax2.set_ylim(0, 40); ax5.set_ylim(0, 40)
+        ax0.set_xlim(0, 14); ax1.set_xlim(0, 14); ax2.set_xlim(0, 14)
+        ax3.set_xlim(0, 14); ax4.set_xlim(0, 14); ax5.set_xlim(0, 14)
+        
     ax2.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
-    fig.suptitle("Dimension data / Dimension fits")
+    ax5.legend(numpoints=1, bbox_to_anchor=(1.2, 1.), prop={'size': 9})
+    fig.suptitle("Dimension data / Dimension fits")'''
 
 def dynamique_plot_nff(HS_GL_SSI_data):
     plt.ion()

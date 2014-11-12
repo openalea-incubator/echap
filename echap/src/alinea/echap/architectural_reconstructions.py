@@ -365,9 +365,18 @@ def pars():
     
 if run_plots:
     archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
-    
+     
+def all_scan():
+    df_obs_all = pandas.DataFrame()
+    for name in ['Tremie12','Tremie13']:
+        df_obs = archidb.treatment_scan(name)
+        df_obs['var'] = name
+        df_obs_all = df_obs_all.append(df_obs)
+    df_obs_all = df_obs_all[df_obs_all['moyenne id_Feuille'] <= df_obs_all['HS']]
+    return df_obs_all
+
 if run_plots:
-    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits())
+    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
 
 class EchapReconstructions(object):
