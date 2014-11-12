@@ -24,7 +24,7 @@ def blade_dimensions_MerciaRht3_2009_2010():
     """ blade dimenstion from field experiment at Grignon in 2009-2010.
         Computed by R script (Christian) from scaned leaves database
     """
-    fn = shared_data(alinea.echap, 'blade_dimensions_MerciaRht3_2010.csv')
+    fn = shared_data(alinea.echap, 'scaned_blade_dimensions_MerciaRht3_2010.csv')
     return pandas.read_csv(fn,na_values=('NA'),sep=' ')
 
 #----------------------------------------------------- Fitted dimension
