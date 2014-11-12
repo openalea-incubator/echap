@@ -14,8 +14,14 @@ plt.ion()
 def dimensions_data():
     dim = {}
     for var in ['Mercia','Rht3','Tremie12','Tremie13']:
-        fn = shared_data(alinea.echap, var+'_dimT_user_base.csv')
-        dim[var] = pandas.read_csv(fn)
+        if var=='Tremie12' or var=='Tremie13':
+            for nff in [12,13]:
+                fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
+                dim[var,nff] = pandas.read_csv(fn)
+        elif var=='Mercia' or var=='Rht3':
+            for nff in [11,12]:
+                fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
+                dim[var,nff] = pandas.read_csv(fn)
     return dim
     
 # blade dimension data from Corinne/Tino scans in 2009/2010
@@ -52,7 +58,7 @@ def Tremie12_fitted_dimensions():
     
 def Tremie13_fitted_dimensions():
     dim = {}
-    for nff in [12]:
+    for nff in [12,13]:
         fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
         # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
@@ -63,12 +69,7 @@ def Tremie13_fitted_dimensions():
         dim[nff]['W_blade'] = dim_tremie12['W_blade']
         dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
         dim[nff]['W_internode'] = dim_tremie12['W_internode']
-        # on complete la colonne L_internode
-        dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
-        
-        # on cree le fichier nff11 (nff12 - ligne12)
-        dim[nff-1] = dim[nff].loc[0:10]
-        #dim[11]['L_internode'] = [0,0,0,0,0,0,0,9.85,16.56,16.17,16.21]
+        dim[nff]['L_internode'] = dim_tremie12['L_internode']
         
     return dim
 
@@ -379,9 +380,9 @@ def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all
         dt = df[df['HS']==HS]
         
         # tableau avec notation depuis le haut (ntop_cur) et moyenne notation depuis le bas (moyenne id_Feuille)
-        data = dt.groupby(['ntop_cur'], as_index=False).mean()  
+        #data = dt.groupby(['ntop_cur'], as_index=False).mean()  
         # tableau avec notation depuis le bas (id_Feuille) et moyenne notation depuis le haut (moyenne ntop_cur)     
-        #data = dt.groupby(['id_Feuille'], as_index=False).mean()    
+        data = dt.groupby(['id_Feuille'], as_index=False).mean()    
 
         nbr = data['ntop_cur'].count(); cpt = 0
         while cpt<nbr:
