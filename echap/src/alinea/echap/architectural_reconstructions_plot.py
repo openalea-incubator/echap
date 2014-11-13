@@ -17,7 +17,10 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         d_data = dimension_data[name, nff_lst[0]]
         dim_data = d_data.where((pandas.notnull(d_data)), None)
         ax0.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = 'Obs '+name)
-        ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        if name=='Mercia' or name=='Rht3':
+            ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        else : #pas de donnees largeur par nff pour tremie12 donc on met des triangles
+            ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], '^'+color, label = '_nolegend_')
         dim_fit = fits[name][nff_lst[0]]
         ax0.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-'+color, label = '_nolegend_')
         ax1.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-'+color, label = '_nolegend_')
@@ -36,7 +39,10 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         d_data = dimension_data[name, nff_lst[1]]
         dim_data = d_data.where((pandas.notnull(d_data)), None)
         ax3.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = '_nolegend_')
-        ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        if name=='Mercia' or name=='Rht3':
+            ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
+        else: #pas de donnees largeur par nff pour tremie12 donc on met des triangles
+            ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], '^'+color, label = '_nolegend_')
         dim_fit = fits[name][nff_lst[1]]
         ax3.plot(dim_fit['index_phytomer'], dim_fit['L_blade'], '-'+color, label = '_nolegend_')
         ax4.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-'+color, label = '_nolegend_')
@@ -50,21 +56,17 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
             dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut
         ax5.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = 'Wfit*Lfit*FF '+name)
         
-        #scan obs
+        #scan obs - pas de donnees scan par nff pour tremie12 donc on met des triangles
         if name=='Tremie12' or name=='Tremie13':
             scan_var = scan[scan['var']==name]
             scaned = scan_var.groupby('moyenne id_Feuille')
             res = scaned['Area A_bl'].agg([np.mean, np.std])
             res = res.reset_index()
-            '''if name=='Tremie12':
-                color2='b'
-            else:
-                color2='m'''
-            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color, label='scan + sd '+name)
-            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color)
+            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color, label='scan + sd '+name)
+            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color)
             
         #scan_old
-        if name=='Mercia' or name=='Rht3':
+        '''if name=='Mercia' or name=='Rht3':
             scan_var = scan_old[scan_old['variety']==name]
             scaned = scan_var.groupby('nmax')
             scaned = scaned.reset_index()
@@ -73,7 +75,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
                 if nmaxindex==11:
                     ax2.errorbar(res['rank'], res['A_bl'], yerr=res['sd_A_bl'], fmt='o'+color, label='scan 2009 + sd '+name)
                 else :
-                    ax5.errorbar(res['rank'], res['A_bl'], yerr=res['sd_A_bl'], fmt='o'+color, label='scan 2009 + sd '+name)
+                    ax5.errorbar(res['rank'], res['A_bl'], yerr=res['sd_A_bl'], fmt='o'+color, label='scan 2009 + sd '+name)'''
             
         
         ax0.set_ylim(0, 30); ax3.set_ylim(0, 30)
