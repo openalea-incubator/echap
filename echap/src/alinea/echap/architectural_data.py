@@ -27,7 +27,7 @@ def dimensions_data():
 # blade dimension data from Corinne/Tino scans in 2009/2010
 
 def blade_dimensions_MerciaRht3_2009_2010():
-    """ blade dimenstion from field experiment at Grignon in 2009-2010.
+    """ blade dimension from field experiment at Grignon in 2009-2010.
         Computed by R script (Christian) from scaned leaves database
     """
     fn = shared_data(alinea.echap, 'scaned_blade_dimensions_MerciaRht3_2010.csv')
