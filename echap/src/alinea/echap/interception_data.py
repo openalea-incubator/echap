@@ -4,6 +4,8 @@
 import pandas
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
+import alinea.echap.architectural_reconstructions as rec
+HSconv = rec.HS_converter
 
 def dye_interception():
     """ Dye interception data
@@ -34,17 +36,105 @@ def dye_applications():
     """
     Date and measured Haunstage at date of application
     """
-    apps = {'Mercia': {'T1': ('2011-04-19', 9.74),# mesure HS le 18/04, a corriger avec delta HS ?
-                      'T2': ('2011-05-11', 12.8)},#HS not measured but estimated from HSconvert
-            'Rht3': {'T1':('2011-04-19', 9.15), #mesure HS le 18
-                     'T2':('2011-05-11', 12.48)},# Hsconvert estimation
-            'Tremie12': {'date1':('2012-03-09', 7.55),#ajout date scan1
+    apps = {'Mercia': {'T1-0.4': ('2011-04-19', 9.34),
+                      'T1-0.2': ('2011-04-19', 9.54),
+                      'T1': ('2011-04-19', 9.74),#HS mesure le 18/04, a corriger avec delta HS ?
+                      'T1+0.2': ('2011-04-19', 9.94),
+                      'T1+0.4': ('2011-04-19', 10.14),
+                      'T2-0.4': ('2011-05-11', 12.4),
+                      'T2-0.2': ('2011-05-11', 12.6),
+                      'T2': ('2011-05-11', 12.8),#HS not measured but estimated from HSconvert
+                      'T2+0.2': ('2011-05-11', 13),
+                      'T2+0.4': ('2011-05-11', 13.2),
+                      'T2+0.5': ('2011-05-11', 13.3),
+                      'T2+1': ('2011-05-11', 13.8)},
+            'Rht3': {'T1-0.4':('2011-04-19', 8.75),
+                     'T1-0.2':('2011-04-19', 8.95),
+                     'T1':('2011-04-19', 9.15), #HS mesure le 18
+                     'T1+0.2':('2011-04-19', 9.35),
+                     'T1+0.4':('2011-04-19', 9.55),
+                     'T2-0.4':('2011-05-11', 12.08),
+                     'T2-0.2':('2011-05-11', 12.28),
+                     'T2':('2011-05-11', 12.48),# HS convert estimation
+                     'T2+0.2':('2011-05-11', 12.68),
+                     'T2+0.4':('2011-05-11', 12.88),
+                     'T2+0.5':('2011-05-11', 12.98),
+                     'T2+1':('2011-05-11', 13.48)},
+            'Tremie12': {'date1-0.4':('2012-03-09', 7.15),
+                     'date1-0.2':('2012-03-09', 7.35),
+                     'date1':('2012-03-09', 7.55),#ajout date scan1
+                     'date1+0.2':('2012-03-09', 7.75),
+                     'date1+0.4':('2012-03-09', 7.95),
+                     'date2-0.4':('2012-04-02', 9.75),
+                     'date2-0.2':('2012-04-02', 9.95),
                      'date2':('2012-04-02', 10.15),#ajout date scan2
+                     'date2+0.2':('2012-04-02', 10.35),
+                     'date2+0.4':('2012-04-02', 10.55),
+                     'T1-0.4':('2012-04-11', 10.58),
+                     'T1-0.2':('2012-04-11', 10.78),
                      'T1':('2012-04-11', 10.98),
-                     'T2':('2012-05-09', 12.63)},
-            'Tremie13': {'date1':('2013-04-22', 8.36),#HSconvert estimation
-                     'T1':('2013-04-25', 8.7),#HSconvert estimation
+                     'T1+0.2':('2012-04-11', 11.18),
+                     'T1+0.4':('2012-04-11', 11.38),
+                     'T2-0.4':('2012-05-09', 12.23),
+                     'T2-0.2':('2012-05-09', 12.43),
+                     'T2':('2012-05-09', 12.63),
+                     'T2+0.2':('2012-05-09', 12.83),
+                     'T2+0.4':('2012-05-09', 13.03),
+                     'T2+0.5':('2012-05-09', 13.13),
+                     'T2+1':('2012-05-09', 13.63),
+                     'T2+1.5':('2012-05-09', 14.13),
+                     'T2+2':('2012-05-09', 14.63),
+                     'T2+2.5':('2012-05-09', 15.13)},
+            'Tremie13': {'date1-0.4':('2013-04-22', 7.96),
+                     'date1-0.2':('2013-04-22', 8.16),
+                     'date1':('2013-04-22', 8.36),#HS convert estimation
+                     'date1+0.2':('2013-04-22', 8.56),
+                     'date1+0.4':('2013-04-22', 8.76),
+                     'T1-0.4':('2013-04-25', 8.3),
+                     'T1-0.2':('2013-04-25', 8.5),
+                     'T1':('2013-04-25', 8.7),#HS convert estimation
+                     'T1+0.2':('2013-04-25', 8.9),
+                     'T1+0.4':('2013-04-25', 9.1),
+                     'date2-0.4':('2013-05-03', 9.3),
+                     'date2-0.2':('2013-05-03', 9.5),
                      'date2':('2013-05-03', 9.7),#HS mesure le 02
-                     'T2':('2013-05-17', 11.04) } #HS convert estimation                
+                     'date2+0.2':('2013-05-03', 9.9),
+                     'date2+0.4':('2013-05-03', 10.1),
+                     'T2-0.4':('2013-05-17', 10.64),
+                     'T2-0.2':('2013-05-17', 10.84),
+                     'T2':('2013-05-17', 11.04),#HS convert estimation 
+                     'T2+0.2':('2013-05-17', 11.24),
+                     'T2+0.4':('2013-05-17', 11.44),
+                     'T2+0.5':('2013-05-17', 11.54),
+                     'T2+1':('2013-05-17', 12.04),
+                     'T2+1.5':('2013-05-17', 12.54),
+                     'T2+2':('2013-05-17', 13.04),
+                     'T2+2.5':('2013-05-17', 13.54)}                
     }
     return apps
+    
+def Petri_data(name='Tremie12'):
+    conv = HSconv[name]
+    if name is 'Tremie12':
+        data_file_T1 = shared_data(alinea.echap, 'petri_T1_20112012.csv')
+        data_file_T2 = shared_data(alinea.echap, 'petri_T2_20112012.csv')
+    if name is 'Tremie13':
+        data_file_T1 = shared_data(alinea.echap, 'petri_T1_20122013.csv')
+        data_file_T2 = shared_data(alinea.echap, 'petri_T2_20122013.csv')
+    # HS T1 et T2
+    dateT1, HS_T1 = dye_applications()[name]['T1']
+    dateT2, HS_T2 = dye_applications()[name]['T2']
+    # lecture des csv
+    header_row=['PETRI','Volume','Niveau','Bloc','ABSORBANCE','DILUTION','concentration(mg/l)','ConcentrationArrondie(mg/l)','quantiteRetenue(mg)','quantite(g/ha)','rapportPoucentage(sol/emis)']
+    df1 = pandas.read_csv(data_file_T1, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
+    df2 = pandas.read_csv(data_file_T2, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
+    # bon format pourcentage
+    df1['rapportPoucentage(sol/emis)'] = df1['rapportPoucentage(sol/emis)'] / 100.
+    df2['rapportPoucentage(sol/emis)'] = df2['rapportPoucentage(sol/emis)'] / 100.
+    # ajout TT et conversion en HS
+    df1['HS'] = HS_T1; df2['HS'] = HS_T2
+    df1['TT'] = conv.TT(HS_T1); df2['TT'] = conv.TT(HS_T2)   
+    # on filtre sur niveau = sol
+    grouped1 = df1.groupby('Niveau'); grouped2 = df2.groupby('Niveau')
+    petri1 = grouped1.get_group('sol'); petri2 = grouped2.get_group('sol')
+    return petri1, petri2
