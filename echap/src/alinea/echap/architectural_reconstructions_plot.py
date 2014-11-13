@@ -29,11 +29,11 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         form_factor_haut = leaf_fits[name].form_factor()[2]
         dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
         if name=='Tremie12' or name=='Tremie13':
-            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8,9]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
-            dim_fit.ix[dim_fit.index_phytomer.isin([10,11,12,13]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
-        else:
             dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
-            dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut 
+            dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
+        else:
+            dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
+            dim_fit.ix[dim_fit.index_phytomer.isin([8,9,10,11]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut 
         ax2.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = '_nolegend_')
         #second nff, ligne du bas
         d_data = dimension_data[name, nff_lst[1]]
@@ -65,7 +65,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
             ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color, label='scan + sd '+name)
             ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color)
             
-        #scan_old
+        #scan_old (scan Mercia / Rht3 de 2009) -> pas ici car confusion (on ne cherche pas a passer dans ces points)
         '''if name=='Mercia' or name=='Rht3':
             scan_var = scan_old[scan_old['variety']==name]
             scaned = scan_var.groupby('nmax')
@@ -91,6 +91,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         ax0.legend(numpoints=1, bbox_to_anchor=(1.1, 1.2), prop={'size': 9})
         ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
     '''
+    #old = tracer seulement la modalite majoritaire haut=data, bas=fit
     varieties = [['Mercia','y',12],['Rht3','g',11],['Tremie12','b',13],['Tremie13','m',12]]
     for name, color, nff in varieties :   
         d_data = dimension_data[name,nff]
