@@ -455,11 +455,12 @@ def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tr
                     df_fin = df_all[df_all['HS']==date]
                     #Area A_bl dens pour dessiner les obs seulement qd densite=1
                     df_fin['Area A_bl dens'] = df_fin['Area A_bl']
-                    df_fin.ix[df_fin.density.isin([0.5]), 'Area A_bl dens'] = 0
+                    df_fin.ix[~df_fin.density.isin([1]), 'Area A_bl dens'] = 0
+                    '''df_fin.ix[df_fin.density.isin([0.5]), 'Area A_bl dens'] = 0
                     df_fin.ix[df_fin.density.isin([0.625]), 'Area A_bl dens'] = 0
                     df_fin.ix[df_fin.density.isin([0.74]), 'Area A_bl dens'] = 0 # cas particulier de Tremie12 qui devrait disparaitre
                     df_fin.ix[df_fin.density.isin([0.75]), 'Area A_bl dens'] = 0
-                    df_fin.ix[df_fin.density.isin([0.875]), 'Area A_bl dens'] = 0
+                    df_fin.ix[df_fin.density.isin([0.875]), 'Area A_bl dens'] = 0'''
                     #---
                     df_fin = df_fin.sort(['ntop_cur', 'HS','density'])
                     n_groups = len(df_fin)
@@ -513,7 +514,7 @@ def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tr
                 df_fin = df_all[df_all['HS']==date]
                 #mean_dens pour dessiner les obs seulement qd densite=1
                 df_fin['mean/area_dens'] = df_fin['mean/area']
-                df_fin.ix[~df_fin.density.isin([1]), 'mean_dens'] = 0
+                df_fin.ix[~df_fin.density.isin([1]), 'mean/area_dens'] = 0
                 '''df_fin.ix[df_fin.density.isin([0.5]), 'mean/area_dens'] = 0
                 df_fin.ix[df_fin.density.isin([0.625]), 'mean/area_dens'] = 0
                 df_fin.ix[df_fin.density.isin([0.74]), 'mean/area_dens'] = 0 # cas particulier de Tremie12 qui devrait disparaitre
