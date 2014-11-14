@@ -11,13 +11,13 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
     fig, axes = plt.subplots(nrows=2, ncols=3)
     ax0, ax1, ax2, ax3, ax4, ax5 = axes.flat
     
-    varieties = [['Mercia','y',[11,12]],['Rht3','g',[11,12]],['Tremie12','b',[12,13]],['Tremie13','m',[12,13]]]
+    varieties = [['Mercia','y',[11,12]],['Rht3','g',[11,12]],['Tremie12','b',[12,13]],['Tremie13','m',[11,12]]]
     for name, color, nff_lst in varieties :
         #premier nff, ligne du haut
         d_data = dimension_data[name, nff_lst[0]]
         dim_data = d_data.where((pandas.notnull(d_data)), None)
         ax0.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = 'Obs '+name)
-        if name=='Mercia' or name=='Rht3':
+        if name=='Mercia' or name=='Rht3' or name=='Tremie13':
             ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
         else : #pas de donnees largeur par nff pour tremie12 donc on met des triangles
             ax1.plot(dim_data['index_phytomer'], dim_data['W_blade'], '^'+color, label = '_nolegend_')
@@ -28,7 +28,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         form_factor_bas = leaf_fits[name].form_factor()[1]
         form_factor_haut = leaf_fits[name].form_factor()[2]
         dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
-        if name=='Tremie12' or name=='Tremie13':
+        if name=='Tremie12': #FF haut pour les 4 feuilles du haut, FF bas pour les autres feuilles
             dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
             dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
         else:
@@ -39,7 +39,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         d_data = dimension_data[name, nff_lst[1]]
         dim_data = d_data.where((pandas.notnull(d_data)), None)
         ax3.plot(dim_data['index_phytomer'], dim_data['L_blade'], 'o'+color, label = '_nolegend_')
-        if name=='Mercia' or name=='Rht3':
+        if name=='Mercia' or name=='Rht3' or name=='Tremie13':
             ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], 'o'+color, label = '_nolegend_')
         else: #pas de donnees largeur par nff pour tremie12 donc on met des triangles
             ax4.plot(dim_data['index_phytomer'], dim_data['W_blade'], '^'+color, label = '_nolegend_')
@@ -48,7 +48,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         ax4.plot(dim_fit['index_phytomer'], dim_fit['W_blade'], '-'+color, label = '_nolegend_')
         #FF
         dim_fit['L*W_blade*FF'] = dim_fit['L_blade']
-        if name=='Tremie12' or name=='Tremie13':
+        if name=='Tremie12':
             dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8,9]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
             dim_fit.ix[dim_fit.index_phytomer.isin([10,11,12,13]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut   
         else:
