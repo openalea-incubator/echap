@@ -615,15 +615,19 @@ def simulation_HS(name='Tremie12', csv=True):
     # test date interception -0.4 -0.2 +0.2 +0.4 pour chaque date, +0.5 et +1 pour T2 seulement - !!! PB TREMIE12 SIM N=200 !!!
     lst = [['Tremie13','T1'],['Tremie13','T2']]
     if name=='Tremie12':
-        lst = [['Tremie12','date1-0.4'], ['Tremie12','date1-0.2'], ['Tremie12','date1'], ['Tremie12','date1+0.2'], ['Tremie12','date1+0.4'],
+        '''lst = [['Tremie12','date1-0.4'], ['Tremie12','date1-0.2'], ['Tremie12','date1'], ['Tremie12','date1+0.2'], ['Tremie12','date1+0.4'],
             ['Tremie12','date2-0.4'], ['Tremie12','date2-0.2'], ['Tremie12','date2'], ['Tremie12','date2+0.2'], ['Tremie12','date2+0.4'],
             ['Tremie12','T1-0.4'], ['Tremie12','T1-0.2'], ['Tremie12','T1'], ['Tremie12','T1+0.2'], ['Tremie12','T1+0.4'],
+            ['Tremie12','T2-0.4'], ['Tremie12','T2-0.2'],  ['Tremie12','T2'],  ['Tremie12','T2+0.2'], ['Tremie12','T2+0.4'], ['Tremie12','T2+0.5'], ['Tremie12','T2+1'],['Tremie12','T2+1.5'], ['Tremie12','T2+2'], ['Tremie12','T2+2.5']]'''
+        lst = [['Tremie12','T1-0.4'], ['Tremie12','T1-0.2'], ['Tremie12','T1'], ['Tremie12','T1+0.2'], ['Tremie12','T1+0.4'],
             ['Tremie12','T2-0.4'], ['Tremie12','T2-0.2'],  ['Tremie12','T2'],  ['Tremie12','T2+0.2'], ['Tremie12','T2+0.4'], ['Tremie12','T2+0.5'], ['Tremie12','T2+1'],['Tremie12','T2+1.5'], ['Tremie12','T2+2'], ['Tremie12','T2+2.5']]
         n=30
     else:
-        lst = [['Tremie13','date1-0.4'], ['Tremie13','date1-0.2'], ['Tremie13','date1'], ['Tremie13','date1+0.2'], ['Tremie13','date1+0.4'],
+        '''lst = [['Tremie13','date1-0.4'], ['Tremie13','date1-0.2'], ['Tremie13','date1'], ['Tremie13','date1+0.2'], ['Tremie13','date1+0.4'],
             ['Tremie13','date2-0.4'], ['Tremie13','date2-0.2'], ['Tremie13','date2'], ['Tremie13','date2+0.2'], ['Tremie13','date2+0.4'],
             ['Tremie13','T1-0.4'], ['Tremie13','T1-0.2'], ['Tremie13','T1'], ['Tremie13','T1+0.2'], ['Tremie13','T1+0.4'],
+            ['Tremie13','T2-0.4'], ['Tremie13','T2-0.2'],  ['Tremie13','T2'],  ['Tremie13','T2+0.2'], ['Tremie13','T2+0.4'], ['Tremie13','T2+0.5'], ['Tremie13','T2+1'],['Tremie13','T2+1.5'], ['Tremie13','T2+2'], ['Tremie13','T2+2.5']]'''
+        lst = [['Tremie13','T1-0.4'], ['Tremie13','T1-0.2'], ['Tremie13','T1'], ['Tremie13','T1+0.2'], ['Tremie13','T1+0.4'],
             ['Tremie13','T2-0.4'], ['Tremie13','T2-0.2'],  ['Tremie13','T2'],  ['Tremie13','T2+0.2'], ['Tremie13','T2+0.4'], ['Tremie13','T2+0.5'], ['Tremie13','T2+1'],['Tremie13','T2+1.5'], ['Tremie13','T2+2'], ['Tremie13','T2+2.5']]
         n=200
     df_sim = pandas.DataFrame()
