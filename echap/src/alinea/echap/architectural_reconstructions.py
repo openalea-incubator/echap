@@ -179,13 +179,30 @@ class deepdd(pandas.DataFrame):
         return self.copy(deep=True)
 #
 
-def density_fits():
+'''def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
     density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[203,203,153,153]}),
                 'Rht3': deepdd({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': deepdd({'HS':[0,6,13,20],'density':[281,281,281,251]}),
+                'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
+                
+    conv = HS_converter
+    
+    for k in density_fits:
+        df = density_fits[k]
+        df['TT'] = conv[k].TT(df['HS'])
+    return density_fits'''
+ 
+#densite non ajustee 
+def density_fits():
+    """
+    Manual fit of plant density based on mean plant density and estimate of plant density at harvest
+    """
+    density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[203,203,203,203]}),
+                'Rht3': deepdd({'HS':[0,6,13,20],'density':[211,211,211,211]}),
+                'Tremie12': deepdd({'HS':[0,6,13,20],'density':[281,281,281,281]}),
                 'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
                 
     conv = HS_converter
@@ -437,11 +454,13 @@ class EchapReconstructions(object):
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':None}, stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, **kwds):
     
         density = self.density_fits[name].deepcopy()
+        
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
         density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0]
         
         pdata = self.plot_data[name]
-        stand = AgronomicStand(sowing_density=pdata['sowing_density'], plant_density=density_at_emergence, inter_row=pdata['inter_row'])        
+        sowing_density = pdata['sowing_density']
+        stand = AgronomicStand(sowing_density=sowing_density*stand_density_factor[name], plant_density=density_at_emergence*stand_density_factor[name], inter_row=pdata['inter_row'])        
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
         if freeze_damage[name] is not None:
