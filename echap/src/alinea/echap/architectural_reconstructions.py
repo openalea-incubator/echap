@@ -434,7 +434,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':None}, **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':None}, stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, **kwds):
     
         density = self.density_fits[name].deepcopy()
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
