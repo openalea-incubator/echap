@@ -14,11 +14,11 @@ plt.ion()
 def dimensions_data():
     dim = {}
     for var in ['Mercia','Rht3','Tremie12','Tremie13']:
-        if var=='Tremie12' or var=='Tremie13':
+        if var=='Tremie12':
             for nff in [12,13]:
                 fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
                 dim[var,nff] = pandas.read_csv(fn)
-        elif var=='Mercia' or var=='Rht3':
+        elif var=='Mercia' or var=='Rht3' or var=='Tremie13':
             for nff in [11,12]:
                 fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
                 dim[var,nff] = pandas.read_csv(fn)
@@ -58,7 +58,7 @@ def Tremie12_fitted_dimensions():
     
 def Tremie13_fitted_dimensions():
     dim = {}
-    for nff in [12,13]:
+    for nff in [12]:
         fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
         # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
@@ -70,7 +70,11 @@ def Tremie13_fitted_dimensions():
         dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
         dim[nff]['W_internode'] = dim_tremie12['W_internode']
         dim[nff]['L_internode'] = dim_tremie12['L_internode']
-        
+        # creation de dim[11]
+        dim[nff-1] = dim[nff].copy()
+        dim[nff-1] = dim[nff-1][0:11]
+        dim[nff-1]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
+
     return dim
 
 def dimension_fits():
