@@ -754,6 +754,20 @@ def leaf_curvature_data(name='Mercia'):
     
     return dfxy, dfsr
     
+# interpolated median leaf from Grignon 2010
+def median_leaf_trajectories():
+    """ interpolated xy for upper/lower leaves every 0.5 HS on Grignon 2009-2010 data
+    """
+    fn = shared_data(alinea.echap, 'median_leaf_trajectories_Grignon2010.csv') 
+    dat = pandas.read_csv(fn, names=['age','x','y','lindex'], sep=',', index_col=False, skiprows=1, decimal='.')
+    ages = set(dat['age'])
+    numage = numpy.array(sorted(list(ages)))
+    agemed = (numage[1:]  + numage[:-1]) / 2.0
+    bins = [numage[0] - 1.0] + agemed[:-1].tolist() + [numage[-1] + 1.0]
+    dat['age_class'] = pandas.cut(dat['age'], bins,labels=False)
+    grouped = dat.groupby(('lindex','age_class'))   
+    trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
+    return trajs, bins
 
 #
 # Elaborated data

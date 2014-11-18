@@ -92,7 +92,7 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
           
     dfxy['age'] = dfxy['HS'] - dfxy['rank'] + 1
     #cut intervalle de 0 a 1, etc.
-    dfxy_cut = pandas.cut(dfxy.age, bins)
+    dfxy_cut = pandas.cut(dfxy.age, bins,labels=False)
     dfxy['age_class'] = dfxy_cut
     
     # use mean_angle to filter / group leaves
@@ -156,6 +156,15 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
         d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
+def median_leaf_fits(disc_level=7):
+    d={}
+    gL = geoLeaf()
+    trajs,bins = archidb.median_leaf_trajectories()
+    for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
+        _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
+        srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
+        d[k] = Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
+    return d
  
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
@@ -398,12 +407,15 @@ if run_plots:
 
 class EchapReconstructions(object):
     
-    def __init__(self):
+    def __init__(self, median_leaf=True):
         self.density_fits = density_fits()
         self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits()
-        self.leaf_fits = leaf_fits()
+        if median_leaf:
+            self.leaf_fits = median_leaf_fits()
+        else:
+            self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
     def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True):
