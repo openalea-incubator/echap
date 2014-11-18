@@ -64,9 +64,19 @@ def aggregate_by_leaf(df):
                    'deposit_Tartrazine': numpy.sum
                    })
     
-def treatment(name='Tremie12', sim='T1', nplants=200, axis='MS', to_csv=False, density=1): 
+def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1): 
 
     adel, df = repartition_at_application(name,sim,nplants=nplants,density=density)
+    
+    #Calcul age depuis emergence de la feuille    
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    df_phenT['ntop_cur'] = df_phenT['nff'] - df_phenT['n']
+    dates = [numpy.mean(df_phenT[df_phenT['ntop_cur']==lf]['tip']) for lf in range(1, int(max(df_phenT['n'])+2))]
+    df_dates = pandas.DataFrame(dates, index = range(1, len(dates)+1), columns = ['leaf_emergence'])
+    df_dates.index.name = 'ntop_cur'
+    df_dates = df_dates.reset_index()
     
     if axis == 'MS':
         df = df[df['axe'] == 'MS']
@@ -85,6 +95,9 @@ def treatment(name='Tremie12', sim='T1', nplants=200, axis='MS', to_csv=False, d
     sub = data.ix[:,('HS','TT','axe','metamer','ntop','ntop_cur','length','area','green_area','deposit_Tartrazine')]
     dfmoy = sub.groupby(['HS','axe','ntop_cur']).mean().reset_index()
     dfsd = sub.groupby(['HS','axe','ntop_cur']).std().reset_index()
+    
+    #ajout colonne leaf_emergence dans dfmoy
+    dfmoy = dfmoy.merge(df_dates, how='inner')
 
     if to_csv:
         data.to_csv(''.join(('data_',name,'_',sim,'_',axis,'.csv')))
@@ -92,6 +105,33 @@ def treatment(name='Tremie12', sim='T1', nplants=200, axis='MS', to_csv=False, d
         dfsd.to_csv(''.join(('std_',name,'_',sim,'_',axis,'.csv')))
              
     return adel.nplants, dfmoy, dfsd
+    
+def sensibilite_nplants(csv=True):
+    # seulement n=30 pour Tremie12 car bug
+    var_lst = ['Mercia','Rht3','Tremie12','Tremie13']
+    for var in var_lst: 
+        df_sim = pandas.DataFrame()
+        for stade in ['T1','T2']:
+            if var=='Tremie12':
+                nplants_lst = [30]
+            else:
+                nplants_lst = [30,60,100,200]           
+            for n in nplants_lst : 
+                x=1
+                while x<=5: 
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False)
+                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(n)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
+                    dfmoy['var'] = var
+                    dfmoy['dim'] = stade
+                    dfmoy['nb_plantes_sim'] = npl
+                    df_sim = df_sim.append(dfmoy)
+                    x+=1
+        df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'ntop_cur']).mean()
+        df_sim_gr = df_sim_gr.reset_index()
+        if csv == True:
+            df_sim.to_csv('sensibilite_all_'+var+'.csv')
+            df_sim_gr.to_csv('sensibilite_mean_'+var+'.csv')
+    return df_sim_gr
    
 
 def simulation_dimension(name='Tremie12', stade_dim='div2', csv=True): 
@@ -345,9 +385,11 @@ def simulation_density(name='Tremie12', csv=True):
     while x<5:
         for var, stade in lst :  
             if var == 'Tremie12':
-                dens_lst = [0.5,0.625,0.75,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
+                dens_lst = [0.5,0.625,0.74,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
+                #dens_lst = [0.1,0.2,0.3,0.4,0.5] #pour aller plus loin
             else :
                 dens_lst = [0.5,0.625,0.75,0.875,1]
+                #dens_lst = [0.1,0.2,0.3,0.4,0.5]
             for dens in dens_lst:         
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False, density=dens)
                 print 'var = '+var+' stade = '+stade+' density = '+str(dens)+' - nbre de plantes sim = '+str(npl)
@@ -362,10 +404,11 @@ def simulation_density(name='Tremie12', csv=True):
         df_sim_gr.to_csv('density_synth_'+name+'.csv')
     return df_sim_gr
   
-def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tremie13']):
+def plot_density(plot1=True, plot2=False, plot3=False, plot4=False, varieties=['Tremie12','Tremie13']):
     '''
     Plot 1 =  Barplot observation / simulation avec ntop_cur en abscisse et (dfmoy['deposit_Tartrazin']  versus obs 'moyenne' par genotype et par date interception
     Plot 2 = Barplot de controle 'area' versus scan data (avec la colone area de dfmoy)
+    !!! plot 2 = PAS DE SCAN POUR MERCIA ET RHT3 donc pas de graph genere (test si plot2=True, ne posera pas de pb)
     Plot 3 = Barplot observation/simulation de deposit/area et obs/area
     Plot 4 = 2 graphes supplémentaires récapitulatifs avec en x = âge des feuilles (en dd depuis la ligulation, quelque soit le numéro des feuilles) ET Ntop (2 graphes donc) et en y = interception feuille par cm2 
     '''
@@ -515,11 +558,6 @@ def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tr
                 #mean_dens pour dessiner les obs seulement qd densite=1
                 df_fin['mean/area_dens'] = df_fin['mean/area']
                 df_fin.ix[~df_fin.density.isin([1]), 'mean/area_dens'] = 0
-                '''df_fin.ix[df_fin.density.isin([0.5]), 'mean/area_dens'] = 0
-                df_fin.ix[df_fin.density.isin([0.625]), 'mean/area_dens'] = 0
-                df_fin.ix[df_fin.density.isin([0.74]), 'mean/area_dens'] = 0 # cas particulier de Tremie12 qui devrait disparaitre
-                df_fin.ix[df_fin.density.isin([0.75]), 'mean/area_dens'] = 0
-                df_fin.ix[df_fin.density.isin([0.875]), 'mean/area_dens'] = 0'''
                 #---
                 df_fin = df_fin.sort(['ntop_cur','HS','density'])      
                 n_groups = len(df_fin)
@@ -541,10 +579,10 @@ def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tr
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
             axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
-    '''           
+
     # PLOT 4
     if plot4 is True :
-        for var in ['Mercia', 'Rht3', 'Tremie13']:
+        for var in varieties:
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
@@ -552,37 +590,45 @@ def plot_density(plot1=True, plot2=False, plot3=False, varieties=['Tremie12','Tr
             df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
             df_all = df_all[df_all['ntop_cur']<=5]
-            df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
-            df_all['mean/area'] = df_all['mean']/df_all['area']
-            if var=='Mercia' or var=='Rht3':
-                TTlig = 1383.2
-            elif var=='Tremie13':
-                TTlig = 1230.21
-            df_all['lig'] = df_all['TT'] - TTlig
-            df_all['lig'] = numpy.round(df_all['lig'], decimals=2)
-            df_all['ntop'] = numpy.round(df_all['ntop'], decimals=2)
             #plot
-            n_groups = len(df_all['lig'])
-            index = numpy.arange(n_groups)
-            bar_width = 0.35; opacity = 0.4
-            fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
-            # x = age feuille en dd depuis ligulation
-            df_all = df_all.sort(['lig','ntop_cur'])
-            rects1 = ax0.bar(index, df_all['tartrazine/area'], bar_width, alpha=opacity, color='b')
-            rects2 = ax0.bar(index + bar_width, df_all['mean/area'], bar_width, alpha=opacity, color='r')
-            ax0.set_xticks(index+bar_width)
-            ax0.set_xticklabels( df_all['lig'].tolist(), rotation=90, fontsize='x-small' )
-            ax0.set_xlabel('TTdepuisLig')
-            # x = ntop (nb feuille depuis le bas)
-            df_all = df_all.sort(['ntop'])
-            rects1 = ax1.bar(index, df_all['tartrazine/area'], bar_width, alpha=opacity, color='b')
-            rects2 = ax1.bar(index + bar_width, df_all['mean/area'], bar_width, alpha=opacity, color='r')
-            ax1.set_xticks(index+bar_width)
-            ax1.set_xticklabels( df_all['ntop'].tolist(), rotation=90, fontsize='x-small' )
-            ax1.legend((rects1[0], rects2[0]), ('Sim', 'Obs'), bbox_to_anchor=[1.10, 1.12] )
-            ax1.set_xlabel('ntop')
-            fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] pour '+var, fontsize=10)
-    '''
+            bar_width = 0.4; opacity = 0.4
+            if var=='Mercia':
+                val = [[0,9.74],[1,12.8]]
+            elif var == 'Rht3' :
+                val = [[0,9.15],[1,12.48]]
+            elif var == 'Tremie12' :
+                val = [[0,10.98],[1,12.63]]
+            else:
+                val = [[0,8.7],[1,11.04]]
+            fig, axes = plt.subplots(nrows=1, ncols=2) 
+            for x, date in val:
+                df_all.HS=map(float,df_all.HS)
+                df_fin = df_all[df_all['HS']==date] 
+                #mean_dens pour dessiner les obs seulement qd densite=1
+                df_fin['mean_dens'] = df_fin['mean']
+                df_fin.ix[~df_fin.density.isin([1]), 'mean_dens'] = 0
+                #---
+                df_fin = df_fin.sort(['ntop_cur', 'leaf_emergence'], ascending=[1,0])
+                n_groups = len(df_fin)
+                index = numpy.arange(n_groups)
+
+                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
+                rects2 = axes[x].bar(index + bar_width, df_fin['mean_dens'], bar_width, alpha=opacity, color='y')
+                # Mise en forme
+                axes[x].set_ylim(0, 8)
+                axes[x].set_xlim(0, len(df_fin))                 
+                axes[x].set_xticks(index+bar_width)
+                df_fin['leaf_emergence'] = numpy.round(df_fin['leaf_emergence'], decimals=1)
+                df_fin['label'] = df_fin['leaf_emergence'].astype(str) + ' - ' + df_fin['density'].astype(str) 
+                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
+                if x == 0:
+                    axes[x].set_xlabel('leaf_since_emergence/densite')
+                axes[x].text(0.4, 7.4, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+
+                fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur pour '+var, fontsize=10)
+                fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+            axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+    
     return df_scan, df_obs, df_sim  
     
 def simulation_HS(name='Tremie12', csv=True):
