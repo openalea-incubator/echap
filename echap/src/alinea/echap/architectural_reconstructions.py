@@ -4,6 +4,7 @@ Current reconstructions use fit from Mariem (pgen data) + new modification consi
 """
 import pandas
 import numpy
+import math
 import scipy.stats as stats
 from copy import deepcopy
 
@@ -363,7 +364,7 @@ if run_plots:
     data = archidb.HS_GL_SSI_data()
     fits = HS_GL_fits()
     #
-    archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
+    #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
     #
     #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
     archi_plot.dynamique_plot_nff(data)
@@ -418,7 +419,7 @@ class EchapReconstructions(object):
             self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True, dimension=1):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
@@ -427,7 +428,9 @@ class EchapReconstructions(object):
         pars = {}
         
         for k in pgens:
-            dimT = self.dimension_fits[name][k]
+            dimT = deepdd(self.dimension_fits[name][k]).copy()
+            dimT['W_blade'] = dimT['W_blade']*(math.sqrt(dimension))
+            dimT['L_blade'] = dimT['L_blade']*(math.sqrt(dimension))
             
             nff = k
             glfit = self.HS_GL_fits[name]['GL']
@@ -463,7 +466,8 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':None}, stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':{'T4':0.25}}, stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, **kwds):
+        '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
     
         density = self.density_fits[name].deepcopy()
         
@@ -472,7 +476,8 @@ class EchapReconstructions(object):
         
         pdata = self.plot_data[name]
         sowing_density = pdata['sowing_density']
-        stand = AgronomicStand(sowing_density=sowing_density*stand_density_factor[name], plant_density=density_at_emergence*stand_density_factor[name], inter_row=pdata['inter_row'])        
+        stand = AgronomicStand(sowing_density=sowing_density*stand_density_factor[name], plant_density=density_at_emergence*stand_density_factor[name], inter_row=pdata['inter_row']/stand_density_factor[name]) #ajout modification de l inter rang
+        #stand = AgronomicStand(sowing_density=stand_density_factor[name], plant_density=stand_density_factor[name], inter_row=pdata['inter_row'])        
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
         if freeze_damage[name] is not None:
@@ -480,7 +485,7 @@ class EchapReconstructions(object):
             for k in freeze_damage[name]:
                 self.tillering_fits[name].primary_tiller_probabilities[k] = freeze_damage[name][k]
         
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence)
+        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
