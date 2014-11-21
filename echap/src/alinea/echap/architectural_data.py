@@ -763,7 +763,7 @@ def median_leaf_trajectories():
     ages = set(dat['age'])
     numage = numpy.array(sorted(list(ages)))
     agemed = (numage[1:]  + numage[:-1]) / 2.0
-    bins = [numage[0] - 1.0] + agemed[:-1].tolist() + [numage[-1] + 1.0]
+    bins = [numage[0] - 1.0] + agemed.tolist() + [numage[-1] + 1.0]
     dat['age_class'] = pandas.cut(dat['age'], bins,labels=False)
     grouped = dat.groupby(('lindex','age_class'))   
     trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
