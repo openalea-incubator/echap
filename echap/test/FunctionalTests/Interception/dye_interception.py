@@ -22,10 +22,10 @@ obs = idata.dye_interception()
 HS_applications = idata.dye_applications()
 interceptor = InterceptModel({'Tartrazine':{'Tartrazine': 1}}) # consider a 1g.l-1 tartrazine solution
 
-def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1):
+def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1):
     """ 10000 l ha-1 is for 1 l/m2 """
     
-    adel = Reconstructions.get_reconstruction(name=name, nplants=nplants, adjust_density = {name:None} , stand_density_factor = {name:density} )
+    adel = Reconstructions.get_reconstruction(name=name, nplants=nplants, adjust_density = {name:None} , stand_density_factor = {name:density} , dimension=dimension)
     date, hs = HS_applications[name][appdate]
     conv = HSconv[name] 
     age = conv.TT(hs)
@@ -64,9 +64,9 @@ def aggregate_by_leaf(df):
                    'deposit_Tartrazine': numpy.sum
                    })
     
-def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1): 
+def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1): 
 
-    adel, df = repartition_at_application(name,sim,nplants=nplants,density=density)
+    adel, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension)
     
     #Calcul age depuis emergence de la feuille    
     df_phenT = adel.phenT()
@@ -106,9 +106,8 @@ def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, d
              
     return adel.nplants, dfmoy, dfsd
     
-def sensibilite_nplants(csv=True):
-    # seulement n=30 pour Tremie12 car bug
-    var_lst = ['Mercia','Rht3','Tremie12','Tremie13']
+def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], csv=True):
+    # seulement n=30 pour Tremie12 car bug    
     for var in var_lst: 
         df_sim = pandas.DataFrame()
         for stade in ['T1','T2']:
@@ -119,44 +118,48 @@ def sensibilite_nplants(csv=True):
             for n in nplants_lst : 
                 x=1
                 while x<=5: 
-                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False)
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='all', to_csv=False)
                     print 'var = '+var+' stade = '+stade+' - nplants = '+str(n)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
                     dfmoy['var'] = var
                     dfmoy['dim'] = stade
                     dfmoy['nb_plantes_sim'] = npl
                     df_sim = df_sim.append(dfmoy)
                     x+=1
-        df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'ntop_cur']).mean()
+        df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'nb_plantes_sim', 'ntop_cur']).mean()
         df_sim_gr = df_sim_gr.reset_index()
         if csv == True:
-            df_sim.to_csv('sensibilite_all_'+var+'.csv')
-            df_sim_gr.to_csv('sensibilite_mean_'+var+'.csv')
+            df_sim.to_csv('sensibiliteMS_all_'+var+'.csv')
+            df_sim_gr.to_csv('sensibiliteMS_mean_'+var+'.csv')
     return df_sim_gr
    
 
-def simulation_dimension(name='Tremie12', stade_dim='div2', csv=True): 
-    # pour faire graph T2 de Tremie12 contre T2 de Tremie13, moyenne de 5 simulations
-    # pas de param dim => à changer directement dans architectural_data.py
-    # stade_dim = div2 div1.5 normal mult1.5 mult2
-    lst = [['Tremie13','T1'],['Tremie13','T2']]
-    if name=='Tremie12':
-        n = 30
+def simulation_dimension(name='Tremie12', csv=True): 
+    if name=='Mercia':
+        lst = [['Mercia','T1'], ['Mercia','T2']]; n = 200
+    elif name=='Rht3':
+        lst = [['Rht3','T1'], ['Rht3','T2']]; n = 200
+    elif name=='Tremie12':
+        lst = [['Tremie12','T1'], ['Tremie12','T2']]; n = 30
     else:
-        n = 200
+        lst = [['Tremie13','T1'], ['Tremie13','T2']]; n = 200
+        
     df_sim = pandas.DataFrame()
     x=0
     while x<5:
-        for var, stade in lst :          
-            npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False)
-            #print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
-            dfmoy['var'] = var; dfmoy['dim'] = stade_dim
-            df_sim = df_sim.append(dfmoy)
+        for var, stade in lst :      
+            dim_lst = [[0.5,'/2'], [0.67,'/1.5'], [1,'1'], [1.5,'x1.5'], [2,'x2']]
+            for dim, dim_label in dim_lst:
+                npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', dimension=dim, to_csv=False)
+                print 'var = '+var+' stade = '+dim_label+' - nbre de plantes sim = '+str(npl)
+                    
+                dfmoy['var'] = var; dfmoy['dim'] = dim_label
+                df_sim = df_sim.append(dfmoy)
         x+=1
     df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'ntop_cur']).mean()
     df_sim_gr = df_sim_gr.reset_index()
     if csv == True:
-        df_sim.to_csv('dim_all_'+stade_dim+'_'+name+'.csv')
-        df_sim.to_csv('dim_synth_'+stade_dim+'_'+name+'.csv')
+        df_sim.to_csv('dim_all_'+name+'.csv')
+        df_sim_gr.to_csv('dim_synth_'+name+'.csv')
     return df_sim_gr
     
 def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13']):
@@ -174,12 +177,11 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
     df_scan = df_scan_tremie12.append(df_scan_tremie13)
     df_obs = idata.dye_interception()
     df_sim = pandas.DataFrame()
-    # ne marche pas pour le moment -> obligation de lancer simulation_dimension() autant de fois que de dimension differente pour chacune des varietes (a modifier dans architectural_data) puis concatener l'ensemble des sorties
-    #for n in varieties:
-    #    df_sim_var = simulation_dimension(name=n)
-    #    df_sim = df_sim.append(df_sim_var)
-    df_sim = 'dim_tremie13.csv'
-    df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
+    for n in varieties:
+        df_sim_var = simulation_dimension(name=n)
+        df_sim = df_sim.append(df_sim_var)
+    #df_sim = 'dim_tremie13.csv'
+    #df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
     
     # PLOT 1
     if plot1 is True :
@@ -209,15 +211,12 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 df_fin['index_dim'] = df_fin['dim']
                 df_fin.ix[df_fin.dim.isin(['/2']), 'index_dim'] = 1
                 df_fin.ix[df_fin.dim.isin(['/1.5']), 'index_dim'] = 2
-                df_fin.ix[df_fin.dim.isin(['norm']), 'index_dim'] = 3
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'index_dim'] = 4
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 3
+                df_fin.ix[df_fin.dim.isin(['x1.5']), 'index_dim'] = 4
+                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 5
                 #rects2 pour ne tracer les obs que quand dim = normale
                 df_fin['mean_dim'] = df_fin['mean']
-                df_fin.ix[df_fin.dim.isin(['/2']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['/1.5']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'mean_dim'] = 0
+                df_fin.ix[~df_fin.dim.isin(['1']), 'mean_dim'] = 0
                 #---
                 df_fin = df_fin.sort(['ntop_cur','HS','index_dim'])
                 n_groups = len(df_fin)
@@ -270,15 +269,12 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 df_fin['index_dim'] = df_fin['dim']
                 df_fin.ix[df_fin.dim.isin(['/2']), 'index_dim'] = 1
                 df_fin.ix[df_fin.dim.isin(['/1.5']), 'index_dim'] = 2
-                df_fin.ix[df_fin.dim.isin(['norm']), 'index_dim'] = 3
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'index_dim'] = 4
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 3
+                df_fin.ix[df_fin.dim.isin(['x1.5']), 'index_dim'] = 4
+                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 5
                 #rects2 
                 df_fin['Area A_bl_dim'] = df_fin['Area A_bl']
-                df_fin.ix[df_fin.dim.isin(['/2']), 'Area A_bl_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['/1.5']), 'Area A_bl_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'Area A_bl_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'Area A_bl_dim'] = 0
+                df_fin.ix[~df_fin.dim.isin(['1']), 'Area A_bl_dim'] = 0
                 #---
                 df_fin = df_fin.sort(['ntop_cur','HS','index_dim'])
                 n_groups = len(df_fin)
@@ -334,15 +330,12 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 df_fin['index_dim'] = df_fin['dim']
                 df_fin.ix[df_fin.dim.isin(['/2']), 'index_dim'] = 1
                 df_fin.ix[df_fin.dim.isin(['/1.5']), 'index_dim'] = 2
-                df_fin.ix[df_fin.dim.isin(['norm']), 'index_dim'] = 3
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'index_dim'] = 4
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 3
+                df_fin.ix[df_fin.dim.isin(['x1.5']), 'index_dim'] = 4
+                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 5
                 #rects2
                 df_fin['mean_dim'] = df_fin['mean/area']
-                df_fin.ix[df_fin.dim.isin(['/2']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['/1.5']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult1.5']), 'mean_dim'] = 0
-                df_fin.ix[df_fin.dim.isin(['mult2']), 'mean_dim'] = 0
+                df_fin.ix[~df_fin.dim.isin(['1']), 'mean_dim'] = 0
                 #---
                 df_fin = df_fin.sort(['ntop_cur','HS','index_dim'])      
                 n_groups = len(df_fin)
