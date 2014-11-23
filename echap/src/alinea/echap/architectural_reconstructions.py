@@ -296,18 +296,18 @@ class HaunStage(object):
     """ Handle HaunStage = f (ThermalTime) fits
     """
     
-    def __init__(self, a_cohort = 1. / 110., TT_col_0 = 0):
+    def __init__(self, a_cohort = 1. / 110., TT_hs_0 = 0):
         self.a_cohort = a_cohort
-        self.TT_col_0 = TT_col_0
+        self.TT_hs_0 = TT_hs_0
         
     def __call__(self, TT):# HS
-        return (numpy.array(TT) - self.TT_col_0) * self.a_cohort
+        return (numpy.array(TT) - self.TT_hs_0) * self.a_cohort
         
     def TT(self, HS):
-        return self.TT_col_0 + numpy.array(HS) / self.a_cohort
+        return self.TT_hs_0 + numpy.array(HS) / self.a_cohort
         
     def TTem(self, TT):
-        return numpy.array(TT) - self.TT_col_0
+        return numpy.array(TT) - self.TT_hs_0
 '''
 if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
@@ -437,10 +437,10 @@ class EchapReconstructions(object):
             conv = self.HS_GL_fits[name]['HS']
             TT_t1 = conv.TT(glfit.hs_t1)
             TT_t2 = conv.TT(glfit.hs_t2)
-            a_nff = nff * 1.0 / (TT_t2 - conv.TT_col_0)
+            a_nff = nff * 1.0 / (TT_t2 - conv.TT_hs_0)
             dynpars = {'a_cohort': a_nff, 
-                       'TT_col_0': conv.TT_col_0,
-                       'TT_col_N_phytomer_potential': TT_t2,
+                       'TT_hs_0': conv.TT_hs_0,
+                       'TT_hs_N_phytomer_potential': TT_t2,
                        'n0': glfit.n0,
                        'n1': glfit.n1,
                        'n2': glfit.n2}
