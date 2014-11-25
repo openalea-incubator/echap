@@ -67,6 +67,11 @@ def Tremie13_fitted_dimensions():
         dim[nff]['L_sheath'] = dim_tremie12['L_sheath']
         dim[nff]['L_internode'] = dim_tremie12['L_internode']
         dim[nff]['W_blade'] = dim_tremie12['W_blade']
+        
+        #ajustement largeur grace au plot dimension dans architectural_reconstruction_plot
+        for i in [4,5,6,7,8,9,10,11]:
+            dim[nff]['W_blade'][i] = dim[nff]['W_blade'][i]*1.3
+            
         dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
         dim[nff]['W_internode'] = dim_tremie12['W_internode']
         #dim[nff]['L_internode'] = dim_tremie12['L_internode'] -> fait buguer le script
