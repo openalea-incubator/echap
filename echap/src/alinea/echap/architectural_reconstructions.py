@@ -471,13 +471,13 @@ class EchapReconstructions(object):
     
         density = self.density_fits[name].deepcopy()
         
-        density_at_emergence = density['density'][density['HS'] == 0].iloc[0]
-        density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0]
+        density_at_emergence = density['density'][density['HS'] == 0].iloc[0] * stand_density_factor[name]
+        density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0] * stand_density_factor[name]
         
         pdata = self.plot_data[name]
-        sowing_density = pdata['sowing_density']
-        stand = AgronomicStand(sowing_density=sowing_density*stand_density_factor[name], plant_density=density_at_emergence*stand_density_factor[name], inter_row=pdata['inter_row']/stand_density_factor[name]) #ajout modification de l inter rang
-        #stand = AgronomicStand(sowing_density=stand_density_factor[name], plant_density=stand_density_factor[name], inter_row=pdata['inter_row'])        
+        sowing_density = pdata['sowing_density'] * stand_density_factor[name]
+        inter_row = pdata['inter_row']/math.sqrt(stand_density_factor[name])
+        stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         
         if freeze_damage[name] is not None:
