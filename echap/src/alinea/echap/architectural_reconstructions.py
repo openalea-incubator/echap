@@ -210,9 +210,9 @@ def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
-    density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[203,203,203,203]}),
-                'Rht3': deepdd({'HS':[0,6,13,20],'density':[211,211,211,211]}),
-                'Tremie12': deepdd({'HS':[0,6,13,20],'density':[281,281,281,281]}),
+    density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[153,153,153,153]}),
+                'Rht3': deepdd({'HS':[0,6,13,20],'density':[146,146,146,146]}),
+                'Tremie12': deepdd({'HS':[0,6,13,20],'density':[251,251,251,251]}),
                 'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
                 
     conv = HS_converter
