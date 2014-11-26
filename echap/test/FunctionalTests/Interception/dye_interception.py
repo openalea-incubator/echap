@@ -106,7 +106,7 @@ def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, d
              
     return adel.nplants, dfmoy, dfsd
     
-def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], csv=True):
+def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS', csv=True): #axis = MS or all
     # seulement n=30 pour Tremie12 car bug    
     for var in var_lst: 
         df_sim = pandas.DataFrame()
@@ -118,18 +118,19 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], csv=T
             for n in nplants_lst : 
                 x=1
                 while x<=5: 
-                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='all', to_csv=False)
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
                     print 'var = '+var+' stade = '+stade+' - nplants = '+str(n)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
                     dfmoy['var'] = var
                     dfmoy['dim'] = stade
                     dfmoy['nb_plantes_sim'] = npl
+                    dfmoy['numero_sim'] = str(x)
                     df_sim = df_sim.append(dfmoy)
                     x+=1
-        df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'nb_plantes_sim', 'ntop_cur']).mean()
+        df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'nb_plantes_sim', 'numero_sim', 'ntop_cur']).mean()
         df_sim_gr = df_sim_gr.reset_index()
         if csv == True:
-            df_sim.to_csv('sensibiliteMS_all_'+var+'.csv')
-            df_sim_gr.to_csv('sensibiliteMS_mean_'+var+'.csv')
+            df_sim.to_csv('sensibilite_'+axis+'_all_'+var+'.csv')
+            df_sim_gr.to_csv('sensibilite_'+axis+'_mean_'+var+'.csv')
     return df_sim_gr
    
 
@@ -233,10 +234,7 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
                 if x == 0:
                     axes[x].set_xlabel('dim/ntop')
-                if var=='Tremie12':
-                    axes[x].text(0.4, 16.2, 'TREMIE 12 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-                else:
-                    axes[x].text(0.4, 16.2, 'TREMIE 13 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                axes[x].text(0.4, 16.2, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
 
                 fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur', fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
@@ -292,10 +290,8 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
                 if x==0:
                     axes[x].set_xlabel('dim/ntop'); axes[x].set_ylabel('area (cm2)')
-                if var=='Tremie12':
-                    axes[x].text(0.4, 48, 'TREMIE 12 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-                else :
-                    axes[x].text(0.4, 48, 'TREMIE 13 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                axes[x].text(0.4, 48, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                
                 fig.suptitle('Surface scan/sim par ntop_cur', fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
             axes[x].legend((rects1[0], rects2[0], rects2[5], rects2[10]), ('Scan', 'Sim F1', 'Sim F2', 'Sim F3'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
@@ -353,10 +349,8 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
                 axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
                 if x == 0:
                     axes[x].set_xlabel('dim/ntop')
-                if var=='Tremie12':
-                    axes[x].text(0.4, 0.33, 'TREMIE 12 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-                else:
-                    axes[x].text(0.4, 0.33, 'TREMIE 13 - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                axes[x].text(0.4, 0.33, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                    
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur', fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
             axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
@@ -378,7 +372,7 @@ def simulation_density(name='Tremie12', csv=True):
     while x<5:
         for var, stade in lst :  
             if var == 'Tremie12':
-                dens_lst = [0.5,0.625,0.74,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
+                dens_lst = [0.5,0.625,0.73,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
                 #dens_lst = [0.1,0.2,0.3,0.4,0.5] #pour aller plus loin
             else :
                 dens_lst = [0.5,0.625,0.75,0.875,1]
