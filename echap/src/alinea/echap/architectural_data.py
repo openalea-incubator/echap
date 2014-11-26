@@ -621,7 +621,7 @@ def Tillering_data_Tremie12_2011_2012():
     
     # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
     edata = data[data['Date'] == 1]
-    edata['T7'] = data['T7'][data['Date'] == 3].values
+    edata.loc[:, 'T7'] = data['T7'][data['Date'] == 3].values
     edata = edata.reset_index()
     emission = emission_probabilities(edata,last='T7')
     
