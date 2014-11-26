@@ -372,11 +372,11 @@ def simulation_density(name='Tremie12', csv=True):
     while x<5:
         for var, stade in lst :  
             if var == 'Tremie12':
-                dens_lst = [0.5,0.625,0.73,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
-                #dens_lst = [0.1,0.2,0.3,0.4,0.5] #pour aller plus loin
+                dens_lst = [0.5,1,1.5,2,2.5]
+                #dens_lst = [0.5,0.625,0.73,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
             else :
-                dens_lst = [0.5,0.625,0.75,0.875,1]
-                #dens_lst = [0.1,0.2,0.3,0.4,0.5]
+                dens_lst = [0.5,1,1.5,2,2.5]
+                #dens_lst = [0.5,0.625,0.75,0.875,1]
             for dens in dens_lst:         
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False, density=dens)
                 print 'var = '+var+' stade = '+stade+' density = '+str(dens)+' - nbre de plantes sim = '+str(npl)
