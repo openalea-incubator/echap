@@ -189,7 +189,7 @@ class deepdd(pandas.DataFrame):
         return self.copy(deep=True)
 #
 
-'''def density_fits():
+def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
@@ -203,24 +203,24 @@ class deepdd(pandas.DataFrame):
     for k in density_fits:
         df = density_fits[k]
         df['TT'] = conv[k].TT(df['HS'])
-    return density_fits'''
+    return density_fits
  
 #densite non ajustee 
-def density_fits():
+'''def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
     density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[153,153,153,153]}),
                 'Rht3': deepdd({'HS':[0,6,13,20],'density':[146,146,146,146]}),
                 'Tremie12': deepdd({'HS':[0,6,13,20],'density':[251,251,251,251]}),
-                'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
+                'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm!
                 
     conv = HS_converter
     
     for k in density_fits:
         df = density_fits[k]
         df['TT'] = conv[k].TT(df['HS'])
-    return density_fits
+    return density_fits'''
 #
 # Tiller survival to handl fly effects
 #    
