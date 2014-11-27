@@ -1,4 +1,4 @@
-Date	var	Trt	Rep	N	Axis	Nflig	Nfvis	H_last_col	nff	Lg_F1	Lg_F2	Lg_F3	Lg_F4	Lg_F5	Lg_F6	Lg_F7	Lg_F8	Lg_F9	Lg_F10	Lg_F11	Lg_F12	f_senF1	fsen_F2	fsen_F3	fsen_F4	fsen_F5	fsen_F6	fsen_F7	fsen_F8	fsen_F9	fsen_F10	fsen_F11	fsen_F12	f_vertF1	fvert_F2	fvert_F3	fvert_F4	fvert_F5	fvert_F6	fvert_F7	fvert_F8	fvert_F9	fvert_F10	fvert_F11	fvert_F12
+Date	var	Trt	Rep	N	Axis	Nflig	Nfvis	H_last_col	nff	Lg_F1	Lg_F2	Lg_F3	Lg_F4	Lg_F5	Lg_F6	Lg_F7	Lg_F8	Lg_F9	Lg_F10	Lg_F11	Lg_F12	fsen_F1	fsen_F2	fsen_F3	fsen_F4	fsen_F5	fsen_F6	fsen_F7	fsen_F8	fsen_F9	fsen_F10	fsen_F11	fsen_F12	fvert_F1	fvert_F2	fvert_F3	fvert_F4	fvert_F5	fvert_F6	fvert_F7	fvert_F8	fvert_F9	fvert_F10	fvert_F11	fvert_F12
 13/02/2013	Tremie	T1+T2	1	1	MB	4	1	NA	12	c	8,2	c	c	7,5								NA	0	NA	0	0	0	0	0	0	0	0	0												
 13/02/2013	Tremie	T1+T2	1	2	MB	4	1	NA	11	c	8	9,6	9,8	5,2								NA	0	0	0	0	0	0	0	0	0	0	0												
 13/02/2013	Tremie	T1+T2	1	3	MB	4	1	NA	11	6,7	7,8	c	10,1	c								10	0	NA	0	0	0	0	0	0	0	0	0												

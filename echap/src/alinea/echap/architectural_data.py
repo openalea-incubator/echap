@@ -122,16 +122,7 @@ def HS_number():
 
     
 '''   
-GL_Mercia = {'GL_number' : {1732.1: 4.03631578947369, 1818.05:3.01047368421053,1959.55:1.90263157894737, 2108.65:0.0},
-            'TT_col_break' : 0.0}   
-GL_Rht3 = {'GL_number' : {1732.1: 3.88352941176471, 1818.05:2.68005882352941,1959.55:1.69764705882353, 2108.65:0.0},
-            'TT_col_break' : 0.0}   
-GL_Tremie = {'GL_number' : {1483.95: 4.9025, 1568.7:4.73684210526316,
-             1659.1:4.16814814814815, 1797.95:3.43777777777778,
-             1905:2.35888888888889,2084.95:0.85578947368421,2150:0.00},
-            'TT_col_break' : 0.0}
-     
-#---
+
      
 def Mercia_2010_plantgen():
     dynT = shared_data(alinea.echap, 'Mercia_dynT_user.csv')
@@ -174,21 +165,8 @@ def Rht3_2010_plantgen():
     inputs = shared_data(alinea.echap, 'Rht3_plantgen_inputs_MIN.py')
     return plantgen_as_dict(inputs, dynT, dimT)
 
-def Tremie_2011_plantgen():
-    dynT = shared_data(alinea.echap, 'Tremie1_dynT_user.csv')
-    dimT = shared_data(alinea.echap, 'Tremie1_dimT_user.csv')
-    inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-
-def Tremie_2012_plantgen():
-    dynT = shared_data(alinea.echap, 'Tremie2_dynT_user.csv')
-    dimT = shared_data(alinea.echap, 'Tremie2_dimT_user.csv')
-    inputs = shared_data(alinea.echap, 'Tremie1_plantgen_inputs_MINnew.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-
 def HS_data():
     fn = shared_data(alinea.echap, 'HS_data_Mercia_Rht3_2010_2011.csv')
-    #fn = shared_data(alinea.echap, 'HS_data_Tremie1_2011_2012.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     grouped = data.groupby(['variety'],as_index=False)
     return grouped.aggregate('mean')
@@ -595,7 +573,7 @@ def Tillering_data_Mercia_Rht3_2010_2011():
 def Tillering_data_Tremie12_2011_2012():
     """Tillering data for Boigneville 2011-2012
     
-    Data come from different plants than those tagged at date 1 and date 6, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
+    Data come from sampled/scanned plants at date 1, from sampled + 'silhoueted' plants at date 6, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
     Counting of axe per plant were also done at stage epis1cm on an independant set of plants, that was renamed here date 8.
     
     Data found in Archi2, Archi3, Archi14, Archi15 were :
