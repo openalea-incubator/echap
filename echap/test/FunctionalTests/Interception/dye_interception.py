@@ -137,15 +137,35 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
             df_sim_gr.to_csv('sensibilite_'+axis+'_mean_'+var+'.csv')
         df_all = df_all.append(df_sim_gr)
         
-    #df_all = df_all.sort(['var', 'HS', 'nb_plantes_sim', 'ntop_cur'])
     df_all = df_all.sort(['var', 'HS', 'ntop_cur'])
     df_all.to_csv('analyse_'+axis+'.csv', index=False)
-    return df_sim
+    return df_all
+    
+def simulation_diff(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS', csv=True): #axis = MS or all 
+    for var in var_lst: 
+        df_sim = pandas.DataFrame()
+        for stade in ['T1','T2']:
+            if var=='Tremie12':
+                nplants_lst = [30] # !!!bug nplants
+            else :
+                nplants_lst = [200] 
+            for n in nplants_lst : 
+                x=1
+                while x<=5: 
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
+                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(npl)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
+                    dfmoy['var'] = var
+                    dfmoy['dim'] = stade
+                    dfmoy['nb_plantes_sim'] = npl
+                    dfmoy['numero_sim'] = str(x)
+                    df_sim = df_sim.append(dfmoy)
+                    x+=1
+        return df_sim
     
 def plot_diff(varieties=['Mercia','Rht3','Tremie12','Tremie13']):
     # simulation interception des talles et des MB (4 valeurs des simulations cote a cote pour les maquettes)
     for var in varieties: 
-        file = sensibilite_nplants(var_lst=[var], axis='all')
+        file = simulation_diff(var_lst=[var], axis='all')
         df_MS = file[file['axe']=='MS']
         df_MS = df_MS.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
         df_MS = df_MS.reset_index(); df_MS = df_MS[df_MS['ntop_cur']<=5]
