@@ -106,20 +106,24 @@ def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, d
              
     return adel.nplants, dfmoy, dfsd
     
-def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS', csv=True): #axis = MS or all
-    # seulement n=30 pour Tremie12 car bug    
+def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS', csv=True): #axis = MS or all 
+    df_all = pandas.DataFrame()
     for var in var_lst: 
         df_sim = pandas.DataFrame()
         for stade in ['T1','T2']:
-            if var=='Tremie12':
-                nplants_lst = [30]
-            else:
-                nplants_lst = [30,60,100,200]           
+            if var=='Mercia':
+                nplants_lst = [43,94,149,279] # soit n=31, 61, 93, 205
+            elif var=='Rht3':
+                nplants_lst = [49,100,150,285] # soit n=31, 58, 107, 201
+            elif var=='Tremie12':
+                nplants_lst = [35] # seulement n=25 pour Tremie12 car bug 
+            elif var=='Tremie13':
+                nplants_lst = [42,82,130,235] # soit n=28, 60, 100, 200  
             for n in nplants_lst : 
                 x=1
                 while x<=5: 
                     npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
-                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(n)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
+                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(npl)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
                     dfmoy['var'] = var
                     dfmoy['dim'] = stade
                     dfmoy['nb_plantes_sim'] = npl
@@ -131,6 +135,10 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
         if csv == True:
             df_sim.to_csv('sensibilite_'+axis+'_all_'+var+'.csv')
             df_sim_gr.to_csv('sensibilite_'+axis+'_mean_'+var+'.csv')
+        df_all = df_all.append(df_sim_gr)
+    #df_all = df_all.sort(['var', 'HS', 'nb_plantes_sim', 'ntop_cur'])
+    df_all = df_all.sort(['var', 'HS', 'ntop_cur'])
+    df_all.to_csv('analyse_'+axis+'.csv')
     return df_sim_gr
    
 
