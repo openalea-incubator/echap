@@ -136,11 +136,66 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
             df_sim.to_csv('sensibilite_'+axis+'_all_'+var+'.csv')
             df_sim_gr.to_csv('sensibilite_'+axis+'_mean_'+var+'.csv')
         df_all = df_all.append(df_sim_gr)
+        
     #df_all = df_all.sort(['var', 'HS', 'nb_plantes_sim', 'ntop_cur'])
     df_all = df_all.sort(['var', 'HS', 'ntop_cur'])
-    df_all.to_csv('analyse_'+axis+'.csv')
-    return df_sim_gr
-   
+    df_all.to_csv('analyse_'+axis+'.csv', index=False)
+    return df_sim
+    
+def plot_diff(varieties=['Mercia','Rht3','Tremie12','Tremie13']):
+    # simulation interception des talles et des MB (4 valeurs des simulations cote a cote pour les maquettes)
+    for var in varieties: 
+        file = sensibilite_nplants(var_lst=[var], axis='all')
+        df_MS = file[file['axe']=='MS']
+        df_MS = df_MS.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        df_MS = df_MS.reset_index(); df_MS = df_MS[df_MS['ntop_cur']<=5]
+        df_all = file
+        df_all = df_all.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        df_all = df_all.reset_index(); df_all = df_all[df_all['ntop_cur']<=5]
+        df_talles = file[file['axe']!='MS']
+        df_talles = df_talles.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        df_talles = df_talles.reset_index(); df_talles = df_talles[df_talles['ntop_cur']<=5]
+        df_T1 = file[file['axe']=='T1']
+        df_T1 = df_T1.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        df_T1 = df_T1.reset_index(); df_T1 = df_T1[df_T1['ntop_cur']<=5]
+        
+        bar_width = 0.2; opacity = 0.4
+        if var=='Mercia':
+            val = [[0,9.74],[1,12.8]]
+        elif var == 'Rht3' :
+            val = [[0,9.15],[1,12.48]]
+        elif var == 'Tremie12' :
+            val = [[0,10.98],[1,12.63]]
+        else:
+            val = [[0,8.7],[1,11.04]]
+        fig, axes = plt.subplots(nrows=1, ncols=2) 
+        for x, date in val:
+            df_MS_date = df_MS[df_MS['HS']==date] 
+            df_all_date = df_all[df_all['HS']==date] 
+            df_talles_date = df_talles[df_talles['HS']==date] 
+            df_T1_date = df_T1[df_T1['HS']==date] 
+            
+            n_groups = len(df_MS_date)
+            index = numpy.arange(n_groups) 
+
+            rects1 = axes[x].bar(index, df_MS_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c'])
+            rects2 = axes[x].bar(index + bar_width, df_all_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['m'])
+            rects3 = axes[x].bar(index + 2*bar_width, df_talles_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['g'])
+            rects4 = axes[x].bar(index + 3*bar_width, df_T1_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['y'])
+            
+            #Mise en forme
+            axes[x].set_ylim(0, 5)
+            axes[x].set_xlim(0, len(df_MS_date))                 
+            axes[x].set_xticks(index+bar_width)
+            df_all_date['label'] = df_all_date['ntop_cur'].astype(str)
+            axes[x].set_xticklabels( df_all_date['label'].tolist(), rotation=90, fontsize='small' )
+            if x == 0:
+                axes[x].set_xlabel('ntop')
+            axes[x].text(0.2, 4.7, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+
+            fig.suptitle('Simulation interception des talles et des MB', fontsize=10)
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+        axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('Interception MB', 'Interception MB + talles', 'Interception talles', 'Interception T1'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
 
 def simulation_dimension(name='Tremie12', csv=True): 
     if name=='Mercia':
