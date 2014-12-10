@@ -204,10 +204,10 @@ def density_fits():
         df = density_fits[k]
         df['TT'] = conv[k].TT(df['HS'])
     return density_fits
-'''
+
 
 #densite non ajustee 
-def density_fits():
+'''def density_fits():
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
