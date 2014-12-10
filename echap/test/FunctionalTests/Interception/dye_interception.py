@@ -1,6 +1,7 @@
 import os
 import pandas
 import numpy
+import math
 from itertools import cycle, islice
 
 import alinea.echap.architectural_reconstructions as reconstructions
@@ -63,6 +64,132 @@ def aggregate_by_leaf(df):
                    'surfacic_doses_Tartrazine':numpy.mean,
                    'deposit_Tartrazine': numpy.sum
                    })
+
+
+# Intervalle de confiance
+def mean(lst):
+    return sum(lst) / float(len(lst))
+
+def variance(lst):
+    """
+    Uses standard variance formula (sum of each (data point - mean) squared)
+    all divided by number of data points
+    """
+    mu = mean(lst)
+    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst])
+
+def conf_int(lst, perc_conf=95):
+    """
+    Confidence interval - given a list of values compute the square root of
+    the variance of the list (v) divided by the number of entries (n)
+    multiplied by a constant factor of (c). This means that I can
+    be confident of a result +/- this amount from the mean.
+    The constant factor can be looked up from a table, for 95pcent confidence
+    on a reasonable size sample (>=500) 1.96 is used.
+    """
+    from scipy.stats import t
+    
+    n, v = len(lst), variance(lst)
+    c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
+    
+    return math.sqrt(v/n) * c
+    
+def plot_data():
+    df_obs = idata.dye_interception() #obs
+    
+    bar_width = 0.2; opacity = 0.4
+    val=[[0, 'T1'], [1, 'T2']]
+
+    fig, axes = plt.subplots(nrows=1, ncols=2) 
+    for x, date in val:
+    
+        df_fin = df_obs[df_obs['treatment']==date] 
+        
+        df_obs1= df_obs[df_obs['feuille']=='F1'] 
+        df_fin1 = df_obs1[df_obs1['treatment']==date] 
+        
+        df_obs2 = df_obs[df_obs['feuille']=='F2'] 
+        df_fin2 = df_obs2[df_obs2['treatment']==date] 
+        
+        df_obs3 = df_obs[df_obs['feuille']=='F3'] 
+        df_fin3 = df_obs3[df_obs3['treatment']==date] 
+        
+        df_obs4 = df_obs[df_obs['feuille']=='F4'] 
+        df_fin4 = df_obs4[df_obs4['treatment']==date] 
+        
+        n_groups = len(df_fin1)
+        index = numpy.arange(n_groups) 
+
+        rects1 = axes[x].bar(index, df_fin1['mean'], bar_width, alpha=opacity, color='c', yerr=df_fin1['IC'], error_kw=dict(ecolor='c'))
+        rects2 = axes[x].bar(index + bar_width, df_fin2['mean'], bar_width, alpha=opacity, color='m', yerr=df_fin2['IC'], error_kw=dict(ecolor='m'))
+        rects3 = axes[x].bar(index + 2*bar_width, df_fin3['mean'], bar_width, alpha=opacity, color='g', yerr=df_fin3['IC'], error_kw=dict(ecolor='g'))
+        rects4 = axes[x].bar(index + 3*bar_width, df_fin4['mean'], bar_width, alpha=opacity, color='r', yerr=df_fin4['IC'], error_kw=dict(ecolor='r'))   
+        
+        # Mise en forme
+        axes[x].set_ylim(0, 6.5)
+        axes[x].set_xlim(0, len(df_fin1))                 
+        axes[x].set_xticks(index+bar_width)
+        label = df_fin['name'].unique()
+        axes[x].set_xticklabels( label.tolist(), rotation=90, fontsize='small' )
+        if x == 0:
+            axes[x].set_xlabel('varieties')
+            axes[x].set_ylabel('g per g.cm-2')
+        axes[x].text(0.2, 6.1, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        
+        fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+    axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+    
+def plot_petri():
+    #boite de petri, seulement Tremie12 et Tremie13
+    petriT1_Tremie12, petriT2_Tremie12 = idata.Petri_data('Tremie12') 
+    petriT1_Tremie13, petriT2_Tremie13 = idata.Petri_data('Tremie13')
+    #traitement boite de Petri
+    pdata_Tremie12 = archidb.Plot_data_Tremie_2011_2012()
+    sowing_density_Tremie12 = pdata_Tremie12['sowing_density']
+    lst1_Tremie12 = petriT1_Tremie12['rapportPoucentage(sol/emis)']*(10**4/sowing_density_Tremie12)
+    lst2_Tremie12 = petriT2_Tremie12['rapportPoucentage(sol/emis)']*(10**4/sowing_density_Tremie12)
+    mean1_Tremie12 = mean(lst1_Tremie12); mean2_Tremie12 = mean(lst2_Tremie12)
+    IC1_Tremie12 = conf_int(lst1_Tremie12, perc_conf=95)
+    IC2_Tremie12 =conf_int(lst2_Tremie12, perc_conf=95)
+    
+    pdata_Tremie13 = archidb.Plot_data_Tremie_2012_2013()
+    sowing_density_Tremie13 = pdata_Tremie13['sowing_density']
+    lst1_Tremie13 = petriT1_Tremie13['rapportPoucentage(sol/emis)']*(10**4/sowing_density_Tremie13)
+    lst2_Tremie13 = petriT2_Tremie13['rapportPoucentage(sol/emis)']*(10**4/sowing_density_Tremie13)
+    mean1_Tremie13 = mean(lst1_Tremie13); mean2_Tremie13 = mean(lst2_Tremie13)
+    IC1_Tremie13 = conf_int(lst1_Tremie13, perc_conf=95)
+    IC2_Tremie13 =conf_int(lst2_Tremie13, perc_conf=95)
+    
+    bar_width = 0.45; opacity = 0.4
+    val=[[0, 'T1'], [1, 'T2']]
+
+    fig, axes = plt.subplots(nrows=1, ncols=2) 
+    for x, date in val:
+
+        if x==0:
+            df_petri = pandas.DataFrame({'var':['Mercia','Rht3','Tremie12','Tremie13'], 'mean':[None, None, mean1_Tremie12, mean1_Tremie13], 'IC':[None, None, IC1_Tremie12, IC1_Tremie13]})
+        else:
+            df_petri = pandas.DataFrame({'var':['Mercia','Rht3','Tremie12','Tremie13'], 'mean':[None, None, mean2_Tremie12, mean2_Tremie13], 'IC':[None, None, IC2_Tremie12, IC2_Tremie13]})
+        
+        n_groups = len(df_petri)
+        index = numpy.arange(n_groups) 
+
+        rects1 = axes[x].bar(index + bar_width, df_petri['mean'], bar_width, alpha=opacity, color='b', yerr=df_petri['IC'], error_kw=dict(ecolor='b'))    
+        
+        # Mise en forme
+        axes[x].set_ylim(0, 15)
+        axes[x].set_xlim(0, len(df_petri))                 
+        axes[x].set_xticks(index+bar_width)
+        label = df_petri['var'].unique()
+        axes[x].set_xticklabels( label.tolist(), rotation=90, fontsize='small' )
+        if x == 0:
+            axes[x].set_xlabel('varieties')
+            axes[x].set_ylabel('g per g.cm-2')
+        axes[x].text(0.2, 14, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        
+        fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+    axes[x].legend((rects1[0], ''), ('Petri',''), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+
     
 def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1): 
 
@@ -145,10 +272,11 @@ def simulation_diff(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS'
     for var in var_lst: 
         df_sim = pandas.DataFrame()
         for stade in ['T1','T2']:
-            if var=='Tremie12':
+            nplants_lst = [30]
+            '''if var=='Tremie12':
                 nplants_lst = [30] # !!!bug nplants
             else :
-                nplants_lst = [200] 
+                nplants_lst = [200]'''
             for n in nplants_lst : 
                 x=1
                 while x<=5: 
@@ -162,21 +290,29 @@ def simulation_diff(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS'
                     x+=1
         return df_sim
     
-def plot_diff(varieties=['Mercia','Rht3','Tremie12','Tremie13']):
+def plot_diff(varieties=['Tremie12']):
     # simulation interception des talles et des MB (4 valeurs des simulations cote a cote pour les maquettes)
     for var in varieties: 
         file = simulation_diff(var_lst=[var], axis='all')
         df_MS = file[file['axe']=='MS']
         df_MS = df_MS.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        #df_MS_count = df_MS.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).count()
+        #df_MS = df_MS.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).sum()
         df_MS = df_MS.reset_index(); df_MS = df_MS[df_MS['ntop_cur']<=5]
         df_all = file
         df_all = df_all.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        #df_all_count = df_all.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).count()
+        #df_all = df_all.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).sum()
         df_all = df_all.reset_index(); df_all = df_all[df_all['ntop_cur']<=5]
         df_talles = file[file['axe']!='MS']
         df_talles = df_talles.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        #df_talles_count = df_talles.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).count()
+        #df_talles = df_talles.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).sum()
         df_talles = df_talles.reset_index(); df_talles = df_talles[df_talles['ntop_cur']<=5]
         df_T1 = file[file['axe']=='T1']
         df_T1 = df_T1.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).mean()
+        #df_T1_count = df_T1.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).count()
+        #df_T1 = df_T1.groupby(['HS', 'nb_plantes_sim', 'ntop_cur']).sum()
         df_T1 = df_T1.reset_index(); df_T1 = df_T1[df_T1['ntop_cur']<=5]
         
         bar_width = 0.2; opacity = 0.4
@@ -202,18 +338,22 @@ def plot_diff(varieties=['Mercia','Rht3','Tremie12','Tremie13']):
             rects2 = axes[x].bar(index + bar_width, df_all_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['m'])
             rects3 = axes[x].bar(index + 2*bar_width, df_talles_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['g'])
             rects4 = axes[x].bar(index + 3*bar_width, df_T1_date['deposit_Tartrazine'], bar_width, alpha=opacity, color=['y'])
+            '''rects1 = axes[x].bar(index, df_MS_date['area'], bar_width, alpha=opacity, color=['c'])
+            rects2 = axes[x].bar(index + bar_width, df_all_date['area'], bar_width, alpha=opacity, color=['m'])
+            rects3 = axes[x].bar(index + 2*bar_width, df_talles_date['area'], bar_width, alpha=opacity, color=['g'])
+            rects4 = axes[x].bar(index + 3*bar_width, df_T1_date['area'], bar_width, alpha=opacity, color=['y'])'''
             
             #Mise en forme
-            axes[x].set_ylim(0, 5)
+            axes[x].set_ylim(0, 6)
             axes[x].set_xlim(0, len(df_MS_date))                 
             axes[x].set_xticks(index+bar_width)
             df_all_date['label'] = df_all_date['ntop_cur'].astype(str)
             axes[x].set_xticklabels( df_all_date['label'].tolist(), rotation=90, fontsize='small' )
             if x == 0:
                 axes[x].set_xlabel('ntop')
-            axes[x].text(0.2, 4.7, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+            axes[x].text(0.4, 5.5, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
 
-            fig.suptitle('Simulation interception des talles et des MB', fontsize=10)
+            fig.suptitle('Simulation somme surfaces des talles et des MB', fontsize=10)
             fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('Interception MB', 'Interception MB + talles', 'Interception talles', 'Interception T1'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
 
@@ -442,23 +582,25 @@ def plot_dimension(plot1=False, plot2=True, plot3=False, varieties=['Tremie13'])
     
 def simulation_density(name='Tremie12', csv=True):
     if name=='Mercia':
-        lst = [['Mercia','T1'], ['Mercia','T2']]; n = 200
+        lst = [['Mercia','T1'], ['Mercia','T2']]; n = 30
     elif name=='Rht3':
-        lst = [['Rht3','T1'], ['Rht3','T2']]; n = 200
+        lst = [['Rht3','T1'], ['Rht3','T2']]; n = 30
     elif name=='Tremie12':
         lst = [['Tremie12','T1'], ['Tremie12','T2']]; n = 30
     else:
-        lst = [['Tremie13','T1'], ['Tremie13','T2']]; n = 200
+        lst = [['Tremie13','T1'], ['Tremie13','T2']]; n = 30
 
     df_sim = pandas.DataFrame()
     x=0
     while x<5:
         for var, stade in lst :  
             if var == 'Tremie12':
-                dens_lst = [0.5,1,1.5,2,2.5]
+                #dens_lst = [0.5,1,1.5,2,2.5]
+                dens_lst = [0.1,1,2.5,5,8,9,10]
                 #dens_lst = [0.5,0.625,0.73,0.875,1] #cas particulier de Tremie12 qui ne supporte pas la densite 0.75...
             else :
-                dens_lst = [0.5,1,1.5,2,2.5]
+                #dens_lst = [0.5,1,1.5,2,2.5]
+                dens_lst = [0.1,1,2.5,5,8,9,10]
                 #dens_lst = [0.5,0.625,0.75,0.875,1]
             for dens in dens_lst:         
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False, density=dens)
@@ -528,7 +670,7 @@ def plot_density(plot1=True, plot2=False, plot3=False, plot4=False, varieties=['
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups) 
 
-                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
+                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g','r','r','r','r','r','r','r','b','b','b','b','b','b','b'])
                 rects2 = axes[x].bar(index + bar_width, df_fin['mean_dens'], bar_width, alpha=opacity, color='y')
                 # Mise en forme
                 axes[x].set_ylim(0, 8)
@@ -544,7 +686,7 @@ def plot_density(plot1=True, plot2=False, plot3=False, plot4=False, varieties=['
 
                 fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+            axes[x].legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
     
     # PLOT 2 - !!! PAS DE SCAN POUR MERCIA ET RHT3 donc pas de graph genere
     if plot2 is True :
@@ -633,7 +775,7 @@ def plot_density(plot1=True, plot2=False, plot3=False, plot4=False, varieties=['
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups)   
                 
-                rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
+                rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g','r','r','r','r','r','r','r','b','b','b','b','b','b','b'])
                 rects2 = axes[x].bar(index + bar_width, df_fin['mean/area_dens'], bar_width, alpha=opacity, color='y')   
                 # Mise en forme
                 axes[x].set_ylim(0, 0.5)
@@ -648,7 +790,7 @@ def plot_density(plot1=True, plot2=False, plot3=False, plot4=False, varieties=['
                 axes[x].text(0.4, 0.45, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
+            axes[x].legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
 
     # PLOT 4
     if plot4 is True :
