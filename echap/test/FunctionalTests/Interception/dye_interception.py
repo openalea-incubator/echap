@@ -206,7 +206,7 @@ def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, d
     df_dates = df_dates.reset_index()
     
     if axis == 'MS':
-        df = df[df['axe'] == 'MS']
+        df = df[(df['axe'] == 'MS') & (df['hasEar'] == 1)] # do not consider aborting axes
     
     data = aggregate_by_leaf(df)
         

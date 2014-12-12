@@ -298,9 +298,12 @@ def record(g, weather_data, recorder, header={}, label = 'blade'):
         n = g.node(vid)
         if n.complex() is not None and n.complex().label is not None:
             if n.complex().label.startswith(label):
+                axe = n.complex().complex().complex()
                 header.update({'date' : date,
                           'plant' : n.complex().complex().complex().complex().label,
-                          'axe' : n.complex().complex().complex().label,
+                          'axe' : axe.label,
+                          'nff' : axe.nff,
+                          'hasEar': axe.hasEar,
                           'metamer' : int(''.join(list(n.complex().complex().label)[7:])),
                           'organ' : n.complex().label,
                           'ntop' : n.complex().ntop,
