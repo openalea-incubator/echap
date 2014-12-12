@@ -125,23 +125,37 @@ def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, densit
     else:
         color='m'; T1=8.7; T2=11.04
         
-    if density==0.5:
-        picto = '+'
-    elif density==0.625:
-        picto = 'o'
-    elif density==0.75:
-        picto = ':'
-    elif density==0.875:
-        picto = '^'
+    if density==0.1:
+        picto = '-+'
     elif density==1:
-        picto='-'
+        picto = '-o'
+    elif density==5:
+        picto = '-:'
+    elif density==8:
+        picto = '-^'
+    elif density==10:
+        picto='-<'
        
     conv = HSconv[name]
-    adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)
     
-    sim = simLAI(adel, domain_area, convUnit, nplants)
+    x=1; sim_all = pandas.DataFrame()
+    while x<=5:
+        adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)   
+        df_sim = simLAI(adel, domain_area, convUnit, nplants)
+        df_sim['numero_sim']=str(x)
+        sim_all = sim_all.append(df_sim)
+        x += 1
+      
+    sim_std = sim_all.groupby(['ThermalTime']).std()
+    sim_std = sim_std.reset_index()
+    sim = sim_all.groupby(['ThermalTime']).mean()
+    sim = sim.reset_index()
+    sim['std_LAI_vert'] = sim_std['LAI_vert']
+      
     sim['HS'] = conv(sim.ThermalTime)
-    sim.plot('HS','LAI_vert',style=picto+color, label='LAI vert simule '+name+', density = '+str(density))
+    #sim.plot('HS','LAI_vert',style=picto+color, label='LAI vert simule '+name+', density = '+str(density))
+    plt.errorbar(sim['HS'], sim['LAI_vert'], yerr=sim['std_LAI_vert'], fmt='--o'+color, label = '5x30plts + IC '+name)
+    
     #sim.plot('HS','LAI_tot',color=color, label='LAI tot simule '+name+', density = '+str(density))
     
     #sim['nbr_axe_tot'] = (( sim['Nbr.axe.tot.m2'] * sim['aire du plot']) / sim['Nbr.plant.perplot']) - 1
@@ -227,9 +241,9 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     conv = HSconv[name]
     h['HS'] = conv(h['tt'])
     
-    h.plot('HS', 'height', style='--o'+color, label = 'Height '+name)
-    plt.xlabel("HS")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    h.plot('HS', 'height', style='-x'+color, label = name)
+    plt.xlabel("HS"); plt.ylabel("Hauteur (en cm)")
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return h
     
@@ -262,9 +276,9 @@ def silhouette(name='Mercia', n=1, aborting_tiller_reduction=1, seed=1, **kwds):
         pgl.Viewer.display(scene)
         pgl.Viewer.frameGL.saveImage(fname)
         
-def silhouette_dyn(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, density=1, **kwds):   
+def silhouette_dyn(name='Mercia', n=30, HS=7, aborting_tiller_reduction=1, seed=1, density=1, **kwds):   
     #visualiser les 30 plantes, verifier le changement de density dans la reconstruction et enregistrer image
-    HS = numpy.arange(1,16,1)
+    #HS = numpy.arange(7,8,1)
     
     # conversion HS en TT
     conv = HSconv[name]
@@ -272,13 +286,15 @@ def silhouette_dyn(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, den
 
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)
     
-    for age in TT :
-        g = adel.setup_canopy(age)
-        HS = conv(age)
-        scene = plot3d(g)
-        fname = 'plot_'+name+'_'+str(HS)+'_seed'+str(seed)+'.png'
-        pgl.Viewer.display(scene)
-        pgl.Viewer.frameGL.saveImage(fname)
+    #for age in TT :
+    g = adel.setup_canopy(TT)
+    #HS = conv(TT)
+    scene = plot3d(g)
+    fname = 'plot_'+name+'_'+str(HS)+'_seed'+str(seed)+'.png'
+    pgl.Viewer.display(scene)
+    pgl.Viewer.frameGL.saveImage(fname)
+        
+    return adel, g
         
 def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie13
     #fichier obs
@@ -523,9 +539,11 @@ def comp_TC(name='Mercia', n=30, zenith=0, aborting_tiller_reduction=1, seed=1, 
     sim_green.plot('HS','TCgreen',style=picto+color, label = 'TC green sim '+name+', density = '+str(density))
     #sim_green.plot('HS','TCsen',style='-y', label = 'TC senescent sim '+name)
     
-    #traitement T1 et T2
+    #traitement T1 et T2 + ajout trait horizontal y=0.95
     plt.axvline(x=T1, color=color, alpha=0.4)
     plt.axvline(x=T2, color=color, alpha=0.4)
+    if zenith==57:
+        plt.axhline(y=0.95, color='k')
     
     #obs    
     obs = archidb.TC_data()[name+'_'+zen]
@@ -765,12 +783,13 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
     
-def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'): #stade = inf ou sup au max de LAI pour les graphs 1 et 2 seulement
+def plot_sup(graph1=False, graph2=False, graph3=False, graph4=False, graph5=True, stade='inf'): #stade = inf ou sup au max de LAI pour les graphs 1 et 2 seulement
     ''' 
-    graph 1 = TCvert obs / LAIvert obs + TCvert sim/ LAIvert sim
+    graph 1 = TCvert obs / LAIvert obs + TC0 vert sim/ LAI vert sim
     graph 2 = TCtot sim / LAItot sim
     graph 3 = TCvert obs / 1_rayonnement data 
     graph 4 = LAIvert obs / 1_rayonnement data
+    graph 5 = TC 57 vert / LAI vert
     '''
     var_lst=['Mercia', 'Rht3', 'Tremie12', 'Tremie13']
 
@@ -785,13 +804,13 @@ def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'):
             elif var=='Tremie13':
                 color='m'
             
-            #LAI vert sim
+            #LAI sim
             sim_lai = 'files/sim_lai_'+var+'.csv'
             sim_lai = pandas.read_csv(sim_lai, decimal='.', sep=',')
-            #TC vert sim
+            #TC sim
             sim_tc = 'files/sim_tc_'+var+'.csv'
             sim_tc = pandas.read_csv(sim_tc, decimal='.', sep=',')
-            #merge LAI vert sim + TC vert sim
+            #merge LAI sim + TC sim
             sim = sim_tc.merge(sim_lai)
             #decoupage selon max value du LAI
             max_lai = sim['LAI_vert'].max()
@@ -846,7 +865,7 @@ def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'):
             
             #mise en forme
             #plt.ylim(ymin=0); plt.xlim(xmin=0); plt.ylim(ymax=1); plt.xlim(xmax=5)
-            plt.xlabel("LAI vert"); plt.ylabel("TC vert")
+            plt.xlabel("LAI vert"); plt.ylabel("TC0 vert")
             plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
            
     if graph2==True:
@@ -860,13 +879,24 @@ def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'):
             elif var=='Tremie13':
                 color='m'
             
-            #LAI tot sim
-            sim_lai = 'files/sim_lai_'+var+'.csv'
-            sim_lai = pandas.read_csv(sim_lai, decimal='.', sep=',')
-            #TC tot sim
-            sim_tc = 'files/sim_tc_'+var+'.csv'
-            sim_tc = pandas.read_csv(sim_tc, decimal='.', sep=',')
-            #merge LAI vert sim + TC vert sim
+            #LAI sim            
+            adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)   
+            sim_lai = simLAI(adel, domain_area, convUnit, nplants)
+            sim_lai = sim_lai.rename(columns={'ThermalTime' : 'TT'})            
+            #TC sim, ajout colonne TC total    
+            dd = range(400,2600,100)    
+            adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)
+            sim = (adel.setup_canopy(age) for age in dd)
+            TC_sim = [draft_TC(g, adel, domain, zenith=0, rep=1) for g in sim]
+            n=0; tc=[]; tc_sen=[]
+            while n<len(TC_sim):
+                tc.append(TC_sim[n]['green'])
+                tc_sen.append(TC_sim[n]['senescent'])
+                n = n + 1
+            sim_tc = pandas.DataFrame({'TT':dd, 'TCgreen':tc, 'TCsen':tc_sen})
+            sim_tc['TCtot'] = sim_tc['TCgreen'] + sim_tc['TCsen']
+            
+            #merge LAI sim + TC sim
             sim = sim_tc.merge(sim_lai)
             #decoupage selon max value du LAI
             max_lai = sim['LAI_tot'].max()
@@ -883,7 +913,7 @@ def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'):
             
             #mise en forme
             #plt.ylim(ymin=0); plt.xlim(xmin=0); plt.ylim(ymax=1); plt.xlim(xmax=5)
-            plt.xlabel("LAI total"); plt.ylabel("TC total")
+            plt.xlabel("LAI total"); plt.ylabel("TC0 total")
             plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
             
     if graph3==True:
@@ -1006,4 +1036,55 @@ def plot_sup(graph1=False, graph2=False, graph3=True, graph4=True, stade='inf'):
         plt.xlabel("LAI vert"); plt.ylabel("1 - rayonnement obs au sol")
         plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
         
-        return obs_new, tab0
+    if graph5==True:
+        for var in var_lst:
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            
+            #LAI sim           
+            adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)   
+            sim_lai = simLAI(adel, domain_area, convUnit, nplants)
+            sim_lai = sim_lai.rename(columns={'ThermalTime' : 'TT'})
+            
+            #TC sim
+            #sim_tc = 'files/sim_tc_'+var+'.csv'
+            #sim_tc = pandas.read_csv(sim_tc, decimal='.', sep=',')            
+            dd = range(400,2600,100)    
+            adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)
+            sim = (adel.setup_canopy(age) for age in dd)
+            TC_sim = [draft_TC(g, adel, domain, zenith=57, rep=2) for g in sim]
+            n=0; tc=[]; tc_sen=[]
+            while n<len(TC_sim):
+                tc.append(TC_sim[n]['green'])
+                tc_sen.append(TC_sim[n]['senescent'])
+                n = n + 1
+            sim_tc = pandas.DataFrame({'TT':dd, 'TCgreen':tc, 'TCsen':tc_sen})
+            #sim_tc['TCtot'] = sim_tc['TCgreen'] + sim_tc['TCsen']
+            
+            #merge LAI sim + TC sim
+            sim = sim_tc.merge(sim_lai)
+            #decoupage selon max value du LAI
+            max_lai = sim['LAI_vert'].max()
+            max_tt = int(sim.TT[sim['LAI_vert']==max_lai])
+            
+            #plot <= max_lai
+            if stade=='inf':
+                sim_min = sim[sim['TT']<=max_tt]
+                sim_min.plot('LAI_vert', 'TCgreen', style='-^'+color, label='Sim '+var, alpha=0.4) 
+            #plot >= max_lai
+            else:
+                sim_max = sim[sim['TT']>=max_tt]
+                sim_max.plot('LAI_vert', 'TCgreen', style='-^'+color, label='Sim '+var, alpha=0.4)
+            
+            #mise en forme
+            #plt.ylim(ymin=0); plt.xlim(xmin=0); plt.ylim(ymax=1); plt.xlim(xmax=5)
+            plt.xlabel("LAI vert"); plt.ylabel("TC 57 vert")
+            plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+        
+        return sim
