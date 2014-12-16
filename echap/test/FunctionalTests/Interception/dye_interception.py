@@ -39,7 +39,7 @@ def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density
     do_record(g, application_data, recorder, header={'TT':age, 'HS':hs})
     df =  recorder.get_records()
     print 'repartition_at_application df.columns before ', df.columns
-    return adel, df
+    return adel, g, df
 
 def aggregate_by_leaf(df):
     """
@@ -193,7 +193,7 @@ def plot_petri():
     
 def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1): 
 
-    adel, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension)
+    adel, g, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension)
     
     #Calcul age depuis emergence de la feuille    
     df_phenT = adel.phenT()
