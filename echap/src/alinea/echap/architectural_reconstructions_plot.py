@@ -329,7 +329,7 @@ def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
         elif name is 'Rht3':
             ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
         else :
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 7]) 
+            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
             
         ax.set_title(name+', delta_stop_del : '+str(delta_stop_del), fontsize=10)
     
