@@ -114,7 +114,7 @@ def simLAI(adel, domain_area, convUnit, nplants):
     res =  plot_statistics(axstat, nplants, domain_area)
     return res
 
-def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, density=1, **kwds): 
+def compare_LAI(name='Mercia', n_sim=1, n_plt=30, aborting_tiller_reduction=1, seed=1, density=1, **kwds): 
 
     if name is 'Mercia':
         color='r'; T1=9.74; T2=12.8
@@ -139,8 +139,8 @@ def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, densit
     conv = HSconv[name]
     
     x=1; sim_all = pandas.DataFrame()
-    while x<=5:
-        adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)   
+    while x <= n_sim:
+        adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n_plt, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)   
         df_sim = simLAI(adel, domain_area, convUnit, nplants)
         df_sim['numero_sim']=str(x)
         sim_all = sim_all.append(df_sim)
@@ -153,8 +153,11 @@ def compare_LAI(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, densit
     sim['std_LAI_vert'] = sim_std['LAI_vert']
       
     sim['HS'] = conv(sim.ThermalTime)
-    #sim.plot('HS','LAI_vert',style=picto+color, label='LAI vert simule '+name+', density = '+str(density))
-    plt.errorbar(sim['HS'], sim['LAI_vert'], yerr=sim['std_LAI_vert'], fmt='--o'+color, label = '5x30plts + IC '+name)
+    
+    if n_sim>1:
+        plt.errorbar(sim['HS'], sim['LAI_vert'], yerr=sim['std_LAI_vert'], fmt='--o'+color, label = '5x30plts + IC '+name)
+    else :
+        sim.plot('HS','LAI_vert',style='-'+color, label='LAI vert simule '+name+', density = '+str(density))
     
     #sim.plot('HS','LAI_tot',color=color, label='LAI tot simule '+name+', density = '+str(density))
     
@@ -277,7 +280,8 @@ def silhouette(name='Mercia', n=1, aborting_tiller_reduction=1, seed=1, **kwds):
         pgl.Viewer.frameGL.saveImage(fname)
         
 def silhouette_dyn(name='Mercia', n=30, HS=7, aborting_tiller_reduction=1, seed=1, density=1, **kwds):   
-    #visualiser les 30 plantes, verifier le changement de density dans la reconstruction et enregistrer image
+    '''visualiser les 30 plantes, verifier le changement de density dans la reconstruction et enregistrer image
+    '''
     #HS = numpy.arange(7,8,1)
     
     # conversion HS en TT
