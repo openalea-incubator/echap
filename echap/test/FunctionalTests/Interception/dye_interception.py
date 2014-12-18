@@ -68,7 +68,9 @@ def aggregate_by_leaf(df):
                    'organ':first_val,
                    'penetrated_doses_Tartrazine': numpy.mean,
                    'surfacic_doses_Tartrazine':numpy.mean,
-                   'deposit_Tartrazine': numpy.sum
+                   'deposit_Tartrazine': numpy.sum,
+                   'lifetime': first_val,
+                   'exposition': first_val,
                    })
 
 
@@ -131,7 +133,7 @@ def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, d
     data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
 
     # aggregation by ntop cur
-    sub = data.ix[:,('HS','TT','axe','metamer','ntop','ntop_cur','length','area','green_area','deposit_Tartrazine')]
+    sub = data.ix[:,('HS','TT','axe','metamer','ntop','ntop_cur','length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
     dfmoy = sub.groupby(['HS','axe','ntop_cur']).mean().reset_index()
     dfsd = sub.groupby(['HS','axe','ntop_cur']).std().reset_index()
     
@@ -304,7 +306,7 @@ def plot_data(plot1=True, plot2=True):
             
             fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
-    
+  
 def plot_petri():
     #boite de petri, seulement Tremie12 et Tremie13
     petriT1_Tremie12, petriT2_Tremie12 = idata.Petri_data('Tremie12') 
@@ -1365,7 +1367,7 @@ def plot_HScom(varieties=['Mercia','Rht3','Tremie12','Tremie13'], appdate_lst = 
     return df_sim
 
 #plot tartrazine/area par HS (HSnff-6 à HSnff+6) pour ntop=1 a 3
-def simulation_tart_HS(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS', csv=True):
+def simulation_efficacy(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS', csv=True):
 
     def frange(x, y, jump):
         while x < y:
@@ -1398,16 +1400,18 @@ def simulation_tart_HS(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS', csv=
         df_sim_gr.to_csv('tartByHS_synth_'+name+'.csv')
     return df_sim_gr
     
-def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot1=True, plot2=True, plot3=True, plot4=True):
+def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot_tartrazine=False, plot_intercept=True, plot_cov=True, plot_protect=True, plot_global=True):
     '''
-    plot 1 : simulation tartrazine pour chaque var de l interception nffmoyen-6 
-            a nffmoyen+6 par pas de temps regulier
-    plot 2 : simulation tartrazine/area pour chaque var de l interception 
-            nffmoyen-6 a nffmoyen+6 par pas de temps regulier
-    plot 3 : simulation tartrazine pour chaque var de l interception (HST2 -    
-            nffmoyen)-6 a (HST2 - nffmoyen)+6 par pas de temps regulier
-    plot 4 : simulation tartrazine/area pour chaque var de l interception 
-            (HST2 - nffmoyen)-6 a (HST2 - nffmoyen)+6 par pas de temps regulier
+    !!! Tous les plots sont declines en 2 versions :
+    HS et HS-nff moyen dans une fourchette de -6 a +6 par pas de temps calcule d'environ 0.5
+    plot tartrazine : simulation 'deposit_Tratrazine' 
+    plot intercept : simulation 'interception efficacy'
+    RAPPEL : interception efficacy = deposit_Tartrazine/area
+    plot cov : simulation 'coverage efficacy'
+    coverage efficacy = interception efficacy * exposition
+    plot protect : simulation 'protection efficacy'
+    protection efficacy = (1-lifetime) * coverage efficacy
+    plot global : simulation 'somme protection efficacy'
     '''
     df_sim = pandas.DataFrame()
     for var in varieties :
@@ -1419,12 +1423,15 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
         mean = df_phenT.mean()
         hs_moyen = mean['nff']
         #sim 
-        df_sim_var = simulation_tart_HS(name=var, hs=hs_moyen, n_sim=n_sim, n_plt=n_plt, axis=axis)
+        df_sim_var = simulation_efficacy(name=var, hs=hs_moyen, n_sim=n_sim, n_plt=n_plt, axis=axis)
         df_sim_var['deposit_Tartrazine/area'] = df_sim_var['deposit_Tartrazine'] / df_sim_var['area']
+        df_sim_var['coverage_efficacy'] = df_sim_var['deposit_Tartrazine/area'] * df_sim_var['exposition']
+        df_sim_var['protection_efficacy'] = (1-df_sim_var['lifetime']) * df_sim_var['coverage_efficacy']
         df_sim_var['HS-nffmean'] = df_sim_var['HS'] - hs_moyen
         df_sim = df_sim.append(df_sim_var)
-    
-    if plot1==True: #tartrazine nff_moyen
+        
+    if plot_tartrazine==True:
+        #x = hs
         plt.figure()
         for var in varieties:        
             if var=='Mercia':
@@ -1435,10 +1442,10 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 color='b'
             elif var=='Tremie13':
                 color='m'
-            df_sim_p1 = df_sim[df_sim['var']==var]
+            df_sim_tartra = df_sim[df_sim['var']==var]
             #plot
             for ntop in [1,2,3]:
-                df_sim_ntop = df_sim_p1[df_sim_p1['ntop']==ntop]
+                df_sim_ntop = df_sim_tartra[df_sim_tartra['ntop']==ntop]
                 #gestion de la legende
                 if var=='Mercia':
                     label = 'true F'+str(ntop)
@@ -1450,15 +1457,15 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 elif ntop==2:
                     plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine'], '--'+color, label=label)
                 elif ntop==3:
-                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine'], ':'+color, label=label)
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine'], '-.'+color, label=label)
             #fleche hsT2
             date, hsT2 = HS_applications[var]['T2']
             plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
         #mise en forme
         plt.xlabel('HS'); plt.ylabel('deposit_tartrazine')
         plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
-        
-    if plot2==True: #tartrazine/area nff_moyen
+            
+        # x = hs - nff moyen   
         plt.figure()
         for var in varieties:        
             if var=='Mercia':
@@ -1469,41 +1476,7 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 color='b'
             elif var=='Tremie13':
                 color='m'
-            df_sim_p2 = df_sim[df_sim['var']==var]
-            #plot
-            for ntop in [1,2,3]:
-                df_sim_ntop = df_sim_p2[df_sim_p2['ntop']==ntop]
-                #gestion de la legende
-                if var=='Mercia':
-                    label = 'true F'+str(ntop)
-                else:
-                    label='_nolegend_'
-                #plot par ntop
-                if ntop==1:
-                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], '-'+color, label=label)
-                elif ntop==2:
-                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], '--'+color, label=label)
-                elif ntop==3:
-                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], ':'+color, label=label)
-            #fleche hsT2
-            date, hsT2 = HS_applications[var]['T2']
-            plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
-        #mise en forme
-        plt.xlabel('HS'); plt.ylabel('deposit_tartrazine/area')
-        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
-        
-    if plot3==True: #tartrazine HST2-nff_moyen
-        plt.figure()
-        for var in varieties:        
-            if var=='Mercia':
-                color='r'
-            elif var=='Rht3':
-                color='g'
-            elif var=='Tremie12':
-                color='b'
-            elif var=='Tremie13':
-                color='m'
-            df_sim_p3 = df_sim[df_sim['var']==var]
+            df_sim_tartra2 = df_sim[df_sim['var']==var]
             # nff moyen
             adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
             df_phenT = adel.phenT()
@@ -1515,7 +1488,7 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
             date, hsT2 = HS_applications[var]['T2']
             #plot
             for ntop in [1,2,3]:
-                df_sim_ntop = df_sim_p3[df_sim_p3['ntop']==ntop]
+                df_sim_ntop = df_sim_tartra2[df_sim_tartra2['ntop']==ntop]
                 #gestion de la legende
                 if var=='Mercia':
                     label = 'true F'+str(ntop)
@@ -1527,15 +1500,16 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 elif ntop==2:
                     plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine'], '--'+color, label=label)
                 elif ntop==3:
-                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine'], ':'+color, label=label)
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine'], '-.'+color, label=label)
             #fleche hsT2 - nff moyen
             hs_new = hsT2 - hs_moyen
             plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
         #mise en forme
-        plt.xlabel('HS'); plt.ylabel('deposit_tartrazine')
+        plt.xlabel('HS - nff moyen'); plt.ylabel('deposit_tartrazine')
         plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
         
-    if plot4==True: #tartrazine/area HST2-nff_moyen
+    if plot_intercept==True: 
+        #x = hs
         plt.figure()
         for var in varieties:        
             if var=='Mercia':
@@ -1546,7 +1520,41 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 color='b'
             elif var=='Tremie13':
                 color='m'
-            df_sim_p4 = df_sim[df_sim['var']==var]
+            df_sim_intercept = df_sim[df_sim['var']==var]
+            #plot
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_intercept[df_sim_intercept['ntop']==ntop]
+                #gestion de la legende
+                if var=='Mercia':
+                    label = 'true F'+str(ntop)
+                else:
+                    label='_nolegend_'
+                #plot par ntop
+                if ntop==1:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], '-'+color, label=label)
+                elif ntop==2:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], '--'+color, label=label)
+                elif ntop==3:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['deposit_Tartrazine/area'], '-.'+color, label=label)
+            #fleche hsT2
+            date, hsT2 = HS_applications[var]['T2']
+            plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS'); plt.ylabel('interception efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+        
+        #x = hs - nffmoyen
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_intercept2 = df_sim[df_sim['var']==var]
             # nff moyen
             adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
             df_phenT = adel.phenT()
@@ -1558,7 +1566,7 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
             date, hsT2 = HS_applications[var]['T2']
             #plot
             for ntop in [1,2,3]:
-                df_sim_ntop = df_sim_p4[df_sim_p4['ntop']==ntop]
+                df_sim_ntop = df_sim_intercept2[df_sim_intercept2['ntop']==ntop]
                 #gestion de la legende
                 if var=='Mercia':
                     label = 'true F'+str(ntop)
@@ -1570,12 +1578,354 @@ def plot_tart_HS(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_p
                 elif ntop==2:
                     plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine/area'], '--'+color, label=label)
                 elif ntop==3:
-                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine/area'], ':'+color, label=label)
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['deposit_Tartrazine/area'], '-.'+color, label=label)
             #fleche hsT2 - nff moyen
             hs_new = hsT2 - hs_moyen
             plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
         #mise en forme
-        plt.xlabel('HS'); plt.ylabel('deposit_tartrazine/area')
+        plt.xlabel('HS - nff moyen'); plt.ylabel('interception efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+    
+    if plot_cov==True: 
+        # x = hs
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_cov = df_sim[df_sim['var']==var]
+            #plot
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_cov[df_sim_cov['ntop']==ntop]
+                #gestion de la legende
+                if var=='Mercia':
+                    label = 'true F'+str(ntop)
+                else:
+                    label='_nolegend_'
+                #plot par ntop
+                if ntop==1:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['coverage_efficacy'], '-'+color, label=label)
+                elif ntop==2:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['coverage_efficacy'], '--'+color, label=label)
+                elif ntop==3:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['coverage_efficacy'], '-.'+color, label=label)
+            #fleche hsT2
+            date, hsT2 = HS_applications[var]['T2']
+            plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS'); plt.ylabel('coverage_efficacy')
         plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
         
+        # x = hs - nff moyen
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_cov2 = df_sim[df_sim['var']==var]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
+            #plot
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_cov2[df_sim_cov2['ntop']==ntop]
+                #gestion de la legende
+                if var=='Mercia':
+                    label = 'true F'+str(ntop)
+                else:
+                    label='_nolegend_'
+                #plot par ntop
+                if ntop==1:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['coverage_efficacy'], '-'+color, label=label)
+                elif ntop==2:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['coverage_efficacy'], '--'+color, label=label)
+                elif ntop==3:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['coverage_efficacy'], '-.'+color, label=label)
+            #fleche hsT2 - nff moyen
+            hs_new = hsT2 - hs_moyen
+            plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS - nff moyen'); plt.ylabel('coverage_efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+
+    if plot_protect==True:
+        # x = hs
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_protect = df_sim[df_sim['var']==var]
+            #plot
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_protect[df_sim_protect['ntop']==ntop]
+                #gestion de la legende
+                if var=='Mercia':
+                    label = 'true F'+str(ntop)
+                else:
+                    label='_nolegend_'
+                #plot par ntop
+                if ntop==1:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['protection_efficacy'], '-'+color, label=label)
+                elif ntop==2:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['protection_efficacy'], '--'+color, label=label)
+                elif ntop==3:
+                    plt.plot(df_sim_ntop['HS'], df_sim_ntop['protection_efficacy'], '-.'+color, label=label)
+            #fleche hsT2
+            date, hsT2 = HS_applications[var]['T2']
+            plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS'); plt.ylabel('protection_efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+        
+        # x = hs - nff moyen
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_protect2 = df_sim[df_sim['var']==var]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
+            #plot
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_protect2[df_sim_protect2['ntop']==ntop]
+                #gestion de la legende
+                if var=='Mercia':
+                    label = 'true F'+str(ntop)
+                else:
+                    label='_nolegend_'
+                #plot par ntop
+                if ntop==1:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['protection_efficacy'], '-'+color, label=label)
+                elif ntop==2:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['protection_efficacy'], '--'+color, label=label)
+                elif ntop==3:
+                    plt.plot(df_sim_ntop['HS-nffmean'], df_sim_ntop['protection_efficacy'], '-.'+color, label=label)
+            #fleche hsT2 - nff moyen
+            hs_new = hsT2 - hs_moyen
+            plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS - nff moyen'); plt.ylabel('protection_efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+               
+    if plot_global==True:
+        # x = hs
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_protect = df_sim[df_sim['var']==var]
+            #traitement dataframe
+            df_sim_protect_all = pandas.DataFrame()
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_protect[df_sim_protect['ntop']==ntop]
+                df_sim_protect_all = df_sim_protect_all.append(df_sim_ntop)
+            df_sim_protect_all = df_sim_protect_all.groupby(['HS']).sum()  
+            df_sim_protect_all = df_sim_protect_all.reset_index()#gestion de la legende
+            if var=='Mercia':
+                label = 'Somme des protections efficacy'
+            else:
+                label='_nolegend_'
+            #plot
+            plt.plot(df_sim_protect_all['HS'], df_sim_protect_all['protection_efficacy'], '-'+color, label=label)
+            #fleche hsT2
+            date, hsT2 = HS_applications[var]['T2']
+            plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS'); plt.ylabel('global_efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+        
+        # x = hs - nff moyen
+        plt.figure()
+        for var in varieties:        
+            if var=='Mercia':
+                color='r'
+            elif var=='Rht3':
+                color='g'
+            elif var=='Tremie12':
+                color='b'
+            elif var=='Tremie13':
+                color='m'
+            df_sim_protect = df_sim[df_sim['var']==var]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
+            #traitement dataframe
+            df_sim_protect_all = pandas.DataFrame()
+            for ntop in [1,2,3]:
+                df_sim_ntop = df_sim_protect[df_sim_protect['ntop']==ntop]
+                df_sim_protect_all = df_sim_protect_all.append(df_sim_ntop)
+            df_sim_protect_all = df_sim_protect_all.groupby(['HS-nffmean']).sum()  
+            df_sim_protect_all = df_sim_protect_all.reset_index()#gestion de la legende
+            if var=='Mercia':
+                label = 'Somme des protections efficacy'
+            else:
+                label='_nolegend_'
+            #plot
+            plt.plot(df_sim_protect_all['HS-nffmean'], df_sim_protect_all['protection_efficacy'], '-'+color, label=label)
+            #fleche hsT2 - nff moyen
+            hs_new = hsT2 - hs_moyen
+            plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.03), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+        #mise en forme
+        plt.xlabel('HS - nff moyen'); plt.ylabel('global_efficacy')
+        plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+                
     return df_sim
+    
+#plot data publi contre simulation au nff moyen    
+def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS', csv=True): #axis = MS or all          
+    if var=='Tremie12':
+        nplants_lst = 30
+    else :
+        nplants_lst = n_plt
+        
+    x=1
+    df_sim = pandas.DataFrame() 
+    while x <= n_sim: 
+        npl, dfmoy, dfsd = treatment(name=var, sim=str(hs), nplants=n_plt, axis=axis, to_csv=False)
+        print 'var = '+var+' stade = '+str(hs)+' - nplants = '+str(npl)
+        dfmoy['var'] = var
+        df_sim = df_sim.append(dfmoy)
+        x+=1
+    df_sim_gr = df_sim.groupby(['var', 'HS', 'ntop_cur']).mean()
+    df_sim_gr = df_sim_gr.reset_index()
+    if csv==True:
+        df_sim.to_csv('sim_nffmoyen_all_'+var+'.csv')
+        df_sim_gr.to_csv('sim_nffmoyen_synth_'+var+'.csv')
+    return df_sim_gr  
+    
+def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS'):
+    '''Plot1 = obs
+    Plot2 = obs/area'''
+    df_sim = pandas.DataFrame()
+    #obs + preparation de obs
+    df_obs = idata.dye_interception() 
+    df_obs.rename(columns={'name':'var'}, inplace=True) 
+    df_obs.rename(columns={'N feuille':'ntop_cur'}, inplace=True)
+    df_obs.rename(columns={'HS':'HS_obs'}, inplace=True)
+    #fichier de simulation
+    for var in varieties :
+        # nff moyen
+        if var=='Mercia':
+            delta = -0.66
+        elif var=='Rht3':
+            delta = -1.2
+        elif var=='Tremie12':
+            delta = -0.5
+        elif var=='Tremie13':
+            delta = -0.7
+        adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+        df_phenT = adel.phenT()
+        nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+        df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+        mean = df_phenT.mean()
+        hs_moyen = mean['nff']
+        hs_moyen = hs_moyen + delta
+        #sim 
+        df_sim_var = simulation_nffmoyen(var=var, hs=hs_moyen, n_sim=n_sim, n_plt=n_plt, axis=axis)
+        df_sim_var['deposit_Tartrazine/area'] = df_sim_var['deposit_Tartrazine'] / df_sim_var['area']
+        #df_sim_var['HS-nffmean'] = df_sim_var['HS'] - hs_moyen
+        df_sim = df_sim.append(df_sim_var)
+    #merge des 2 tableaux obs et sim
+    df_obs = df_obs[df_obs['treatment']=='T2'] 
+    df_all = df_sim.merge(df_obs)
+    #column tartrazine/area
+    df_all['meanObs/area'] = df_all['mean']/df_all['area']
+    
+    #plot
+    bar_width = 0.3; opacity = 0.4
+    val=[[0, 'mean', 'deposit_Tartrazine'], [1, 'meanObs/area', 'deposit_Tartrazine/area']]
+    fig, axes = plt.subplots(nrows=1, ncols=2) 
+
+    for x, col_data, col_sim in val:   
+        #on ne veut que les 4 feuilles du haut
+        df_all = df_all[df_all['ntop_cur']<=4] 
+        
+        n_groups = len(df_all)
+        index = numpy.arange(n_groups) 
+
+        #publi
+        if x==0:
+            rects1 = axes[x].bar(index, df_all[col_data], bar_width, alpha=opacity, color='y', yerr=df_all['IC'], error_kw=dict(ecolor='k'))
+        else:
+            rects1 = axes[x].bar(index, df_all[col_data], bar_width, alpha=opacity, color='y')
+        #sim a hs nff moyen + delta
+        rects2 = axes[x].bar(index + bar_width, df_all[col_sim], bar_width, alpha=opacity, color=['r','r','r','r','g','g','g','g','b','b','b','b','m','m','m','m'])
+       
+        # Mise en forme
+        df_all['HS'] = numpy.round(df_all['HS'], decimals=1)
+        label = ['','Mercia','','Rht3','','Tremie12','','Tremie13']
+        axes[x].set_xticklabels(label, rotation=90, fontsize='small')
+        if x == 0:
+            axes[x].set_xlabel('var')
+            axes[x].set_ylabel('deposit_tartrazine')
+        else:
+            axes[x].set_ylabel('deposit_tartrazine/area')
+            
+        fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+        
+        def autolabel(rects):
+            # attach some text labels
+            if rects == rects2 :
+                list=['F1','F2','F3','F4']
+            else:
+                print 'pb'
+            for rect in rects:
+                height = rect.get_height()
+                if int(rect.get_x()) <4 :
+                    if x==0:
+                        print int(rect.get_x())
+                        axes[x].text(rect.get_x()+rect.get_width()/2. -0.1, 1.05*height + 0.2, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8)
+        autolabel(rects2)
+        
+        
+        '''axes[x].text(0.2, 6.1, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+               
+    axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})'''
+    
