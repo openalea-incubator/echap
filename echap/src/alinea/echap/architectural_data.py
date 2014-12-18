@@ -64,7 +64,7 @@ def Tremie13_fitted_dimensions():
         # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
         fn_tremie12 = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
         dim_tremie12 = pandas.read_csv(fn_tremie12)
-        dim[nff]['L_sheath'] = dim_tremie12['L_sheath']
+        dim[nff]['L_sheath'] = [3,3,3,2.5,3,5,6.5,8,9.5,11,13,14]
         dim[nff]['L_internode'] = dim_tremie12['L_internode']
         dim[nff]['W_blade'] = dim_tremie12['W_blade']
         
@@ -74,15 +74,40 @@ def Tremie13_fitted_dimensions():
             
         dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
         dim[nff]['W_internode'] = dim_tremie12['W_internode']
-        #dim[nff]['L_internode'] = dim_tremie12['L_internode'] -> fait buguer le script
+        dim[nff]['L_internode'] = dim_tremie12['L_internode'] # fait buguer le script
         # on complete la colonne L_internode
-        dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06] 
-        #dim[nff]['L_internode'] = [0,0,0,0,0,0,0,10.14,11.4,12.67,13.94,15.2]
+        #dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
         # creation de dim[11]
         dim[nff-1] = dim[nff].copy()
         dim[nff-1] = dim[nff-1][0:11]
         dim[nff-1]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
     return dim
+    '''dim = {}
+    for nff in [11, 12]:
+        fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
+        dim[nff] = pandas.read_csv(fn)
+        # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
+        fn_rht3 = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
+        dim_rht3 = pandas.read_csv(fn_rht3)
+        dim[nff]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
+        dim[nff]['L_sheath'] = dim_rht3['L_sheath']
+        dim[nff]['L_internode'] = dim_rht3['L_internode']
+        dim[nff]['W_blade'] = dim_rht3['W_blade']
+        
+        #ajustement largeur grace au plot dimension dans architectural_reconstruction_plot
+        for i in [4,5,6,7,8,9,10,11]:
+            dim[nff]['W_blade'][i] = dim[nff]['W_blade'][i]*1.3
+            
+        dim[nff]['W_sheath'] = dim_rht3['W_sheath']
+        dim[nff]['W_internode'] = dim_rht3['W_internode']
+        dim[nff]['L_internode'] = dim_rht3['L_internode'] # fait buguer le script
+        # on complete la colonne L_internode
+        #dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
+        # creation de dim[11]
+        dim[nff-1] = dim[nff].copy()
+        dim[nff-1] = dim[nff-1][0:11]
+        dim[nff-1]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
+    return dim'''
 
 def dimension_fits():
     d = {'Mercia': Mercia_2011_fitted_dimensions(),
