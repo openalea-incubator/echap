@@ -26,7 +26,7 @@ interceptor = InterceptModel({'Tartrazine':{'Tartrazine': 1}}) # consider a 1g.l
 def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1):
     """ 10000 l ha-1 is for 1 l/m2 """
     
-    adel = Reconstructions.get_reconstruction(name=name, nplants=nplants, adjust_density = {name:None} , stand_density_factor = {name:density} , dimension=dimension)
+    adel = Reconstructions.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
     
     appdate_ref = ['T1-0.4', 'T1-0.2', 'T1', 'T1+0.2', 'T1+0.4',
             'T2-2.5', 'T2-2', 'T2-1.5', 'T2-1', 'T2-0.5', 'T2-0.4', 'T2-0.2', 'T2', 'T2+0.2', 'T2+0.4', 'T2+0.5', 'T2+1', 'T2+1.5', 'T2+2', 'T2+2.5']

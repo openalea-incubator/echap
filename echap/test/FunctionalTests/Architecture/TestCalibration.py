@@ -480,7 +480,7 @@ def plot_scan_obs_dimfactor(name='Tremie12', n=30): # Pour Tremie12 et Tremie13
 #------------------------------------------------------------------------------------- 
 # Taux de couverture
 
-def draft_TC(g, adel, domain, zenith, rep):
+def draft_TC(g, adel, domain, zenith, rep, scale = 1):
     from alinea.adel.postprocessing import ground_cover
     
     #modelisation afin de voir si erreur
@@ -490,11 +490,11 @@ def draft_TC(g, adel, domain, zenith, rep):
     echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
     #high resolution
     #gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 2144, image_height = 1424, getImages=True, replicate=rep)
+    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = int(2144 * scale), image_height = int(1424*scale), getImages=True, replicate=rep)
 
     return gc
     
-def comp_TC(name='Mercia', n=30, zenith=0, aborting_tiller_reduction=1, seed=1, density=1, **kwds): #zenith = 0 or 57
+def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, aborting_tiller_reduction=1, seed=1, density=1, **kwds): #zenith = 0 or 57
     conv = HSconv[name]
 
     if zenith==0:
@@ -522,11 +522,11 @@ def comp_TC(name='Mercia', n=30, zenith=0, aborting_tiller_reduction=1, seed=1, 
     elif density==1:
         picto = '-'
 
-    dd = range(400,2600,100)
+    
     
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, stand_density_factor = {name:density}, **kwds)
     sim = (adel.setup_canopy(age) for age in dd)
-    TC_sim = [draft_TC(g, adel, domain, zenith, rep) for g in sim]
+    TC_sim = [draft_TC(g, adel, domain, zenith, rep, scale=scale) for g in sim]
 
     n=0; tc=[]; tc_sen=[]
     while n<len(TC_sim):

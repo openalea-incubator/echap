@@ -159,12 +159,13 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
 
 def median_leaf_fits(disc_level=7):
     d={}
-    gL = geoLeaf()
+    gL = {k:geoLeaf() for k in ['Mercia','Tremie12', 'Tremie13']}
+    gL['Rht3'] = geoLeaf(Lindex_top =1) # hack to 'simulate' differential leaf spread in Rht3 (better way should be to mimic the 'fan' display of tillers
     trajs,bins = archidb.median_leaf_trajectories()
     for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
         _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
         srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
-        d[k] = Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
+        d[k] = Leaves(trajs, srdb, geoLeaf=gL[k], dynamic_bins = bins, discretisation_level = disc_level)
     return d
  
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
@@ -362,7 +363,7 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order, tiller_survival=tiller_survival)
     
-def tillering_fits(delta_stop_del=2.8, n_elongated_internode={'Mercia':3.5, 'Rht3':3.5, 'Tremie12': 5, 'Tremie13':4} , max_order=None, tiller_survival=fly_damage_tillering):
+def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3':3., 'Tremie12': 5, 'Tremie13':4} , max_order=None, tiller_survival=fly_damage_tillering):
         
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
@@ -468,7 +469,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', adjust_density = {'Mercia':0.7, 'Rht3':0.7, 'Tremie12': 0.7, 'Tremie13':None}, dec_density={'Mercia':0, 'Rht3':0, 'Tremie12': 0, 'Tremie13':None}, freeze_damage ={'Mercia':{'T4':0.01,'T5':0.01,'T6':0.01}, 'Rht3':{'T4':0.01,'T5':0.01}, 'Tremie12': None, 'Tremie13':{'T4':0.25}}, stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, **kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
     
         density = self.density_fits[name].deepcopy()
@@ -481,12 +482,7 @@ class EchapReconstructions(object):
         inter_row = pdata['inter_row']/math.sqrt(stand_density_factor[name])
         stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
-        
-        if freeze_damage[name] is not None:
-            self.tillering_fits = tillering_fits()
-            for k in freeze_damage[name]:
-                self.tillering_fits[name].primary_tiller_probabilities[k] = freeze_damage[name][k]
-        
+               
         pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
@@ -496,16 +492,16 @@ class EchapReconstructions(object):
         
         #adjust density according to density fit
         if density_at_harvest  < density_at_emergence and nplants > 1:
+            TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
             #to do test for 4 lines table only
             d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
-            devT = pgen_ext.adjust_density(devT, d)
-            if adjust_density[name] is not None:
-                d['density'].iloc[0] = 1
-                d['density'].iloc[1] = adjust_density[name]
-                conv = self.HS_GL_fits[name]['HS']
-                d['HS'] -= dec_density[name]
-                d['TT'] = conv.TT(d['HS'])
-                devT = pgen_ext.adjust_tiller_survival(devT, d)
+            devT = pgen_ext.adjust_density(devT, d, TT_stop_del = TT_stop_del)
+            
+        # adjust tiller survival if early death occured
+        if self.tillering_fits[name].tiller_survival is not None:
+            TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
+            cohort_survival = self.tillering_fits[name].cohort_survival()
+            devT = pgen_ext.adjust_tiller_survival(devT, cohort_survival, TT_stop_del = TT_stop_del)
             
         leaves = self.leaf_fits[name] 
         
