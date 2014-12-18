@@ -5,13 +5,39 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
+def dimension_plot_other(dimension_data, fits):
+    plt.ion()
+    
+    fig, axes = plt.subplots(nrows=1, ncols=3)
+    ax0, ax1, ax2 = axes.flat
+    
+    varieties = [['Mercia','r',12],['Rht3','g',11],['Tremie12','b',13],['Tremie13','m',11]]
+    for name, color, nff in varieties :
+        #premier nff, ligne du haut
+        d_data = dimension_data[name, nff]
+        dim_data = d_data.where((pandas.notnull(d_data)), None)
+        ax0.plot(dim_data['index_phytomer'], dim_data['L_sheath'], 'o'+color, label = 'Obs '+name)
+        ax1.plot(dim_data['index_phytomer'], dim_data['L_internode'], 'o'+color, label = 'Obs '+name)
+        ax2.plot(dim_data['index_phytomer'], dim_data['W_internode'], 'o'+color, label = 'Obs '+name)
+        
+        dim_fit = fits[name][nff]
+        ax0.plot(dim_fit['index_phytomer'], dim_fit['L_sheath'], '-'+color, label = '_nolegend_')
+        ax1.plot(dim_fit['index_phytomer'], dim_fit['L_internode'], '-'+color, label = '_nolegend_')
+        ax2.plot(dim_fit['index_phytomer'], dim_fit['W_internode'], '-'+color, label = 'Fit '+name)
+        
+        #legende
+        ax0.set_title('L_sheath nff maj', fontsize=9)
+        ax1.set_title('L_internode nff maj', fontsize=9)
+        ax2.set_title('W_internode nff maj', fontsize=9)
+        ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
+
 def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
     plt.ion()
     
     fig, axes = plt.subplots(nrows=2, ncols=3)
     ax0, ax1, ax2, ax3, ax4, ax5 = axes.flat
     
-    varieties = [['Mercia','y',[11,12]],['Rht3','g',[11,12]],['Tremie12','b',[12,13]],['Tremie13','m',[11,12]]]
+    varieties = [['Mercia','r',[11,12]],['Rht3','g',[11,12]],['Tremie12','b',[12,13]],['Tremie13','m',[11,12]]]
     for name, color, nff_lst in varieties :
         #premier nff, ligne du haut
         d_data = dimension_data[name, nff_lst[0]]
@@ -157,8 +183,52 @@ def dynamique_plot_nff(HS_GL_SSI_data):
         if '13' in df_GL.columns:
             df_GL.plot('TT', '13', style='p'+color, label='GL ' +name+', nff 13')
             df_HS.plot('TT', '13', style='p'+color, label='HS ' +name+', nff 13')
-  
-
+    '''   
+    #varieties = [['Tremie12','b','o'],['Tremie13','m','^']]
+    varieties = [['Tremie12','b','o']]
+    for name, color, picto in varieties :
+        df_GL = HS_GL_SSI_data[name]['GL']
+        df_HS = HS_GL_SSI_data[name]['HS']
+        df_SSI = HS_GL_SSI_data[name]['SSI']
+        if '11' in df_GL.columns:
+            #df_GL.plot('TT', '11', style='o'+color, label='GL ' +name+', nff 11')
+            #df_HS.plot('TT', '11', style='o'+color, label='HS ' +name+', nff 11')
+            df_SSI.plot('TT', '11', style=picto+'-b', label='SSI ' +name+' nff11')
+        if '12' in df_GL.columns:
+            #df_GL.plot('TT', '12', style='^'+color, label='GL ' +name+', nff 12')
+            #df_HS.plot('TT', '12', style='^'+color, label='HS ' +name+', nff 12')
+            df_SSI.plot('TT', '12', style=picto+'-g', label='SSI ' +name+' nff12')
+        if '13' in df_GL.columns:
+            #df_GL.plot('TT', '13', style='p'+color, label='GL ' +name+', nff 13')
+            #df_HS.plot('TT', '13', style='p'+color, label='HS ' +name+', nff 13')
+            df_SSI.plot('TT', '13', style=picto+'-r', label='SSI ' +name+' nff13')
+    #donnees guillaume
+    TT_Tremie12=[1167,1237,1351,1435,1512,1608,1736,1848,2029]
+    #SSI_Tremie12_12=[6.725,7.0125,7.105,7.40833333333,7.76666666667,8.64666666667,9.31166666667,10.3366666667,11.2683333333]
+    #SSI_Tremie12_13=[6.78235294118,6.9350678733,6.98733893557,7.00716666667,7.98235294118,8.99485294118,9.76882352941,10.8918382353,11.9805882353]
+    #SSI_Tremie12_14=[6.86142857143,7.05,7.36833333333,7.70166666667,8.53857142857,9.21,10.0285714286,11.62,12.7683333333]
+    SSI_Tremie12_12 = [6.68333333333,6.67583333333,6.70166666667,7.11361111111,7.38888888889,7.70333333333,8.84666666667,9.57333333333,10.7133333333]
+    SSI_Tremie12_13 = [6.86266381766,6.65133903134,6.68070730831,7.52593162393,7.84303215303,8.69962962963,9.29888888889,10.1140740741,11.2477777778]
+    
+    #Tremie12_g = zip(TT_Tremie12, SSI_Tremie12_12, SSI_Tremie12_13, SSI_Tremie12_14)
+    #Tremie12_g = pandas.DataFrame(data = Tremie12_g, columns=['TT','12','13','14'])
+    Tremie12_g = zip(TT_Tremie12, SSI_Tremie12_12, SSI_Tremie12_13)
+    Tremie12_g = pandas.DataFrame(data = Tremie12_g, columns=['TT','12','13'])
+    Tremie12_g.plot('TT','12', style='--^g', label="SSI Tremie12 nff12 Guillaume")
+    Tremie12_g.plot('TT','13', style='--^r', label="SSI Tremie12 nff13 Guillaume")
+    #Tremie12_g.plot('TT','14', style='--^y', label="SSI Tremie12 nff14 Guillaume")
+    
+    TT_Tremie13=[1281,1325,1411,1542,1635,1759,1880,1995,2135]
+    #SSI_Tremie13_11=[7.39739130435,7.51304347826,7.83608695652,8.39913043478,9.32782608696,10.2504347826,11.0,11.0,11.0]
+    #SSI_Tremie13_12=[7.79871052632,7.87494987469,8.1102443609,8.98523809524,9.952125,10.9421052632,11.8189655172,11.9388888889,12.0]
+    SSI_Tremie13_11 = [7.3646875,7.475625,7.59,8.0071875,8.419375,9.5040625,10.7171875,10.9958064516,11.0]
+    SSI_Tremie13_12 = [7.75923076923,7.85022435897,8.07257326007,8.54,9.42313186813,10.35,11.3908333333,11.8983333333,12.0]
+    
+    Tremie13_g = zip(TT_Tremie13, SSI_Tremie13_11, SSI_Tremie13_12)
+    Tremie13_g = pandas.DataFrame(data = Tremie13_g, columns=['TT','11','12'])
+    Tremie13_g.plot('TT','11', style='--^b', label="SSI Tremie13 nff11 Guillaume")
+    Tremie13_g.plot('TT','12', style='--^g', label="SSI Tremie13 nff12 Guillaume")
+    '''
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     plt.xlabel("TT")
     
@@ -335,6 +405,86 @@ def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
     
     ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Tillering")
+    
+def tillering_primary(obs_data, fits, HS_converter, delta_stop_del):
+    plt.ion()
+    
+    if not isinstance(delta_stop_del,dict):
+        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
+
+    varieties = [['Mercia',delta_stop_del['Mercia']],['Rht3',delta_stop_del['Rht3']],['Tremie12',delta_stop_del['Tremie12']],['Tremie13',delta_stop_del['Tremie13']]]
+    
+    for name,delta_stop_del in varieties :
+    
+        if name=='Mercia':
+            color='r'
+        elif name=='Rht3':
+            color='g'
+        elif name=='Tremie12':
+            color='b'
+        elif name=='Tremie13':
+            color='m'
+
+        fit = fits[name].axis_dynamics(include_MS = False)
+
+        if name=='Mercia':
+            plt.plot(fit['HS'], fit['primary'], '-'+color, label='Primary')
+        else :
+            plt.plot(fit['HS'], fit['primary'], '-'+color, label='_nolegend_')           
+
+        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs['HS'] = HS_converter[name](obs['TT'])
+        
+        if name=='Mercia':
+            plt.plot(obs['HS'], obs['TP'], 'o'+color, label='TP', markersize=9)
+            plt.plot(obs['HS'], obs['FT'], '^'+color, label='FT', markersize=9)
+        else :
+            plt.plot(obs['HS'], obs['TP'], 'o'+color, label='_nolegend_', markersize=9)
+            plt.plot(obs['HS'], obs['FT'], '^'+color, label='_nolegend_', markersize=9)
+        
+    plt.xlim(xmax=20)
+    plt.xlabel('HS')
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+    
+def tillering_tot(obs_data, fits, HS_converter, delta_stop_del):
+    plt.ion()
+    
+    if not isinstance(delta_stop_del,dict):
+        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
+
+    varieties = [['Mercia',delta_stop_del['Mercia']],['Rht3',delta_stop_del['Rht3']],['Tremie12',delta_stop_del['Tremie12']],['Tremie13',delta_stop_del['Tremie13']]]
+    
+    for name,delta_stop_del in varieties :
+    
+        if name=='Mercia':
+            color='r'
+        elif name=='Rht3':
+            color='g'
+        elif name=='Tremie12':
+            color='b'
+        elif name=='Tremie13':
+            color='m'
+
+        fit = fits[name].axis_dynamics(include_MS = False)
+
+        if name=='Mercia':
+            plt.plot(fit['HS'], fit['total'], '-'+color, label='Total')
+        else :
+            plt.plot(fit['HS'], fit['total'], '-'+color, label='_nolegend_')        
+
+        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs['HS'] = HS_converter[name](obs['TT'])
+        
+        if name=='Mercia':
+            plt.plot(obs['HS'], obs['TPS'], 'p'+color, label='TPS', markersize=9)
+            plt.plot(obs['HS'], obs['FT'], '^'+color, label='FT', markersize=9)
+        else :
+            plt.plot(obs['HS'], obs['TPS'], 'p'+color, label='_nolegend_', markersize=9)
+            plt.plot(obs['HS'], obs['FT'], '^'+color, label='_nolegend_', markersize=9)
+        
+    plt.xlim(xmax=20)
+    plt.xlabel('HS')
+    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
    
 def graph_primary_emission(archidb):
     plt.ion()
