@@ -25,6 +25,13 @@ class LeafElementRecorder:
             if 'lesions' in properties:
                 les = properties['lesions'][0]
                 data.update(les.Lesions.EtatS())
+                
+            organ = node.complex()
+            properties = organ.properties()
+            items = ['exposition','lifetime']
+            for item in items:
+                if item in properties:
+                    data[item] = properties[item]            
            
             data.update(header)
             self.data[self.counts] = data
