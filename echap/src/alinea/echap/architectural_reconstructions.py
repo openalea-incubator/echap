@@ -159,7 +159,8 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
 
 def median_leaf_fits(disc_level=7):
     d={}
-    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Rht3', 'Tremie13']}
+    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
+    gL['Rht3'] = geoLeaf(nlim=2) 
     gL['Tremie12'] = geoLeaf() 
     trajs,bins = archidb.median_leaf_trajectories()
     for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
@@ -168,7 +169,7 @@ def median_leaf_fits(disc_level=7):
         d[k] = Leaves(trajs, srdb, geoLeaf=gL[k], dynamic_bins = bins, discretisation_level = disc_level)
     return d
  
-# Attention pour rht3 on veut geoleaf qui retourne 1 (= feuile du bas) quelque soit le rang !
+# Attention pour rht3 on veut geoleaf qui retourne 1 (= feuille du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
     
             
@@ -382,20 +383,33 @@ def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3
 
     return t_fits
 
+#1 graph tillering par var -> 4 graph sur une feuille
 if run_plots:
     delta_stop_del = 2.
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
     fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
     obs = archidb.tillers_per_plant()
     archi_plot.multi_plot_tillering(obs, fits, HS_converter, delta_stop_del)
+#tallage primary pour les 4 var   
+if run_plots:
+    delta_stop_del = 2.
+    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
+    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
+    obs = archidb.tillers_per_plant()
+    archi_plot.tillering_primary(obs, fits, HS_converter, delta_stop_del)
+#tallage total pour les 4 var    
+if run_plots:
+    delta_stop_del = 2.
+    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
+    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
+    obs = archidb.tillers_per_plant()
+    archi_plot.tillering_tot(obs, fits, HS_converter, delta_stop_del)
    
 if run_plots:
     archi_plot.graph_primary_emission(archidb)
-
-    
+   
 reconst_db={}
-
-    
+  
 def all_scan():
     df_obs_all = pandas.DataFrame()
     for name in ['Tremie12','Tremie13']:
@@ -476,9 +490,12 @@ class EchapReconstructions(object):
         
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0] * stand_density_factor[name]
         density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0] * stand_density_factor[name]
+        #density_at_emergence = 215
+        #density_at_harvest = 215
         
         pdata = self.plot_data[name]
         sowing_density = pdata['sowing_density'] * stand_density_factor[name]
+        #sowing_density = 215
         inter_row = pdata['inter_row']/math.sqrt(stand_density_factor[name])
         stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
