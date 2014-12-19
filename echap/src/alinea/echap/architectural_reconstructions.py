@@ -159,8 +159,8 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
 
 def median_leaf_fits(disc_level=7):
     d={}
-    gL = {k:geoLeaf() for k in ['Mercia','Tremie12', 'Tremie13']}
-    gL['Rht3'] = geoLeaf(Lindex_top =1) # hack to 'simulate' differential leaf spread in Rht3 (better way should be to mimic the 'fan' display of tillers
+    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Rht3', 'Tremie13']}
+    gL['Tremie12'] = geoLeaf() 
     trajs,bins = archidb.median_leaf_trajectories()
     for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
         _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
