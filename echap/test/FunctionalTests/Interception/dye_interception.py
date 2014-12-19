@@ -1397,7 +1397,7 @@ def simulation_efficacy(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS'):
     df_sim_gr = df_sim_gr.reset_index()
     return df_sim_gr
     
-def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot_tartrazine=False, plot_intercept=True, plot_cov=True, plot_protect=True, plot_global=True, csv=True):
+def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot_tartrazine=True, plot_intercept=True, plot_cov=True, plot_protect=True, plot_global=True, csv=True):
     '''
     !!! Tous les plots sont declines en 2 versions :
     HS et HS-nff moyen dans une fourchette de -6 a +6 par pas de temps calcule d'environ 0.5
@@ -1426,8 +1426,8 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
         df_sim_var['protection_efficacy'] = (1-df_sim_var['lifetime']) * df_sim_var['coverage_efficacy']
         df_sim_var['HS-nffmean'] = df_sim_var['HS'] - hs_moyen
         df_sim = df_sim.append(df_sim_var)
-        if csv==True:
-            df_sim.to_csv('efficacy_data.csv')
+    if csv==True:
+        df_sim.to_csv('efficacy_data.csv')
         
     if plot_tartrazine==True:
         #x = hs
