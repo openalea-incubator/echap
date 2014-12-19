@@ -207,8 +207,9 @@ def compare_LAI(name='Mercia', n_sim=1, n_plt=30, aborting_tiller_reduction=1, s
             color = '#F5A9F2'
         plt.errorbar(obs_new['HS'], obs_new['LAI_vert_biomasse'], yerr=obs_new['IC'], fmt='--o', color=color, label = 'LAI vert biomasse mean+IC '+name)
     
-    plt.xlabel("HS")
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.xlabel("haun stage")
+    plt.grid(False) # enlever la grille
+    #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return sim
     
@@ -538,7 +539,7 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
     sim_green['HS'] = conv(sim_green.tt)
 
     # plot sim TC_tot, TC_green et senescence sur le meme graph
-    sim_green['TCtot'] = sim_green['TCgreen'] + sim_green['TCsen']
+    #sim_green['TCtot'] = sim_green['TCgreen'] + sim_green['TCsen']
     #sim_green.plot('HS','TCtot',style='--'+color, label='TC total sim '+name+', density = '+str(density))
     sim_green.plot('HS','TCgreen',style=picto+color, label = 'TC green sim '+name+', density = '+str(density))
     #sim_green.plot('HS','TCsen',style='-y', label = 'TC senescent sim '+name)
@@ -565,8 +566,9 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
         #plot mean with IC
     plt.errorbar(obs_new['HS'], obs_new['TC'], yerr=obs_new['IC'], fmt='--o'+color, label = 'TC mean+IC '+name)
     
-    plt.xlabel("HS")
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.xlabel("haun stage")
+    plt.grid(False) # enlever la grille
+    #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     # Tracer les courbes 1-TC et TC_tot pr comparer avec graph rayonnement obs/sim
     #sim_green['1-TC']=1-sim_green['TCgreen']
@@ -783,8 +785,10 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds
         #plot
         res_sim.plot('HS', '1-light', style = '-'+c, linewidth=2, label = '1 - light sim level = '+str(level))
  
-    plt.ylim(ymax=1.); plt.xlabel("HS"); plt.ylabel("1-%")
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    plt.xlim(ymin=0); plt.xlim(ymin=0)
+    plt.ylim(ymax=1.); plt.xlabel("haun stage"); plt.ylabel("1-%")
+    plt.grid(False) # enlever la grille
+    #plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
     
 def plot_sup(graph1=False, graph2=False, graph3=False, graph4=False, graph5=True, stade='inf'): #stade = inf ou sup au max de LAI pour les graphs 1 et 2 seulement
