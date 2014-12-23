@@ -179,7 +179,7 @@ def compare_LAI(name='Mercia', n_sim=1, n_plt=30, aborting_tiller_reduction=1, s
         IC.append(conf_int(obs_HS['PAI_vert_photo'], perc_conf=95))
     obs_new['IC'] = IC
         #plot mean with IC
-    plt.errorbar(obs_new['HS'], obs_new['PAI_vert_photo'], yerr=obs_new['IC'], fmt='--o'+color, label = 'PAI vert photo mean+IC '+name)
+    #plt.errorbar(obs_new['HS'], obs_new['PAI_vert_photo'], yerr=obs_new['IC'], fmt='--o'+color, label = 'PAI vert photo mean+IC '+name)
     
     #traitement T1 et T2
     plt.axvline(x=T1, color=color, alpha=0.4)
@@ -208,6 +208,7 @@ def compare_LAI(name='Mercia', n_sim=1, n_plt=30, aborting_tiller_reduction=1, s
         plt.errorbar(obs_new['HS'], obs_new['LAI_vert_biomasse'], yerr=obs_new['IC'], fmt='--o', color=color, label = 'LAI vert biomasse mean+IC '+name)
     
     plt.xlabel("haun stage")
+    plt.ylabel("LAI")
     plt.grid(False) # enlever la grille
     #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
@@ -245,9 +246,10 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     conv = HSconv[name]
     h['HS'] = conv(h['tt'])
     
-    h.plot('HS', 'height', style='-x'+color, label = name)
-    plt.xlabel("HS"); plt.ylabel("Hauteur (en cm)")
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    h.plot('HS', 'height', style='-'+color, label = name)
+    plt.xlabel("haun stage"); plt.ylabel("hauteur")
+    plt.grid(False) # enlever la grille
+    #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
     return h
     
@@ -547,8 +549,8 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
     #traitement T1 et T2 + ajout trait horizontal y=0.95
     plt.axvline(x=T1, color=color, alpha=0.4)
     plt.axvline(x=T2, color=color, alpha=0.4)
-    if zenith==57:
-        plt.axhline(y=0.95, color='k')
+    #if zenith==57:
+    #    plt.axhline(y=0.95, color='k')
     
     #obs    
     obs = archidb.TC_data()[name+'_'+zen]
@@ -567,6 +569,7 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
     plt.errorbar(obs_new['HS'], obs_new['TC'], yerr=obs_new['IC'], fmt='--o'+color, label = 'TC mean+IC '+name)
     
     plt.xlabel("haun stage")
+    plt.ylabel("TC")
     plt.grid(False) # enlever la grille
     #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     
@@ -658,7 +661,8 @@ def draft_light(g, adel, domain, z_level):
     return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
-def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds):
+def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=1, **kwds):
+    # level prend en arg 0 5 20 25 cm
     from alinea.astk.TimeControl import thermal_time # Attention la fonction marche seulement avec freq='H' !!! (pas en jour)
     conv = HSconv[name]
     
@@ -714,16 +718,18 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds
             #dfa.plot('HS', colf, style='+g', label = '_nolegend_') #markersize=4
         tab0['HS'] = conv(tab0.TT)
         tab0['1-%'] = 1 - tab0['%']
-        tab0.plot('HS','1-%',color='r', label = 'Moyenne capteurs PAR sol')
-        list_level = [[0,'r']]
+        if level==0 or level==5:
+            tab0.plot('HS','1-%',color='r', label = 'Moyenne capteurs PAR sol')
+        list_level = [[level,'r']]
     elif name is 'Rht3':
         for col in [5,6,7,8]:
             colf = '%SE'+str(col)
             #dfa.plot('HS', colf, style='+g', label = '_nolegend_') #markersize=4
         tab20['HS'] = conv(tab20.TT)
         tab20['1-%'] = 1 - tab20['%']
-        tab20.plot('HS','1-%',color='g', label = 'Moyenne capteurs PAR sol')
-        list_level = [[0,'g']]
+        if level==0 or level==5:
+            tab20.plot('HS','1-%',color='g', label = 'Moyenne capteurs PAR sol')
+        list_level = [[level,'g']]
     elif name is 'Tremie12' or name is 'Tremie13':
         if name=='Tremie12':
             color='b'
@@ -737,13 +743,13 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds
             #dfa.plot('HS', colf, style='+c', label = '_nolegend_') #markersize=4
         tab0['HS'] = conv(tab0.TT)
         tab0['1-%'] = 1 - tab0['%']
-        tab0.plot('HS','1-%',color=color, label = 'Moyenne capteurs PAR sol')
+        if level==0 or level==5:
+            tab0.plot('HS','1-%',color=color, label = 'Moyenne capteurs PAR sol')
         tab20['HS'] = conv(tab20.TT)
         tab20['1-%'] = 1 - tab20['%']
-        #tab20.plot('HS','1-%',color=color, label = 'Moyenne capteurs PAR 20cm')
-        
-        #list_level = [[0,'b'],[20,'c']]
-        list_level = [[0,color]]
+        if level==20 or level==25:
+            tab20.plot('HS','1-%',color=color, label = 'Moyenne capteurs PAR 20cm')
+        list_level = [[level,color]]
         
     if name is 'Mercia':
         color='r'; T1=9.74; T2=12.8
@@ -785,7 +791,7 @@ def graph_meteo(name='Mercia', n=30, aborting_tiller_reduction=1, seed=1, **kwds
         #plot
         res_sim.plot('HS', '1-light', style = '-'+c, linewidth=2, label = '1 - light sim level = '+str(level))
  
-    plt.xlim(ymin=0); plt.xlim(ymin=0)
+    plt.xlim(xmin=0); plt.ylim(ymin=0)
     plt.ylim(ymax=1.); plt.xlabel("haun stage"); plt.ylabel("1-%")
     plt.grid(False) # enlever la grille
     #plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
