@@ -80,7 +80,7 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         else:
             dim_fit.ix[dim_fit.index_phytomer.isin([1,2,3,4,5,6,7,8]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_bas
             dim_fit.ix[dim_fit.index_phytomer.isin([9,10,11,12]), 'L*W_blade*FF'] = dim_fit['L_blade'] * dim_fit['W_blade'] * form_factor_haut
-        ax5.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-x'+color, label = 'Wfit*Lfit*FF '+name)
+        ax5.plot(dim_fit['index_phytomer'], dim_fit['L*W_blade*FF'], '-'+color, label = 'Wfit*Lfit*FF '+name)
         
         #scan obs - pas de donnees scan par nff pour tremie12 donc on met des triangles
         if name=='Tremie12' or name=='Tremie13':
@@ -88,8 +88,8 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
             scaned = scan_var.groupby('moyenne id_Feuille')
             res = scaned['Area A_bl'].agg([np.mean, np.std])
             res = res.reset_index()
-            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color, label='scan + sd '+name)
-            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='^'+color)
+            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color, label='scan + sd '+name)
+            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color)
             
         #scan_old (scan Mercia / Rht3 de 2009) -> pas ici car confusion (on ne cherche pas a passer dans ces points)
         '''if name=='Mercia' or name=='Rht3':
@@ -110,10 +110,12 @@ def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
         ax0.set_xlim(0, 14); ax1.set_xlim(0, 14); ax2.set_xlim(0, 14)
         ax3.set_xlim(0, 14); ax4.set_xlim(0, 14); ax5.set_xlim(0, 14)
         
+        ax3.set_ylabel('longueur'); ax4.set_ylabel('largeur'); ax5.set_ylabel('surface')
+        ax3.set_xlabel('n_phytomer'); ax4.set_xlabel('n_phytomer'); ax5.set_xlabel('n_phytomer')
         #legende
-        ax0.set_title('L_blade nff min', fontsize=9); ax3.set_title('L_blade nff max', fontsize=9)
-        ax1.set_title('W_blade nff min', fontsize=9); ax4.set_title('W_blade nff max', fontsize=9)
-        ax2.set_title('L_blade*W_blade nff min + scan', fontsize=9); ax5.set_title('L_blade*W_blade nff max + scan', fontsize=9)
+        ax0.set_title('L_blade nff min', fontsize=9)#; ax3.set_title('L_blade nff max', fontsize=9)
+        ax1.set_title('W_blade nff min', fontsize=9)#; ax4.set_title('W_blade nff max', fontsize=9)
+        ax2.set_title('L_blade*W_blade nff min + scan', fontsize=9)#; ax5.set_title('L_blade*W_blade nff max + scan', fontsize=9)
         ax0.legend(numpoints=1, bbox_to_anchor=(1.1, 1.2), prop={'size': 9})
         ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
     '''
