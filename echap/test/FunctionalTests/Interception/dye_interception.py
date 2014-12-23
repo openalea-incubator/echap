@@ -23,10 +23,19 @@ obs = idata.dye_interception()
 HS_applications = idata.dye_applications()
 interceptor = InterceptModel({'Tartrazine':{'Tartrazine': 1}}) # consider a 1g.l-1 tartrazine solution
 
-def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1):
+'''
+# Pour visualiser couvert
+%run dye_interception
+adel, g, df = repartition_at_application('Tremie13', 'T2')
+adel.plot(g,'ntop')
+'''
+
+def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1, nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3):
     """ 10000 l ha-1 is for 1 l/m2 """
     
-    adel = Reconstructions.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
+    Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
+    
+    adel = Reconstructions_appli.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
     
     appdate_ref = ['T1-0.4', 'T1-0.2', 'T1', 'T1+0.2', 'T1+0.4',
             'T2-2.5', 'T2-2', 'T2-1.5', 'T2-1', 'T2-0.5', 'T2-0.4', 'T2-0.2', 'T2', 'T2+0.2', 'T2+0.4', 'T2+0.5', 'T2+1', 'T2+1.5', 'T2+2', 'T2+2.5']
@@ -103,9 +112,9 @@ def conf_int(lst, perc_conf=95):
     return math.sqrt(v/n) * c
     
    
-def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1): 
+def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1, nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3): 
 
-    adel, g, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension)
+    adel, g, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension, nlim_Mercia=nlim_Mercia, nlim_Rht3=nlim_Rht3, nlim_Tremie12=nlim_Tremie12, nlim_Tremie13=nlim_Tremie13)
     
     #Calcul age depuis emergence de la feuille    
     df_phenT = adel.phenT()
@@ -429,19 +438,30 @@ def plot_diff(varieties=['Mercia']):
         axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('Interception MB', 'Interception MB + talles', 'Interception talles', 'Interception T1'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
 
 #effet dimension
-def simulation_dimension(name='Tremie12', n_sim=5, n_plt=200, csv=True): 
+def simulation_dimension(name='Tremie12', n_sim=5, n_plt=200, ajust=True): 
     if name=='Tremie12':
         n = 30
     else :
         n = n_plt
-        
-    lst = [[name,'T1'], [name,'T2']]
-        
+      
+    # nff moyen
+    adel = Reconstructions.get_reconstruction(name=name, nplants=n_plt)
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    mean = df_phenT.mean()
+    hs_moyen = mean['nff']
+    # HS T2 - nff moyen
+    if ajust==True:
+        lst = [[name, str(hs_moyen)]]
+    else:
+        lst = [[name, 'T2']]
+    
     df_sim = pandas.DataFrame()
-    x=0
+    x=1
     while x<=n_sim:
-        for var, stade in lst :      
-            dim_lst = [[0.5,'/2'], [0.67,'/1.5'], [1,'1'], [1.5,'x1.5'], [2,'x2']]
+        for var, stade in lst :   
+            dim_lst = [[0.5,'/2'], [0.75,'/1.25'], [0.9,'/1.1'], [1,'1'], [1.1,'x1.1'], [1.25,'x1.25'], [1.5,'x1.5']]
             for dim, dim_label in dim_lst:
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', dimension=dim, to_csv=False)
                 print 'var = '+var+' stade = '+dim_label+' - nbre de plantes sim = '+str(npl)
@@ -451,12 +471,9 @@ def simulation_dimension(name='Tremie12', n_sim=5, n_plt=200, csv=True):
         x+=1
     df_sim_gr = df_sim.groupby(['var', 'HS', 'dim', 'ntop_cur']).mean()
     df_sim_gr = df_sim_gr.reset_index()
-    if csv == True:
-        df_sim.to_csv('dim_all_'+name+'.csv')
-        df_sim_gr.to_csv('dim_synth_'+name+'.csv')
     return df_sim_gr
     
-def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], n_sim=1, n_plt=30):
+def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=30, ajust=True):
     '''
     Plot 1 =  Barplot observation / simulation avec ntop_cur en abscisse et (dfmoy['deposit_Tartrazin']  versus obs 'moyenne' par genotype et par date interception
     Plot 2 = Barplot de controle 'area' versus scan data (avec la colone area de dfmoy)
@@ -472,8 +489,9 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], 
     df_obs = idata.dye_interception()
     df_sim = pandas.DataFrame()
     for n in varieties:
-        df_sim_var = simulation_dimension(name=n, n_sim=n_sim, n_plt=n_plt)
+        df_sim_var = simulation_dimension(name=n, n_sim=n_sim, n_plt=n_plt, ajust=ajust)
         df_sim = df_sim.append(df_sim_var)
+    df_sim.to_csv('dimension.csv')
     #df_sim = 'dim_tremie13.csv'
     #df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
     
@@ -483,31 +501,51 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], 
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            #df_obs_var.HS=map(str,df_obs_var.HS)
+            #df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
             df_all = df_all[df_all['ntop_cur']<=3]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
+            df_all['HS-nffmean'] = df_all['HS']-hs_moyen
+
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12' :
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    val = [[0,9.74],[1,12.8]]
+                elif var == 'Rht3' :
+                    val = [[0,9.15],[1,12.48]]
+                elif var == 'Tremie12' :
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                else:
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
+                val = [[0,round(hs_moyen,2)]]
+            
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #index_dim pour classer les dim dans l ordre souhaite
                 df_fin['index_dim'] = df_fin['dim']
                 df_fin.ix[df_fin.dim.isin(['/2']), 'index_dim'] = 1
-                df_fin.ix[df_fin.dim.isin(['/1.5']), 'index_dim'] = 2
-                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 3
-                df_fin.ix[df_fin.dim.isin(['x1.5']), 'index_dim'] = 4
-                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['/1.25']), 'index_dim'] = 2
+                df_fin.ix[df_fin.dim.isin(['/1.1']), 'index_dim'] = 3
+                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 4
+                df_fin.ix[df_fin.dim.isin(['x1.1']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['x1.25']), 'index_dim'] = 6
+                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 7
                 #rects2 pour ne tracer les obs que quand dim = normale
                 df_fin['mean_dim'] = df_fin['mean']
                 df_fin.ix[~df_fin.dim.isin(['1']), 'mean_dim'] = 0
@@ -516,22 +554,21 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], 
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups) 
 
-                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g'])
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean_dim'], bar_width, alpha=opacity, color='y')
+                rects1 = ax0.bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g'])
+                rects2 = ax0.bar(index + bar_width, df_fin['mean_dim'], bar_width, alpha=opacity, color='y')
                 # Mise en forme
-                axes[x].set_ylim(0, 17)
-                axes[x].set_xlim(0, len(df_fin))                 
-                axes[x].set_xticks(index+bar_width)
+                ax0.set_ylim(0, 8)
+                ax0.set_xlim(0, len(df_fin))                 
+                ax0.set_xticks(index+bar_width)
                 df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
                 df_fin['label'] = df_fin['dim'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
-                if x == 0:
-                    axes[x].set_xlabel('dim/ntop')
-                axes[x].text(0.4, 16.2, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                ax0.set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
+                ax0.set_xlabel('dim/ntop')
+                ax0.text(0.4, 7.5, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
 
                 fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur', fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+            #ax0.legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
     
     # PLOT 2
     if plot2 is True :
@@ -596,33 +633,53 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], 
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            #df_obs_var.HS=map(str,df_obs_var.HS)
+            #df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
             df_all = df_all[df_all['ntop_cur']<=3]
             df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
             df_all['mean/area'] = df_all['mean']/df_all['area']
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12' :
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    #val = [[0,9.74],[1,12.8]]
+                    val = [[0,12.8]]
+                elif var == 'Rht3' :
+                    #val = [[0,9.15],[1,12.48]]
+                    val = [[0,12.48]]
+                elif var == 'Tremie12' :
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                else:
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
+                val = [[0,round(hs_moyen,2)]]
+            
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date]
                 #index_dim
                 df_fin['index_dim'] = df_fin['dim']
                 df_fin.ix[df_fin.dim.isin(['/2']), 'index_dim'] = 1
-                df_fin.ix[df_fin.dim.isin(['/1.5']), 'index_dim'] = 2
-                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 3
-                df_fin.ix[df_fin.dim.isin(['x1.5']), 'index_dim'] = 4
-                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['/1.25']), 'index_dim'] = 2
+                df_fin.ix[df_fin.dim.isin(['/1.1']), 'index_dim'] = 3
+                df_fin.ix[df_fin.dim.isin(['1']), 'index_dim'] = 4
+                df_fin.ix[df_fin.dim.isin(['x1.1']), 'index_dim'] = 5
+                df_fin.ix[df_fin.dim.isin(['x1.25']), 'index_dim'] = 6
+                df_fin.ix[df_fin.dim.isin(['x2']), 'index_dim'] = 7
                 #rects2
                 df_fin['mean_dim'] = df_fin['mean/area']
                 df_fin.ix[~df_fin.dim.isin(['1']), 'mean_dim'] = 0
@@ -631,40 +688,77 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie13'], 
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups)   
                 
-                rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g'])
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean_dim'], bar_width, alpha=opacity, color='y')   
+                rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g'])
+                rects2 = ax0.bar(index + bar_width, df_fin['mean_dim'], bar_width, alpha=opacity, color='y')   
                 # Mise en forme
-                axes[x].set_ylim(0, 0.35)
-                axes[x].set_xlim(0, len(df_fin)) 
-                axes[x].set_xticks(index+bar_width)
+                ax0.set_ylim(0, 0.5)
+                ax0.set_xlim(0, len(df_fin)) 
+                ax0.set_xticks(index+bar_width)
                 df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
                 df_fin['TT'] = numpy.round(df_fin['TT'], decimals=1)
                 df_fin['label'] = df_fin['dim'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
-                if x == 0:
-                    axes[x].set_xlabel('dim/ntop')
-                axes[x].text(0.4, 0.33, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                ax0.set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
+                ax0.set_xlabel('dim/ntop')
+                ax0.text(0.4, 0.46, var+' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
                     
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur', fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[5], rects1[10], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
+            #ax0.legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
 
     return df_scan, df_obs, df_sim
  
+def courbe_dimension(varieties=['Tremie12','Tremie13']):
+    #courbe interception par surface a partir du fichier de sortie de plot_dimension
+    df_sim = 'dimension.csv'
+    df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
+    
+    for var in varieties:
+        df_sim_var = df_sim[df_sim['var']==var]
+        for ntop in [1,2,3]:
+            df_sim_var_ntop = df_sim_var[df_sim_var['ntop']==ntop]
+            if var=='Tremie12':
+                picto='o'
+            elif var=='Tremie13':
+                picto='^'
+            if ntop==1:
+                color='c'
+            elif ntop==2:
+                color='m'
+            elif ntop==3:
+                color='g'
+            if ntop==1:
+                plt.plot(df_sim_var_ntop['area'], df_sim_var_ntop['deposit_Tartrazine'], picto+color, label=var)
+            else:
+                plt.plot(df_sim_var_ntop['area'], df_sim_var_ntop['deposit_Tartrazine'], picto+color, label='_nolegend_')
+        plt.ylim(0, 8); plt.xlim(0, 50)
+        plt.xlabel('surface'); plt.ylabel('interception')
+        plt.legend(numpoints=1, bbox_to_anchor=(1., 1.), prop={'size': 9})
+    
 #effet densite 
-def simulation_density(name='Tremie12', n_sim=5, n_plt=200, csv=True):
+def simulation_density(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
     if name=='Tremie12':
         n = 30
     else :
         n = n_plt
         
-    lst = [[name,'T1'], [name,'T2']]
+    # nff moyen
+    adel = Reconstructions.get_reconstruction(name=name, nplants=n_plt)
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    mean = df_phenT.mean()
+    hs_moyen = mean['nff']
+    
+    if ajust==True:
+        lst = [[name, str(hs_moyen)]]
+    else: 
+        lst = [[name, 'T2']]
         
     df_sim = pandas.DataFrame()
     x=1
     while x<=n_sim:
         for var, stade in lst :  
-            dens_lst = [0.1,1,2.5,5,8,9,10] #tjrs mettre 7 valeurs sinon decalage dans les couleurs du plot, penser a modifier argument color dans rects de plot_density
+            dens_lst = [0.1,0.5,0.75,0.9,1,1.1,1.25,1.5,1.9] 
             for dens in dens_lst:         
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False, density=dens)
                 print 'var = '+var+' stade = '+stade+' density = '+str(dens)+' - nbre de plantes sim = '+str(npl)
@@ -674,12 +768,9 @@ def simulation_density(name='Tremie12', n_sim=5, n_plt=200, csv=True):
         x+=1
     df_sim_gr = df_sim.groupby(['var', 'HS', 'density', 'ntop_cur']).mean()
     df_sim_gr = df_sim_gr.reset_index()
-    if csv==True:
-        df_sim.to_csv('density_all_'+name+'.csv')
-        df_sim_gr.to_csv('density_synth_'+name+'.csv')
     return df_sim_gr
   
-def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=30):
+def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=30, ajust=True):
     '''
     Plot 1 =  Barplot observation / simulation avec ntop_cur en abscisse et (dfmoy['deposit_Tartrazin']  versus obs 'moyenne' par genotype et par date interception
     Plot 2 = Barplot de controle 'area' versus scan data (avec la colone area de dfmoy)
@@ -695,8 +786,9 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
     df_obs = idata.dye_interception()
     df_sim = pandas.DataFrame()
     for n in varieties:
-        df_sim_var = simulation_density(name=n, n_sim=n_sim, n_plt=n_plt)
+        df_sim_var = simulation_density(name=n, n_sim=n_sim, n_plt=n_plt, ajust=ajust)
         df_sim = df_sim.append(df_sim_var)
+    df_sim.to_csv('density.csv')
     # test
     #df_sim = 'density_synth_tremie12.csv'
     #df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
@@ -707,23 +799,41 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            #df_obs_var.HS=map(str,df_obs_var.HS)
+            #df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
-            df_all = df_all[df_all['ntop_cur']<=5]
+            df_all = df_all[df_all['ntop_cur']<=3]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12' :
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    #val = [[0,9.74],[1,12.8]]
+                    val = [[0,12.8]]
+                elif var == 'Rht3' :
+                    #val = [[0,9.15],[1,12.48]]
+                    val = [[0,12.48]]
+                elif var == 'Tremie12' :
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                else:
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
+                val = [[0,round(hs_moyen,2)]]
+            
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #mean_dens pour dessiner les obs seulement qd densite=1
                 df_fin['mean_dens'] = df_fin['mean']
@@ -733,23 +843,23 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups) 
 
-                rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g','r','r','r','r','r','r','r','b','b','b','b','b','b','b'])
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean_dens'], bar_width, alpha=opacity, color='y')
+                rects1 = ax0.bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b'])
+                rects2 = ax0.bar(index + bar_width, df_fin['mean_dens'], bar_width, alpha=opacity, color='y')
                 # Mise en forme
-                axes[x].set_ylim(0, 8)
-                axes[x].set_xlim(0, len(df_fin))                 
-                axes[x].set_xticks(index+bar_width)
+                ax0.set_ylim(0, 8)
+                ax0.set_xlim(0, len(df_fin))                 
+                ax0.set_xticks(index+bar_width)
                 df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
                 df_fin['TT'] = numpy.round(df_fin['TT'], decimals=1)
-                df_fin['label'] = df_fin['density'].astype(str) + ' - ' + df_fin['TT'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
+                df_fin['label'] = df_fin['density'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
+                ax0.set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
                 if x == 0:
-                    axes[x].set_xlabel('densite/TT/ntop')
-                axes[x].text(0.4, 7.4, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                    ax0.set_xlabel('densite/ntop')
+                ax0.text(0.4, 7.5, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
 
                 fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+            #ax0.legend((rects1[0], rects1[9], rects1[18], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
     
     # PLOT 2 - !!! PAS DE SCAN POUR MERCIA ET RHT3 donc pas de graph genere
     if plot2 is True :
@@ -804,25 +914,43 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            #df_obs_var.HS=map(str,df_obs_var.HS)
+            #df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
-            df_all = df_all[df_all['ntop_cur']<=5]
+            df_all = df_all[df_all['ntop_cur']<=3]
             df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
             df_all['mean/area'] = df_all['mean']/df_all['area']
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12' :
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    #val = [[0,9.74],[1,12.8]]
+                    val = [[0,12.8]]
+                elif var == 'Rht3' :
+                    #val = [[0,9.15],[1,12.48]]
+                    val = [[0,12.48]]
+                elif var == 'Tremie12' :
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                else:
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
+                val = [[0,round(hs_moyen,2)]]
+            
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date]
                 #mean_dens pour dessiner les obs seulement qd densite=1
                 df_fin['mean/area_dens'] = df_fin['mean/area']
@@ -832,22 +960,21 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups)   
                 
-                rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','m','m','m','m','m','m','m','g','g','g','g','g','g','g','r','r','r','r','r','r','r','b','b','b','b','b','b','b'])
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean/area_dens'], bar_width, alpha=opacity, color='y')   
+                rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b'])
+                rects2 = ax0.bar(index + bar_width, df_fin['mean/area_dens'], bar_width, alpha=opacity, color='y')   
                 # Mise en forme
-                axes[x].set_ylim(0, 0.5)
-                axes[x].set_xlim(0, len(df_fin)) 
-                axes[x].set_xticks(index+bar_width)
+                ax0.set_ylim(0, 0.5)
+                ax0.set_xlim(0, len(df_fin)) 
+                ax0.set_xticks(index+bar_width)
                 df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
                 df_fin['TT'] = numpy.round(df_fin['TT'], decimals=1)
-                df_fin['label'] = df_fin['density'].astype(str) + ' - ' + df_fin['TT'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='x-small' )
-                if x == 0:
-                    axes[x].set_xlabel('densite/TT/ntop')
-                axes[x].text(0.4, 0.45, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+                df_fin['label'] = df_fin['density'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
+                ax0.set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='x-small' )
+                ax0.set_xlabel('densite/ntop')
+                ax0.text(0.4, 0.46, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[7], rects1[14], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
+            #ax0.legend((rects1[0], rects1[9], rects1[18], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
 
     # PLOT 4
     if plot4 is True :
@@ -900,16 +1027,57 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
     
     return df_scan, df_obs, df_sim  
  
-#effet HS 
-def simulation_HS(name='Tremie12', n_sim=5, n_plt=200, csv=True):
+def courbe_density(varieties=['Tremie12','Tremie13']):
+    #courbe interception par nbr epi/plante*densite imposee a partir du fichier de sortie de plot_density
+    df_sim = 'density.csv'
+    df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
+    
+    for var in varieties:
+        df_sim_var = df_sim[df_sim['var']==var]
+        for ntop in [1,2,3]:
+            df_sim_var_ntop = df_sim_var[df_sim_var['ntop']==ntop]
+            if var=='Tremie12':
+                picto='o'
+                df_sim_var_ntop['earsm2xdens'] = 728*df_sim_var_ntop['density']
+            elif var=='Tremie13':
+                picto='^'
+                df_sim_var_ntop['earsm2xdens'] = 530*df_sim_var_ntop['density']
+            if ntop==1:
+                color='c'
+            elif ntop==2:
+                color='m'
+            elif ntop==3:
+                color='g'
+            if ntop==1:
+                plt.plot(df_sim_var_ntop['earsm2xdens'], df_sim_var_ntop['deposit_Tartrazine'], picto+color, label=var)
+            else:
+                plt.plot(df_sim_var_ntop['earsm2xdens'], df_sim_var_ntop['deposit_Tartrazine'], picto+color, label='_nolegend_')
+        plt.ylim(0, 8)
+        plt.xlabel('nb epis/plante * densite'); plt.ylabel('interception')
+        plt.legend(numpoints=1, bbox_to_anchor=(1., 1.), prop={'size': 9})
+    
+#effet HS
+def simulation_HS(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
     if name=='Tremie12':
         n = 30
     else :
         n = n_plt
         
-    lst = [[name,'T1-0.4'], [name,'T1-0.2'], [name,'T1'], [name,'T1+0.2'], [name,'T1+0.4'],
-            [name,'T2-2.5'], [name,'T2-2'], [name,'T2-1.5'], [name,'T2-1'], [name,'T2-0.5'], [name,'T2-0.4'], [name,'T2-0.2'], [name,'T2'], [name,'T2+0.2'], [name,'T2+0.4'], [name,'T2+0.5'], [name,'T2+1'], [name,'T2+1.5'], [name,'T2+2'], [name,'T2+2.5']]
-
+    # nff moyen
+    adel = Reconstructions.get_reconstruction(name=name, nplants=n_plt)
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    mean = df_phenT.mean()
+    hs_moyen = mean['nff']
+    # HS T2 - nff moyen
+    date, hsT2 = HS_applications[name]['T2']
+    # date a simuler
+    if ajust==True:
+        lst = [[name, str(hs_moyen-2)], [name, str(hs_moyen-1.5)], [name, str(hs_moyen-1)], [name, str(hs_moyen-0.5)], [name, str(hs_moyen)], [name, str(hs_moyen+0.5)], [name, str(hs_moyen+1)], [name, str(hs_moyen+1.5)], [name, str(hs_moyen+2)], [name, str(hs_moyen+2.5)], [name, str(hs_moyen+3)], [name, str(hs_moyen+3.5)], [name, str(hs_moyen+4)], [name, str(hs_moyen+4.5)], [name, str(hs_moyen+5)]]
+    else:   
+        #lst = [[name, str(hsT2-0.8)], [name, str(hsT2-0.6)], [name, str(hsT2-0.4)], [name, str(hsT2-0.2)], [name, str(hsT2)], [name, str(hsT2+0.2)], [name, str(hsT2+0.4)], [name, str(hsT2+0.6)], [name, str(hsT2+0.8)]]
+        lst = [[name, str(hsT2-2)], [name, str(hsT2-1.5)], [name, str(hsT2-1)], [name, str(hsT2-0.5)], [name, str(hsT2)], [name, str(hsT2+0.5)], [name, str(hsT2+1)], [name, str(hsT2+1.5)], [name, str(hsT2+2)], [name, str(hsT2+2.5)], [name, str(hsT2+3)], [name, str(hsT2+3.5)], [name, str(hsT2+4)], [name, str(hsT2+4.5)], [name, str(hsT2+5)]]
 
     df_sim = pandas.DataFrame()
     x=1
@@ -922,12 +1090,9 @@ def simulation_HS(name='Tremie12', n_sim=5, n_plt=200, csv=True):
         x+=1
     df_sim_gr = df_sim.groupby(['var', 'HS', 'ntop_cur']).mean()
     df_sim_gr = df_sim_gr.reset_index()
-    if csv==True:
-        df_sim.to_csv('HS_all_'+name+'.csv')
-        df_sim_gr.to_csv('HS_synth_'+name+'.csv')
     return df_sim_gr
     
-def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Mercia', 'Rht3', 'Tremie12', 'Tremie13'], n_sim=1, n_plt=30):
+def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie13'], n_sim=1, n_plt=30, ajust=False):
     '''
     Plot 1 =  Barplot observation / simulation avec ntop_cur en abscisse et (dfmoy['deposit_Tartrazin']  versus obs 'moyenne' par genotype et par date interception
     Plot 2 = Barplot de controle 'area' versus scan data (avec la colone area de dfmoy)
@@ -941,8 +1106,9 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Mercia', 'Rht3', 'T
     df_obs = idata.dye_interception()
     df_sim = pandas.DataFrame()
     for n in varieties:
-        df_sim_var = simulation_HS(name=n, n_sim=n_sim, n_plt=n_plt)
+        df_sim_var = simulation_HS(name=n, n_sim=n_sim, n_plt=n_plt, ajust=ajust)
         df_sim = df_sim.append(df_sim_var)
+    df_sim.to_csv('HS.csv')
     # test 
     #df_sim = 'HS_synth_tremie13.csv'
     #df_sim = pandas.read_csv(df_sim, decimal='.', sep=',')
@@ -953,55 +1119,70 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Mercia', 'Rht3', 'T
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            #df_obs_var.HS=map(str,df_obs_var.HS)
+            #df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
-            df_all = df_all[df_all['ntop_cur']<=5]
+            df_all = df_all[df_all['ntop_cur']<=3]
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12' :
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    #val = [[0,9.74],[1,12.8]]
+                    val = [[0,12.8]]
+                elif var == 'Rht3' :
+                    #val = [[0,9.15],[1,12.48]]
+                    val = [[0,12.48]]
+                elif var == 'Tremie12' :
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                elif var == 'Tremie13' :
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
-            for x, date in val:
-                
+                val = [[0,round(hs_moyen,2)]]
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
+            for x, date in val:                
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
-                if x == 0:
-                    for f in [-0.4,-0.2,0.2,0.4]:
-                        df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
-                else :
-                    for f in [-2.5,-2,-1.5,-1,-0.5,-0.4,-0.2,0.2,0.4,0.5,1,1.5,2,2.5]:
-                        df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
+                #for f in [-0.8,-0.6,-0.4,-0.2,+0.2,+0.4,+0.6,+0.8]:
+                for f in [-2,-1.5,-1,-0.5,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5]:                
+                    df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
                 df_fin = df_fin.sort(['ntop_cur','HS'])
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups) 
 
-                if date == 8.7 or date == 10.98 or date==9.15 or date==9.74 :
-                    rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
+                if date == 10.98 or date == 8.7 or date==9.15 or date==9.74:
+                    rects1 = ax0.bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
                 else :
-                    rects1 = axes[x].bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
+                    if ajust==True:
+                        rects1 = ax0.bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
+                    else:
+                        rects1 = ax0.bar(index, df_fin['deposit_Tartrazine'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
    
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean'], bar_width, alpha=opacity, color='y')
+                rects2 = ax0.bar(index + bar_width, df_fin['mean'], bar_width, alpha=opacity, color='y')
                 # Mise en forme
-                axes[x].set_ylim(0, 7)
-                axes[x].set_xlim(0, len(df_fin))                 
-                axes[x].set_xticks(index+bar_width)
+                ax0.set_ylim(0, 8)
+                ax0.set_xlim(0, len(df_fin))                 
+                ax0.set_xticks(index+bar_width)
                 df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
-                df_fin['TT'] = numpy.round(df_fin['TT'], decimals=1)
-                df_fin['label'] = df_fin['HS'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
-                if x == 0:
-                    axes[x].set_xlabel('HS/ntop')
-                axes[x].text(0.4, 6.5, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=14)
+                df_fin['lig'] = (df_fin['HS']-0.3-df_fin['metamer'])/HSconv[var].a_cohort
+                df_fin['lig'] = numpy.round(df_fin['lig'], decimals=2)
+                ax0.set_xticklabels( df_fin['lig'].tolist(), rotation=90, fontsize='small' )
+                ax0.set_xlabel('age depuis ligulation')
+                ax0.text(0.4, 7.5, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=14)
                 fig.suptitle('Sim [deposit_Tartrazine] / Obs [mean] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[15], rects1[30], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+            #ax0.legend((rects1[0], rects1[15], rects1[30], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
     
     # PLOT 2
     if plot2 is True :
@@ -1065,54 +1246,70 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Mercia', 'Rht3', 'T
             df_obs_var.HS=map(str,df_obs_var.HS)
             df_sim_var.HS=map(str,df_sim_var.HS)
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean','sd']], how='outer')
-            df_all = df_all[df_all['ntop_cur']<=5]
+            df_all = df_all[df_all['ntop_cur']<=3]
             df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
             df_all['mean/area'] = df_all['mean']/df_all['area']
+            # nff moyen
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            # HS T2 - nff moyen
+            date, hsT2 = HS_applications[var]['T2']
             #plot
             bar_width = 0.4; opacity = 0.4
-            if var=='Mercia':
-                val = [[0,9.74],[1,12.8]]
-            elif var == 'Rht3' :
-                val = [[0,9.15],[1,12.48]]
-            elif var == 'Tremie12':
-                val = [[0,10.98],[1,12.63]]
+            if ajust==False:
+                if var=='Mercia':
+                    #val = [[0,9.74],[1,12.8]]
+                    val = [[0,12.8]]
+                elif var == 'Rht3' :
+                    #val = [[0,9.15],[1,12.48]]
+                    val = [[0,12.48]]
+                elif var == 'Tremie12':
+                    #val = [[0,10.98],[1,12.63]]
+                    val = [[0,12.63]]
+                else:
+                    #val = [[0,8.7],[1,11.04]]
+                    val = [[0,11.04]]
             else:
-                val = [[0,8.7],[1,11.04]]
-            fig, axes = plt.subplots(nrows=1, ncols=2) 
+                val = [[0,round(hs_moyen,2)]]
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
                 df_all.HS=map(float,df_all.HS)
+                df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
-                if x == 0:
-                    for f in [-0.4,-0.2,0.2,0.4]:
-                        df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
-                else :
-                    for f in [-2.5,-2,-1.5,-1,-0.5,-0.4,-0.2,0.2,0.4,0.5,1,1.5,2,2.5]:
-                        df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
+                #for f in [-0.8,-0.6,-0.4,-0.2,+0.2,+0.4,+0.6,+0.8]:
+                for f in [-2,-1.5,-1,-0.5,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5]:               
+                    df_fin = df_fin.append(df_all[df_all['HS']==round(date+f,2)])
                 df_fin = df_fin.sort(['ntop_cur','HS'])
                 n_groups = len(df_fin)
                 index = numpy.arange(n_groups)   
                 
-                #rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','m','g','r','b'])
+                #rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','m','g','r','b'])
                 if date == 10.98 or date == 8.7 or date==9.15 or date==9.74:
-                    rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
+                    rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','m','m','m','m','m','g','g','g','g','g','r','r','r','r','r','b','b','b','b','b'])
                 else :
-                    rects1 = axes[x].bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
+                    if ajust==True:
+                        rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
+                    else:
+                        rects1 = ax0.bar(index, df_fin['tartrazine/area'], bar_width, alpha=opacity, color=['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','m','m','m','m','m','m','m','m','m','m','m','m','m','m','m','g','g','g','g','g','g','g','g','g','g','g','g','g','g','g','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'])
                     
-                rects2 = axes[x].bar(index + bar_width, df_fin['mean/area'], bar_width, alpha=opacity, color='y')   
+                rects2 = ax0.bar(index + bar_width, df_fin['mean/area'], bar_width, alpha=opacity, color='y')   
                 # Mise en forme
-                axes[x].set_ylim(0, 0.35)
-                axes[x].set_xlim(0, len(df_fin)) 
-                axes[x].set_xticks(index+bar_width)
-                df_fin['metamer'] = numpy.round(df_fin['metamer'], decimals=1)
-                df_fin['TT'] = numpy.round(df_fin['TT'], decimals=1)
-                df_fin['label'] = df_fin['HS'].astype(str) + ' - ' + df_fin['metamer'].astype(str)
-                axes[x].set_xticklabels( df_fin['label'].tolist(), rotation=90, fontsize='small' )
+                ax0.set_ylim(0, 0.5)
+                ax0.set_xlim(0, len(df_fin)) 
+                ax0.set_xticks(index+bar_width)
+                df_fin['lig'] = (df_fin['HS']-0.3-df_fin['metamer'])/HSconv[var].a_cohort
+                df_fin['lig'] = numpy.round(df_fin['lig'], decimals=2)
+                ax0.set_xticklabels( df_fin['lig'].tolist(), rotation=90, fontsize='small' )
                 if x == 0:
-                    axes[x].set_xlabel('HS/ntop')
-                axes[x].text(0.4, 0.32, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=14)
+                    ax0.set_xlabel('age depuis ligulation')
+                ax0.text(0.4, 0.46, var + ' - HS = '+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=14)
                 fig.suptitle('Sim [deposit_Tartrazine/area] / Obs [mean/area] par ntop_cur pour '+var, fontsize=10)
                 fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-            axes[x].legend((rects1[0], rects1[15], rects1[30], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
+            #ax0.legend((rects1[0], rects1[15], rects1[30], rects2[0]), ('Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
             
     return df_scan, df_obs, df_sim
     
@@ -1397,7 +1594,7 @@ def simulation_efficacy(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS'):
     df_sim_gr = df_sim_gr.reset_index()
     return df_sim_gr
     
-def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot_tartrazine=True, plot_intercept=True, plot_cov=True, plot_protect=True, plot_global=True, csv=True, ntop_lst=[1,2,3]):
+def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot_tartrazine=True, plot_intercept=True, plot_cov=True, plot_protect=True, plot_global=True, csv=True, ntop_lst=[1,2,3], data=True):
     '''
     !!! Tous les plots sont declines en 2 versions :
     HS et HS-nff moyen dans une fourchette de -6 a +6 par pas de temps calcule d'environ 0.5
@@ -1428,6 +1625,12 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
         df_sim = df_sim.append(df_sim_var)
     if csv==True:
         df_sim.to_csv('efficacy_data.csv')
+        
+    #obs
+    df_obs = idata.dye_interception() 
+    '''df_obs.rename(columns={'name':'var'}, inplace=True) 
+    df_obs.rename(columns={'N feuille':'ntop_cur'}, inplace=True)
+    df_obs.rename(columns={'HS':'HS_obs'}, inplace=True)'''
         
     if plot_tartrazine==True:
         #x = hs
@@ -1463,6 +1666,23 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
             #fleche hsT2
             date, hsT2 = HS_applications[var]['T2']
             plt.annotate('', xy=(hsT2, 0), xytext=(hsT2, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+            #observation
+            if data==True:
+                df_obs_var=df_obs[df_obs['name']==var]
+                df_obs_var=df_obs_var[df_obs_var['treatment']=='T2']
+                df_obs_var['x']=hsT2
+                for n_feuille in [1,2,3,4]:
+                    df_obs_var_f=df_obs_var[df_obs_var['N feuille']==n_feuille]
+                    if n_feuille==1:
+                        colorf = 'c'
+                    elif n_feuille==2:
+                        colorf = 'm'
+                    elif n_feuille==3:
+                        colorf = 'g'
+                    elif n_feuille==4:
+                        colorf = 'r'
+                    plt.plot(df_obs_var_f['x'], df_obs_var_f['mean'], 'o'+colorf)
+            
         #mise en forme
         plt.xlabel('haun stage'); plt.ylabel('deposit_tartrazine')
         plt.grid(False) # enlever la grille
@@ -1510,6 +1730,22 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
             #fleche hsT2 - nff moyen
             hs_new = hsT2 - hs_moyen
             plt.annotate('', xy=(hs_new, 0), xytext=(hs_new, -0.7), arrowprops=dict(color=color, arrowstyle="->", connectionstyle="arc3"))
+            #observation
+            if data==True:
+                df_obs_var=df_obs[df_obs['name']==var]
+                df_obs_var=df_obs_var[df_obs_var['treatment']=='T2']
+                df_obs_var['x']=hs_new
+                for n_feuille in [1,2,3,4]:
+                    df_obs_var_f=df_obs_var[df_obs_var['N feuille']==n_feuille]
+                    if n_feuille==1:
+                        colorf = 'c'
+                    elif n_feuille==2:
+                        colorf = 'm'
+                    elif n_feuille==3:
+                        colorf = 'g'
+                    elif n_feuille==4:
+                        colorf = 'r'
+                    plt.plot(df_obs_var_f['x'], df_obs_var_f['mean'], 'o'+colorf)
         #mise en forme
         plt.xlabel('haun stage - nff moyen'); plt.ylabel('deposit_tartrazine')
         plt.grid(False) # enlever la grille
@@ -1851,8 +2087,8 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
                 
     return df_sim
     
-#plot data publi contre simulation au nff moyen    
-def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS', csv=True): #axis = MS or all          
+#plot data publi contre simulation au nff moyen ou HS   
+def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS'): #axis = MS or all          
     if var=='Tremie12':
         nplants_lst = 30
     else :
@@ -1868,45 +2104,55 @@ def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS', csv=
         x+=1
     df_sim_gr = df_sim.groupby(['var', 'HS', 'ntop_cur']).mean()
     df_sim_gr = df_sim_gr.reset_index()
-    if csv==True:
-        df_sim.to_csv('sim_nffmoyen_all_'+var+'.csv')
-        df_sim_gr.to_csv('sim_nffmoyen_synth_'+var+'.csv')
     return df_sim_gr  
     
-def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS'):
+def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', sim_date='T2',decobs=['Mercia', 'Rht3', 'Tremie12']):
     '''Plot1 = obs
-    Plot2 = obs/area'''
+    Plot2 = obs/area
+    sim_date is one of T1 T2 delta'''
     df_sim = pandas.DataFrame()
     #obs + preparation de obs
-    df_obs = idata.dye_interception() 
+    df_obs = idata.dye_interception(decobs) 
     df_obs.rename(columns={'name':'var'}, inplace=True) 
     df_obs.rename(columns={'N feuille':'ntop_cur'}, inplace=True)
     df_obs.rename(columns={'HS':'HS_obs'}, inplace=True)
     #fichier de simulation
     for var in varieties :
-        # nff moyen
-        if var=='Mercia':
-            delta = -0.7
-        elif var=='Rht3':
-            delta = -1.2
-        elif var=='Tremie12':
-            delta = -0.5
-        elif var=='Tremie13':
-            delta = -0.7
-        adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
-        df_phenT = adel.phenT()
-        nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
-        df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
-        mean = df_phenT.mean()
-        hs_moyen = mean['nff']
-        hs_moyen = hs_moyen + delta
+
+        #if ajust=False, attention au pb de decalage de feuille
+        if sim_date=='T1':
+            date, hsr = HS_applications[var]['T1']
+            df_obs = df_obs[df_obs['treatment']=='T1'] 
+        elif sim_date=='T2':
+            date, hsr = HS_applications[var]['T2']
+            df_obs = df_obs[df_obs['treatment']=='T2'] 
+        
         #sim 
-        df_sim_var = simulation_nffmoyen(var=var, hs=hs_moyen, n_sim=n_sim, n_plt=n_plt, axis=axis)
+        if sim_date=='delta':
+            # nff moyen
+            if var=='Mercia':
+                delta = -0.7
+            elif var=='Rht3':
+                delta = -1
+            elif var=='Tremie12':
+                delta = -0.5
+            elif var=='Tremie13':
+                delta = -0.4
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            hs_moyen = hs_moyen + delta
+            df_sim_var = simulation_nffmoyen(var=var, hs=hs_moyen, n_sim=n_sim, n_plt=n_plt, axis=axis)
+            df_obs = df_obs[df_obs['treatment']=='T2'] 
+        else:
+            df_sim_var = simulation_nffmoyen(var=var, hs=hsr, n_sim=n_sim, n_plt=n_plt, axis=axis)
         df_sim_var['deposit_Tartrazine/area'] = df_sim_var['deposit_Tartrazine'] / df_sim_var['area']
         #df_sim_var['HS-nffmean'] = df_sim_var['HS'] - hs_moyen
         df_sim = df_sim.append(df_sim_var)
     #merge des 2 tableaux obs et sim
-    df_obs = df_obs[df_obs['treatment']=='T2'] 
     df_all = df_sim.merge(df_obs)
     #column tartrazine/area
     df_all['meanObs/area'] = df_all['mean']/df_all['area']
@@ -1938,9 +2184,11 @@ def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_s
         if x == 0:
             axes[x].set_xlabel('var')
             axes[x].set_ylabel('deposit_tartrazine')
+            axes[x].set_ylim(0, 8) 
         else:
             axes[x].set_ylabel('deposit_tartrazine/area')
-            
+            axes[x].set_ylim(0, 0.5) 
+                      
         fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         
         def autolabel(rects):
@@ -1961,4 +2209,381 @@ def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_s
         '''axes[x].text(0.2, 6.1, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
                
     axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})'''
+
+#plot data publi contre simulation T2 et simulation au nff moyen    
+def simulation_sim_simnffmoyen(var='Tremie12', n_sim=5, n_plt=200, axis='MS'): #axis = MS or all          
+    if var=='Tremie12':
+        nplants_lst = 30
+        delta = -0.5
+    else :
+        nplants_lst = n_plt
+        delta = -0.4
+
+    # HS T2
+    date, hsT2 = HS_applications[var]['T2']
+    # nff moyen + delta
+    adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    mean = df_phenT.mean()
+    hs_moyen = mean['nff']
+    hs_moyen = hs_moyen + delta
+    # date a simuler
+    lst = [[var,'T2'], [var, str(hs_moyen)]]
+        
+    df_sim = pandas.DataFrame()
+    x=1
+    while x<=n_sim:
+        for var, stade in lst :          
+            npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False)
+            print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+            dfmoy['var'] = var
+            df_sim = df_sim.append(dfmoy)
+        x+=1
+    df_sim_gr = df_sim.groupby(['var', 'HS', 'ntop_cur']).mean()
+    df_sim_gr = df_sim_gr.reset_index()
+    return df_sim_gr
     
+def plot_data_sim_simnffmoyen(varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot1=True, plot2=True):
+    '''Plot1 = obs publi
+    Plot2 = obs/area'''
+    #obs + preparation de obs
+    df_obs = idata.dye_interception() 
+    df_obs.rename(columns={'name':'var'}, inplace=True) 
+    df_obs.rename(columns={'N feuille':'ntop_cur'}, inplace=True)
+    df_obs.rename(columns={'HS':'HS_obs'}, inplace=True)
+    #simulation
+    df_sim = pandas.DataFrame()
+    for var in varieties:
+        df_sim_var = simulation_sim_simnffmoyen(var=var, n_sim=n_sim, n_plt=n_plt, axis=axis)
+        df_sim_var['deposit_Tartrazine/area'] = df_sim_var['deposit_Tartrazine'] / df_sim_var['area']
+        df_sim = df_sim.append(df_sim_var)
+    #merge des 2 tableaux obs et sim
+    df_obs = df_obs[df_obs['treatment']=='T2'] 
+    df_all = df_sim.merge(df_obs)
+    #column tartrazine/area
+    df_all['meanObs/area'] = df_all['mean']/df_all['area']
+    
+    df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
+
+    if plot1==True:
+        for var in varieties: 
+            bar_width = 0.2; opacity = 0.4
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
+            #on ne veut que les 3 feuilles du haut
+            df_all_var = df_all[df_all['var']==var]
+            df_all_var = df_all_var[df_all_var['ntop_cur']<=4] 
+            date, hsT2 = HS_applications[var]['T2']
+            df_all_var_T2 = df_all_var[df_all_var['HS']==hsT2] 
+            if var=='Mercia':
+                delta = -0.7
+            elif var=='Rht3':
+                delta = -1
+            elif var=='Tremie12':
+                delta = -0.5
+            elif var=='Tremie13':
+                delta = -0.4
+            # nff moyen + delta
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            hs_moyen = hs_moyen + delta
+            df_all_var_delta = df_all_var[df_all_var['HS']==round(hs_moyen,2)] 
+            
+            n_groups = len(df_all_var_T2)
+            index = numpy.arange(n_groups) 
+
+            #publi
+            rects1 = ax0.bar(index, df_all_var_T2['mean'], bar_width, alpha=opacity, color='y', yerr=df_all_var_T2['IC'], error_kw=dict(ecolor='k'))
+            #sim T2
+            rects2 = ax0.bar(index + bar_width, df_all_var_T2['deposit_Tartrazine'], bar_width, alpha=opacity, color='r')
+            #sim T2+delta
+            rects3 = ax0.bar(index + 2*bar_width, df_all_var_delta['deposit_Tartrazine'], bar_width, alpha=opacity, color='b')
+           
+            # Mise en forme
+            label = ['']
+            ax0.set_xticklabels(label, rotation=90, fontsize='small')
+            ax0.text(0.3, -0.3, '1', fontsize='small')
+            ax0.text(1.3, -0.3, '2', fontsize='small')
+            ax0.text(2.3, -0.3, '3', fontsize='small')
+            ax0.text(3.3, -0.3, '4', fontsize='small')
+            
+            def autolabel(rects):
+            # attach some text labels
+                if rects == rects1 :
+                    list=['publication','','','']
+                elif rects== rects2:
+                    list=['simulation T2','','','']
+                elif rects== rects3:
+                    list=['simulation nff moyen + delta','','','']
+                for rect in rects:
+                    height = rect.get_height()
+                    if rects==rects1:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.7, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+                    else:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.2, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+            autolabel(rects1)
+            autolabel(rects2)
+            autolabel(rects3)
+
+            plt.ylim(ymax=7)
+            #ax0.set_xlabel('ntop_cur')
+            ax0.set_ylabel('deposit_tartrazine '+var)
+                
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+        
+    if plot2==True:
+        for var in varieties: 
+            bar_width = 0.2; opacity = 0.4
+            fig, ax1 = plt.subplots(nrows=1, ncols=1) 
+            #on ne veut que les 3 feuilles du haut
+            df_all_var = df_all[df_all['var']==var]
+            df_all_var = df_all_var[df_all_var['ntop_cur']<=4] 
+            date, hsT2 = HS_applications[var]['T2']
+            df_all_var_T2 = df_all_var[df_all_var['HS']==hsT2] 
+            if var=='Mercia':
+                delta = -0.7
+            elif var=='Rht3':
+                delta = -1
+            elif var=='Tremie12':
+                delta = -0.5
+            elif var=='Tremie13':
+                delta = -0.4
+            # nff moyen + delta
+            adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+            df_phenT = adel.phenT()
+            nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+            df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+            mean = df_phenT.mean()
+            hs_moyen = mean['nff']
+            hs_moyen = hs_moyen + delta
+            df_all_var_delta = df_all_var[df_all_var['HS']==round(hs_moyen,2)] 
+            
+            n_groups = len(df_all_var_T2)
+            index = numpy.arange(n_groups) 
+
+            #publi tartrazine/area
+            rects1 = ax1.bar(index, df_all_var_T2['meanObs/area'], bar_width, alpha=opacity, color='y')
+            #sim T2
+            rects2 = ax1.bar(index + bar_width, df_all_var_T2['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='r')
+            #sim T2+delta
+            rects3 = ax1.bar(index + 2*bar_width, df_all_var_delta['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='b')
+           
+            # Mise en forme
+            label = ['']
+            ax1.set_xticklabels(label, rotation=90, fontsize='small')
+            ax1.text(0.3, -0.01, '1', fontsize='small')
+            ax1.text(1.3, -0.01, '2', fontsize='small')
+            ax1.text(2.3, -0.01, '3', fontsize='small')
+            ax1.text(3.3, -0.01, '4', fontsize='small')
+            
+            def autolabel(rects):
+            # attach some text labels
+                if rects == rects1 :
+                    list=['publication','','','']
+                elif rects== rects2:
+                    list=['simulation T2','','','']
+                elif rects== rects3:
+                    list=['simulation nff moyen + delta','','','']
+                for rect in rects:
+                    height = rect.get_height()
+                    print height
+                    ax1.text(rect.get_x()+rect.get_width()/2., 1.05*height, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+            autolabel(rects1)
+            autolabel(rects2)
+            autolabel(rects3)
+
+            plt.ylim(ymax=0.28)
+            #ax1.set_xlabel('ntop_cur')
+            ax1.set_ylabel('deposit_tartrazine/area '+var)
+                
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+
+   
+#plot courbure
+def simulation_courbure(var='Tremie12', n_sim=1, n_plt=30, axis='MS'): #axis = MS or all          
+    if var=='Tremie12':
+        nplants_lst = 30
+        delta = -0.5
+    else :
+        nplants_lst = n_plt
+        delta = -0.4
+
+    # HS T2
+    date, hsT2 = HS_applications[var]['T2']
+    # nff moyen + delta
+    adel = Reconstructions.get_reconstruction(name=var, nplants=n_plt)
+    df_phenT = adel.phenT()
+    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
+    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
+    mean = df_phenT.mean()
+    hs_moyen = mean['nff']
+    hs_moyen = hs_moyen + delta
+    # date a simuler
+    lst = [[var, str(hs_moyen)]]
+        
+    df_sim = pandas.DataFrame()
+    x=1
+    while x<=n_sim:
+        for var, stade in lst :   
+            for nlim in [1,2,3,4,5,6]:
+                if var=='Tremie12':
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False, nlim_Tremie12=nlim)
+                elif var=='Tremie13':
+                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False, nlim_Tremie13=nlim)
+                print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+                dfmoy['var'] = var
+                dfmoy['nlim'] = nlim
+                df_sim = df_sim.append(dfmoy)
+        x+=1
+    df_sim_gr = df_sim.groupby(['var', 'HS', 'nlim', 'ntop_cur']).mean()
+    df_sim_gr = df_sim_gr.reset_index()
+    return df_sim_gr
+       
+def plot_courbure(varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=30, axis='MS', plot1=True, plot2=True):
+    '''Plot1 = obs publi
+    Plot2 = obs/area'''
+    #simulation
+    df_sim = pandas.DataFrame()
+    for var in varieties:
+        df_sim_var = simulation_courbure(var=var, n_sim=n_sim, n_plt=n_plt, axis=axis)
+        df_sim_var['deposit_Tartrazine/area'] = df_sim_var['deposit_Tartrazine'] / df_sim_var['area']
+        df_sim = df_sim.append(df_sim_var)
+    df_all = df_sim
+    df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
+
+    if plot1==True:
+        for var in varieties: 
+            bar_width = 0.1; opacity = 0.4
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
+            #on ne veut que les 3 feuilles du haut
+            df_all_var = df_all[df_all['var']==var]
+            df_all_var = df_all_var[df_all_var['ntop_cur']<=3] 
+
+            df_all_var_nlim1 = df_all_var[df_all_var['nlim']==1] 
+            df_all_var_nlim2 = df_all_var[df_all_var['nlim']==2] 
+            df_all_var_nlim3 = df_all_var[df_all_var['nlim']==3] 
+            df_all_var_nlim4 = df_all_var[df_all_var['nlim']==4] 
+            df_all_var_nlim5 = df_all_var[df_all_var['nlim']==5] 
+            df_all_var_nlim6 = df_all_var[df_all_var['nlim']==6] 
+            
+            n_groups = len(df_all_var_nlim1)
+            index = numpy.arange(n_groups) 
+
+            rects1 = ax0.bar(index, df_all_var_nlim1['deposit_Tartrazine'], bar_width, alpha=opacity, color='y')
+            rects2 = ax0.bar(index+bar_width, df_all_var_nlim2['deposit_Tartrazine'], bar_width, alpha=opacity, color='r')
+            rects3 = ax0.bar(index+2*bar_width, df_all_var_nlim3['deposit_Tartrazine'], bar_width, alpha=opacity, color='b')
+            rects4 = ax0.bar(index+3*bar_width, df_all_var_nlim4['deposit_Tartrazine'], bar_width, alpha=opacity, color='g')
+            rects5 = ax0.bar(index+4*bar_width, df_all_var_nlim5['deposit_Tartrazine'], bar_width, alpha=opacity, color='m')
+            rects6 = ax0.bar(index+5*bar_width, df_all_var_nlim6['deposit_Tartrazine'], bar_width, alpha=opacity, color='c')
+
+           
+            # Mise en forme
+            label = ['']
+            ax0.set_xticklabels(label, rotation=90, fontsize='small')
+            ax0.text(0.3, -0.4, '1', fontsize='small')
+            ax0.text(1.3, -0.4, '2', fontsize='small')
+            ax0.text(2.3, -0.4, '3', fontsize='small')
+            
+            def autolabel(rects):
+            # attach some text labels
+                if rects == rects1 :
+                    list=['nlim=1','','']
+                elif rects== rects2:
+                    list=['nlim=2','','']
+                elif rects== rects3:
+                    list=['nlim=3','','']
+                elif rects== rects4:
+                    list=['nlim=4','','']
+                elif rects== rects5:
+                    list=['nlim=5','','']
+                elif rects== rects6:
+                    list=['nlim=6','','']
+                for rect in rects:
+                    height = rect.get_height()
+                    if rects==rects1:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.2, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+                    else:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.2, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+            autolabel(rects1)
+            autolabel(rects2)
+            autolabel(rects3)
+            autolabel(rects4)
+            autolabel(rects5)
+            autolabel(rects6)
+
+            plt.ylim(ymax=12)
+            #ax0.set_xlabel('ntop_cur')
+            ax0.set_ylabel('deposit_tartrazine '+var)
+                
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
+     
+    if plot2==True:
+        for var in varieties: 
+            bar_width = 0.1; opacity = 0.4
+            fig, ax0 = plt.subplots(nrows=1, ncols=1) 
+            #on ne veut que les 3 feuilles du haut
+            df_all_var = df_all[df_all['var']==var]
+            df_all_var = df_all_var[df_all_var['ntop_cur']<=3] 
+
+            df_all_var_nlim1 = df_all_var[df_all_var['nlim']==1] 
+            df_all_var_nlim2 = df_all_var[df_all_var['nlim']==2] 
+            df_all_var_nlim3 = df_all_var[df_all_var['nlim']==3] 
+            df_all_var_nlim4 = df_all_var[df_all_var['nlim']==4] 
+            df_all_var_nlim5 = df_all_var[df_all_var['nlim']==5] 
+            df_all_var_nlim6 = df_all_var[df_all_var['nlim']==6] 
+            
+            n_groups = len(df_all_var_nlim1)
+            index = numpy.arange(n_groups) 
+
+            rects1 = ax0.bar(index, df_all_var_nlim1['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='y')
+            rects2 = ax0.bar(index+bar_width, df_all_var_nlim2['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='r')
+            rects3 = ax0.bar(index+2*bar_width, df_all_var_nlim3['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='b')
+            rects4 = ax0.bar(index+3*bar_width, df_all_var_nlim4['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='g')
+            rects5 = ax0.bar(index+4*bar_width, df_all_var_nlim5['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='m')
+            rects6 = ax0.bar(index+5*bar_width, df_all_var_nlim6['deposit_Tartrazine/area'], bar_width, alpha=opacity, color='c')
+
+           
+            # Mise en forme
+            label = ['']
+            ax0.set_xticklabels(label, rotation=90, fontsize='small')
+            ax0.text(0.3, -0.02, '1', fontsize='small')
+            ax0.text(1.3, -0.02, '2', fontsize='small')
+            ax0.text(2.3, -0.02, '3', fontsize='small')
+            
+            def autolabel(rects):
+            # attach some text labels
+                if rects == rects1 :
+                    list=['nlim=1','','']
+                elif rects== rects2:
+                    list=['nlim=2','','']
+                elif rects== rects3:
+                    list=['nlim=3','','']
+                elif rects== rects4:
+                    list=['nlim=4','','']
+                elif rects== rects5:
+                    list=['nlim=5','','']
+                elif rects== rects6:
+                    list=['nlim=6','','']
+                for rect in rects:
+                    height = rect.get_height()
+                    if rects==rects1:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.02, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+                    else:
+                        ax0.text(rect.get_x()+rect.get_width()/2., 1.05*height + 0.02, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
+            autolabel(rects1)
+            autolabel(rects2)
+            autolabel(rects3)
+            autolabel(rects4)
+            autolabel(rects5)
+            autolabel(rects6)
+
+            plt.ylim(ymax=0.5)
+            #ax0.set_xlabel('ntop_cur')
+            ax0.set_ylabel('deposit_tartrazine/area '+var)
+                
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
