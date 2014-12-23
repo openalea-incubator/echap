@@ -157,11 +157,17 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
         d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
-def median_leaf_fits(disc_level=7):
+def median_leaf_fits(disc_level=7, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
     d={}
-    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
+    '''gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
     gL['Rht3'] = geoLeaf(nlim=2) 
-    gL['Tremie12'] = geoLeaf() 
+    gL['Tremie12'] = geoLeaf(nlim=4) '''
+    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
+    gL['Mercia'] = geoLeaf(nlim=nlim_factor['Mercia']) 
+    gL['Rht3'] = geoLeaf(nlim=nlim_factor['Rht3']) 
+    gL['Tremie12'] = geoLeaf(nlim=nlim_factor['Tremie12'])    
+    gL['Tremie13'] = geoLeaf(nlim=nlim_factor['Tremie13']) 
+    
     trajs,bins = archidb.median_leaf_trajectories()
     for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
         _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
@@ -425,13 +431,13 @@ if run_plots:
 
 class EchapReconstructions(object):
     
-    def __init__(self, median_leaf=True):
+    def __init__(self, median_leaf=True, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
         self.density_fits = density_fits()
         self.tillering_fits = tillering_fits()
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits()
         if median_leaf:
-            self.leaf_fits = median_leaf_fits()
+            self.leaf_fits = median_leaf_fits(nlim_factor=nlim_factor)
         else:
             self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
