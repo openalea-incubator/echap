@@ -7,7 +7,7 @@ from openalea.deploy.shared_data import shared_data
 import alinea.echap.architectural_reconstructions as rec
 HSconv = rec.HS_converter
 
-def dye_interception():
+def dye_interception(todec = []):
     """ Dye interception data
     
     data are  mean/sd deposit per leaf compiled from all sprayed volume experiment.
@@ -26,10 +26,19 @@ def dye_interception():
     df = pandas.read_csv(data_file, decimal=',', sep=';')
     # shift leaf numbers at date 1
     decfeu = {'Mercia':'19/04/2011', 'Rht3':'19/04/2011', 'Tremie12':'11/04/2012', 'Tremie13':'25/04/2013'}
+    decfeu = {k:decfeu[k] for k in todec}
     for name,d in decfeu.iteritems():
         sel = (df['name'] == name) & (df['date'] == d) & (map(lambda x: x.startswith('F'),df['feuille']))
         df['feuille'][sel] = ('F2','F3','F4','F5')
         df['N feuille'][sel] = (2,3,4,5)
+        # complete with missing leaf to allow barplot
+        missing = df[sel].iloc[0]
+        missing['feuille'] = 'F1'
+        missing['N feuille'] = 1
+        missing['mean'] = 0
+        missing['sd'] = 0
+        missing['IC'] = 0
+        df = df.append(missing)
     return df
     
 def dye_applications():
@@ -41,6 +50,11 @@ def dye_applications():
                       'T1': ('2011-04-19', 9.74),#HS mesure le 18/04, a corriger avec delta HS ?
                       'T1+0.2': ('2011-04-19', 9.94),
                       'T1+0.4': ('2011-04-19', 10.14),
+                      'T2-2.5': ('2011-05-11', 10.3),
+                      'T2-2': ('2011-05-11', 10.8),
+                      'T2-1.5': ('2011-05-11', 11.3),
+                      'T2-1': ('2011-05-11', 11.8),
+                      'T2-0.5': ('2011-05-11', 12.3),
                       'T2-0.4': ('2011-05-11', 12.4),
                       'T2-0.2': ('2011-05-11', 12.6),
                       'T2': ('2011-05-11', 12.8),#HS not measured but estimated from HSconvert
@@ -56,6 +70,11 @@ def dye_applications():
                      'T1':('2011-04-19', 9.15), #HS mesure le 18
                      'T1+0.2':('2011-04-19', 9.35),
                      'T1+0.4':('2011-04-19', 9.55),
+                     'T2-2.5': ('2011-05-11', 9.98),
+                     'T2-2': ('2011-05-11', 10.48),
+                     'T2-1.5': ('2011-05-11', 10.98),
+                     'T2-1': ('2011-05-11', 11.48),
+                     'T2-0.5': ('2011-05-11', 11.98),
                      'T2-0.4':('2011-05-11', 12.08),
                      'T2-0.2':('2011-05-11', 12.28),
                      'T2':('2011-05-11', 12.48),# HS convert estimation
@@ -81,6 +100,11 @@ def dye_applications():
                      'T1':('2012-04-11', 10.98),
                      'T1+0.2':('2012-04-11', 11.18),
                      'T1+0.4':('2012-04-11', 11.38),
+                     'T2-2.5':('2012-05-09', 10.13),
+                     'T2-2':('2012-05-09', 10.63),
+                     'T2-1.5':('2012-05-09', 11.13),
+                     'T2-1':('2012-05-09', 11.63),
+                     'T2-0.5':('2012-05-09', 12.13),
                      'T2-0.4':('2012-05-09', 12.23),
                      'T2-0.2':('2012-05-09', 12.43),
                      'T2':('2012-05-09', 12.63),
@@ -106,6 +130,11 @@ def dye_applications():
                      'date2':('2013-05-03', 9.7),#HS mesure le 02
                      'date2+0.2':('2013-05-03', 9.9),
                      'date2+0.4':('2013-05-03', 10.1),
+                     'T2-2.5':('2013-05-17', 8.54),
+                     'T2-2':('2013-05-17', 9.04),
+                     'T2-1.5':('2013-05-17', 9.54),
+                     'T2-1':('2013-05-17', 10.04),
+                     'T2-0.5':('2013-05-17', 11.54),
                      'T2-0.4':('2013-05-17', 10.64),
                      'T2-0.2':('2013-05-17', 10.84),
                      'T2':('2013-05-17', 11.04),#HS convert estimation 
