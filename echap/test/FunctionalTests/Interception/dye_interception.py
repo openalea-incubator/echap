@@ -437,7 +437,7 @@ def plot_diff(varieties=['Mercia']):
             fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('Interception MB', 'Interception MB + talles', 'Interception talles', 'Interception T1'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
 
-#effet dimension
+#effet dimension (effet dimension _T2/T1)
 def simulation_dimension(name='Tremie12', n_sim=5, n_plt=200, ajust=True): 
     if name=='Tremie12':
         n = 30
@@ -734,7 +734,7 @@ def courbe_dimension(varieties=['Tremie12','Tremie13']):
         plt.xlabel('surface'); plt.ylabel('interception')
         plt.legend(numpoints=1, bbox_to_anchor=(1., 1.), prop={'size': 9})
     
-#effet densite 
+#effet densite  (efffet density T2- T1)
 def simulation_density(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
     if name=='Tremie12':
         n = 30
@@ -1056,7 +1056,7 @@ def courbe_density(varieties=['Tremie12','Tremie13']):
         plt.xlabel('nb epis/plante * densite'); plt.ylabel('interception')
         plt.legend(numpoints=1, bbox_to_anchor=(1., 1.), prop={'size': 9})
     
-#effet HS
+#effet HS _T2 / T1
 def simulation_HS(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
     if name=='Tremie12':
         n = 30
@@ -1313,7 +1313,7 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
             
     return df_scan, df_obs, df_sim
     
-#comparer ntop_cur=1 pour des ages de feuilles identiques
+#comparer ntop_cur=1 pour des ages de feuilles identiques (Fameuse figure corinne)
 def sim_HScom(var='Mercia', stade='T1', axis='MS'):
     df_sim = pandas.DataFrame()
     x=1
@@ -1563,6 +1563,7 @@ def plot_HScom(varieties=['Mercia','Rht3','Tremie12','Tremie13'], appdate_lst = 
     df_sim.to_csv('HS_com_synth_all.csv')
     return df_sim
 
+# efficacy_T2/T1
 #plot tartrazine/area par HS (HSnff-6 à HSnff+6) pour ntop=1 a 3
 def simulation_efficacy(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS'):
 
@@ -2087,7 +2088,7 @@ def plot_efficacy(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_sim=1, n_
                 
     return df_sim
     
-#plot data publi contre simulation au nff moyen ou HS   
+#plot data publi contre simulation au nff moyen ou HS   (comp base sim_obs T1_T2)
 def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS'): #axis = MS or all          
     if var=='Tremie12':
         nplants_lst = 30
@@ -2210,7 +2211,7 @@ def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_s
                
     axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})'''
 
-#plot data publi contre simulation T2 et simulation au nff moyen    
+#plot data publi contre simulation T2 et simulation au nff moyen  (data-sim T2 - sim delta)   
 def simulation_sim_simnffmoyen(var='Tremie12', n_sim=5, n_plt=200, axis='MS'): #axis = MS or all          
     if var=='Tremie12':
         nplants_lst = 30
