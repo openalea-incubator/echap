@@ -32,7 +32,7 @@ from alinea.echap.interfaces import local_microclimate
 from alinea.pesticide_efficacy.pesticide_efficacy import *
 from alinea.echap.interfaces import pesticide_efficacy
 # Rain interception
-from alinea.septo3d.Rapilly import *
+# from alinea.septo3d.Rapilly import *
 from alinea.echap.interfaces import rain_interception
 # Septo3d
 from alinea.septo3d.cycle.alep_objects import *
@@ -44,7 +44,7 @@ from alinea.popdrops.Drops import *
 
 # Alep protocol
 from alinea.alep.inoculation import RandomInoculation
-from alinea.alep.dispersal import RandomDispersal
+from alinea.alep.dispersal_transport import RandomDispersal
 from alinea.alep.protocol import initiate
 from alinea.alep.protocol import infect
 from alinea.alep.protocol import update
