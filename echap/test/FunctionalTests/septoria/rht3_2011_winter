@@ -1,0 +1,18 @@
+\documentclass[a4paper,reqno,11pt]{amsart}
+
+\usepackage[french]{babel}
+\usepackage{booktabs}
+\title{number of observations}
+
+\begin{document}
+
+\begin{tabular}{llrrrr}
+\toprule
+{} & &9& 10& 11& 12\\
+Date & Degree days &  &  &  & \\
+\midrule
+2011-01-19 & 468 & 36 & 36 & 36 & 36\\
+\bottomrule
+\end{tabular}
+
+\end{document}
