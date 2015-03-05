@@ -300,23 +300,28 @@ def change_zero_sample(data, df, variable = 'severity', xaxis = 'degree_days'):
         to find the last date when variable = 0 """
     indx = np.nonzero(df[variable])[0]
     if sum(df[variable]==0)>0 and len(indx)>=2:
+        first_date_zero = df[xaxis][df[variable]==0].iloc[0]
         df_insert = pd.DataFrame(index = [df.index[0]], columns = df.columns)
         df_insert[variable] = 0.
         x_data = df.iloc[indx[:2]][variable].values
         y_data_xaxis = df.iloc[indx[:2]][xaxis].values
         s_xaxis = InterpolatedUnivariateSpline(x_data, y_data_xaxis, k=1)
-        df_insert[xaxis] = s_xaxis(0.)
-        if xaxis != 'degree_days':
-            y_data_dd = df.iloc[indx[:2]]['degree_days'].values
-            s_xaxis = InterpolatedUnivariateSpline(x_data, y_data_dd, k=1)
-            df_insert['degree_days'] = s_xaxis(0.)
-        df_insert['datetime'] = np.argmin(np.abs(data['degree_days'] - s_xaxis(0.)))
-        return pd.concat([df, df_insert]).sort('datetime')
+        if s_xaxis(0.) > first_date_zero:
+            df_insert[xaxis] = s_xaxis(0.)
+            if xaxis != 'degree_days':
+                y_data_dd = df.iloc[indx[:2]]['degree_days'].values
+                s_xaxis = InterpolatedUnivariateSpline(x_data, y_data_dd, k=1)
+                df_insert['degree_days'] = s_xaxis(0.)
+            #df_insert['datetime'] = np.argmin(np.abs(data['degree_days'] - s_xaxis(0.)))
+            return pd.concat([df, df_insert]).sort('datetime')
+        else:
+            return df
         
 def plot_by_leaf_sample(data, weather, variable = 'severity', 
                         leaf = 1, plant = None,  xaxis = 'degree_days', variety = 'Tremie 12',
                         return_df = False, display_fit_function = None, ax = None, 
-                        fixed_color = None, change_zero = False, marker = None, linestyle = '-'):
+                        fixed_color = None, change_zero = False, marker = None, 
+                        linestyle = '-', xlims = None, ylims = None):
     """ Plot given leaf (numbered from top) as individual samples for all plants or for given plant """
     try:
         import mpld3
@@ -382,14 +387,21 @@ def plot_by_leaf_sample(data, weather, variable = 'severity',
         ax.set_xlabel('Age of leaf since emergence in Cd', fontsize = 18)
     elif xaxis == 'age_leaf_lig':
         ax.set_xlabel('Age of leaf since ligulation in Cd', fontsize = 18)
-    ax.set_ylim([0, 100])
+    
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    else:
+        ax.set_ylim([0, 100])
             
     # Display particular data table
     if return_df == True and plant is not None and len(plant)==1:
         return df.loc[plant]
         
 def plot_by_leaf_samples_by_fnl(data, weather, variable = 'septo_green', 
-                                    leaf = 2, xaxis = 'age_emergence', marker = None):
+                                leaf = 2, xaxis = 'age_emergence', 
+                                marker = None, xlims = None, ylims = None):
     """ Plot given leaf (numbered from top) as individual samples
             for all plants or for given plant grouped by final leaf number """
     data_grouped = group_by_fnl(data)
@@ -399,8 +411,9 @@ def plot_by_leaf_samples_by_fnl(data, weather, variable = 'septo_green',
     handles = []
     for fnl, df in data_grouped.iteritems():
         color = next(colors)
-        plot_by_leaf_sample(df, weather, variable = variable, leaf = leaf, xaxis = xaxis,
-                            ax = ax, fixed_color = color, marker = marker)
+        plot_by_leaf_sample(df, weather, variable = variable, leaf = leaf,
+                            xaxis = xaxis, ax = ax, fixed_color = color,
+                            marker = marker, xlims = xlims, ylims = ylims)
         handles += [plt.Line2D([],[], color = color, linewidth = 2)]
         legend += ['%d' % fnl]
     ax.legend(handles, legend, title = 'FNL', loc='best', fontsize=12)
@@ -681,8 +694,8 @@ def plot_df_mean(ax, df_mean, color = None, marker='d', markersize=8,
 def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leaves = range(1,7), 
                  fig_size=(8,6), pointer=True, title_suffix='', minimum_sample_size = 5, 
                  linestyle = '-', marker = 'd', ax = None, fig = None, jump_colors = 0,
-                 return_df_mean = False, xlims = None, title = None, error_bars = False, 
-                 with_brewer = True, xlabel = True):
+                 return_df_mean = False, xlims = None, ylims = None, title = None, 
+                 error_bars = False, with_brewer = True, xlabel = True):
     """ Plot average of given variable for separate leaves in argument versus xaxis in argument """
     # Extract data
     if error_bars == True:
@@ -719,12 +732,16 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
     ax = custom_ylabel(ax = ax, variable = variable)
     if xlabel == True:
         ax = custom_xlabel(ax, degree_days = True)
+    if ylims is not None:
+        ax.set_ylim(ylims)
     if xlims is None:
-        xlims, ylims = get_fig_lims(df_mean = df_mean, degree_days = True)
+        xlims, ylims_ = get_fig_lims(df_mean = df_mean, degree_days = True)
     else:
-        _ , ylims = get_fig_lims(df_mean = df_mean, degree_days = True)
+        _ , ylims_ = get_fig_lims(df_mean = df_mean, degree_days = True)
     ax.set_xlim(xlims)
-    ax.set_ylim(ylims)
+    ax.set_ylim(ylims_)
+    if ylims is not None:
+        ax.set_ylim(ylims)
     ax.grid(alpha=0.5)
     if title is None:
         title = data['variety'][0]+'_'+str(data.index[-1].year)+title_suffix
@@ -738,7 +755,7 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
         return df_mean
         
 def plot_by_leaf_by_fnl(data, weather, variable='severity', xaxis = 'degree_days',
-                        leaves = range(1,7), fig_size=(8,6), xlims = None, 
+                        leaves = range(1,7), fig_size=(8,6), xlims = None, ylims = None,
                         title_suffix='_control', minimum_sample_size = 5, 
                         with_brewer = True, error_bars = False, fig = None, ax = None,
                         xlabel = False, jumps = {11:0, 12:0, 13:0}):
@@ -758,8 +775,9 @@ def plot_by_leaf_by_fnl(data, weather, variable='severity', xaxis = 'degree_days
         df_mean = plot_by_leaf(df, weather, leaves = leaves, variable = variable, pointer = False,
                                 title_suffix=title_suffix, xaxis = xaxis, ax = ax, fig = fig, 
                                 linestyle = linestyle, marker = marker, jump_colors = jumps[fnl],
-                                return_df_mean = True, xlims = xlims, with_brewer = with_brewer,
-                                minimum_sample_size = minimum_sample_size, xlabel = xlabel, 
+                                return_df_mean = True, xlims = xlims, ylims = ylims, 
+                                with_brewer = with_brewer, xlabel = xlabel, 
+                                minimum_sample_size = minimum_sample_size, 
                                 error_bars = error_bars)
         labels += ['L '+str(lf)+': FNL '+str(fnl) for lf in df_mean.columns]
 
@@ -770,14 +788,64 @@ def plot_by_leaf_by_fnl(data, weather, variable='severity', xaxis = 'degree_days
                             key=lambda t: color_list.index(t[1].get_c())))
     leg = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
+def compare_plot_by_leaf_two_datasets(data1, data2, weather, variable='severity',
+                                      xaxis = 'degree_days', leaves = range(1,7),
+                                      labels = ['data1', 'data2'], xlims = None, ylims = None,
+                                      minimum_sample_size = 5, error_bars = False,
+                                      title_suffix='_control', markers = ['d', '*'],
+                                      linestyles = ['-', '--'], ax = None):
+    if ax == None:
+        fig, ax = plt.subplots(1, figsize = (8,6))
+    plot_by_leaf(data1, weather, leaves = leaves, variable = variable, xaxis = xaxis, pointer=False, 
+                 title_suffix = title_suffix, xlims = xlims, ylims = ylims, ax = ax,
+                 minimum_sample_size = minimum_sample_size, error_bars = error_bars,
+                 marker = markers[0], linestyle = linestyles[0])
+    plot_by_leaf(data2, weather, leaves = leaves, variable = variable, xaxis = xaxis, pointer=False, 
+                 title_suffix = title_suffix, xlims = xlims, ylims = ylims, ax = ax,
+                 minimum_sample_size = minimum_sample_size, error_bars = error_bars,
+                 marker = markers[1], linestyle = linestyles[1])
+                 
+    labels = ['F%d ' %lf +labels[0] for lf in leaves]+['F%d ' %lf +labels[1] for lf in leaves]
+    color_list = [next(ax._get_lines.color_cycle) for lf in range(7)]
+    leg = ax.legend(ax._get_legend_handles(), labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    labels, handles = zip(*sorted(zip(labels, ax._get_legend_handles()), 
+                           key=lambda t: color_list.index(t[1].get_c())))
+    leg = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    
+def compare_plot_by_leaf_two_variables(data, weather, 
+                                        variable1 = 'septo_green', variable2 = 'severity',
+                                        xaxis = 'degree_days', leaves = range(1,7),
+                                        labels = ['septo_green', 'severity'], 
+                                        xlims = None, ylims = None,
+                                        markers = ['d', '*'], linestyles = ['-', '--'],
+                                        minimum_sample_size = 5, error_bars = False,
+                                        title_suffix='_control', ax = None):
+    if ax == None:
+        fig, ax = plt.subplots(1, figsize = (8,6))
+    plot_by_leaf(data, weather, leaves = leaves, variable = variable1, xaxis = xaxis, pointer=False, 
+                 title_suffix = title_suffix, xlims = xlims, ylims = ylims, ax = ax,
+                 minimum_sample_size = minimum_sample_size, error_bars = error_bars,
+                 marker = markers[0], linestyle = linestyles[0])
+    plot_by_leaf(data, weather, leaves = leaves, variable = variable2, xaxis = xaxis, pointer=False, 
+                 title_suffix = title_suffix, xlims = xlims, ylims = ylims, ax = ax,
+                 minimum_sample_size = minimum_sample_size, error_bars = error_bars,
+                 marker = markers[1], linestyle = linestyles[1])
+                 
+    labels = ['F%d ' %lf +labels[0] for lf in leaves]+['F%d ' %lf +labels[1] for lf in leaves]
+    color_list = [next(ax._get_lines.color_cycle) for lf in range(7)]
+    leg = ax.legend(ax._get_legend_handles(), labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    labels, handles = zip(*sorted(zip(labels, ax._get_legend_handles()), 
+                           key=lambda t: color_list.index(t[1].get_c())))
+    leg = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    
 def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'degree_days', 
                                 leaves=range(1,7), fig_size=(15, 10), title_suffix='', 
                                 comparison_table = None, minimum_sample_size = 5, 
-                                return_fig = False, xlims = None, fig = None, axs = None, 
-                                marker = 'o', fixed_color = None, alpha=0.3, linestyle = '-', 
-                                filling_contour = True, tight_layout = True, title = True,
-                                xlabel = True, display_error_margin = True, display_box = True,
-                                forced_date_leaves = None):
+                                return_fig = False, xlims = None, ylims = None, fig = None, 
+                                axs = None, marker = 'o', fixed_color = None, alpha=0.3, 
+                                linestyle = '-', filling_contour = True, tight_layout = True, 
+                                title = True, xlabel = True, display_error_margin = True,
+                                display_box = True, forced_date_leaves = None):
     """ Plot mean of given variable, with distribution and confidence interval
         for separate leaves in argument versus xaxis in argument """
     from matplotlib.dates import MonthLocator, DateFormatter
@@ -956,7 +1024,10 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
         
         # Customize
         ax.set_xlim(xlims)
-        ax.set_ylim([0, 100])
+        if ylims is not None:
+            ax.set_ylim(ylims)
+        else:
+            ax.set_ylim([0, 100])
         if ax in axs.flat[::2]:
             if variable=='septo_green':
                 ylab = 'Septoria on green (in %)'
@@ -985,7 +1056,7 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
         
 def plot_confidence_and_boxplot_by_fnl(data, weather, variable='severity', xaxis = 'degree_days',
                                        leaves=range(1,7), fig_size=(15, 10), title_suffix='', 
-                                       minimum_sample_size = 5, xlims = None):
+                                       minimum_sample_size = 5, xlims = None, ylims = None):
     """ Plot mean of given variable, with distribution and confidence interval
         for separate leaves in argument versus xaxis in argument, plants grouped by FNL """
     # Group data by fnl
@@ -1006,8 +1077,8 @@ def plot_confidence_and_boxplot_by_fnl(data, weather, variable='severity', xaxis
             count += 1
         df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(df, weather, leaves = leaves, variable = variable,
                                                                         xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
-                                                                        xlims = xlims, return_fig = True, fig = fig, axs = axs,
-                                                                        marker = marker, fixed_color = color, alpha = alpha,
+                                                                        xlims = xlims, ylims = ylims, return_fig = True, fig = fig,
+                                                                        axs = axs, marker = marker, fixed_color = color, alpha = alpha,
                                                                         linestyle = linestyle, filling_contour = False,
                                                                         minimum_sample_size = minimum_sample_size)
         labels += ['FNL '+str(fnl)]
@@ -1019,13 +1090,13 @@ def plot_confidence_and_boxplot_by_fnl(data, weather, variable='severity', xaxis
 def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days', 
                                              leaves=range(1,7), fig_size=(15, 10), 
                                              title_suffix='', minimum_sample_size = 5, 
-                                             xlims = None, display_necro = False, 
+                                             xlims = None, ylims = None, display_necro = False, 
                                              display_green = True):
     """ Compare plots of mean, distribution and confidence interval 
             for variables 'septo_green' and 'severity' on separate leaves in data """
     df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data, weather, leaves = leaves, variable = 'septo_green',
                                                                         xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
-                                                                        xlims = xlims, return_fig = True, 
+                                                                        xlims = xlims, ylims = ylims, return_fig = True, 
                                                                         marker = 'o', fixed_color = 'g', alpha = 0.2,
                                                                         linestyle = '-', filling_contour = False)
     labels = ['Septoria on green']
@@ -1034,8 +1105,8 @@ def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days
     if display_necro == True:
         df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data, weather, leaves = leaves, variable = 'necro',
                                                                     xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
-                                                                    xlims = xlims, return_fig = True, fig = fig, axs = axs,
-                                                                    marker = 'o', fixed_color = 'k', alpha = 0.2,
+                                                                    xlims = xlims, ylims = ylims, return_fig = True, fig = fig, 
+                                                                    axs = axs, marker = 'o', fixed_color = 'k', alpha = 0.2,
                                                                     linestyle = '--', filling_contour = False,
                                                                     display_error_margin = False, display_box = False)
         labels.insert(0, 'Apical senescence')
@@ -1046,8 +1117,8 @@ def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days
         df['green'] = 100 - df['necro']
         df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data, weather, leaves = leaves, variable = 'green',
                                                                     xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
-                                                                    xlims = xlims, return_fig = True, fig = fig, axs = axs,
-                                                                    marker = 'o', fixed_color = 'k', alpha = 0.2,
+                                                                    xlims = xlims, ylims = ylims, return_fig = True, fig = fig,
+                                                                    axs = axs, marker = 'o', fixed_color = 'k', alpha = 0.2,
                                                                     linestyle = '--', filling_contour = False,
                                                                     display_error_margin = False, display_box = False)
         labels.insert(0, 'Non-senescent')
@@ -1055,8 +1126,8 @@ def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days
         
     df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data, weather, leaves = leaves, variable = 'severity',
                                                                         xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
-                                                                        xlims = xlims, return_fig = True, fig = fig, axs = axs,
-                                                                        marker = 'o', fixed_color = 'r', alpha = 0.2,
+                                                                        xlims = xlims, ylims = ylims, return_fig = True, fig = fig, 
+                                                                        axs = axs, marker = 'o', fixed_color = 'r', alpha = 0.2,
                                                                         linestyle = '-', filling_contour = False)
     labels += ['Severity']
     proxy += [plt.Rectangle((0,0), 0,0, facecolor='r', alpha = 0.2)]   
@@ -1069,7 +1140,7 @@ def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days
 def plot_confidence_and_boxplot_with_global(data, data_global, weather, xaxis = 'degree_days',
                                             variable = 'severity', leaves=range(1,7), 
                                             fig_size=(15, 10), title_suffix='', title = '',
-                                            minimum_sample_size = 5, xlims = None, 
+                                            minimum_sample_size = 5, xlims = None, ylims = None,
                                             display_necro = False, display_green = True):
     """ Plot mean of given variable, with distribution and confidence interval
         for separate leaves versus xaxis. 
@@ -1086,16 +1157,16 @@ def plot_confidence_and_boxplot_with_global(data, data_global, weather, xaxis = 
     df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data_global, weather, leaves = range(1,min(max(leaves),5)),
                                                                      variable = variable, xaxis = xaxis, 
                                                                      title_suffix = title_suffix, title = title,
-                                                                     fig_size = fig_size, xlims = xlims, return_fig = True, 
-                                                                     fig = fig, axs = axs, marker = 'o', fixed_color = 'r', 
-                                                                     alpha = 0.2, linestyle = '', filling_contour = False,
-                                                                     display_error_margin = False, display_box = False,
-                                                                     forced_date_leaves = forced_date_leaves)
+                                                                     fig_size = fig_size, xlims = xlims, ylims = None,
+                                                                     return_fig = True, fig = fig, axs = axs, marker = 'o', 
+                                                                     fixed_color = 'r', alpha = 0.2, linestyle = '', 
+                                                                     filling_contour = False, display_error_margin = False,
+                                                                     display_box = False, forced_date_leaves = forced_date_leaves)
     
     df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data, weather, leaves = leaves, variable = variable,
                                                                         xaxis = xaxis, title_suffix = title_suffix, title = title,
-                                                                        fig_size = fig_size,
-                                                                        xlims = xlims, return_fig = True, fig = fig, axs = axs, 
+                                                                        fig_size = fig_size, xlims = xlims, ylims = ylims, 
+                                                                        return_fig = True, fig = fig, axs = axs, 
                                                                         minimum_sample_size = minimum_sample_size)
     labels = ['Weekly\n measurements', 'Consistency\n measurements']
     proxy = [plt.Line2D((0,1),(0,0), color = 'k', marker ='o', linestyle ='-'), 
@@ -1106,6 +1177,39 @@ def plot_confidence_and_boxplot_with_global(data, data_global, weather, xaxis = 
     except:
         pass
         
+def compare_confidence_and_boxplot_two_datasets(data1, data2, weather, variable = 'severity',
+                                                xaxis = 'degree_days', leaves=range(1,5),
+                                                fig_size=(15, 10), minimum_sample_size = 5., 
+                                                labels = ['data1', 'data2'], 
+                                                xlims = None, ylims = None, 
+                                                display_error_margin = [True, True],
+                                                display_box = [True, True],
+                                                forced_date_leaves = None):
+    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data1, weather, leaves = leaves, variable = variable,
+                                                                        xaxis = xaxis, title = False, fig_size = fig_size,
+                                                                        xlims = xlims, ylims = ylims, return_fig = True, 
+                                                                        marker = 'o', fixed_color = 'g', alpha = 0.2,
+                                                                        linestyle = '-', filling_contour = False,
+                                                                        display_error_margin = display_error_margin[0],
+                                                                        display_box = display_box[0],
+                                                                        minimum_sample_size = minimum_sample_size, 
+                                                                        forced_date_leaves = forced_date_leaves)
+    proxy = [plt.Rectangle((0,0), 0,0, facecolor='g', alpha = 0.2)]
+        
+    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data2, weather, leaves = leaves, variable = variable,
+                                                                        xaxis = xaxis, title = False, fig_size = fig_size,
+                                                                        xlims = xlims, ylims = ylims, return_fig = True,
+                                                                        fig = fig, axs = axs,
+                                                                        marker = 'o', fixed_color = 'r', alpha = 0.2,
+                                                                        display_error_margin = display_error_margin[1],
+                                                                        display_box = display_box[1],
+                                                                        linestyle = '-', filling_contour = False, 
+                                                                        minimum_sample_size = minimum_sample_size,
+                                                                        forced_date_leaves = forced_date_leaves)
+    proxy += [plt.Rectangle((0,0), 0,0, facecolor='r', alpha = 0.2)]   
+        
+    axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
+    
 # Fit of curves ####################################################################################
 from scipy.optimize import curve_fit
 
@@ -1368,6 +1472,50 @@ def get_nb_risk_by_leaf(adel, weather, age_inf = 0, age_sup = 500,
         else:
             raise ValueError("Unit unknown")
     return df_risk
+
+def get_speed(data, weather, variable = 'severity', from_top = True):
+    """ Get speed of curve to reach value max  """
+    df = data.copy()
+    change_index(df, ['plant'])
+
+    if from_top == True:
+        num_leaf = 'num_leaf_top'
+    else:
+        num_leaf = 'num_leaf_bottom'
+
+    df_speed = pd.DataFrame()
+    for lf in set(df[num_leaf]):
+        for pl in set(df[df[num_leaf]==lf].index):
+            df_ = df[df[num_leaf]==lf].loc[pl,:]
+            if is_iterable(df_[variable]):
+                # Extract date of first positive value from interpolation between notations
+                change_zero_sample(data, df_, variable = variable, xaxis = 'degree_days')
+                first_date_zero = df_['degree_days'][df_[variable]==0].iloc[0]
+                # Extract date of first reach of max value 
+                # (TODO from interpolation between notations)
+                max_value = max(df_[variable])
+                first_date_max = df_['degree_days'][df_[variable]==max_value].iloc[0]
+                delta_date = first_date_max - first_date_zero
+                df_speed.loc[pl,lf] = max_value/delta_date if delta_date>0. else 0.
+    return df_speed
+    
+def get_max_sev(data, weather, variable = 'severity', from_top = True):
+    """ Get value max of curve on each sample """
+    df = data.copy()
+    change_index(df, ['plant'])
+
+    if from_top == True:
+        num_leaf = 'num_leaf_top'
+    else:
+        num_leaf = 'num_leaf_bottom'
+
+    df_max = pd.DataFrame()
+    for lf in set(df[num_leaf]):
+        for pl in set(df[df[num_leaf]==lf].index):
+            df_ = df[df[num_leaf]==lf].loc[pl,:]
+            if is_iterable(df_[variable]):
+                df_max.loc[pl,lf] = max(df_[variable])
+    return df_max
     
 # Plots related to weather-disease interactions ####################################################
 import matplotlib.gridspec as gridspec
