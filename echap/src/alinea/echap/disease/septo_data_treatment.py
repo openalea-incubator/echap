@@ -143,8 +143,10 @@ def bootstr(x):
         try:
             return bootstrap.ci(data=x, statfunction=scipy.mean)
         except:
-            import pdb
-            pdb.set_trace()        
+            if np.mean(x) == np.max(x):
+                return(np.array([np.mean(x), np.mean(x)]))
+            else:
+                return np.array([np.nan, np.nan])
 
 def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'datetime', 
                                             num_leaf = 1, by_leaf=True, from_top = True):
@@ -1499,7 +1501,7 @@ def get_speed(data, weather, variable = 'severity', from_top = True):
                 df_speed.loc[pl,lf] = max_value/delta_date if delta_date>0. else 0.
     return df_speed
     
-def get_max_sev(data, weather, variable = 'severity', from_top = True):
+def get_max_value(data, weather, variable = 'severity', from_top = True):
     """ Get value max of curve on each sample """
     df = data.copy()
     change_index(df, ['plant'])
@@ -1694,8 +1696,8 @@ def plot_daily_relative_humidity(weather, xaxis = 'degree_days',
    
 def plot_with_weather(data, weather, leaves = range(1,2), 
                       variable='severity', xaxis = 'degree_days',
-                      minimum_sample_size = 5, xlims = [1150, 2050], 
-                      error_bars = False, return_ax = False, marker = 'd'):
+                      minimum_sample_size = 5, xlims = [1150, 2050], ylims = [0, 100], 
+                      error_bars = False, return_ax = False, marker = 'd', with_brewer = True):
     """ Plot disease evolution with weather conditions underneath """
     weather_ = deepcopy(weather)
     try:
@@ -1713,7 +1715,7 @@ def plot_with_weather(data, weather, leaves = range(1,2),
 
     plot_by_leaf(data, weather_, leaves = leaves,  variable = variable, 
                  pointer = False, title_suffix = '_control', xaxis = xaxis, 
-                 ax = ax1, xlims = xlims, with_brewer = True, xlabel = False, 
+                 ax = ax1, xlims = xlims, ylims = ylims, with_brewer = with_brewer, xlabel = False, 
                  minimum_sample_size = minimum_sample_size, error_bars = error_bars, 
                  marker = marker)
     ax1.legend(ax1._get_legend_handles(), leaves, title = 'Leaf number',
