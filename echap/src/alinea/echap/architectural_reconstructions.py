@@ -250,8 +250,8 @@ def HS_GL_fits():
     HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
     GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
     nff = archidb.mean_nff()
-    coefs = {'n0': 4.4, 'hs_t1': 8.1}#n0=4.4 : Maxwell value
-    n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
+    coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
+    n1 = {'Mercia':3., 'Rht3': 3., 'Tremie12':3., 'Tremie13':3.}
     n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
     fits = {k:pgen_ext.GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
     #

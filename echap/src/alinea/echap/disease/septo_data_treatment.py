@@ -300,7 +300,7 @@ def form_int(x, pos):
 def change_zero_sample(data, df, variable = 'severity', xaxis = 'degree_days'):
     """ Interpolate data of given variable between notations 
         to find the last date when variable = 0 """
-    indx = np.nonzero(df[variable])[0]
+    indx = np.nonzero(df[variable][~np.isnan(df[variable])])[0]
     if sum(df[variable]==0)>0 and len(indx)>=2:
         first_date_zero = df[xaxis][df[variable]==0].iloc[0]
         df_insert = pd.DataFrame(index = [df.index[0]], columns = df.columns)

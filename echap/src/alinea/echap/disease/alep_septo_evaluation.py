@@ -23,6 +23,8 @@ def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
             # Temp : to move in disease outputs
             rec_lf.data['pycnidia_coverage'] = (rec_lf.data['ratio_spo'] + rec_lf.data['ratio_empty'])*100
             rec_lf.data['pycnidia_coverage_on_green'] = (rec_lf.data['ratio_spo'] + rec_lf.data['ratio_empty'])*100
+            rec_lf.get_normalized_audpc()
+            rec_lf.data['audpc'] = rec_lf.normalized_audpc
             recos.append(rec_lf.data)
     data_sim = pd.concat(recos)
     

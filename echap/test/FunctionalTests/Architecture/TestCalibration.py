@@ -1,3 +1,4 @@
+# -*- coding: latin1 -*- 
 import pandas
 import numpy
 import os
@@ -589,63 +590,6 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
 #-------------------------------------------------------------------------------------
 # GRAPH METEO
     
-def mat_ray_obs(data_file):
-    import re
-    
-    header_row = ['DATE','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
-    #data = pandas.read_csv(data_file, parse_dates={'datetime':[0,1]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
-    df = pandas.read_csv(data_file, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
-
-    #filtre seulement heure entre 9h et 19h pour chaque journee
-    df = df[df['H']>9]; df = df[df['H']<19]
-    
-    #tableau non traité
-    dfa=df; dfa = dfa.reset_index()
-    dfa.columns = ['datetime','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
-    dfa = dfa.groupby(dfa['datetime'], axis=0).mean(); dfa = dfa.reset_index()
-    da=0
-    while da<len(dfa):
-        dfa['datetime'][da] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", dfa['datetime'][da])
-        da = da+1
-    dfa['%SE1'] = dfa['SE_PAR_Avg_1']/dfa['QR_PAR_Avg']; dfa['%SE2'] = dfa['SE_PAR_Avg_2']/dfa['QR_PAR_Avg']
-    dfa['%SE3'] = dfa['SE_PAR_Avg_3']/dfa['QR_PAR_Avg']; dfa['%SE4'] = dfa['SE_PAR_Avg_4']/dfa['QR_PAR_Avg']
-    dfa['%SE5'] = dfa['SE_PAR_Avg_5']/dfa['QR_PAR_Avg']; dfa['%SE6'] = dfa['SE_PAR_Avg_6']/dfa['QR_PAR_Avg']
-    dfa['%SE7'] = dfa['SE_PAR_Avg_7']/dfa['QR_PAR_Avg']; dfa['%SE8'] = dfa['SE_PAR_Avg_8']/dfa['QR_PAR_Avg']
-    
-    # traitement tableau de données obs
-    #avg PAR niveau du sol ('SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4')
-    dat0 = df.ix[:,'SE_PAR_Avg_1':'SE_PAR_Avg_4']; dat0 = dat0.apply(numpy.mean,1)
-    #avg PAR env 20 cm du sol ('SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8')
-    dat20 = df.ix[:,'SE_PAR_Avg_5':'SE_PAR_Avg_8']; dat20 = dat20.apply(numpy.mean,1)
-    # tableau % dat0/dat200
-    tab_prc0 = dat0/df.QR_PAR_Avg
-    # tableau % dat20/dat200
-    tab_prc20 = dat20/df.QR_PAR_Avg
-    
-    # chaine de traitement pour hauteur au niveau du sol
-    tab0 = pandas.DataFrame(tab_prc0)
-    tab0 = tab0.reset_index(); tab0.columns = ['datetime','%']
-    tab0 = tab0.groupby(tab0['datetime'], axis=0).mean()
-    tab0 = tab0.reset_index()
-    # changement format date JJ/MM/AAAA en JJ-MM-AAAA
-    dt=0
-    while dt<len(tab0):
-        tab0['datetime'][dt] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", tab0['datetime'][dt])
-        dt = dt+1
-
-    # chaine de traitement pour hauteur a 20 cm du sol
-    tab20 = pandas.DataFrame(tab_prc20)
-    tab20 = tab20.reset_index(); tab20.columns = ['datetime','%']
-    tab20 = tab20.groupby(tab20['datetime'], axis=0).mean()
-    tab20 = tab20.reset_index()
-    # changement format date JJ/MM/AAAA en JJ-MM-AAAA
-    dte=0
-    while dte<len(tab20):
-        tab20['datetime'][dte] = re.sub("([0-9]{2})/([0-9]{2})/([0-9]{4})", "\\1-\\2-\\3", tab20['datetime'][dte])
-        dte = dte+1
-    
-    return dfa, tab0, tab20
-    
 def draft_light(g, adel, domain, z_level):
     from alinea.caribu.label import Label
 
@@ -668,7 +612,6 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
     
     # PARTIE OBS ------------------------------------------
     if name is 'Mercia' or name is 'Rht3': 
-        data_file = 'METEO_stationINRA_20102011.csv'
         # correspondance entre date et TT
         met = Boigneville_2010_2011()
         seq = pandas.date_range(start="2010-10-15", end="2011-07-18", freq='H')
@@ -677,7 +620,6 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
         seq = pandas.date_range(start="2010-10-15", end="2011-07-18")
         bid = bid[seq]
     if name is 'Tremie12': 
-        data_file = 'METEO_stationINRA_20112012.csv'
         # correspondance entre date et TT
         met = Boigneville_2011_2012()
         seq = pandas.date_range(start="2011-10-21", end="2012-07-18", freq='H')
@@ -686,7 +628,6 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
         seq = pandas.date_range(start="2011-10-21", end="2012-07-18")
         bid = bid[seq]
     if name is 'Tremie13': 
-        data_file = 'METEO_stationINRA_20122013.csv'
         # correspondance entre date et TT
         met = Boigneville_2012_2013()
         seq = pandas.date_range(start="2012-10-29", end="2013-08-01", freq='H')
@@ -695,7 +636,7 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
         seq = pandas.date_range(start="2012-10-29", end="2013-08-01")
         bid = bid[seq]
         
-    dfa, tab0, tab20 = mat_ray_obs(data_file)
+    dfa, tab0, tab20 = mat_ray_obs(name)
         
     # merger bid avec tab0 puis tab20 
         # mise en forme de bid
