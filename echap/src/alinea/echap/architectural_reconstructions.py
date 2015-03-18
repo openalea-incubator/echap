@@ -238,6 +238,9 @@ if run_plots:
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 #
+# Styrategie : pour premieres feuilles
+#
+
 def HS_GL_fits():
     HS_converter = fit_HS()
     # common fit mercia, rht3, Tremie12
@@ -250,8 +253,10 @@ def HS_GL_fits():
     HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
     GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
     nff = archidb.mean_nff()
-    coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
-    n1 = {'Mercia':3., 'Rht3': 3., 'Tremie12':3., 'Tremie13':3.}
+    #coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
+    coefs = {'n0': 4.7, 'hs_t1': 8.6} # newparameter to avoid too short grean area lifetime for disease
+    #n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
+    n1 = {'Mercia':3, 'Rht3': 3, 'Tremie12':3, 'Tremie13':3}# newparameter to avoid too short grean area lifetime for disease (should be 3.5 but pb in fitting)
     n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
     fits = {k:pgen_ext.GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
     #
@@ -355,7 +360,7 @@ def tiller_survival():
                   'Rht3':  {T:sfly_Rht3 for T in ('T1','T2','T3')},
                   'Tremie12': {'T3':sfreeze_Tremie12},
                   'Tremie13': None}
-
+    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
     return survivals
                     
 fly_damage_tillering = tiller_survival()                
