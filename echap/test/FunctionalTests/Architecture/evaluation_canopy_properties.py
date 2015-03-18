@@ -193,7 +193,7 @@ def plot_mean(df_prop, variable = 'LAI_vert', xaxis = 'ThermalTime',
     if xlims is not None:
         ax.set_xlim(xlims)
     if ylims is not None:
-        ax.set_xlim(ylims)
+        ax.set_ylim(ylims)
     if return_ax == True:
         return ax
 
@@ -236,8 +236,10 @@ def get_TC_obs(variety = 'Tremie12'):
     df_obs['Gapgreen'] = 1 - df_obs['TCgreen']
     df_obs['Gapgreen_57'] = 1 - df_obs['TCgreen_57']
     df_obs = df_obs.rename(columns = {'TT':'ThermalTime'})
+    HSconv = HS_converter[variety]
+    df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     return df_obs
-        
+    
 def get_radiation_obs(variety = 'Tremie12'):
     dfa, tab0, tab20 = mat_ray_obs(variety)
     tab0 = tab0.rename(columns = {'%':'LightPenetration_0'})
@@ -260,33 +262,70 @@ def get_radiation_obs(variety = 'Tremie12'):
     df_obs['LightInterception_20'] = 1 - df_obs['LightPenetration_20']
     return df_obs
 
-def plot_sim_obs_lai(df_sim, df_obs, origin = 'biomass', xaxis = 'HS',
-                     title = 'Comparison LAI sim vs. obs',
-                     xlabel = 'Haun Stage', ylabel = 'LAI',
-                     colors = ['r', 'b'], markers = ['d', 'o'], linestyles = ['-', '--'],
-                     error_bars = False, xlims = None, ylims = None, ax = None):
+def get_all_obs(variety = 'Tremie12', origin_lai_data = 'biomass'):
+    df_lai = get_lai_obs(variety = variety, origin = origin_lai_data)
+    df_TC = get_TC_obs(variety = variety)
+    df_rad = get_radiation_obs(variety = variety)
+    df_all = pandas.concat([df_lai, df_TC, df_rad])
+    return df_all.reset_index(drop = True)
+    
+def plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS', 
+                 title = None, xlabel = 'Haun Stage', ylabel = 'LAI',
+                 colors = ['b', 'r'], markers = ['d', 'o'], linestyles = ['-', '--'],
+                 error_bars = [True, True], xlims = None, ylims = None, legend = True, ax = None):
     if ax == None:
         fig, ax = plt.subplots()
-    plot_mean(df_sim, variable = 'LAI_vert', xaxis = xaxis, error_bars = error_bars, 
-                    color = colors[0], marker = markers[0], linestyle = linestyle[0], ax = ax)
+    plot_mean(df_sim, variable = variable, xaxis = xaxis, error_bars = error_bars[0], 
+                color = colors[0], marker = markers[0], linestyle = linestyles[0],
+                ax = ax)
         
-    plot_mean(df_obs, variable = 'LAI_vert', xaxis = 'HS', 
-                    error_bars = False, color = colors[1], marker = markers[1],
-                    linestyle = linestyle[1], title = title, 
-                    xlabel = xlabel, ylabel = ylabel,
-                    xlims = None, ylims = None, ax = ax)
-                    
-    ax.legend(['Simulated', 'Observed'], loc='center left', bbox_to_anchor=(1, 0.5))
-
-def compare_one_variety_lai(variety = 'Tremie12', filename = 'canopy_properties_tremie12_5rep.csv',
-                            origin = 'biomass', xaxis = 'HS', title = 'Comparison LAI sim vs. obs',
-                            xlabel = 'Haun Stage', ylabel = 'LAI', colors = ['r', 'b'], 
-                            markers = ['d', 'o'], linestyles = ['-', '--'],
-                            error_bars = False, xlims = None, ylims = None, ax = None):
-    df_sim = get_simu_results(filename = filename)
-    df_obs = get_lai_obs(variety = variety, origin = origin)
+    plot_mean(df_obs, variable = variable, xaxis = xaxis, error_bars = error_bars[1], 
+                color = colors[1], marker = markers[1], linestyle = linestyles[1],
+                title = title, xlabel = xlabel, ylabel = ylabel, 
+                xlims = xlims, ylims = ylims, ax = ax)
     
-    plot_sim_obs_lai(df_sim, df_obs, origin = origin, xaxis = xaxis,
+    if legend == True:   
+        ax.legend(['Simulated', 'Observed'], loc='center left', bbox_to_anchor=(1, 0.5))
+
+def compare_sim_obs(variety = 'Tremie12', filename = 'canopy_properties_tremie12_5rep.csv',
+                    origin = 'biomass', variable = 'LAI_vert', xaxis = 'HS', 
+                    title = None, xlabel = 'Haun Stage', ylabel = None,
+                    colors = ['b', 'r'], markers = ['d', 'o'], linestyles = ['-', '--'],
+                    error_bars = [True, True], xlims = None, ylims = None, ax = None):
+    df_sim = get_simu_results(filename = filename)
+    df_obs = get_all_obs(variety = variety, origin_lai_data = origin)
+    plot_sim_obs(df_sim, df_obs, variable = variable, xaxis = xaxis,
                      title = title, xlabel = xlabel, ylabel = ylabel,
                      colors = colors, markers = markers, linestyles = linestyles,
                      error_bars = error_bars, xlims = xlims, ylims = ylims)
+                     
+def test_architecture_canopy_single(variety = 'Tremie12', 
+                                     filename = 'canopy_properties_tremie12_5rep.csv',
+                                     fig_size = (10, 10), color = 'b', axs = None):
+    if axs == None:
+        fig, axs = plt.subplots(2,2, figsize = fig_size)
+    df_sim = get_simu_results(filename = filename)
+    df_obs = get_all_obs(variety = variety, origin_lai_data = 'biomass')
+    plot_sim_obs(df_sim, df_obs, variable = 'TCgreen_57', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Cover fraction (oblique view)',
+                     colors = [color, color], markers = ['', 'o'], linestyles = ['-', '--'],
+                     error_bars = [False, True], legend = False, ax = axs[0][0])
+    plot_sim_obs(df_sim, df_obs, variable = 'TCgreen', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Cover fraction (vertical view)',
+                     colors = [color, color], markers = ['', 'o'], linestyles = ['-', '--'],
+                     error_bars = [False, True], legend = True, ax = axs[0][1])
+    plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
+                     colors = [color, color], markers = ['', 'o'], linestyles = ['-', '--'],
+                     error_bars = [False, True], legend = False, ax = axs[1][0])
+    # Temp
+    if not 'LightInterception_0' in df_sim.columns:
+        df_sim['LightInterception_0'] = 1 - df_sim['LightPenetration_0']
+    plot_sim_obs(df_sim, df_obs, variable = 'LightInterception_0', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Intercepted fraction of radiation',
+                     colors = [color, color], markers = ['', ''], linestyles = ['-', '--'],
+                     error_bars = [False, False], legend = False, ax = axs[1][1])
+    letters = iter(['a', 'b', 'c', 'd'])
+    for ax in axs.flat:
+        ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+    plt.tight_layout()
