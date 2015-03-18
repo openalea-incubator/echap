@@ -117,7 +117,7 @@ def run_and_save_one_simu(variety = 'Tremie12', nplants = 30,
                                  variability_type = variability_type, age_range = age_range,
                                  time_steps = time_steps)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = 1)
-    file_path = shared_data(alinea.echap, 'architectural_simulations/' + filename)
+    file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
     
 def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30, 
@@ -128,7 +128,7 @@ def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30,
                              variability_type = variability_type, age_range = age_range,
                              time_steps = time_steps, nrep = nrep)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
-    file_path = shared_data(alinea.echap, 'architectural_simulations/' + filename)
+    file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
 
 def run_interception():
