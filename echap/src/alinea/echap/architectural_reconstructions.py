@@ -276,8 +276,8 @@ if run_plots:
 
 def pars():
     sim_all={}
+    e = EchapReconstructions()
     for name in ('Mercia','Rht3','Tremie12','Tremie13'):
-        e = EchapReconstructions()
         pars = e.get_pars(name=name, nplants=30)
         nff_lst = pars.keys()
         nff_proba = archidb.Tillering_data()[name]['nff_probabilities']

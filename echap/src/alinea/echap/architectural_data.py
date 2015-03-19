@@ -20,7 +20,11 @@ def dimensions_data():
                 dim[var,nff] = pandas.read_csv(fn)
         elif var=='Mercia' or var=='Rht3' or var=='Tremie13':
             for nff in [11,12]:
-                fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
+                # HACK
+                if var == 'Tremie13' and nff == 11:
+                    fn = shared_data(alinea.echap, var+'_dimT%d_user.csv'%(nff))
+                else:
+                    fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
                 dim[var,nff] = pandas.read_csv(fn)
     return dim
     
@@ -861,7 +865,7 @@ def PlantDensity():
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
         # add survival data
         for i,d in enumerate(tdata['plant_survival']['Date']):
-            lab = 'd%d'%(d)
+            lab = 'd%d'%(d+1)
             events.append(lab)
             date.append(tdata['date_code'][lab])
             TT.append(tdata['TT_code'][lab])

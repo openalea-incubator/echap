@@ -64,7 +64,15 @@ def read_weather(start, end):
                     start_date = start)
     return weather
 
-def read_weather_year(year = 2011):
+def get_year_for_variety(variety = 'Mercia'):
+    if variety in ['Mercia', 'Rht3']:
+        return 2011
+    elif variety is 'Tremie12': 
+        return 2012
+    elif variety is 'Tremie13':
+        return 2013
+
+def get_start_end_dates(year = 2011):
     if year == 2011:
         start_date = "2010-10-15"
         end_date = "2011-06-20"
@@ -74,8 +82,15 @@ def read_weather_year(year = 2011):
     elif year == 2013:
         start_date = "2012-10-29"
         end_date = "2013-08-01"
-    start, end = format_date(start_date, end_date)
+    return format_date(start_date, end_date)
+   
+def read_weather_year(year = 2011):
+    start, end = get_start_end_dates(year = year)
     return read_weather(start, end)
+
+def read_weather_variety(variety = 'Mercia'):
+    year = get_year_for_variety(variety = variety)
+    return read_weather_year(year)
 
 def mat_ray_obs(name = 'Tremie12'):
     import re
