@@ -447,7 +447,7 @@ class EchapReconstructions(object):
             self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True, dimension=1):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True, dimension=1,echap_delay=True):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
@@ -479,7 +479,7 @@ class EchapReconstructions(object):
             GL['TT'] = conv.TT(GL['HS'])
             GL = dict(zip(GL['TT'],GL['GL']))
             
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1})
+            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay})
             
             if 'hs_deb_reg' in pgens[k]:
                 hs_deb_reg = pgens[k].pop('hs_deb_reg')
@@ -494,7 +494,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, **kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, echap_delay=True, **kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
     
         density = self.density_fits[name].deepcopy()
@@ -511,7 +511,7 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
+        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension, echap_delay=echap_delay)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
