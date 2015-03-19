@@ -1,5 +1,5 @@
 """ Reconstruct a MTG wheat canopy at different ages and save LAI, cover fraction,
-    intercepted radiation and dye interception and compare it with field data """
+    intercepted radiation and compare it with field data """
 
 import pandas
 import numpy
@@ -135,8 +135,10 @@ def run_interception():
     pass
     
 # Get and plot canopy properties ###################################################################
-def get_simu_results(filename = 'canopy_properties_tremie12_5rep.csv'):
-    return pandas.read_csv(filename, sep = ';')
+def get_simu_results(variety = 'Tremie12', nplants = 30, nrep = 1):
+    filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
+    file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
+    return pandas.read_csv(file_path)
 
 def variance(lst):
     """
@@ -167,35 +169,36 @@ def plot_mean(df_prop, variable = 'LAI_vert', xaxis = 'ThermalTime',
               marker = 'd', linestyle = '-', color = 'b', 
               title = None, xlabel = None, ylabel = None,
               xlims = None, ylims = None, ax = None, return_ax = False):
-    if ax == None:
-        fig, ax = plt.subplots()
-    df = df_prop[pandas.notnull(df_prop.loc[:,variable])].loc[:, [xaxis, variable]]
-    df_mean = df.groupby(xaxis).mean()
-    df['nb_rep'] = map(lambda x: df[xaxis].value_counts()[x], df[xaxis])
-    if error_bars == True and min(df['nb_rep'])>1:
-        if error_method == 'confidence_interval':
-            df_err = df.groupby(xaxis).agg(conf_int)
-        elif error_method == 'std_deviation':
-            df_err = df.groupby(xaxis).std()
+    if variable in df_prop.columns:
+        if ax == None:
+            fig, ax = plt.subplots()
+        df = df_prop[pandas.notnull(df_prop.loc[:,variable])].loc[:, [xaxis, variable]]
+        df_mean = df.groupby(xaxis).mean()
+        df['nb_rep'] = map(lambda x: df[xaxis].value_counts()[x], df[xaxis])
+        if error_bars == True and min(df['nb_rep'])>1:
+            if error_method == 'confidence_interval':
+                df_err = df.groupby(xaxis).agg(conf_int)
+            elif error_method == 'std_deviation':
+                df_err = df.groupby(xaxis).std()
+            else:
+                raise ValueError("'error_method' unknown: 'try confidence_interval' or 'std_deviation'")
+            ax.errorbar(df_mean.index, df_mean[variable], yerr = df_err[variable].values,
+                        color = color, marker = marker, linestyle = linestyle)
         else:
-            raise ValueError("'error_method' unknown: 'try confidence_interval' or 'std_deviation'")
-        ax.errorbar(df_mean.index, df_mean[variable], yerr = df_err[variable],
-                    color = color, marker = marker, linestyle = linestyle)
-    else:
-        ax.plot(df_mean.index, df_mean[variable], color = color, 
-                marker = marker, linestyle = linestyle)
-    if title is not None:
-        ax.set_title(title, fontsize = 18)
-    if xlabel is not None:
-        ax.set_xlabel(xlabel, fontsize = 18)
-    if ylabel is not None:
-        ax.set_ylabel(ylabel, fontsize = 18)
-    if xlims is not None:
-        ax.set_xlim(xlims)
-    if ylims is not None:
-        ax.set_ylim(ylims)
-    if return_ax == True:
-        return ax
+            ax.plot(df_mean.index, df_mean[variable], color = color, 
+                    marker = marker, linestyle = linestyle)
+        if title is not None:
+            ax.set_title(title, fontsize = 18)
+        if xlabel is not None:
+            ax.set_xlabel(xlabel, fontsize = 18)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel, fontsize = 18)
+        if xlims is not None:
+            ax.set_xlim(xlims)
+        if ylims is not None:
+            ax.set_ylim(ylims)
+        if return_ax == True:
+            return ax
 
 # Get observation data for canopy properties #######################################################        
 def get_lai_obs(variety = 'Tremie12', origin = 'biomass'):
@@ -216,6 +219,9 @@ def get_lai_obs(variety = 'Tremie12', origin = 'biomass'):
             df_obs['date'] = df_obs['date'].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'))
         return df_obs
         
+    if variety in ['Mercia', 'Rht3'] and origin == 'biomass':
+        # columns = ['LAI_vert', 'ThermalTime', 'HS', 'origin']
+        return None
     if origin in ['biomass', 'photo']:
         return get_lai_from_single_origin(origin)
     elif origin == 'all':
@@ -245,14 +251,7 @@ def get_radiation_obs(variety = 'Tremie12'):
     tab0 = tab0.rename(columns = {'%':'LightPenetration_0'})
     tab20 = tab20.rename(columns = {'%':'LightPenetration_20'})
     df_obs = pandas.merge(tab0, tab20)
-    
-    if variety in ['Mercia', 'Rht3']:
-        year = 2011
-    elif variety is 'Tremie12': 
-        year = 2012
-    elif variety is 'Tremie13':
-        year = 2013
-    weather = read_weather_year(year)
+    weather = read_weather_variety(variety)
     df_obs = df_obs.rename(columns = {'datetime':'date'})
     df_obs['date'] = df_obs['date'].apply(lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
     df_obs['ThermalTime'] = weather.data.degree_days[df_obs['date']].values
@@ -287,24 +286,24 @@ def plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS',
     if legend == True:   
         ax.legend(['Simulated', 'Observed'], loc='center left', bbox_to_anchor=(1, 0.5))
 
-def compare_sim_obs(variety = 'Tremie12', filename = 'canopy_properties_tremie12_5rep.csv',
-                    origin = 'biomass', variable = 'LAI_vert', xaxis = 'HS', 
+def compare_sim_obs(variety = 'Tremie12', nplants = 30, nrep = 1,
+                    origin = 'biomass', variable = 'LAI_vert', xaxis = 'HS',
                     title = None, xlabel = 'Haun Stage', ylabel = None,
                     colors = ['b', 'r'], markers = ['d', 'o'], linestyles = ['-', '--'],
                     error_bars = [True, True], xlims = None, ylims = None, ax = None):
-    df_sim = get_simu_results(filename = filename)
+    df_sim = get_simu_results(variety = variety)
     df_obs = get_all_obs(variety = variety, origin_lai_data = origin)
     plot_sim_obs(df_sim, df_obs, variable = variable, xaxis = xaxis,
                      title = title, xlabel = xlabel, ylabel = ylabel,
                      colors = colors, markers = markers, linestyles = linestyles,
                      error_bars = error_bars, xlims = xlims, ylims = ylims)
                      
-def test_architecture_canopy_single(variety = 'Tremie12', 
-                                     filename = 'canopy_properties_tremie12_5rep.csv',
-                                     fig_size = (10, 10), color = 'b', axs = None):
+def test_architecture_canopy_single(variety = 'Tremie12', nplants = 30, nrep = 1,
+                                     fig_size = (10, 10), color = 'b', title = None, 
+                                     axs = None, tight_layout = False):
     if axs == None:
         fig, axs = plt.subplots(2,2, figsize = fig_size)
-    df_sim = get_simu_results(filename = filename)
+    df_sim = get_simu_results(variety = variety, nplants = nplants, nrep = nrep)
     df_obs = get_all_obs(variety = variety, origin_lai_data = 'biomass')
     plot_sim_obs(df_sim, df_obs, variable = 'TCgreen_57', xaxis = 'HS',
                      xlabel = 'Haun stage', ylabel = 'Cover fraction (oblique view)',
@@ -328,4 +327,21 @@ def test_architecture_canopy_single(variety = 'Tremie12',
     letters = iter(['a', 'b', 'c', 'd'])
     for ax in axs.flat:
         ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
-    plt.tight_layout()
+    if title is not None:
+        ax.set_title(title, fontsize = 18)
+    if tight_layout == True:
+        plt.tight_layout()
+    
+def test_architecture_canopy(varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'],
+                             nplants = 30, nrep = 1, fig_size = (10, 10), color = 'b', 
+                             title = None, tight_layout = False):
+    fig, axs = plt.subplots(2,2, figsize = fig_size)
+    colors = {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+    proxy = []
+    for variety in varieties:
+        color = colors[variety]
+        test_architecture_canopy_single(variety = variety, nplants = nplants, nrep = nrep,
+                                        fig_size = fig_size, color = color, title = title, 
+                                        axs = axs, tight_layout = tight_layout)
+        proxy += [plt.Line2D((0,1),(0,0), color=color, marker='', linestyle='-')]
+    axs[1][1].legend(proxy, varieties, loc='center left', bbox_to_anchor=(1, 0.5))
