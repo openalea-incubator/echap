@@ -1261,7 +1261,7 @@ def get_date_threshold(data, weather, variable = 'severity', xaxis = 'degree_day
                                                                 int(max(df_[xaxis]))+100)],
                                                                 index = np.arange(int(min(df_[xaxis]))-100,
                                                                 int(max(df_[xaxis]))+100))
-                    df_2[df_[xaxis].astype(int)] = df_[variable].values
+                    df_2[df_[xaxis][pd.notnull(df_[xaxis])].astype(int)] = df_[variable][pd.notnull(df_[xaxis])].values
                     df_2.interpolate(inplace=True)
                     df_dates.loc[pl,lf] = np.argmax(df_2>threshold)
                 else:

@@ -164,18 +164,18 @@ def conf_int(lst, perc_conf=95):
     
     return sqrt(v/n) * c
 
-def plot_mean(df_prop, variable = 'LAI_vert', xaxis = 'ThermalTime', 
+def plot_mean(data, variable = 'LAI_vert', xaxis = 'ThermalTime', 
               error_bars = False, error_method = 'confidence_interval', 
               marker = 'd', linestyle = '-', color = 'b', 
               title = None, xlabel = None, ylabel = None,
               xlims = None, ylims = None, ax = None, return_ax = False):
-    if variable in df_prop.columns:
+    if variable in data.columns:
         if ax == None:
             fig, ax = plt.subplots()
-        df = df_prop[pandas.notnull(df_prop.loc[:,variable])].loc[:, [xaxis, variable]]
+        df = data[pandas.notnull(data.loc[:,variable])].loc[:, [xaxis, variable]]
         df_mean = df.groupby(xaxis).mean()
         df['nb_rep'] = map(lambda x: df[xaxis].value_counts()[x], df[xaxis])
-        if error_bars == True and min(df['nb_rep'])>1:
+        if error_bars == True and len(df['nb_rep'])>0 and min(df['nb_rep'])>1:
             if error_method == 'confidence_interval':
                 df_err = df.groupby(xaxis).agg(conf_int)
             elif error_method == 'std_deviation':
@@ -186,6 +186,42 @@ def plot_mean(df_prop, variable = 'LAI_vert', xaxis = 'ThermalTime',
                         color = color, marker = marker, linestyle = linestyle)
         else:
             ax.plot(df_mean.index, df_mean[variable], color = color, 
+                    marker = marker, linestyle = linestyle)
+        if title is not None:
+            ax.set_title(title, fontsize = 18)
+        if xlabel is not None:
+            ax.set_xlabel(xlabel, fontsize = 18)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel, fontsize = 18)
+        if xlims is not None:
+            ax.set_xlim(xlims)
+        if ylims is not None:
+            ax.set_ylim(ylims)
+        if return_ax == True:
+            return ax
+            
+def plot_sum(data, variable = 'LAI_vert', xaxis = 'ThermalTime', 
+              marker = 'd', linestyle = '-', color = 'b', 
+              title = None, xlabel = None, ylabel = None,
+              xlims = None, ylims = None, ax = None, return_ax = False):
+    
+    def get_mean_data(variable):
+        if variable in data.columns:
+            df_sum.loc[:, variable] = df_mean.loc[:, variable]
+    
+    if variable in data.columns:
+        if ax == None:
+            fig, ax = plt.subplots()
+        df = data[pandas.notnull(data.loc[:,variable])]
+        df_mean = df.groupby(xaxis).mean()
+
+        df_sum = df.groupby(xaxis).sum()
+        for var in ['HS', 'num_leaf_bottom', 'num_leaf_top', 'fnl', 
+                    'cur_max_leaf_top', 'cur_num_leaf_top']:
+            if var != 'xaxis':
+                get_mean_data(var)
+
+        ax.plot(df_sum.index, df_sum[variable], color = color, 
                     marker = marker, linestyle = linestyle)
         if title is not None:
             ax.set_title(title, fontsize = 18)
@@ -333,7 +369,7 @@ def test_architecture_canopy_single(variety = 'Tremie12', nplants = 30, nrep = 1
         plt.tight_layout()
     
 def test_architecture_canopy(varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'],
-                             nplants = 30, nrep = 1, fig_size = (10, 10), color = 'b', 
+                             nplants = 30, nrep = 1, fig_size = (15, 15), color = 'b', 
                              title = None, tight_layout = False):
     fig, axs = plt.subplots(2,2, figsize = fig_size)
     colors = {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}

@@ -340,7 +340,15 @@ def LAI_biomasse_data():
 def _nmax(sub):
     sub['nmax'] = sub['id_Feuille'].max()
     return sub
-    
+
+def scan_dates(variety = 'Tremie12'):
+    if variety == 'Tremie12':
+        return ['09/03/2012', '02/04/2012', '11/04/2012', '09/05/2012']
+    elif variety == 'Tremie13':
+        return ['22/04/2013', '03/05/2013']
+    else:
+        raise ValueError("No scan available for this variety")
+        
 def scan_dep_Tremie12():
     '''
     Leaf scan data for Tremie 2011-2012
@@ -353,7 +361,9 @@ def scan_dep_Tremie12():
                                 C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
                                 Avec fichier de notations associe
                                 C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
-    
+            stat = 1 : feuille entiere et en bon etat
+            stat = 2 : longueur correcte mais surface affectee
+            stat = 3 : feuille abimee OU en croissance
             numerotation des feuilles coherente avec photos et vrai numero determine (plantes baguees)
             donnes dispo dans share/data raw_srdb_BoignevilleTremie12.csv. 
 

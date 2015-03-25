@@ -27,6 +27,7 @@ def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
             rec_lf.data['audpc'] = rec_lf.normalized_audpc
             recos.append(rec_lf.data)
     data_sim = pd.concat(recos)
+    data_sim.index.name = 'datetime'
     
     # Convert ratios in percentage
     list_of_ratios = [var for var in data_sim.columns if var.startswith('ratio')]+['severity', 'necrosis_percentage']
@@ -41,14 +42,15 @@ def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
     if skipna == True:
         df_count = table_count_notations(data_sim, weather, variable = 'severity', add_ddays = True)
         for lf in df_count.columns:
-            df_lf = df_count[lf][map(lambda x: isinstance(x, (int, float)), df_count[lf])]
+            df_lf = df_count[lf][map(lambda x: isinstance(x, (numpy.int64, int, float)), 
+                                    df_count[lf])]
             nan_dates = df_lf[df_lf<df_lf.max()].reset_index().loc[:,'Date']
             if len(nan_dates)>0:
                 for variable in data_sim.columns:
                     if variable not in ['datetime', 'degree_days', 'date_death',
                                         'variety', 'plant', 'num_leaf_top', 'num_leaf_bottom']:
                         data_sim[variable][(data_sim['num_leaf_top']==lf) & 
-                                (data_sim['datetime'].isin([d for d in nan_dates]))] = np.nan
+                                (data_sim.index.isin([d for d in nan_dates]))] = np.nan
     return data_sim
     
 def recorder_to_dataframe_single_variable(recorder, weather = None, adel = None, skipna = True):
