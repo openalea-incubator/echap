@@ -232,17 +232,19 @@ def fit_HS():
     TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
     return {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
 #
-HS_converter = fit_HS()
+
 
 if run_plots:
+    HS_converter = fit_HS()
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 #
 # Styrategie : pour premieres feuilles
 #
 
-def HS_GL_fits():
-    HS_converter = fit_HS()
+def HS_GL_fits(HS_converter=None):
+    if HS_converter is None:
+        HS_converter = fit_HS()
     # common fit mercia, rht3, Tremie12
     conv = HS_converter['Tremie12']
     HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])
@@ -295,6 +297,7 @@ def pars():
     return sim_all
     
 if run_plots:
+    HS_converter = fit_HS()
     archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
  
 #
@@ -307,10 +310,12 @@ class deepdd(pandas.DataFrame):
         return self.copy(deep=True)
 #
 
-def density_fits():
+def density_fits(HS_converter=None):
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
+    if HS_converter is None:
+        HS_converter = fit_HS()
     density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[203,203,153,153]}),
                 'Rht3': deepdd({'HS':[0,6,13,20],'density':[211,211,146,146]}),
                 'Tremie12': deepdd({'HS':[0,6,13,20],'density':[281,281,281,281]}),
@@ -342,11 +347,14 @@ def density_fits():
     return density_fits'''
 #
 if run_plots:
+    HS_converter = fit_HS()
     archi_plot.density_plot(archidb.PlantDensity(), density_fits(), HS_converter)
 #
 # Tiller survival to handl fly effects
 #    
-def tiller_survival():
+def tiller_survival(HS_converter=None):
+    if HS_converter is None:
+        HS_converter = fit_HS()
     conv = HS_converter
     sfly = pandas.DataFrame({'HS':[4,9], 'density':[1,0.7]})# 0.7 is mean survival among living plant
     sfly_Mercia = sfly.copy(deep=True)
@@ -363,7 +371,7 @@ def tiller_survival():
     survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
     return survivals
                     
-fly_damage_tillering = tiller_survival()                
+                
 
 #
 # Fit tillering
@@ -375,8 +383,11 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order, tiller_survival=tiller_survival)
     
-def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3':3., 'Tremie12': 5, 'Tremie13':4} , max_order=None, tiller_survival=fly_damage_tillering):
-        
+def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3':3., 'Tremie12': 5, 'Tremie13':4} , max_order=None, t_survival=None,HS_converter=None):
+    if HS_converter is None:
+        HS_converter = fit_HS()
+    if t_survival is None:
+        t_survival = tiller_survival(HS_converter)  
     tdb = archidb.Tillering_data()
     pdata = archidb.Plot_data_Tremie_2012_2013()
     #
@@ -390,29 +401,31 @@ def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3
     if not isinstance(n_elongated_internode,dict):
         n_elongated_internode = {k:n_elongated_internode for k in tdb}   
     
-    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=tiller_survival[k]) for k in tdb}
+    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=t_survival[k]) for k in tdb}
 
     return t_fits
 
 #1 graph tillering par var -> 4 graph sur une feuille
 if run_plots:
+    HS_converter = fit_HS()
+    fly_damage_tillering = tiller_survival(HS_converter)  
     delta_stop_del = 2.
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
+    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
     obs = archidb.tillers_per_plant()
     archi_plot.multi_plot_tillering(obs, fits, HS_converter, delta_stop_del)
 #tallage primary pour les 4 var   
 if run_plots:
     delta_stop_del = 2.
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
+    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
     obs = archidb.tillers_per_plant()
     archi_plot.tillering_primary(obs, fits, HS_converter, delta_stop_del)
 #tallage total pour les 4 var    
 if run_plots:
     delta_stop_del = 2.
     #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, tiller_survival=fly_damage_tillering)
+    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
     obs = archidb.tillers_per_plant()
     archi_plot.tillering_tot(obs, fits, HS_converter, delta_stop_del)
    
@@ -437,10 +450,11 @@ if run_plots:
 class EchapReconstructions(object):
     
     def __init__(self, median_leaf=True, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
-        self.density_fits = density_fits()
-        self.tillering_fits = tillering_fits()
+        converter = fit_HS()
+        self.density_fits = density_fits(converter)
+        self.tillering_fits = tillering_fits(converter)
         self.dimension_fits = archidb.dimension_fits()
-        self.HS_GL_fits = HS_GL_fits()
+        self.HS_GL_fits = HS_GL_fits(converter)
         if median_leaf:
             self.leaf_fits = median_leaf_fits(nlim_factor=nlim_factor)
         else:
