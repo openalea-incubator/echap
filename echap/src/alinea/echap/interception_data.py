@@ -4,8 +4,7 @@
 import pandas
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
-import alinea.echap.architectural_reconstructions as rec
-HSconv = rec.HS_converter
+from alinea.echap.architectural_reconstructions import fit_HS
 
 def dye_interception(todec = []):
     """ Dye interception data
@@ -149,6 +148,7 @@ def dye_applications():
     return apps
     
 def Petri_data(name='Tremie12'):
+    HSconv = fit_HS()
     conv = HSconv[name]
     if name is 'Tremie12':
         data_file_T1 = shared_data(alinea.echap, 'petri_T1_20112012.csv')

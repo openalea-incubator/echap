@@ -9,7 +9,7 @@ import csv
 from alinea.adel.WheatTillering import WheatTillering
 import alinea.echap.architectural_data as archidb
 import alinea.echap.interception_data as interceptdb
-import alinea.echap.architectural_reconstructions as rec
+from alinea.echap.architectural_reconstructions import fit_HS
 
 from alinea.echap.architectural_reconstructions import EchapReconstructions
 
@@ -23,10 +23,12 @@ from alinea.caribu.caribu_star import diffuse_source, run_caribu
 from alinea.adel.astk_interface import AdelWheat
 import alinea.echap.interception_data as idata
 
+from alinea.echap.evaluation_canopy_properties import draft_TC, draft_light
+
 plt.ion()
 
 Reconst = EchapReconstructions()
-HSconv = rec.HS_converter
+HSconv = fit_HS()
 
 def get_reconstruction(name='Mercia', **args):
     adel = Reconst.get_reconstruction(name, **args)
@@ -482,22 +484,7 @@ def plot_scan_obs_dimfactor(name='Tremie12', n=30): # Pour Tremie12 et Tremie13
             fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
             
 #------------------------------------------------------------------------------------- 
-# Taux de couverture
-
-def draft_TC(g, adel, domain, zenith, rep, scale = 1):
-    from alinea.adel.postprocessing import ground_cover
-    
-    #modelisation afin de voir si erreur
-    #scene=plot3d(g)
-    #pgl.Viewer.display(scene)
-    
-    echap_top_camera =  {'type':'perspective', 'distance':200., 'fov':50., 'azimuth':0, 'zenith':zenith}
-    #high resolution
-    #gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = 4288, image_height = 2848, getImages=True, replicate=rep)
-    gc, im, box = ground_cover(g,domain, camera=echap_top_camera, image_width = int(2144 * scale), image_height = int(1424*scale), getImages=True, replicate=rep)
-
-    return gc
-    
+# Taux de couverture    
 def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, aborting_tiller_reduction=1, seed=1, density=1, **kwds): #zenith = 0 or 57
     conv = HSconv[name]
 
@@ -589,20 +576,6 @@ def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, 
 
 #-------------------------------------------------------------------------------------
 # GRAPH METEO
-    
-def draft_light(g, adel, domain, z_level):
-    from alinea.caribu.label import Label
-
-    scene = adel.scene(g)
-    #modelisation afin de voir si erreur
-    #scene=plot3d(g)
-    #pgl.Viewer.display(scene)
-
-    sources = diffuse_source(46)
-    out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
-    labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
-    ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
-    return float(numpy.mean(ei_soil))
     
 #fonction a lancer pour obtenir graph 'rayonnement obs contre rayonnement sim'
 def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=1, **kwds):

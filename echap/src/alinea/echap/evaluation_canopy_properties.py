@@ -10,11 +10,13 @@ from math import sqrt
 from openalea.deploy.shared_data import shared_data
 from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
-from alinea.echap.architectural_reconstructions import EchapReconstructions, HS_converter
+from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
+                                                        get_EchapReconstructions, 
+                                                        fit_HS, density_fits)
 from alinea.adel.postprocessing import axis_statistics, plot_statistics, ground_cover
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
+from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.label import Label
-from TestCalibration import draft_light, draft_TC
 
 # Run and save canopy properties ###################################################################
 def get_lai_properties(g, adel, nplants):
@@ -28,6 +30,13 @@ def get_lai_properties(g, adel, nplants):
                     'number_of_active_axes_per_m2']
         return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
 
+def draft_TC(g, adel, domain, zenith, rep, scale = 1):
+    echap_top_camera =  {'type':'perspective', 'distance':200., 
+                         'fov':50., 'azimuth':0, 'zenith':zenith}
+    gc, im, box = ground_cover(g, domain, camera=echap_top_camera, image_width = int(2144 * scale), 
+                                image_height = int(1424*scale), getImages=True, replicate=rep)
+    return gc
+        
 def get_cover_fraction_properties(g, adel, nplants, scale = 1):
     df_TC = pandas.DataFrame(columns = ['TCgreen', 'TCsen', 'TCtot',
                                          'TCgreen_57', 'TCsen_57', 'TCtot_57',])
@@ -50,6 +59,14 @@ def get_cover_fraction_properties(g, adel, nplants, scale = 1):
         df_TC.loc[0, 'Gaptot'+suffix] = 1 - df_TC.loc[0, 'TCtot'+suffix]
     return df_TC
 
+def draft_light(g, adel, domain, z_level):
+    scene = adel.scene(g)
+    sources = diffuse_source(46)
+    out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
+    labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
+    ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
+    return float(numpy.mean(ei_soil))
+    
 def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
     df_radiation = pandas.DataFrame(columns = ['LightPenetration_%d' %lev for lev in z_levels])
     for z_level in z_levels:
@@ -60,9 +77,13 @@ def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
     return df_radiation
     
 def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = None,
-                        age_range = [400., 2600.], time_steps = [20, 100], scale_povray = 0.1):
-    reconst = EchapReconstructions()
-    HSconv = HS_converter[variety]
+                        age_range = [400., 2600.], time_steps = [20, 100], 
+                        scale_povray = 1., reset_reconst = False):
+    if reset_reconst == False:
+        reconst = get_EchapReconstructions()
+    else:
+        reconst = EchapReconstructions()
+    HSconv = fit_HS()[variety]
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
     ages_1 = range(age_range[0], age_range[1], time_steps[0])
     ages_2 = range(age_range[0], age_range[1], time_steps[1])
@@ -96,12 +117,13 @@ def run_multi_simu(variety = 'Tremie12', nplants = 30,
                     variability_type = None,
                     age_range = [400, 2600], time_steps = [20, 100],
                     filename = 'canopy_properties_tremie12_5rep.csv',
-                    nrep = 5):
+                    nrep = 5, scale_povray = 1., reset_reconst = False):
     df_props = []
     for rep in range(nrep):
         df_prop = run_one_simulation(variety = variety, nplants = nplants, 
                                        variability_type = variability_type, 
-                                       age_range = age_range, time_steps = time_steps)
+                                       age_range = age_range, time_steps = time_steps,
+                                       scale_povray = scale_povray, reset_reconst = reset_reconst)
         df_prop.loc[:,'rep'] = rep
         df_props.append(df_prop)
     df_props = pandas.concat(df_props)
@@ -110,12 +132,13 @@ def run_multi_simu(variety = 'Tremie12', nplants = 30,
 def get_file_name(variety = 'Tremie12', nplants = 30, nrep = 5):
     return variety.lower() + '_' + str(nplants) + 'pl_' + str(nrep) + 'rep.csv'
     
-def run_and_save_one_simu(variety = 'Tremie12', nplants = 30, 
-                            variability_type = None,
-                            age_range = [400, 2600], time_steps = [20, 100]):                         
+def run_and_save_one_simu(variety = 'Tremie12', nplants = 30, variability_type = None,
+                          age_range = [400, 2600], time_steps = [20, 100],
+                          scale_povray = 1., reset_reconst = False):                         
     df_save = run_one_simulation(variety = variety, nplants = nplants, 
                                  variability_type = variability_type, age_range = age_range,
-                                 time_steps = time_steps)
+                                 time_steps = time_steps, scale_povray = scale_povray,
+                                 reset_reconst = reset_reconst)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = 1)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
@@ -123,16 +146,14 @@ def run_and_save_one_simu(variety = 'Tremie12', nplants = 30,
 def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30, 
                             variability_type = None,
                             age_range = [400, 2600], time_steps = [20, 100],
-                            nrep = 5):
+                            nrep = 5, scale_povray = 1., reset_reconst = False):
     df_save = run_multi_simu(variety = variety, nplants = nplants, 
                              variability_type = variability_type, age_range = age_range,
-                             time_steps = time_steps, nrep = nrep)
+                             time_steps = time_steps, nrep = nrep,
+                             scale_povray = scale_povray, reset_reconst = reset_reconst)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
-
-def run_interception():
-    pass
     
 # Get and plot canopy properties ###################################################################
 def get_simu_results(variety = 'Tremie12', nplants = 30, nrep = 1):
@@ -248,7 +269,7 @@ def get_lai_obs(variety = 'Tremie12', origin = 'biomass'):
             variable = 'PAI_vert_photo'
 
         df_obs = df_obs.rename(columns = {variable:'LAI_vert', 'TT_date':'ThermalTime'})
-        HSconv = HS_converter[variety]
+        HSconv = fit_HS()[variety]
         df_obs['HS'] = HSconv(df_obs['ThermalTime'])
         df_obs['origin'] = origin_
         if 'date' in df_obs.columns:
@@ -278,7 +299,7 @@ def get_TC_obs(variety = 'Tremie12'):
     df_obs['Gapgreen'] = 1 - df_obs['TCgreen']
     df_obs['Gapgreen_57'] = 1 - df_obs['TCgreen_57']
     df_obs = df_obs.rename(columns = {'TT':'ThermalTime'})
-    HSconv = HS_converter[variety]
+    HSconv = fit_HS()[variety]
     df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     return df_obs
     
@@ -291,7 +312,7 @@ def get_radiation_obs(variety = 'Tremie12'):
     df_obs = df_obs.rename(columns = {'datetime':'date'})
     df_obs['date'] = df_obs['date'].apply(lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
     df_obs['ThermalTime'] = weather.data.degree_days[df_obs['date']].values
-    HSconv = HS_converter[variety]
+    HSconv = fit_HS()[variety]
     df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     df_obs['LightInterception_0'] = 1 - df_obs['LightPenetration_0']
     df_obs['LightInterception_20'] = 1 - df_obs['LightPenetration_20']
@@ -381,3 +402,10 @@ def test_architecture_canopy(varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie1
                                         axs = axs, tight_layout = tight_layout)
         proxy += [plt.Line2D((0,1),(0,0), color=color, marker='', linestyle='-')]
     axs[1][1].legend(proxy, varieties, loc='center left', bbox_to_anchor=(1, 0.5))
+    
+# variety = 'Tremie12'
+# nplants = 30
+# nrep = 1
+# df_sim = get_simu_results(variety = variety, nplants = nplants, nrep = nrep)
+# df_dens = density_fits()['Tremie12']
+

@@ -6,13 +6,14 @@ import numpy
 import datetime
 import matplotlib.pyplot as plt
 
-from alinea.echap.architectural_reconstructions import EchapReconstructions, HS_converter
+from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
+                                                        get_EchapReconstructions, fit_HS)
 from alinea.echap.architectural_data import scan_dates
 from alinea.adel.newmtg import adel_labels
 from alinea.astk.plantgl_utils import get_height
 from alinea.echap.weather_data import *
 from alinea.astk.TimeControl import *
-from evaluation_canopy_properties import plot_mean, plot_sum
+from alinea.echap.evaluation_canopy_properties import plot_mean, plot_sum
 
 # Run simu and save leaf properties ################################################################
 class AdelLeafRecorder:
@@ -36,8 +37,8 @@ class AdelLeafRecorder:
     
     def get_values_single_leaf(self, g, date, degree_days, id_list):
         areas = g.property('area')
-        green_areas = g.property('area')
-        scenesced_areas = g.property('senesced_area')
+        green_areas = g.property('green_area')
+        senesced_areas = g.property('senesced_area')
         lengths = g.property('length')
         green_lengths = g.property('green_length')
         senesced_lengths = g.property('senesced_length')
@@ -98,7 +99,7 @@ class AdelLeafRecorder:
                     self.data.loc[df_date.index, 'cur_num_leaf_top'] = cur_max_leaf_top - df_date['num_leaf_top'] + 1
     
     def add_haun_stage(self):
-        HSconv = HS_converter[self.variety]
+        HSconv = fit_HS()[self.variety]
         self.data['HS'] = HSconv(self.data['degree_days'])
     
     def post_treatment(self):
@@ -164,8 +165,11 @@ def ddays_and_notations_filter(seq, weather, delay = 20.):
     df[df.index[0]] = True
     return df
     
-def set_adel_canopy(variety = 'Tremie12', nplants = 30, age = 0.):
-    reconst = EchapReconstructions()
+def set_adel_canopy(variety = 'Tremie12', nplants = 30, age = 0., reset_reconst = False):
+    if reset_reconst == False:
+        reconst = get_EchapReconstructions()
+    else:
+        reconst = EchapReconstructions()
     return reconst.get_reconstruction(name = variety, nplants = nplants)
     
 def get_weather(variety = 'Tremie12'):
@@ -176,12 +180,13 @@ def get_weather(variety = 'Tremie12'):
     seq = pandas.date_range(start = start, end = end, freq='H')
     return weather, seq
     
-def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20.):
+def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20., reset_reconst = False):
     adel = None
     while adel is None:
         try:
             # Initialize wheat canopy
-            adel = set_adel_canopy(variety = variety, nplants = nplants, age = 0.)
+            adel = set_adel_canopy(variety = variety, nplants = nplants, age = 0., 
+                                    reset_reconst = reset_reconst)
         except:
             pass
     recorder = AdelLeafRecorder()
@@ -224,21 +229,28 @@ def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days',
         num_leaf = 'num_leaf_top'
     else:
         num_leaf = 'num_leaf_bottom'
-        
-    for lf in leaves:
-        df_lf = df[(df['axis'].isin(plant_axis)) & (df[num_leaf]==lf)]
-        if fixed_color == None:
-            color = next(colors)
-        else:
-            color = fixed_color
-        plot_mean(df_lf, variable = variable, xaxis = xaxis, 
-                  error_bars = error_bars, error_method = error_method, 
-                  marker = marker, linestyle = linestyle, color = color, 
-                  title = title, xlabel = xlabel, ylabel = ylabel,
-                  xlims = xlims, ylims = ylims, ax = ax)
+    
+    proxy = []
+    labels = []
+    for lf in set(df[num_leaf]):
+        if lf in leaves:
+            df_lf = df[(df['axis'].isin(plant_axis)) & (df[num_leaf]==lf)]
+            if fixed_color == None:
+                color = next(colors)
+            else:
+                color = fixed_color
+            plot_mean(df_lf, variable = variable, xaxis = xaxis, 
+                      error_bars = error_bars, error_method = error_method, 
+                      marker = marker, linestyle = linestyle, color = color, 
+                      title = title, xlabel = xlabel, ylabel = ylabel,
+                      xlims = xlims, ylims = ylims, ax = ax)
+            proxy += [plt.Line2D((0,1),(0,0), color = color, linestyle ='-')]
+            labels += ['L%d' %lf]
     
     if legend == True:
-        ax.legend(['L%d' %lf for lf in leaves], title = 'Leaf\nNumber',
+        colors = ax._get_lines.set_color_cycle()
+        colors = ax._get_lines.color_cycle
+        ax.legend(proxy, labels, title = 'Leaf\nNumber',
                     loc='center left', bbox_to_anchor=(1, 0.5))
     if return_ax == True:
         return ax
@@ -280,7 +292,7 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
 def add_hs_and_degree_days(df, variety = 'Tremie12'):
     weather = read_weather_variety(variety = variety)
     df['degree_days'] = weather.data.degree_days[df['date']].values
-    HSconv = HS_converter[variety]
+    HSconv = fit_HS()[variety]
     df['HS'] = HSconv(df['degree_days'])
 
 def get_tagged_data(variety = 'Tremie12'):

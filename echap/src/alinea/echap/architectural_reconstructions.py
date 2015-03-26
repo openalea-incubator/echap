@@ -548,4 +548,28 @@ class EchapReconstructions(object):
         leaves = self.leaf_fits[name] 
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
-                             
+
+def save_EchapReconstructions():
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
+    import alinea.echap
+    from openalea.deploy.shared_data import shared_data
+    filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
+    f = open(filename, 'w')
+    pickle.dump(EchapReconstructions(), f)
+    f.close()
+    
+def get_EchapReconstructions():
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
+    import alinea.echap
+    from openalea.deploy.shared_data import shared_data
+    filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
+    f = open(filename)
+    reconst = pickle.load(f)
+    f.close()
+    return reconst
