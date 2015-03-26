@@ -562,7 +562,10 @@ def save_EchapReconstructions():
     f.close()
     
 def get_EchapReconstructions():
-    import pickle
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
     import alinea.echap
     from openalea.deploy.shared_data import shared_data
     filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
