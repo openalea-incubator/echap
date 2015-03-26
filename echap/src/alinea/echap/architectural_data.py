@@ -49,7 +49,7 @@ def Mercia_2011_fitted_dimensions():
 def Rht3_2011_fitted_dimensions():
     dim = {}
     for nff in [11,12]:
-        fn = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
+        fn = shared_data(alinea.echap, 'rht3_dimT%d_user.csv'%(nff))
         dim[nff] = pandas.read_csv(fn)
     return dim
     
