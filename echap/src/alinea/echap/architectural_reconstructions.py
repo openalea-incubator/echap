@@ -349,32 +349,28 @@ def density_fits(HS_converter=None):
 if run_plots:
     HS_converter = fit_HS()
     archi_plot.density_plot(archidb.PlantDensity(), density_fits(), HS_converter)
-#
-# Tiller survival to handl fly effects
-#    
-def tiller_survival(HS_converter=None):
-    if HS_converter is None:
-        HS_converter = fit_HS()
-    conv = HS_converter
-    sfly = pandas.DataFrame({'HS':[4,9], 'density':[1,0.7]})# 0.7 is mean survival among living plant
-    sfly_Mercia = sfly.copy(deep=True)
-    sfly_Mercia['TT'] = conv['Mercia'].TT(sfly['HS'])
-    sfly_Rht3 = sfly.copy(deep=True)
-    sfly_Rht3['TT'] = conv['Rht3'].TT(sfly['HS'])
-    sfly_Rht3['density'][1] = 0.6
-    sfreeze_Tremie12 = pandas.DataFrame({'HS':[4.9,5.1], 'density':[1,0.2]})
-    sfreeze_Tremie12['TT'] = conv['Tremie12'].TT(sfreeze_Tremie12['HS'])
-    survivals = {'Mercia': {T:sfly_Mercia for T in ('T1','T2','T3')},
-                  'Rht3':  {T:sfly_Rht3 for T in ('T1','T2','T3')},
-                  'Tremie12': {'T3':sfreeze_Tremie12},
-                  'Tremie13': None}
-    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-    return survivals
                     
                 
 
 #
 # Fit tillering
+#****************
+#
+# fitting functions
+def _tsurvival(tiller_damages=None, HS_converter=None):
+    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
+    if tiller_damages is not None:
+        if HS_converter is None:
+            HS_converter = fit_HS()
+        conv = HS_converter
+        for k in survivals:
+            damages = tiller_damages[k]
+            if damages is not None:
+                tillers = damages.pop('tillers')
+                df = pandas.DataFrame(damages)
+                df['TT'] = conv[k].TT(df['HS'])
+                survivals[k] = {T:df for T in tillers} 
+    return survivals
 #
 def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival):
     ms_nff_probas = tdb['nff_probabilities']
@@ -382,57 +378,87 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order, tiller_survival=tiller_survival)
-    
-def tillering_fits(delta_stop_del=2., n_elongated_internode={'Mercia':3.5, 'Rht3':3., 'Tremie12': 5, 'Tremie13':4} , max_order=None, t_survival=None,HS_converter=None):
-    if HS_converter is None:
-        HS_converter = fit_HS()
-    if t_survival is None:
-        t_survival = tiller_survival(HS_converter)  
-    tdb = archidb.Tillering_data()
-    pdata = archidb.Plot_data_Tremie_2012_2013()
+#
+# Fitting parameters
+def tillering_pars():
+    """ Manual parameters used for fitting
+    """
+    pars={}
+    # optional limit to max order of tillering
+    pars['max_order'] = None
+    # delay between stop of growth and disparition of an axe
+    pars['delta_stop_del'] = 2.
     #
-    tdb['Tremie13']['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-    for T in ('T3','T4'):
-        tdb['Tremie13']['emission_probabilities'][T] *= 0.5
+    pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
+    # reduction of emmission
+    pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
     
+    # damages to tillers
+    #pars['tiller_damages'] = None
+    pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
+    'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
+    'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
+    'Tremie13': None}
+    return pars
+#
+# Fits
+def tillering_fits(**kwds):
+
+    # Emission probabilities
+    #
+    tdb = archidb.Tillering_data()
+    # special etimation of ears per plant for Tremie 13
+    pdata = archidb.Plot_data_Tremie_2012_2013()
+    tdb['Tremie13']['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
+    # manual reductions
+    emf = kwds.get('emission_reduction')
+    if emf is not None:
+        for k in emf:
+            if emf[k] is not None:
+                for T in emf[k]:
+                    tdb[k]['emission_probabilities'][T] *= emf[k][T]
+    
+    # Tiller damages
+    #
+    HS_converter = kwds.get('HS_converter')
+    tiller_damages = kwds.get('tiller_damages')
+    tiller_survival = _tsurvival(tiller_damages=tiller_damages, HS_converter=HS_converter)
+    
+    # Wheat tillering model parameters
+    delta_stop_del = kwds.get('delta_stop_del', 2.)
     if not isinstance(delta_stop_del,dict):
         delta_stop_del = {k:delta_stop_del for k in tdb}
-        
+    # 
+    n_elongated_internode = kwds.get('n_elongated_internode',4.) 
     if not isinstance(n_elongated_internode,dict):
         n_elongated_internode = {k:n_elongated_internode for k in tdb}   
+    #
+    max_order = kwds.get('max_order')
     
-    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=t_survival[k]) for k in tdb}
+    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=tiller_survival[k]) for k in tdb}
 
     return t_fits
 
-#1 graph tillering par var -> 4 graph sur une feuille
+
 if run_plots:
+    # populate with fits
+    pars = tillering_pars()
     HS_converter = fit_HS()
-    fly_damage_tillering = tiller_survival(HS_converter)  
-    delta_stop_del = 2.
-    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
+    fits = tillering_fits(HS_converter=HS_converter, **pars)
     obs = archidb.tillers_per_plant()
-    archi_plot.multi_plot_tillering(obs, fits, HS_converter, delta_stop_del)
-#tallage primary pour les 4 var   
-if run_plots:
-    delta_stop_del = 2.
-    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
-    obs = archidb.tillers_per_plant()
-    archi_plot.tillering_primary(obs, fits, HS_converter, delta_stop_del)
-#tallage total pour les 4 var    
-if run_plots:
-    delta_stop_del = 2.
-    #delta_stop_del={'Mercia':3.5, 'Rht3':2.5, 'Tremie12': 0.5, 'Tremie13':2.5}#handle freezing effect on Tremie12
-    fits = tillering_fits(delta_stop_del=delta_stop_del, n_elongated_internode={'Mercia':3.5, 'Rht3':3, 'Tremie12': 5, 'Tremie13':4}, max_order=None, t_survival=fly_damage_tillering)
-    obs = archidb.tillers_per_plant()
+    
+    #1 graph tillering par var -> 4 graph sur une feuille
+    archi_plot.multi_plot_tillering(obs, fits, HS_converter, pars['delta_stop_del'])  
+    
+    #tallage primary pour les 4 var   
+    archi_plot.tillering_primary(obs, fits, HS_converter, pars['delta_stop_del'])
+    
+    #tallage total pour les 4 var    
     archi_plot.tillering_tot(obs, fits, HS_converter, delta_stop_del)
    
-if run_plots:
+   # primary emissions
     archi_plot.graph_primary_emission(archidb)
    
-reconst_db={}
   
 def all_scan():
     df_obs_all = pandas.DataFrame()
@@ -451,8 +477,9 @@ class EchapReconstructions(object):
     
     def __init__(self, median_leaf=True, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
         converter = fit_HS()
+        tpars = tillering_pars()
         self.density_fits = density_fits(converter)
-        self.tillering_fits = tillering_fits(converter)
+        self.tillering_fits = tillering_fits(HS_converter=converter, **tpars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
         if median_leaf:
