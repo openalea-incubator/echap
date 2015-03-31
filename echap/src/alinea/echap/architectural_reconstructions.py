@@ -493,7 +493,7 @@ class EchapReconstructions(object):
             GL['TT'] = conv.TT(GL['HS'])
             GL = dict(zip(GL['TT'],GL['GL']))
             
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay})
+            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay,'inner_params':{'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}})
             
             if 'hs_deb_reg' in pgens[k]:
                 hs_deb_reg = pgens[k].pop('hs_deb_reg')
