@@ -323,7 +323,8 @@ def plot_by_leaf_sample(data, weather, variable = 'severity',
                         leaf = 1, plant = None,  xaxis = 'degree_days', variety = 'Tremie 12',
                         return_df = False, display_fit_function = None, ax = None, 
                         fixed_color = None, change_zero = False, marker = None, 
-                        linestyle = '-', xlims = None, ylims = None):
+                        linestyle = '-', xlims = None, ylims = None, 
+                        xlabel = None, ylabel = None):
     """ Plot given leaf (numbered from top) as individual samples for all plants or for given plant """
     try:
         import mpld3
@@ -382,13 +383,10 @@ def plot_by_leaf_sample(data, weather, variable = 'severity',
                 pass
     
     # Customize plot
-    ax.set_ylabel(variable+' (in %)', fontsize = 18)
-    if xaxis == 'degree_days':
-        ax.set_xlabel('Thermal time since sowing in Cd', fontsize = 18)
-    elif xaxis == 'age_leaf':
-        ax.set_xlabel('Age of leaf since emergence in Cd', fontsize = 18)
-    elif xaxis == 'age_leaf_lig':
-        ax.set_xlabel('Age of leaf since ligulation in Cd', fontsize = 18)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize = 18)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize = 18)
     
     if xlims is not None:
         ax.set_xlim(xlims)

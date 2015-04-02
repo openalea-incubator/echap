@@ -12,3 +12,23 @@ This file can be used to document future development
 * dans adel calculer area etc dans update mtg et non dans mtg construction: ca permet d'eviter la duplication de données. En plus on aura une methode 'add areas' + methode LAI fonctionnant sur tous les mtg
 
 * Faire un mtg picklable (__reduce__ + add aas ars le resultat du reduce dans le constructeur) pour pouvoir arreter/reprendre les simulations
+
+####################################################################################################
+TODO LIST pour V0 de Septoria
+
+* senescence et dimensions sur maitre brin par NFF: revenir aux donnees mesurees.
+    Verifier senescence indiv feuilles, phyllochron et nb feuilles vertes
+    dimensions : feuilles non mesurees :
+        - Strategie par rapport aux donnees standard ? 
+        - Revoir cmt sont fait les brins maitres avec donnees scan
+        - Quelles règles par NFF ?
+    pouvoir switcher senescence avec maladie et senescence sans maladie
+* courbures de feuilles : 
+    - mettre les données Tremie
+    - décider mettre ou non la variabilite
+* variabilite d'emergence qui colle aux donnees
+* Regle a donner sur proportion des NFFs
+
+pour V1 plutot
+* semis qui etale les plantes dans les rangs
+* parametres gx sur positionnement des talles (Bruno Mariem)
