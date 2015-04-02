@@ -104,7 +104,7 @@ def reconstruction_parameters():
     pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
     # reduction of emmission
     pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
-    # damages to tillers
+    # damages to tillers (HS values define the interval at which axes are deleted)
     #pars['tiller_damages'] = None
     pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
     'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
@@ -519,7 +519,7 @@ class EchapReconstructions(object):
             self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    def get_pars(self, name='Mercia', nplants=1, density = 1, dimension=1,echap_delay=True):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, dimension=1):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
@@ -554,7 +554,7 @@ class EchapReconstructions(object):
             GL['TT'] = conv.TT(GL['HS'])
             GL = dict(zip(GL['TT'],GL['GL']))
             
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay})
+            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1})
             
                 
             pars[k] = pgen_ext.pgen_tables(pgens[k])
@@ -565,7 +565,7 @@ class EchapReconstructions(object):
         
         return pars
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, echap_delay=True, ssipars={'r1':0.07,'ndelsen':3},**kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
     
         density = self.density_fits[name].deepcopy()
@@ -582,7 +582,7 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension, echap_delay=echap_delay)
+        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
