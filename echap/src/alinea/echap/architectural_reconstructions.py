@@ -1,6 +1,4 @@
 """ Reconstruction of Wheat for Boigneville data
-
-Current reconstructions use fit from Mariem (pgen data) + new modification consigned here
 """
 import pandas
 import numpy
@@ -18,8 +16,11 @@ import alinea.echap.architectural_data as archidb
 import alinea.echap.architectural_reconstructions_plot as archi_plot
 
 import alinea.adel.plantgen_extensions as pgen_ext
-
 run_plots = False # prevent ipython %run to make plots
+
+
+class NotImplementedError(Exception):
+    pass
 
 #generic function to be moved to adel
   
@@ -71,7 +72,54 @@ def setAdel(**kwds):
     adel = AdelWheat(**kwds)    
     return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
 
-#---------- reconstructions 
+#---------- reconstructions
+
+#
+# Fitting parameters
+#
+def pdict(value):
+    """ create a parameter dict with value
+    """
+    return {k:value for k in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')}
+#
+def reconstruction_parameters():
+    """ Manual parameters used for fitting Echap experiments
+    """
+    pars={}
+    #
+    # PlantGen parameters
+    #--------------------
+    pars['pgen_base'] = {'TT_hs_break':0.0,
+                         # delay  hs->collar apprearance (pyllochronic units)
+                        'inner_params': {'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}}
+    #
+    # Tillering
+    #----------
+    # max order of tillering or None
+    pars['max_order'] = None
+    # delay between stop of growth and disparition of a tiller
+    pars['delta_stop_del'] = pdict(2.)
+    # n_elongated internode is used to control HS of tiller regression start (start = nff - n_elongated_internode + delta_reg)
+    # if original plantgen model behaviour is desired (true decimal number of elongated internodes from dimension data), this value should be set to None
+    pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
+    # reduction of emmission
+    pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
+    # damages to tillers
+    #pars['tiller_damages'] = None
+    pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
+    'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
+    'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
+    'Tremie13': None}
+    #
+    # Leaf geometry
+    #--------------
+    # number of top leaves to be considered erectophyl
+    #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}
+    pars['top_leaves'] = {'Mercia':4, 'Rht3':4, 'Tremie12':4, 'Tremie13':4}
+    #
+    #
+    return pars
+
 
 # leaf geometry
 
@@ -157,18 +205,17 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
         d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
-def median_leaf_fits(disc_level=7, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
-    d={}
-    '''gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
-    gL['Rht3'] = geoLeaf(nlim=2) 
-    gL['Tremie12'] = geoLeaf(nlim=4) '''
+def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+
     gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
-    gL['Mercia'] = geoLeaf(nlim=nlim_factor['Mercia']) 
-    gL['Rht3'] = geoLeaf(nlim=nlim_factor['Rht3']) 
-    gL['Tremie12'] = geoLeaf(nlim=nlim_factor['Tremie12'])    
-    gL['Tremie13'] = geoLeaf(nlim=nlim_factor['Tremie13']) 
+    gL['Mercia'] = geoLeaf(nlim=top_leaves['Mercia']) 
+    gL['Rht3'] = geoLeaf(nlim=top_leaves['Rht3']) 
+    gL['Tremie12'] = geoLeaf(nlim=top_leaves['Tremie12'])    
+    gL['Tremie13'] = geoLeaf(nlim=top_leaves['Tremie13']) 
     
     trajs,bins = archidb.median_leaf_trajectories()
+    
+    d={}
     for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
         _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
         srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
@@ -207,6 +254,9 @@ class HaunStage(object):
         
     def TTem(self, TT):
         return numpy.array(TT) - self.TT_hs_0
+        
+    def phyllochron(self):
+        return 1. / self.a_cohort
 '''
 if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
@@ -377,41 +427,24 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival
     nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    options={}
     return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order, tiller_survival=tiller_survival)
-#
-# Fitting parameters
-def tillering_pars():
-    """ Manual parameters used for fitting
-    """
-    pars={}
-    # optional limit to max order of tillering
-    pars['max_order'] = None
-    # delay between stop of growth and disparition of an axe
-    pars['delta_stop_del'] = 2.
-    #
-    pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
-    # reduction of emmission
-    pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
-    
-    # damages to tillers
-    #pars['tiller_damages'] = None
-    pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
-    'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
-    'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
-    'Tremie13': None}
-    return pars
+
 #
 # Fits
-def tillering_fits(**kwds):
+def tillering_fits(**parameters):
+
 
     # Emission probabilities
     #
     tdb = archidb.Tillering_data()
+    
     # special etimation of ears per plant for Tremie 13
     pdata = archidb.Plot_data_Tremie_2012_2013()
     tdb['Tremie13']['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-    # manual reductions
-    emf = kwds.get('emission_reduction')
+
+    # apply manual reductions
+    emf = parameters.get('emission_reduction')
     if emf is not None:
         for k in emf:
             if emf[k] is not None:
@@ -419,21 +452,17 @@ def tillering_fits(**kwds):
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
     
     # Tiller damages
-    #
-    HS_converter = kwds.get('HS_converter')
-    tiller_damages = kwds.get('tiller_damages')
+    HS_converter = parameters.get('HS_converter')
+    tiller_damages = parameters.get('tiller_damages')
     tiller_survival = _tsurvival(tiller_damages=tiller_damages, HS_converter=HS_converter)
     
     # Wheat tillering model parameters
-    delta_stop_del = kwds.get('delta_stop_del', 2.)
-    if not isinstance(delta_stop_del,dict):
-        delta_stop_del = {k:delta_stop_del for k in tdb}
-    # 
-    n_elongated_internode = kwds.get('n_elongated_internode',4.) 
-    if not isinstance(n_elongated_internode,dict):
-        n_elongated_internode = {k:n_elongated_internode for k in tdb}   
+    delta_stop_del = parameters.get('delta_stop_del', pdict(2.))
+    n_elongated_internode = parameters.get('n_elongated_internode',pdict(4.)) 
+    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
+        raise NotImplementedError("Not yet implemented")
     #
-    max_order = kwds.get('max_order')
+    max_order = parameters.get('max_order')
     
     t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=tiller_survival[k]) for k in tdb}
 
@@ -442,7 +471,7 @@ def tillering_fits(**kwds):
 
 if run_plots:
     # populate with fits
-    pars = tillering_pars()
+    pars = reconstruction_parameters()
     HS_converter = fit_HS()
     fits = tillering_fits(HS_converter=HS_converter, **pars)
     obs = archidb.tillers_per_plant()
@@ -475,25 +504,30 @@ if run_plots:
 
 class EchapReconstructions(object):
     
-    def __init__(self, median_leaf=True, nlim_factor={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+    def __init__(self, median_leaf=True, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+        self.pars = reconstruction_parameters()
+        
+        self.pgen_base = self.pars['pgen_base']
         converter = fit_HS()
-        tpars = tillering_pars()
         self.density_fits = density_fits(converter)
-        self.tillering_fits = tillering_fits(HS_converter=converter, **tpars)
+        self.tillering_fits = tillering_fits(HS_converter=converter, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
         if median_leaf:
-            self.leaf_fits = median_leaf_fits(nlim_factor=nlim_factor)
+            self.leaf_fits = median_leaf_fits(top_leaves=top_leaves)
         else:
             self.leaf_fits = leaf_fits()
         self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
     
-    def get_pars(self, name='Mercia', nplants=1, density = 1, force_start_reg = True, dimension=1,echap_delay=True):
+    def get_pars(self, name='Mercia', nplants=1, density = 1, dimension=1,echap_delay=True):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
+        
+        conv = self.HS_GL_fits[name]['HS']
+                
         Tillering = self.tillering_fits[name]
-        pgens = Tillering.to_pgen(nplants, density, force_start_reg=force_start_reg)
+        pgens = Tillering.to_pgen(nplants, density, phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0, pgen_base = self.pgen_base)
         pars = {}
         
         for k in pgens:
@@ -503,7 +537,7 @@ class EchapReconstructions(object):
             
             nff = k
             glfit = self.HS_GL_fits[name]['GL']
-            conv = self.HS_GL_fits[name]['HS']
+            
             TT_t1 = conv.TT(glfit.hs_t1)
             TT_t2 = conv.TT(glfit.hs_t2)
             a_nff = nff * 1.0 / (TT_t2 - conv.TT_hs_0)
@@ -520,12 +554,8 @@ class EchapReconstructions(object):
             GL['TT'] = conv.TT(GL['HS'])
             GL = dict(zip(GL['TT'],GL['GL']))
             
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay,'inner_params':{'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}})
+            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1,'echap_delay':echap_delay})
             
-            if 'hs_deb_reg' in pgens[k]:
-                hs_deb_reg = pgens[k].pop('hs_deb_reg')
-                TT_start_reg = conv.TT(hs_deb_reg)
-                pgens[k].update({'TT_regression_start_user': TT_start_reg})
                 
             pars[k] = pgen_ext.pgen_tables(pgens[k])
             axeT, dimT, phenT = pars[k]['adelT']
