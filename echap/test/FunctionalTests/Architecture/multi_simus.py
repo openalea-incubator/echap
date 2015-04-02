@@ -16,5 +16,5 @@ def run_variety(variety = 'Tremie12', reset_reconst=False):
     # pymap(run_variety, varieties, nb_cpu)
     
 for variety in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']:
-    run_variety(variety)
-    #run_variety(variety,reset_reconst=True)
+    #run_variety(variety)
+    run_variety(variety,reset_reconst=True)
