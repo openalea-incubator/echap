@@ -523,7 +523,26 @@ def dynamique_data():
     dd = shared_data(alinea.echap, 'dynamique_data.csv')
     data = pandas.read_csv(dd,decimal='.',sep=';')
     return data
+
+#
+# Reader for leaf by leaf data (G. Garin April 2015)
+# 
+
+def treated_archi_tagged_data(variety = 'Tremie12'):
+    filename = variety + '_treated_archi_tagged.csv'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = ';')
     
+def treated_symptom_tagged_data(variety = 'Tremie12'):
+    filename = variety + '_treated_symptom_tagged.csv'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = ';')
+    
+def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
+    filename = 'Tremie12_scan_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = "\t")
+
 #-------------------------------------------------------------------------------  
 # Utilities for processing tillering data
 
@@ -835,7 +854,7 @@ def median_leaf_trajectories():
     grouped = dat.groupby(('lindex','age_class'))   
     trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
     return trajs, bins
-
+    
 #
 # Elaborated data
 #    

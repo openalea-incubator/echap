@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
                                                         get_EchapReconstructions, fit_HS)
-from alinea.echap.architectural_data import scan_dates
+import alinea.echap.architectural_data as archidb
 from alinea.adel.newmtg import adel_labels
 from alinea.astk.plantgl_utils import get_height
 from alinea.echap.weather_data import *
@@ -144,7 +144,7 @@ def add_notation_dates(weather_data, variety):
     if variety in ['Mercia', 'Rht3']:
         df = pandas.DataFrame(numpy.zeros(len(weather_data)), index = weather_data.index)
     else:
-        dates = map(lambda x: pandas.to_datetime(x, dayfirst=True), scan_dates(variety = variety))
+        dates = map(lambda x: pandas.to_datetime(x, dayfirst=True), archidb.scan_dates(variety = variety))
         df = pandas.DataFrame(numpy.zeros(len(weather_data)), index = weather_data.index)
         df.loc[dates, :] = 1
     return df.values == 1
@@ -211,17 +211,20 @@ def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20., reset_reconst =
 
 def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
     file_path = get_file_path(variety = variety, nplants = nplants, group = group)
-    return pandas.read_csv(file_path)
+    df = pandas.read_csv(file_path)
+    df['necro'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    df['necro_tot'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    return df
     
 def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days', 
                   leaves = range(1, 14), from_top = True, plant_axis = ['MS'],
                   error_bars = False, error_method = 'confidence_interval', 
                   marker = '', linestyle = '-', fixed_color = None, 
                   title = None, legend = True, xlabel = None, ylabel = None,
-                  xlims = None, ylims = None, ax = None, return_ax = False):
+                  xlims = None, ylims = None, ax = None, return_ax = False, fig_size = (10,8)):
     df = data.copy()
     if ax == None:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize = fig_size)
     colors = ax._get_lines.set_color_cycle()
     colors = ax._get_lines.color_cycle
         
@@ -260,7 +263,7 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
                   error_bars = False, error_method = 'confidence_interval', 
                   markers = ['', '', ''], linestyle = ['-', '--', ':'], colors = [None, None, None], 
                   title = None, xlabel = None, ylabel = None,
-                  xlims = None, ylims = None, ax = None, return_ax = False):
+                  xlims = None, ylims = None, ax = None, return_ax = False, fig_size = (10,8)):
     if from_top == True:
         num_leaf = 'num_leaf_top'
     else:
@@ -295,21 +298,20 @@ def add_hs_and_degree_days(df, variety = 'Tremie12'):
     HSconv = fit_HS()[variety]
     df['HS'] = HSconv(df['degree_days'])
 
-def get_tagged_data(variety = 'Tremie12'):
-    filename = variety + '_suivis_plantes_baguees_T.csv'
-    file_path = str(shared_data(alinea.echap)/filename)
-    df = pandas.read_csv(file_path)
-    df = df.rename(columns = {'Date':'date', 'var':'variety', 'Rep':'rep', 
-                              'N':'num_plant', 'Axis':'axis', 'nff':'fnl'})
-    df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x, dayfirst=True))
-    df['axis'] = df['axis'].apply(lambda x: 'MS' if x == 'MB' else 'T')
+def get_archi_tagged_data(variety = 'Tremie12'):
+    df = archidb.treated_archi_tagged_data(variety = variety)
+    df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x))
+    add_hs_and_degree_days(df, variety = variety)
+    return df
+    
+def get_symptom_tagged_data(variety = 'Tremie12'):
+    df = archidb.treated_symptom_tagged_data(variety = variety)
+    df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x))
     add_hs_and_degree_days(df, variety = variety)
     return df
 
 def get_scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
-    filename = 'Tremie12_scan_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
-    file_path = str(shared_data(alinea.echap)/filename)
-    df_all = pandas.read_csv(file_path, sep = "\t")
+    df_all = archidb.scan_dimensions_single_date(variety = variety, date = date)
     df = df_all.loc[:, ['prelevement', 'plant', 'id_Axe', 'rank', 'lmax', 'wmax',
                         'A_bl', 'A_bl_green', 'stat']]
     df = df.rename(columns = {'prelevement':'date', 'plant':'num_plant', 'id_Axe':'axis', 
@@ -321,51 +323,96 @@ def get_scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
     
 def get_scan_dimensions(variety = 'Tremie12'):
     df = pandas.concat([get_scan_dimensions_single_date(variety = variety, date = d) 
-                        for d in scan_dates(variety)])
+                        for d in archidb.scan_dates(variety)])
     add_hs_and_degree_days(df, variety = variety)
     return df.reset_index(drop = True)
+
+def plot_sim_obs_MS(df_sim, df_obs, variable = 'length', xaxis = 'degree_days', 
+                     leaves = range(7, 14), from_top = False, error_bars = [False, True],
+                     markers = ['', 'o'], linestyles = ['-', '--'], 
+                     xlims = None, ylims = None, legend = True, 
+                     title = None, ax = None, fig_size = None):
+    if ax is None:
+        if fig_size is not None:
+            fig, ax = plt.subplots(figsize = fig_size)
+        else:
+            fig, ax = plt.subplots()
+    plot_by_leaf(df_sim, variable = variable, xaxis = xaxis, leaves = leaves, 
+                      plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[0], 
+                      marker = markers[0], linestyle = linestyles[0], title = title,
+                      xlabel = xaxis, ylabel = variable, xlims = xlims, 
+                      ylims = ylims, legend = legend, ax = ax)
+    plot_by_leaf(df_obs, variable = variable, xaxis = xaxis, leaves = leaves, 
+                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[1],
+                 marker = markers[1], linestyle = linestyles[1], title = title,
+                 xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
+                 legend = legend, ax = ax)
     
 def compare_sim_scan(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
-                     leaves = range(7, 14), exclude_stat = None, 
-                     xlims = None, ylims = None, legend = True, ax = None, df_sim = None):
+                     leaves = range(7, 14), from_top = False, exclude_stat = None, 
+                     xlims = None, ylims = None, legend = True, ax = None, df_sim = None, 
+                     fig_size = (10, 8)):
     if df_sim is None:
         df_sim = get_simu_results(variety = variety, nplants = 30)
     df_obs = get_scan_dimensions(variety = variety)
-    if ax is None:
-        fig, ax = plt.subplots()
-    plot_by_leaf(df_sim, variable = variable, xaxis = xaxis, leaves = leaves, 
-                      plant_axis = ['MS'], from_top = False, error_bars = False, 
-                      marker = '', linestyle = '-', title = 'Simu vs. scans',
-                      xlabel = xaxis, ylabel = variable, xlims = xlims, 
-                      ylims = ylims, legend = legend, ax = ax)
     if exclude_stat is not None:
         df_obs = df_obs[df_obs['stat'] < exclude_stat]
-    plot_by_leaf(df_obs, variable = variable, xaxis = xaxis, leaves = leaves, 
-                 plant_axis = ['MS'], from_top = False, error_bars = True,
-                 marker = 'o', linestyle = '--', title = 'Simu vs. scans',
-                 xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
-                 legend = legend, ax = ax)
+    plot_sim_obs_MS(df_sim, df_obs, variable = variable, xaxis = xaxis, leaves = leaves, 
+                      from_top = from_top, title = 'Simu vs. scans',
+                      xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
 
-def compare_sim_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
-                        leaves = range(8, 14), xlims = None, ylims = None, 
-                        legend = True, ax = None, df_sim = None):
+def compare_sim_archi_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+                            leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
+                            legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
         df_sim = get_simu_results(variety = variety, nplants = 30)
-    df_obs = get_tagged_data(variety = variety)
+    df_obs = get_archi_tagged_data(variety = variety)
+    plot_sim_obs_MS(df_sim, df_obs, variable = variable, xaxis = xaxis,
+                    leaves = leaves, from_top = from_top,
+                    title = 'Simu vs. treated archi tagged',
+                    xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
+                      
+def compare_sim_symptom_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+                            leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
+                            legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
+    if df_sim is None:
+        df_sim = get_simu_results(variety = variety, nplants = 30)
+    df_obs = get_symptom_tagged_data(variety = variety)
+    plot_sim_obs_MS(df_sim, df_obs, variable = variable, xaxis = xaxis, 
+                      leaves = leaves, from_top = from_top,
+                      title = 'Simu vs. treated treated symptom tagged',
+                      xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
+
+def compare_sim_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+                        leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
+                        legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
+    if df_sim is None:
+        df_sim = get_simu_results(variety = variety, nplants = 30)
+    df_obs_archi = get_archi_tagged_data(variety = variety)
+    df_obs_symptom = get_symptom_tagged_data(variety = variety)
     if ax is None:
-        fig, ax = plt.subplots()
+        if fig_size is not None:
+            fig, ax = plt.subplots(figsize = fig_size)
+        else:
+            fig, ax = plt.subplots()
     plot_by_leaf(df_sim, variable = variable, xaxis = xaxis, leaves = leaves, 
-                      plant_axis = ['MS'], from_top = False, error_bars = False, 
-                      marker = '', linestyle = '-', title = 'Simu vs. tagged',
+                      plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[0], 
+                      marker = markers[0], linestyle = linestyles[0], title = title,
                       xlabel = xaxis, ylabel = variable, xlims = xlims, 
                       ylims = ylims, legend = legend, ax = ax)
-    plot_by_leaf(df_obs, variable = variable, xaxis = xaxis, leaves = leaves, 
-                 plant_axis = ['MS'], from_top = False, error_bars = True,
-                 marker = 'o', linestyle = '--', title = 'Simu vs. tagged',
+    plot_by_leaf(df_obs_archi, variable = variable, xaxis = xaxis, leaves = leaves, 
+                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[1],
+                 marker = 'o', linestyle = '-', title = title,
                  xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
                  legend = legend, ax = ax)
-
-def compare_sim_scan_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+# TODO : facecolors
+    plot_by_leaf(df_obs_symptom, variable = variable, xaxis = xaxis, leaves = leaves, 
+                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[1],
+                 marker = markers[1], linestyle = linestyles[1], title = title,
+                 xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
+                 legend = legend, ax = ax)
+                      
+def compare_sim_scan_archi_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
                             leaves = range(8, 14), exclude_stat = None,
                             xlims = None, ylims = None, fig_size = (15, 10)):
     df_sim = get_simu_results(variety = variety, nplants = 30)
@@ -374,9 +421,25 @@ def compare_sim_scan_tagged(variety = 'Tremie12', variable = 'length', xaxis = '
                      leaves = leaves, exclude_stat = exclude_stat, 
                      xlims = xlims, ylims = ylims, legend = False,
                      ax = axs[0], df_sim = df_sim)
-    compare_sim_tagged(variety = variety, variable = variable, xaxis = xaxis, 
-                       leaves = leaves, xlims = xlims, ylims = ylims,
-                       ax = axs[1], df_sim = df_sim)
+    compare_sim_archi_tagged(variety = variety, variable = variable, xaxis = xaxis, 
+                           leaves = leaves, xlims = xlims, ylims = ylims,
+                           ax = axs[1], df_sim = df_sim)
+    letters = iter(['a', 'b', 'c', 'd'])
+    for ax in axs:
+        ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+        
+def compare_sim_scan_symptom_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+                            leaves = range(8, 14), exclude_stat = None,
+                            xlims = None, ylims = None, fig_size = (15, 10)):
+    df_sim = get_simu_results(variety = variety, nplants = 30)
+    fig, axs = plt.subplots(1, 2, figsize = fig_size)
+    compare_sim_scan(variety = variety, variable = variable, xaxis = xaxis, 
+                     leaves = leaves, exclude_stat = exclude_stat, 
+                     xlims = xlims, ylims = ylims, legend = False,
+                     ax = axs[0], df_sim = df_sim)
+    compare_sim_symptom_tagged(variety = variety, variable = variable, xaxis = xaxis, 
+                           leaves = leaves, xlims = xlims, ylims = ylims,
+                           ax = axs[1], df_sim = df_sim)
     letters = iter(['a', 'b', 'c', 'd'])
     for ax in axs:
         ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)

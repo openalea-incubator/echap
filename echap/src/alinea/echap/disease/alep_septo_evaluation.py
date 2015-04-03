@@ -12,25 +12,13 @@ from alinea.echap.disease.septo_data_treatment import *
 # Get data as DataFrames ###########################################################################
 def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
     """ Translate recorder object in DataFrame with the same format as disease notations """
-    recos = []
-    for pl, rec_pl in recorder.iteritems():
-        for lf, rec_lf in rec_pl.iteritems():
-            rec_lf.data['plant'] = int(pl[1:])
-            rec_lf.data['num_leaf_top'] = int(lf[1:])
-            rec_lf.data['num_leaf_bottom'] = len(rec_pl) - int(lf[1:]) + 1
-            rec_lf.data['variety'] = 'tremie'
-            rec_lf.data = rec_lf.data.rename(columns = {'date_sequence':'datetime'})
-            # Temp : to move in disease outputs
-            rec_lf.data['pycnidia_coverage'] = (rec_lf.data['ratio_spo'] + rec_lf.data['ratio_empty'])*100
-            rec_lf.data['pycnidia_coverage_on_green'] = (rec_lf.data['ratio_spo'] + rec_lf.data['ratio_empty'])*100
-            rec_lf.get_normalized_audpc()
-            rec_lf.data['audpc'] = rec_lf.normalized_audpc
-            recos.append(rec_lf.data)
-    data_sim = pd.concat(recos)
-    data_sim.index.name = 'datetime'
+    data_sim = recorder.data
+    data_sim = data_sim.rename(columns = {'num_plant':'plant'})
     
     # Convert ratios in percentage
-    list_of_ratios = [var for var in data_sim.columns if var.startswith('ratio')]+['severity', 'necrosis_percentage']
+    list_of_ratios = [var for var in data_sim.columns if 
+                        var.startswith('ratio')]+['severity', 'necrosis_percentage', 
+                        'pycnidia_coverage', 'pycnidia_coverage_on_green']
     data_sim[list_of_ratios] = data_sim[list_of_ratios].apply(lambda x: x*100.)
     
     # Add leaf dates
@@ -53,48 +41,7 @@ def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
                                 (data_sim.index.isin([d for d in nan_dates]))] = np.nan
     return data_sim
     
-def recorder_to_dataframe_single_variable(recorder, weather = None, adel = None, skipna = True):
-    """ Translate recorder object in DataFrame with the same format as disease notations """
-    to_keep = ['datetime', 'degree_days', 'date_death','variety',
-                'plant', 'num_leaf_top', 'num_leaf_bottom'] + ['pycnidia_coverage']
-    recos = []
-    for pl, rec_pl in recorder.iteritems():
-        for lf, rec_lf in rec_pl.iteritems():
-            rec_lf.data['plant'] = int(pl[1:])
-            rec_lf.data['num_leaf_top'] = int(lf[1:])
-            rec_lf.data['num_leaf_bottom'] = len(rec_pl) - int(lf[1:]) + 1
-            rec_lf.data['variety'] = 'tremie'
-            rec_lf.data = rec_lf.data.rename(columns = {'date_sequence':'datetime'})
-            # Temp : to move in disease outputs
-            rec_lf.data['pycnidia_coverage'] = (rec_lf.data['ratio_spo'] + rec_lf.data['ratio_empty'])*100
-            rec_lf.data.drop([c for c in rec_lf.data.columns if not c in to_keep],inplace=True,axis=1)
-            recos.append(rec_lf.data)
-    data_sim = pd.concat(recos)
-    
-    # Convert ratios in percentage
-    # list_of_ratios = [var for var in data_sim.columns if var.startswith('ratio')]+['severity', 'necrosis_percentage']
-    # data_sim[list_of_ratios] = data_sim[list_of_ratios].apply(lambda x: x*100.)
-    
-    # Add leaf dates
-    if weather is not None:
-        filename = find_dates_filename(weather)
-        data_sim = add_leaf_dates_to_data(data_sim, adel, filename = filename)
-    
-    # Ignore data from dates with dead leaves in each layer
-    if skipna == True:
-        df_count = table_count_notations(data_sim, weather, variable = 'pycnidia_coverage', add_ddays = True)
-        for lf in df_count.columns:
-            df_lf = df_count[lf][map(lambda x: isinstance(x, (int, float, numpy.integer)), df_count[lf])]
-            nan_dates = df_lf[df_lf<df_lf.max()].reset_index().loc[:,'Date']
-            if len(nan_dates)>0:
-                for variable in data_sim.columns:
-                    if variable not in ['datetime', 'degree_days', 'date_death',
-                                        'variety', 'plant', 'num_leaf_top', 'num_leaf_bottom']:
-                        data_sim[variable][(data_sim['num_leaf_top']==lf) & 
-                                (data_sim['datetime'].isin([d for d in nan_dates]))] = np.nan
-    return data_sim
-    
-def get_data_sim(filename = '../alep/example/tremie/recorder_2012_30pl_7sect_frac2e-4.pckl',
+def get_data_sim(filename = '../alep/example/tremie/recorder_2012_30pl_7sect.pckl',
                  weather = None, adel =None, skipna = True):
     recorder = get_recorder(filename)
     return recorder_to_dataframe(recorder, weather = weather, adel = adel, skipna = skipna)
