@@ -735,9 +735,15 @@ def Tillering_data_Tremie13_2012_2013():
     
     # tiller dynamics
     axdyn = axis_dynamics(data)
+    
+    #estimate ears per plant from plot data
+    pdata = Plot_data_Tremie_2012_2013()
+    ears_per_plant = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
+
 
     obs = {'emission_probabilities': emission,
            'nff_probabilities': nff_prop,
+           'ears_per_plant': ears_per_plant,
            'tillers_per_plant': axdyn, 
            'date_code' : date_code,
            'TT_code' : TT_code}

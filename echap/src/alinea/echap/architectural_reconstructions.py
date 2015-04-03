@@ -24,34 +24,10 @@ class NotImplementedError(Exception):
 
 #generic function to be moved to adel
   
-def plantgen_to_devT_comp(pgen_pars):
-    from alinea.adel.plantgen.plantgen_interface import gen_adel_input_data,plantgen2adel
-    
-    axeT_, dimT_, phenT_, _, _, _, _, _, _, _, _ = gen_adel_input_data(**pgen_pars)
-    axeT, dimT, phenT = plantgen2adel(axeT_, dimT_, phenT_)
-    return axeT, dimT, phenT
+
     
     
-def check_nff(devT):
-    """ Count the probability of occurence of MS with given nff
-    """
-    nffs = devT['axeT']['N_phytomer'][devT['axeT']['id_axis']=='MS']
-    counts = {n:nffs.tolist().count(n) for n in set(nffs)}
-    probas = {n:nffs.tolist().count(n) * 1.0 / len(nffs) for n in set(nffs)}
-    return counts, probas
-    
-    
-def check_primary_tillers(devT):
-    """ Count/estimate probabilitie of occurence of primary tillers
-    """
-    import re 
-    axis = devT['axeT']['id_axis']
-    ms = [e for e in axis if re.match('MS',e)]
-    tillers = [e for e in axis if re.match('T.$',e)]
-    counts = {n:tillers.count(n) for n in set(tillers)}
-    probas = {n:tillers.count(n) * 1.0 / len(ms) for n in set(tillers)}
-    return counts, probas
-    
+   
 '''
 def sen(pgen):
     """ Creates devT tables from plantgen dict
@@ -107,9 +83,9 @@ def reconstruction_parameters():
     # damages to tillers (HS values define the interval at which axes are deleted)
     #pars['tiller_damages'] = None
     pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
-    'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
-    'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
-    'Tremie13': None}
+                              'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
+                              'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
+                              'Tremie13': None}
     #
     # Leaf geometry
     #--------------
@@ -439,10 +415,6 @@ def tillering_fits(**parameters):
     #
     tdb = archidb.Tillering_data()
     
-    # special etimation of ears per plant for Tremie 13
-    pdata = archidb.Plot_data_Tremie_2012_2013()
-    tdb['Tremie13']['ears_per_plant'] = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-
     # apply manual reductions
     emf = parameters.get('emission_reduction')
     if emf is not None:
@@ -457,8 +429,8 @@ def tillering_fits(**parameters):
     tiller_survival = _tsurvival(tiller_damages=tiller_damages, HS_converter=HS_converter)
     
     # Wheat tillering model parameters
-    delta_stop_del = parameters.get('delta_stop_del', pdict(2.))
-    n_elongated_internode = parameters.get('n_elongated_internode',pdict(4.)) 
+    delta_stop_del = parameters.get('delta_stop_del')
+    n_elongated_internode = parameters.get('n_elongated_internode') 
     if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
         raise NotImplementedError("Not yet implemented")
     #
