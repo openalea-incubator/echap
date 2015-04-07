@@ -539,7 +539,16 @@ class EchapReconstructions(object):
    
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
-    
+        
+        
+        run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1}
+        if name == 'Rht3':
+            incT=75
+            dep=10
+        else:
+            incT=60
+            dep=7
+            
         density = self.density_fits[name].deepcopy()
         
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0] * stand_density_factor[name]
@@ -551,7 +560,7 @@ class EchapReconstructions(object):
         sowing_density = pdata['sowing_density'] * stand_density_factor[name]
         #sowing_density = 215
         inter_row = pdata['inter_row']/math.sqrt(stand_density_factor[name])
-        stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row)       
+        stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row, noise=0.04)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
         pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
@@ -576,7 +585,7 @@ class EchapReconstructions(object):
             
         leaves = self.leaf_fits[name] 
         
-        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect, **kwds)
+        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
 
 def save_EchapReconstructions():
     try:
