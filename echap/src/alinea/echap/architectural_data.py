@@ -267,6 +267,7 @@ def Plot_data_Tremie_2011_2012():
     'fertile_axis_density':{'2012-05-09':[545, 569, 443]} 
     }
     d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
+    d['ear_density_at_harvest_SD'] = valSD(d['raw_ear_density_at_harvest'])
     d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
     
@@ -788,7 +789,7 @@ def mean_nff():
 def leaf_curvature_data(name='Mercia'):
 
     def xy_reader(file):
-        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y']
+        header_row_xydb = ['variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y','hins','side']
         return pandas.read_csv(file, names=header_row_xydb, sep=',', index_col=False, skiprows=1, decimal='.')
         
     def sr_reader(file) :
@@ -898,9 +899,11 @@ def _add_ghs(df, g):
 def PlantDensity():
     # Mercia /rht3
     ld = []
+    pd = Plot_data_Mercia_Rht3_2010_2011()
+    td = Tillering_data_Mercia_Rht3_2010_2011()
     for g in ('Mercia','Rht3'):
-        pdata = Plot_data_Mercia_Rht3_2010_2011()[g]
-        tdata = Tillering_data_Mercia_Rht3_2010_2011()[g]
+        pdata = pd[g]
+        tdata = td[g]
         date,TT,density,SD = [],[],[],[]
         events = ['sowing', 'emergence', 'harvest']
         density = [pdata['sowing_density'], 
@@ -1026,3 +1029,6 @@ def tillers_per_plant():
     df = _add_ghs(df, 'Tremie13')
     ld.append(df)    
     return reduce(lambda x,y : pandas.concat([x,y]), ld)
+    
+    
+#class ReconstructionData(object):
