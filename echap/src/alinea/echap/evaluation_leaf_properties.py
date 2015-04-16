@@ -219,7 +219,7 @@ def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
 def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days', 
                   leaves = range(1, 14), from_top = True, plant_axis = ['MS'],
                   error_bars = False, error_method = 'confidence_interval', 
-                  marker = '', linestyle = '-', fixed_color = None, 
+                  marker = '', empty_marker = False, linestyle = '-', fixed_color = None, 
                   title = None, legend = True, xlabel = None, ylabel = None,
                   xlims = None, ylims = None, ax = None, return_ax = False, fig_size = (10,8)):
     df = data.copy()
@@ -235,20 +235,19 @@ def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days',
     
     proxy = []
     labels = []
-    for lf in set(df[num_leaf]):
-        if lf in leaves:
-            df_lf = df[(df['axis'].isin(plant_axis)) & (df[num_leaf]==lf)]
-            if fixed_color == None:
-                color = next(colors)
-            else:
-                color = fixed_color
-            plot_mean(df_lf, variable = variable, xaxis = xaxis, 
-                      error_bars = error_bars, error_method = error_method, 
-                      marker = marker, linestyle = linestyle, color = color, 
-                      title = title, xlabel = xlabel, ylabel = ylabel,
-                      xlims = xlims, ylims = ylims, ax = ax)
-            proxy += [plt.Line2D((0,1),(0,0), color = color, linestyle ='-')]
-            labels += ['L%d' %lf]
+    for lf in leaves:
+        df_lf = df[(df['axis'].isin(plant_axis)) & (df[num_leaf]==lf)]
+        if fixed_color == None:
+            color = next(colors)
+        else:
+            color = fixed_color
+        plot_mean(df_lf, variable = variable, xaxis = xaxis, 
+                  error_bars = error_bars, error_method = error_method, 
+                  marker = marker, empty_marker = empty_marker, linestyle = linestyle, 
+                  color = color, title = title, xlabel = xlabel, ylabel = ylabel,
+                  xlims = xlims, ylims = ylims, ax = ax)
+        proxy += [plt.Line2D((0,1),(0,0), color = color, linestyle ='-')]
+        labels += ['L%d' %lf]
     
     if legend == True:
         colors = ax._get_lines.set_color_cycle()
@@ -300,7 +299,10 @@ def add_hs_and_degree_days(df, variety = 'Tremie12'):
 
 def get_archi_tagged_data(variety = 'Tremie12'):
     df = archidb.treated_archi_tagged_data(variety = variety)
-    df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x))
+    if variety == 'Tremie13':
+        df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x, dayfirst = True))
+    else:
+        df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x))
     add_hs_and_degree_days(df, variety = variety)
     return df
     
@@ -383,35 +385,78 @@ def compare_sim_symptom_tagged(variety = 'Tremie12', variable = 'necro', xaxis =
                       title = 'Simu vs. treated treated symptom tagged',
                       xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
 
-def compare_sim_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
-                        leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
-                        legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
-    if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
-    df_obs_archi = get_archi_tagged_data(variety = variety)
-    df_obs_symptom = get_symptom_tagged_data(variety = variety)
+def plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
+                    variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+                    leaves = range(8, 14), from_top = False, error_bars = True,
+                    xlims = None, ylims = None, 
+                    legend = True, ax = None, fig_size = (10, 8)):
     if ax is None:
         if fig_size is not None:
             fig, ax = plt.subplots(figsize = fig_size)
         else:
             fig, ax = plt.subplots()
     plot_by_leaf(df_sim, variable = variable, xaxis = xaxis, leaves = leaves, 
-                      plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[0], 
-                      marker = markers[0], linestyle = linestyles[0], title = title,
-                      xlabel = xaxis, ylabel = variable, xlims = xlims, 
-                      ylims = ylims, legend = legend, ax = ax)
+                  plant_axis = ['MS'], from_top = from_top, error_bars = False, 
+                  marker = '', linestyle = '-', title = None,
+                  xlabel = xaxis, ylabel = variable, xlims = xlims, 
+                  ylims = ylims, legend = legend, ax = ax)
     plot_by_leaf(df_obs_archi, variable = variable, xaxis = xaxis, leaves = leaves, 
-                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[1],
-                 marker = 'o', linestyle = '-', title = title,
+                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars,
+                 marker = 'o', empty_marker = True, linestyle = '', title = None,
                  xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
-                 legend = legend, ax = ax)
-# TODO : facecolors
+                 legend = False, ax = ax)
     plot_by_leaf(df_obs_symptom, variable = variable, xaxis = xaxis, leaves = leaves, 
-                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars[1],
-                 marker = markers[1], linestyle = linestyles[1], title = title,
+                 plant_axis = ['MS'], from_top = from_top, error_bars = error_bars,
+                 marker = 'o', linestyle = '--', title = "Simu vs. all tagged",
                  xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
-                 legend = legend, ax = ax)
+                 legend = False, ax = ax)
+    
+    labels = ['L%d' %lf for lf in leaves]
+    leg1 = ax.legend(ax._get_legend_handles(), labels, title = 'Leaf\nNumber', loc='center left', bbox_to_anchor=(0, 0.65))
+    
+    proxy = [plt.Line2D((0,1),(0,0), color = 'k', linestyle ='-'),
+             plt.Line2D((0,1),(0,0), marker = 'o', markerfacecolor = 'none', markeredgecolor = 'k', linestyle =''),
+             plt.Line2D((0,1),(0,0), marker = 'o', color = 'k', linestyle ='--')]
+    labels = ['simulation', 'archi tagged', 'symptom tagged']
+    leg2 = plt.legend(proxy, labels, loc='best')
+    ax.add_artist(leg1)
+    ax.add_artist(leg2)
                       
+def compare_sim_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+                        leaves = range(8, 14), from_top = False, error_bars = True, 
+                        xlims = None, ylims = None, legend = True, ax = None, 
+                        df_sim = None, fig_size = (10, 8)):
+    if df_sim is None:
+        df_sim = get_simu_results(variety = variety, nplants = 30)
+    df_obs_archi = get_archi_tagged_data(variety = variety)
+    df_obs_symptom = get_symptom_tagged_data(variety = variety)
+    plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
+                    variety = variety, variable = variable, xaxis = xaxis, 
+                    leaves = leaves, from_top = from_top, error_bars = error_bars,
+                    xlims = xlims, ylims = ylims, 
+                    legend = legend, ax = ax)
+                      
+def compare_sim_tagged_by_fnl(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+                        leaves = range(8, 14), from_top = False, error_bars = True, 
+                        xlims = None, ylims = None, 
+                        legend = True, ax = None, df_sim = None, fig_size = (10, 17)):
+    if df_sim is None:
+        df_sim = get_simu_results(variety = variety, nplants = 30)
+    df_obs_archi = get_archi_tagged_data(variety = variety)
+    df_obs_symptom = get_symptom_tagged_data(variety = variety)
+    fnls = set(df_sim['fnl']) & set(df_obs_symptom['fnl']) & set(df_obs_archi['fnl'])
+    fig, axs = plt.subplots(len(fnls), 1, figsize = fig_size)
+    for i, fnl in enumerate(fnls):
+        df_sim_fnl = df_sim[df_sim['fnl'] == fnl]
+        df_obs_archi_fnl = df_obs_archi[df_obs_archi['fnl'] == fnl]
+        df_obs_symptom_fnl = df_obs_symptom[df_obs_symptom['fnl'] == fnl]
+        plot_sim_tagged(df_sim_fnl, df_obs_archi_fnl, df_obs_symptom_fnl,
+                        variety = variety, variable = variable, xaxis = xaxis, 
+                        leaves = leaves, from_top = from_top, error_bars = error_bars,
+                        xlims = xlims, ylims = ylims, 
+                        legend = legend, ax = axs[i], fig_size = fig_size)
+        axs[i].annotate('FNL %d' % fnl, xy=(0.05, 0.4), xycoords='axes fraction', fontsize=18)
+        
 def compare_sim_scan_archi_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
                             leaves = range(8, 14), exclude_stat = None,
                             xlims = None, ylims = None, fig_size = (15, 10)):

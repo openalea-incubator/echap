@@ -187,12 +187,17 @@ def conf_int(lst, perc_conf=95):
 
 def plot_mean(data, variable = 'LAI_vert', xaxis = 'ThermalTime', 
               error_bars = False, error_method = 'confidence_interval', 
-              marker = 'd', linestyle = '-', color = 'b', 
+              marker = 'd', empty_marker = False, linestyle = '-', color = 'b', 
               title = None, xlabel = None, ylabel = None,
               xlims = None, ylims = None, ax = None, return_ax = False):
     if variable in data.columns:
         if ax == None:
             fig, ax = plt.subplots()
+        if empty_marker == False:
+            markerfacecolor = color
+        else:
+            markerfacecolor = 'none'
+            
         df = data[pandas.notnull(data.loc[:,variable])].loc[:, [xaxis, variable]]
         df_mean = df.groupby(xaxis).mean()
         df['nb_rep'] = map(lambda x: df[xaxis].value_counts()[x], df[xaxis])
@@ -204,10 +209,12 @@ def plot_mean(data, variable = 'LAI_vert', xaxis = 'ThermalTime',
             else:
                 raise ValueError("'error_method' unknown: 'try confidence_interval' or 'std_deviation'")
             ax.errorbar(df_mean.index, df_mean[variable], yerr = df_err[variable].values,
-                        color = color, marker = marker, linestyle = linestyle)
+                        marker = marker, linestyle = linestyle, color = color,
+                        markerfacecolor = markerfacecolor,  markeredgecolor = color)
         else:
-            ax.plot(df_mean.index, df_mean[variable], color = color, 
-                    marker = marker, linestyle = linestyle)
+            ax.plot(df_mean.index, df_mean[variable],
+                    marker = marker, linestyle = linestyle, color = color,
+                    markerfacecolor = markerfacecolor,  markeredgecolor = color)
         if title is not None:
             ax.set_title(title, fontsize = 18)
         if xlabel is not None:

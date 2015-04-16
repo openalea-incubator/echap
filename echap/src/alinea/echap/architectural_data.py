@@ -839,7 +839,20 @@ def leaf_curvature_data(name='Mercia'):
         dfsr = sr_reader(data_file_srdb)
     
     return dfxy, dfsr
-    
+ 
+def xydb_reader(name = 'Mercia'):
+    if name in ['Mercia', 'Rht3']:
+        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv')
+        df = pandas.read_csv(data_file_xydb)
+        df.loc[:, 'side'] = 1.
+    elif name in ['Tremie12', 'Tremie13']:
+        data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
+        df = pandas.read_csv(data_file_xydb)
+        # Wrong data for plants 19, 20, 21 on harvest 2 (Redo)
+        if name == 'Tremie12':
+            df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
+    return df[df['variety'] == name]
+
 # interpolated median leaf from Grignon 2010
 def median_leaf_trajectories():
     """ interpolated xy for upper/lower leaves every 0.5 HS on Grignon 2009-2010 data

@@ -48,7 +48,7 @@ def get_mean_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df = df[df['num_leaf_bottom'] == num_leaf]
     if xaxis in ['datetime', 'degree_days']:
         return df.groupby(xaxis).mean()[variable]
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         df_mean = df.groupby('degree_days').mean()[variable]
         df_dates = get_df_dates_xaxis(df, xaxis)
         df_mean.index -= df_dates.loc[num_leaf, xaxis].astype(int)
@@ -66,7 +66,7 @@ def get_mean(df, column='severity', xaxis = 'datetime', by_leaf=True, from_top =
             change_index(df_, new_index = [xaxis, num_leaf])
             df_ = df_.groupby(level=[0,1]).mean()
             return df_[column].unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
             dfs = []
             for lf in set(df_[num_leaf]):
                 df_mean_lf = get_mean_one_leaf(df_, variable = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
@@ -100,7 +100,7 @@ def get_error_margin_one_leaf(df, column='severity', xaxis = 'datetime',
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         return df_.groupby(level=0).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         df_ = df_.groupby(level=0).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
@@ -121,7 +121,7 @@ def get_error_margin(df, column='severity', xaxis = 'datetime', by_leaf=True, fr
             df_ = df_[column]
             df_ = df_.groupby(level=[0,1]).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
             return df_.unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
             dfs = []
             for lf in set(df_[num_leaf]):
                 df_lf = get_error_margin_one_leaf(df_, column = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
@@ -161,7 +161,7 @@ def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'datetime
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         return df_.groupby(level=0).apply(lambda x: bootstr(x[~np.isnan(x)]))
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         df_ = df_.groupby(level=0).apply(lambda x: bootstr(x[~np.isnan(x)]))
@@ -182,7 +182,7 @@ def get_bootstrap_error_margin(df, column='severity', xaxis = 'datetime', by_lea
             df_ = df_[column]
             df_ = df_.groupby(level=[0,1]).apply(lambda x: bootstr(x[~np.isnan(x)]))
             return df_.unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
             dfs = []
             for lf in set(df_[num_leaf]):
                 df_lf = get_bootstrap_error_margin_one_leaf(df_, column = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
@@ -333,8 +333,9 @@ def plot_by_leaf_sample(data, weather, variable = 'severity',
         pass
     
     # Rename xaxis according to column names
-    if not xaxis in ['degree_days', 'age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
-        raise ValueError("xaxis unknown: try 'degree_days', 'age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig'")
+    if not xaxis in ['degree_days', 'age_leaf', 'age_leaf_lig',
+                        'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
+        raise ValueError("xaxis unknown: try 'degree_days', 'age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg'")
 
     # Isolate data for particular leaf
     df = data.copy()
@@ -921,7 +922,7 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
             if xaxis != 'datetime':
                 # Get data for x axis
                 x_data = np.array([ind for ind in df_low.iloc[notnans,df_low.columns==leaf].index])
-                if xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+                if xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
                     df_dates = pd.DataFrame(index = set(data.num_leaf_top))
                     if forced_date_leaves is None:
                         date_name = get_date_name_event(xaxis)
@@ -1149,7 +1150,7 @@ def plot_confidence_and_boxplot_with_global(data, data_global, weather, xaxis = 
     """
     fig, axs = plt.subplots(int(ceil(len(leaves)/2.)), 2, figsize=fig_size)
     
-    if xaxis in ['age_leaf',  'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    if xaxis in ['age_leaf',  'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         forced_date_leaves = data[['num_leaf_top', get_date_name_event(xaxis)]]
     else:
         forced_date_leaves = None
@@ -1592,9 +1593,9 @@ def plot_septo_infection_risk(weather, start_date="2010-10-15 12:00:00",
         ax.set_xlim(xlims)       
     return ax
     
-def plot_rain_and_temp(weather, xaxis = 'degree_days', 
+def plot_rain_and_temp(weather, xaxis = 'degree_days', leaf_dates=None, 
                        ax = None, xlims=None, ylims_rain = None, ylims_temp = None,
-                       title = None, xlabel = True):
+                       title = None, xlabel = True, arrowstyle = '->', arrow_color = 'g'):
     """ Plot rain intensity (mm/h) and temperature (°Cd) """
     if ax == None:
         fig, ax = plt.subplots(figsize=(8,1.8))
@@ -1607,6 +1608,15 @@ def plot_rain_and_temp(weather, xaxis = 'degree_days',
     ax.bar(index, weather.data.rain, width = 1, color = 'b')
     ax2 = ax.twinx()
     ax2.plot(index, weather.data.temperature_air, 'r', alpha = 0.5)
+    
+    if leaf_dates is not None:
+        col_name = leaf_dates.columns[0]
+        for lf, row in leaf_dates.iterrows():
+            ax.annotate('', xy=(row[col_name], 4.), xycoords='data',
+                        xytext=(row[col_name], 5.), 
+                        arrowprops=dict(arrowstyle=arrowstyle, 
+                                        connectionstyle="arc3", 
+                                        color=arrow_color))
     
     if title == None:
         ax.set_title(str(weather.data.index[0].year)+'-'+str(weather.data.index[-1].year))
@@ -1692,10 +1702,10 @@ def plot_daily_relative_humidity(weather, xaxis = 'degree_days',
     ax.set_ylabel('Relative humidity (%)')
     return ax
    
-def plot_with_weather(data, weather, leaves = range(1,2), 
-                      variable='severity', xaxis = 'degree_days',
-                      minimum_sample_size = 5, xlims = [1150, 2050], ylims = [0, 100], 
-                      error_bars = False, return_ax = False, marker = 'd', with_brewer = True):
+def plot_with_infection_risk(data, weather, leaves = range(1,2), 
+                              variable='severity', xaxis = 'degree_days',
+                              minimum_sample_size = 5, xlims = [1150, 2050], ylims = [0, 100], 
+                              error_bars = False, return_ax = False, marker = 'd', with_brewer = True):
     """ Plot disease evolution with weather conditions underneath """
     weather_ = deepcopy(weather)
     try:
@@ -1731,8 +1741,14 @@ def plot_with_weather(data, weather, leaves = range(1,2),
         weather_.data['degree_days'] -= date
         df_dates = get_df_dates_xaxis(data, 'age_leaf_lig')
         df_dates -= date
+    elif xaxis == 'age_leaf_vs_flag_emg':
+        df_dates = get_df_dates_xaxis(data, xaxis)
+        date = df_dates.loc[leaves[0], xaxis]
+        weather_.data['degree_days'] -= date
+        df_dates = get_df_dates_xaxis(data, 'age_leaf')
+        df_dates -= date
     elif xaxis == 'degree_days':
-        df_dates = get_df_dates_xaxis(data, 'age_leaf_lig')
+        df_dates = get_df_dates_xaxis(data, 'age_leaf')
         
     plot_septo_infection_risk(weather = weather_, leaf_dates = df_dates, ax = ax2,
                               xlims = xlims, title = '', xlabel = False, ylabel = True)
@@ -1742,10 +1758,119 @@ def plot_with_weather(data, weather, leaves = range(1,2),
     if return_ax == True:
         return [ax1, ax2, ax3]
 
+def plot_with_weather(data, weather, leaves = range(1,2), 
+                      variable='severity', xaxis = 'degree_days',
+                      minimum_sample_size = 5, xlims = [1150, 2050], ylims = [0, 100], 
+                      error_bars = False, return_ax = False, marker = 'd', with_brewer = True):
+    """ Plot disease evolution with weather conditions underneath """
+    weather_ = deepcopy(weather)
+    try:
+        import mpld3
+        mpld3.disable_notebook()
+    except:
+        pass
+
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[5, 2])
+
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+
+    plot_by_leaf(data, weather_, leaves = leaves,  variable = variable, 
+                 pointer = False, title_suffix = '_control', xaxis = xaxis, 
+                 ax = ax1, xlims = xlims, ylims = ylims, with_brewer = with_brewer, xlabel = False, 
+                 minimum_sample_size = minimum_sample_size, error_bars = error_bars, 
+                 marker = marker)
+    ax1.legend(ax1._get_legend_handles(), leaves, title = 'Leaf number',
+                loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if xaxis in ['age_leaf', 'age_leaf_lig']:
+        df_dates = get_df_dates_xaxis(data, xaxis)
+        assert len(leaves) == 1, "Can't plot with 'age_leaf' in xaxis if more than 1 leaf at a time"
+        date = df_dates.loc[leaves[0], xaxis]
+        weather_.data['degree_days'] -= date
+        df_dates -= date
+    elif xaxis == 'age_leaf_vs_flag_lig':
+        df_dates = get_df_dates_xaxis(data, xaxis)
+        date = df_dates.loc[leaves[0], xaxis]
+        weather_.data['degree_days'] -= date
+        df_dates = get_df_dates_xaxis(data, 'age_leaf_lig')
+        df_dates -= date
+    elif xaxis == 'age_leaf_vs_flag_emg':
+        df_dates = get_df_dates_xaxis(data, xaxis)
+        date = df_dates.loc[leaves[0], xaxis]
+        weather_.data['degree_days'] -= date
+        df_dates = get_df_dates_xaxis(data, 'age_leaf')
+        df_dates -= date
+    elif xaxis == 'degree_days':
+        df_dates = get_df_dates_xaxis(data, 'age_leaf')
+            
+    plot_rain_and_temp(weather = weather_, leaf_dates = df_dates, ax = ax2,
+                       ylims_rain = [0., 5.], ylims_temp = [0., 30.],
+                       xlims = xlims, title = '')
+    if return_ax == True:
+        return [ax1, ax2]
+
 def plot_with_weather_by_fnl(data, weather, variable = 'severity',
-                              leaves = range(1, 5), xaxis = 'degree_days', 
-                              minimum_sample_size = 5, fig_size = (10, 15),
-                              xlims = None, error_bars = False, return_ax = False):
+                                      leaves = range(1, 5), xaxis = 'degree_days', 
+                                      minimum_sample_size = 5, fig_size = (10, 10),
+                                      xlims = None, error_bars = False, return_ax = False):
+    """ Plot disease evolution with weather conditions underneath """
+    data_grouped = group_by_fnl(data)
+    try:
+        import mpld3
+        mpld3.disable_notebook()
+    except:
+        pass
+
+    fig = plt.figure(figsize=fig_size)
+    height_ratios = [5] + [1]
+    gs = gridspec.GridSpec(2, 1, height_ratios=[5, 2])
+
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+    
+    plot_by_leaf_by_fnl(data, weather, leaves = leaves,  variable = variable, 
+                        title_suffix = '', xaxis = xaxis, fig = fig,
+                        ax = ax1, xlims = xlims, with_brewer = True, xlabel = False, 
+                        minimum_sample_size = minimum_sample_size, error_bars = error_bars)
+    
+    arrow_styles = iter(['->', '-|>'])
+    arrow_colors = iter(['g', 'k'])
+    for fnl, df in data_grouped.iteritems():
+        weather_ = deepcopy(weather)
+        if xaxis in ['age_leaf', 'age_leaf_lig']:
+            df_dates = get_df_dates_xaxis(df, xaxis)
+            assert len(leaves) == 1, "Can't plot with 'age_leaf' in xaxis if more than 1 leaf at a time"
+            date = df_dates.loc[leaves[0], xaxis]
+            weather_.data['degree_days'] -= date
+            df_dates -= date
+        elif xaxis == 'age_leaf_vs_flag_lig':
+            df_dates = get_df_dates_xaxis(df, xaxis)
+            date = df_dates.loc[leaves[0], xaxis]
+            weather_.data['degree_days'] -= date
+            df_dates = get_df_dates_xaxis(df, 'age_leaf_lig')
+            df_dates -= date
+        elif xaxis == 'age_leaf_vs_flag_emg':
+            df_dates = get_df_dates_xaxis(df, xaxis)
+            date = df_dates.loc[leaves[0], xaxis]
+            weather_.data['degree_days'] -= date
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
+            df_dates -= date
+        elif xaxis == 'degree_days':
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
+
+        plot_rain_and_temp(weather = weather_, leaf_dates = df_dates, ax = ax2, 
+                           ylims_rain = [0., 5.], ylims_temp = [0., 30.],
+                           xlims = xlims, title = '', xlabel = True, 
+                           arrowstyle = next(arrow_styles), arrow_color = next(arrow_colors))
+    if return_ax == True:
+        return axs
+        
+def plot_with_infection_risk_by_fnl(data, weather, variable = 'severity',
+                                      leaves = range(1, 5), xaxis = 'degree_days', 
+                                      minimum_sample_size = 5, fig_size = (10, 15),
+                                      xlims = None, error_bars = False, return_ax = False):
     """ Plot disease evolution with weather conditions underneath """
     data_grouped = group_by_fnl(data)
     try:
@@ -1779,8 +1904,14 @@ def plot_with_weather_by_fnl(data, weather, variable = 'severity',
             weather_.data['degree_days'] -= date
             df_dates = get_df_dates_xaxis(df, 'age_leaf_lig')
             df_dates -= date
+        elif xaxis == 'age_leaf_vs_flag_emg':
+            df_dates = get_df_dates_xaxis(df, xaxis)
+            date = df_dates.loc[leaves[0], xaxis]
+            weather_.data['degree_days'] -= date
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
+            df_dates -= date
         elif xaxis == 'degree_days':
-            df_dates = get_df_dates_xaxis(df, 'age_leaf_lig')
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
             
         plot_septo_infection_risk(weather = weather_, leaf_dates = df_dates, ax = iter_axs.next(),
                                   xlims = xlims, title = 'FNL %d' % fnl,
@@ -1957,12 +2088,13 @@ def compare_confidence_and_boxplot_mercia_rht3(data_mercia, data_rht3, weather, 
         
     axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
     
-def compare_plot_with_weather_mercia_rht3(data_mercia, data_rht3, weather, 
+def compare_plot_with_infection_risk_mercia_rht3(data_mercia, data_rht3, weather, 
                                           leaves = range(1, 5), xaxis = 'degree_days', 
                                           minimum_sample_size = 5, xlims = None, error_bars = False):
 
-    axs = plot_with_weather(data_mercia, weather, leaves = leaves, variable = 'septo_green', xaxis = xaxis,
-                      xlims = xlims, error_bars = error_bars, return_ax = True)
+    axs = plot_with_infection_risk(data_mercia, weather, leaves = leaves, variable = 'septo_green', 
+                                    xaxis = xaxis, xlims = xlims, error_bars = error_bars,
+                                    return_ax = True)
     
     weather_ = deepcopy(weather)
     
@@ -1999,10 +2131,11 @@ def compare_confidence_and_boxplot_2012_2013(data_12, data_13, weather_12, weath
 
     axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
     
-def compare_plot_with_weather_2012_2013(data_12, data_13, weather_12, weather_13, variable = 'severity',
-                                          leaves = range(1, 5), xaxis = 'degree_days', 
-                                          minimum_sample_size = 5, xlims = None, fig_size = (10,15),
-                                          error_bars = False, return_ax = False):
+def compare_plot_with_infection_risk_2012_2013(data_12, data_13, weather_12, weather_13,
+                                                variable = 'severity', leaves = range(1, 5),
+                                                xaxis = 'degree_days', minimum_sample_size = 5,
+                                                xlims = None, fig_size = (10,15),
+                                                error_bars = False, return_ax = False):
     weather_12_ = deepcopy(weather_12)
     weather_13_ = deepcopy(weather_13)
     try:
@@ -2049,8 +2182,14 @@ def compare_plot_with_weather_2012_2013(data_12, data_13, weather_12, weather_13
             weather_.data['degree_days'] -= date
             df_dates = get_df_dates_xaxis(df, 'age_leaf_lig')
             df_dates -= date
+        elif xaxis == 'age_leaf_vs_flag_emg':
+            df_dates = get_df_dates_xaxis(df, xaxis)
+            date = df_dates.loc[leaves[0], xaxis]
+            weather_.data['degree_days'] -= date
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
+            df_dates -= date
         elif xaxis == 'degree_days':
-            df_dates = get_df_dates_xaxis(df, 'age_leaf_lig')
+            df_dates = get_df_dates_xaxis(df, 'age_leaf')
             
         plot_septo_infection_risk(weather = weather_, leaf_dates = df_dates, ax = iter_axs.next(),
                                   xlims = xlims, title = weather_.data.index[-1].year,
@@ -2081,12 +2220,15 @@ def compare_confidence_and_boxplot_ref_ctrl(data_ctrl, data_ref, weather, xaxis 
 
     axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
     
-def compare_plot_with_weather_ref_ctrl(data_ctrl, data_ref, weather, 
-                                       leaves = range(1, 5), xaxis = 'degree_days', 
-                                       minimum_sample_size = 5, xlims = None, error_bars = False):
+def compare_plot_with_infection_risk_ref_ctrl(data_ctrl, data_ref, weather, 
+                                               leaves = range(1, 5), xaxis = 'degree_days', 
+                                               minimum_sample_size = 5, xlims = None,
+                                               error_bars = False):
 
-    axs = plot_with_weather(data_ctrl, weather, leaves = leaves, variable = 'severity', xaxis = xaxis,
-                      xlims = xlims, minimum_sample_size = minimum_sample_size, error_bars = error_bars, return_ax = True)
+    axs = plot_with_infection_risk(data_ctrl, weather, leaves = leaves, variable = 'severity',
+                                    xaxis = xaxis, xlims = xlims, 
+                                    minimum_sample_size = minimum_sample_size,
+                                    error_bars = error_bars, return_ax = True)
     
     plot_by_leaf(data_ref, weather, leaves = leaves,  variable = 'severity', 
              pointer = False, title = '', title_suffix = '', xaxis = xaxis, 

@@ -291,6 +291,8 @@ def get_date_name_event(xaxis):
         return 'date_ligulation_leaf'
     elif xaxis == 'age_leaf_vs_flag_lig':
         return 'date_ligulation_flag_leaf'
+    elif xaxis == 'age_leaf_vs_flag_emg':
+        return 'date_emergence_flag_leaf'
         
 def get_df_dates_xaxis(data, xaxis):
     """ Get dates of leaf stage in argument xaxis from data """
@@ -308,7 +310,7 @@ def get_count_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df = df[df['num_leaf_bottom'] == num_leaf]
     if xaxis in ['datetime', 'degree_days']:
         return df.groupby(xaxis).count()[variable]
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         df_count = df.groupby('degree_days').count()[variable]
         df_dates = get_df_dates_xaxis(df, xaxis)
         df_count.index -= df_dates.loc[num_leaf, xaxis].astype(int)
@@ -331,7 +333,7 @@ def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'date
         if xaxis=='datetime' and add_ddays == True:
             df = add_index_ddays(df, weather)
         return df
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
+    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         dfs = []
         for lf in set(df[num_leaf]):
             df_count_lf = get_count_one_leaf(df, variable = variable, xaxis = xaxis, 
@@ -371,6 +373,7 @@ def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
     dict_emerg = {}
     dict_lig = {}
     dict_flag_lig = {}
+    dict_flag_emg = {}
     for fnl in grp_fnls.iterkeys():
         if filename is None:
             assert adel is not None, ("Provide either an adel canopy mock up or file with emergence and ligulation dates")
@@ -402,6 +405,7 @@ def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
                 dict_lig[fnl] = complete_df_with_nearest_fnl(df_lig, fnl, nearest_fnl)
 
         dict_flag_lig[fnl] = dict_lig[fnl].loc[1, 'date']
+        dict_flag_emg[fnl] = dict_emerg[fnl].loc[1, 'date']
 
     df['date_emergence_leaf'] = map(lambda x : dict_emerg[x[0]].loc[x[1], 'date'],
                                         zip(df['FNL'], df['num_leaf_top']))
@@ -413,6 +417,9 @@ def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
 
     df['date_ligulation_flag_leaf'] = map(lambda x: dict_flag_lig[x], df['FNL'])
     df['age_leaf_vs_flag_lig'] = df['degree_days'] - df['date_ligulation_flag_leaf']
+    
+    df['date_emergence_flag_leaf'] = map(lambda x: dict_flag_emg[x], df['FNL'])
+    df['age_leaf_vs_flag_emg'] = df['degree_days'] - df['date_emergence_flag_leaf']
     return df
     
 def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_number = False):
