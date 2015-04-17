@@ -5,12 +5,20 @@ import numpy
 import math
 import scipy.stats as stats
 from copy import deepcopy
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
 
 from alinea.adel.astk_interface import AdelWheat
 from alinea.adel.geometric_elements import Leaves
 from alinea.adel.Stand import AgronomicStand
 from alinea.adel.WheatTillering import WheatTillering
 from alinea.adel.AdelR import devCsv
+
+import alinea.echap
+from openalea.deploy.shared_data import shared_data
 
 import alinea.echap.architectural_data as archidb
 import alinea.echap.architectural_reconstructions_plot as archi_plot
@@ -23,11 +31,7 @@ class NotImplementedError(Exception):
     pass
 
 #generic function to be moved to adel
-  
-
-    
-    
-   
+ 
 '''
 def sen(pgen):
     """ Creates devT tables from plantgen dict
@@ -54,7 +58,7 @@ def setAdel(**kwds):
 # Fitting parameters
 #
 def pdict(value):
-    """ create a parameter dict with value
+    """ create a parameter dict for all echap cultivar with value
     """
     return {k:value for k in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')}
 #
@@ -69,6 +73,12 @@ def reconstruction_parameters():
                          # delay  hs->collar apprearance (pyllochronic units)
                         'inner_params': {'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}}
     #
+    # Plant Density
+    #--------------
+    #thining period (comment out if constant density is desired)
+    pars['thining_period'] = {'Mercia':[6,13], 'Rht3':[6,13], 'Tremie12': None, 'Tremie13': None}
+    # density adjust factor(multiplicative effect)
+    pars['adjust_density'] = None
     # Tillering
     #----------
     # max order of tillering or None
@@ -76,7 +86,7 @@ def reconstruction_parameters():
     # delay between stop of growth and disparition of a tiller
     pars['delta_stop_del'] = pdict(2.)
     # n_elongated internode is used to control HS of tiller regression start (start = nff - n_elongated_internode + delta_reg)
-    # if original plantgen model behaviour is desired (true decimal number of elongated internodes from dimension data), this value should be set to None
+    # if original plantgen model behaviour is desired (true decimal number of elongated internodes computed from dimension data), this value should be set to None
     pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
     # reduction of emmission
     pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
@@ -90,7 +100,7 @@ def reconstruction_parameters():
     # Leaf geometry
     #--------------
     # number of top leaves to be considered erectophyl
-    #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}
+    #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3} # values optimised for echap report december 2014
     pars['top_leaves'] = {'Mercia':4, 'Rht3':4, 'Tremie12':4, 'Tremie13':4}
     #
     #
@@ -257,6 +267,21 @@ def fit_HS():
     a_cohort = stats.linregress(hsdec['TTdec'], hsdec['mean_pond'])[0]
     TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
     return {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
+    
+
+    
+def HS_fit(reset=False):
+    filename = str(shared_data(alinea.echap)/'HS_fit.pckl')
+    if not reset:
+        try:
+            with open(filename) as input:
+                return pickle.load(input)
+        except:
+            pass
+    fit = fit_HS()
+    with open(filename,'w') as output:
+        pickle.dump(fit, output)
+    return fit
 #
 
 
@@ -336,45 +361,54 @@ class deepdd(pandas.DataFrame):
         return self.copy(deep=True)
 #
 
-def density_fits(HS_converter=None):
+def density_fits(HS_converter=None, reset_data=False, **parameters):
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
+
     if HS_converter is None:
-        HS_converter = fit_HS()
-    density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[203,203,153,153]}),
-                'Rht3': deepdd({'HS':[0,6,13,20],'density':[211,211,146,146]}),
-                'Tremie12': deepdd({'HS':[0,6,13,20],'density':[281,281,281,281]}),
-                'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm
-                
-    conv = HS_converter
+        HS_converter = HS_fit()
+    
+    data = archidb.reconstruction_data(reset=reset_data)
+    pdb = data.Plot_data
+    tdb = data.Tillering_data
+    
+    # in case one density only is used, choose mean density or density at harvest if missing
+    plant_density = {k: round(pdb[k].get('mean_plant_density', 1. * pdb[k]['ear_density_at_harvest'] / tdb[k]['ears_per_plant'])) for k in pdb}
+    #
+    fits = {k: {'HS':[0,20],'density':[plant_density[k]] * 2} for k in plant_density}
+    #
+    thining = parameters.get('thining_period')
+    if thining is not None:
+        for k in thining:
+            if thining[k] is not None:
+                density_at_emergence = round(pdb[k].get('plant_density_at_emergence',plant_density[k]))
+                density_at_harvest = round(1. * pdb[k]['ear_density_at_harvest'] / tdb[k]['ears_per_plant'])
+                fits[k] = {'HS':[0] + thining[k] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
+    
+    density_fits = {k:pandas.DataFrame(fits[k]) for k in fits}
+    
+    adjust = parameters.get('adjust_density')
+    if adjust is not None: 
+        for k in adjust:
+            if adjust[k] is not None:
+                df = density_fits[k]
+                df['density'] *= adjust[k]
+
     
     for k in density_fits:
         df = density_fits[k]
-        df['TT'] = conv[k].TT(df['HS'])
+        df['TT'] = HS_converter[k].TT(df['HS'])
+        
     return density_fits
 
 
-#densite non ajustee 
-'''def density_fits():
-    """
-    Manual fit of plant density based on mean plant density and estimate of plant density at harvest
-    """
-    density_fits = {'Mercia':deepdd({'HS':[0,6,13,20],'density':[153,153,153,153]}),
-                'Rht3': deepdd({'HS':[0,6,13,20],'density':[146,146,146,146]}),
-                'Tremie12': deepdd({'HS':[0,6,13,20],'density':[251,251,251,251]}),
-                'Tremie13': deepdd({'HS':[0,20],'density':[251,251]})} #ne prend pas en compte la densite releve a epis1cm!
-                
-    conv = HS_converter
-    
-    for k in density_fits:
-        df = density_fits[k]
-        df['TT'] = conv[k].TT(df['HS'])
-    return density_fits'''
 #
 if run_plots:
-    HS_converter = fit_HS()
-    archi_plot.density_plot(archidb.PlantDensity(), density_fits(), HS_converter)
+    parameters = reconstruction_parameters()
+    fits = density_fits(**parameters)
+    obs = archidb.validation_data()
+    archi_plot.density_plot(obs.PlantDensity, fits, HS_fit())
                     
                 
 
@@ -480,8 +514,8 @@ class EchapReconstructions(object):
         self.pars = reconstruction_parameters()
         
         self.pgen_base = self.pars['pgen_base']
-        converter = fit_HS()
-        self.density_fits = density_fits(converter)
+        converter = HS_fit(reset=True)
+        self.density_fits = density_fits(converter, reset_data=True)
         self.tillering_fits = tillering_fits(HS_converter=converter, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
@@ -549,7 +583,7 @@ class EchapReconstructions(object):
             incT=60
             dep=7
             
-        density = self.density_fits[name].deepcopy()
+        density = self.density_fits[name].copy()
         
         density_at_emergence = density['density'][density['HS'] == 0].iloc[0] * stand_density_factor[name]
         density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0] * stand_density_factor[name]
@@ -588,24 +622,14 @@ class EchapReconstructions(object):
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
 
 def save_EchapReconstructions():
-    try:
-        import cPickle as pickle
-    except:
-        import pickle
-    import alinea.echap
-    from openalea.deploy.shared_data import shared_data
+
     filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
     f = open(filename, 'w')
     pickle.dump(EchapReconstructions(), f)
     f.close()
     
 def get_EchapReconstructions():
-    try:
-        import cPickle as pickle
-    except:
-        import pickle
-    import alinea.echap
-    from openalea.deploy.shared_data import shared_data
+ 
     filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
     f = open(filename)
     reconst = pickle.load(f)
