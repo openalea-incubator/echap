@@ -83,7 +83,7 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
         reconst = get_EchapReconstructions()
     else:
         reconst = EchapReconstructions()
-    HSconv = fit_HS()[variety]
+    HSconv = reconst.HS_GL_fits[variety]['HS']
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
     ages_1 = range(age_range[0], age_range[1], time_steps[0])
     ages_2 = range(age_range[0], age_range[1], time_steps[1])
