@@ -5,6 +5,12 @@ from openalea.deploy.shared_data import shared_data
 import alinea.echap
 from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
+
 from math import sqrt
 
 import matplotlib.pyplot as plt
@@ -979,7 +985,7 @@ def PlantDensity():
     df['SD']=SD
     df = _add_ghs(df, 'Tremie13')
     ld.append(df)
-    return reduce(lambda x,y : pandas.concat([x,y]), ld)
+    return pandas.concat(ld)
 
 # converter axis_dyn output -> df
 def _axdyn_df(tdb):
@@ -1030,5 +1036,47 @@ def tillers_per_plant():
     ld.append(df)    
     return reduce(lambda x,y : pandas.concat([x,y]), ld)
     
+
+ 
+class ReconstructionData(object):
+
+    def __init__(self):
+        self.Plot_data = Plot_data()
+        self.Tillering_data = Tillering_data()
+        
+    def save(self, filename):
+        with open(filename, 'w') as output:
+            pickle.dump(self, output)
+ 
+def reconstruction_data(reset=False):
+    filename = str(shared_data(alinea.echap)/'architectural_ReconstructionData.pckl')
+    if not reset:
+        try:
+            with open(filename) as input:
+                return pickle.load(input)
+        except:
+            pass
+    Data = ReconstructionData()
+    Data.save()
+    return Data
+ 
+class ValidationData(object):
     
-#class ReconstructionData(object):
+    def __init__(self):
+        self.PlantDensity = PlantDensity()
+        
+    def save(self, filename):
+        with open(filename, 'w') as output:
+            pickle.dump(self, output)
+    
+def validation_data(reset=False):
+    filename = str(shared_data(alinea.echap)/'architectural_ValidationData.pckl')
+    if not reset:
+        try:
+            with open(filename) as input:
+                return pickle.load(input)
+        except:
+            pass
+    Data = ValidationData()
+    Data.save(filename)
+    return Data     
