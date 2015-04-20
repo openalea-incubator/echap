@@ -193,7 +193,10 @@ def mean_leaf(leaves):
     
 def plot_mean_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop', 
                               hins_mean = True, fixed_xlims = [-15, 15],
-                              fixed_ylims = [-10, 90], set_lims = False, add_sim_mean=True, add_sim=False):
+                              fixed_ylims = [-10, 90], set_lims = False, add_simu = True):
+    # TODO :
+    # Reflechir a une moyenne qui tienne compte de si la feuille est entiere ou non
+    # Ou filtrer les outlayers
     df = xydb_reader(name = name)
     fig, axs = plt.subplots(1, len(numpy.unique(df['harvest'])))
     
