@@ -341,7 +341,7 @@ def density_plot(density_data, fits, HS_converter):
             color='b'
         else:
             color='m'
-        fits[g].plot('HS', 'density', style='-'+color, label=g+' density fits')
+        fits[g]['density_table'].plot('HS', 'density', style='-'+color, label=g+' density fits')
       
     plt.title("Plant density"); plt.xlabel("HS"); plt.xlim(xmax=25); plt.ylim(ymin=0); plt.ylim(ymax=350)
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})

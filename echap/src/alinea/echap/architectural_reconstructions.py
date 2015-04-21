@@ -75,7 +75,7 @@ def reconstruction_parameters():
     #
     # Plant Density
     #--------------
-    #thining period (comment out if constant density is desired)
+    #thining period (comment out if constant density is desired). Make density decrease linearly between density at emergence and density at harvest
     pars['thining_period'] = {'Mercia':[6,13], 'Rht3':[6,13], 'Tremie12': None, 'Tremie13': None}
     # density adjust factor(multiplicative effect)
     pars['adjust_density'] = None
@@ -386,20 +386,27 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
                 density_at_harvest = round(1. * pdb[k]['ear_density_at_harvest'] / tdb[k]['ears_per_plant'])
                 fits[k] = {'HS':[0] + thining[k] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
     
-    density_fits = {k:pandas.DataFrame(fits[k]) for k in fits}
-    
+    density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
+                       'inter_row': pdb[k]['inter_row'],
+                       'density_table': pandas.DataFrame(fits[k])} for k in fits}
+
+                       
     adjust = parameters.get('adjust_density')
     if adjust is not None: 
         for k in adjust:
             if adjust[k] is not None:
-                df = density_fits[k]
+                df = density_fits[k]['density_table']
                 df['density'] *= adjust[k]
+                density_fits[k]['sowing_density'] *= adjust[k]
+                density_fits[k]['inter_row'] /= math.sqrt(adjust[k])
 
-    
     for k in density_fits:
-        df = density_fits[k]
+        df = density_fits[k]['density_table']
         df['TT'] = HS_converter[k].TT(df['HS'])
-        
+        density_fits[k]['density_at_emergence'] = df['density'].iloc[0]
+        density_fits[k]['density_at_harvest'] = df['density'].iloc[-1]
+
+                
     return density_fits
 
 
@@ -510,12 +517,12 @@ if run_plots:
 
 class EchapReconstructions(object):
     
-    def __init__(self, median_leaf=True, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+    def __init__(self, reset_data=False,  median_leaf=True, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
         self.pars = reconstruction_parameters()
         
         self.pgen_base = self.pars['pgen_base']
         converter = HS_fit(reset=True)
-        self.density_fits = density_fits(converter, reset_data=True)
+        self.density_fits = density_fits(converter, reset_data=reset_data, **self.pars)
         self.tillering_fits = tillering_fits(HS_converter=converter, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
@@ -523,17 +530,17 @@ class EchapReconstructions(object):
             self.leaf_fits = median_leaf_fits(top_leaves=top_leaves)
         else:
             self.leaf_fits = leaf_fits()
-        self.plot_data = {k:{kk:v[kk] for kk in ['inter_row', 'sowing_density']} for k,v in archidb.Plot_data().iteritems()}
-    
-    def get_pars(self, name='Mercia', nplants=1, density = 1, dimension=1):
+
+    def get_pars(self, name='Mercia', nplants=1, dimension=1):
         """ 
         Construct devT tables from models, considering one reconstruction per nff (ie composite)
         """
         
         conv = self.HS_GL_fits[name]['HS']
+        density = self.density_fits[name]['density_at_emergence']
                 
         Tillering = self.tillering_fits[name]
-        pgens = Tillering.to_pgen(nplants, density, phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0, pgen_base = self.pgen_base)
+        pgens = Tillering.to_pgen(nplants, density = density, phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0, pgen_base = self.pgen_base)
         pars = {}
         
         for k in pgens:
@@ -583,21 +590,11 @@ class EchapReconstructions(object):
             incT=60
             dep=7
             
-        density = self.density_fits[name].copy()
-        
-        density_at_emergence = density['density'][density['HS'] == 0].iloc[0] * stand_density_factor[name]
-        density_at_harvest = density['density'][density['HS'] == max(density['HS'])].iloc[0] * stand_density_factor[name]
-        #density_at_emergence = 215
-        #density_at_harvest = 215
-        
-        pdata = self.plot_data[name]
-        sowing_density = pdata['sowing_density'] * stand_density_factor[name]
-        #sowing_density = 215
-        inter_row = pdata['inter_row']/math.sqrt(stand_density_factor[name])
-        stand = AgronomicStand(sowing_density=sowing_density, plant_density=density_at_emergence, inter_row=inter_row, noise=0.04)       
+        d = self.density_fits[name]
+        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
-        pars = self.get_pars(name=name, nplants=n_emerged, density = density_at_emergence, dimension = dimension)
+        pars = self.get_pars(name=name, nplants=n_emerged, dimension = dimension)
         axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
         dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
         phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
@@ -605,11 +602,11 @@ class EchapReconstructions(object):
         devT = devCsv(axeT, dimT, phenT)
         
         #adjust density according to density fit
-        if density_at_harvest  < density_at_emergence and nplants > 1:
+        if d['density_at_harvest']  < d['density_at_emergence'] and nplants > 1:
             TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
             #to do test for 4 lines table only
-            d = density.iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
-            devT = pgen_ext.adjust_density(devT, d, TT_stop_del = TT_stop_del)
+            dt = d['density_table'].iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
+            devT = pgen_ext.adjust_density(devT, dt, TT_stop_del = TT_stop_del)
             
         # adjust tiller survival if early death occured
         if self.tillering_fits[name].tiller_survival is not None:
@@ -635,3 +632,15 @@ def get_EchapReconstructions():
     reconst = pickle.load(f)
     f.close()
     return reconst
+    
+    
+# checks consistency adel/fits
+
+if run_plots:
+    e=EchapReconstructions()
+    adel = e.get_reconstruction()
+    df = adel.checkAxeDyn()
+    fit = e.density_fits['Mercia']['density_table']
+    ax=fit.plot('TT','density',style='-')
+    df.plot('TT','nbplants',style='--',ax=ax)
+    
