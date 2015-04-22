@@ -449,13 +449,14 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival
 
 #
 # Fits
-def tillering_fits(**parameters):
-
+def tillering_fits(HS_converter=None, reset_data=False, **parameters):
+    if HS_converter is None:
+        HS_converter = HS_fit()
 
     # Emission probabilities
     #
-    tdb = archidb.Tillering_data()
-    
+    data = archidb.reconstruction_data(reset=reset_data)
+    tdb = deepcopy(data.Tillering_data)    
     # apply manual reductions
     emf = parameters.get('emission_reduction')
     if emf is not None:
@@ -484,19 +485,18 @@ def tillering_fits(**parameters):
 
 if run_plots:
     # populate with fits
-    pars = reconstruction_parameters()
-    HS_converter = fit_HS()
-    fits = tillering_fits(HS_converter=HS_converter, **pars)
-    obs = archidb.tillers_per_plant()
+    parameters = reconstruction_parameters()
+    fits = tillering_fits(**parameters)
+    obs = archidb.validation_data()
     
     #1 graph tillering par var -> 4 graph sur une feuille
-    archi_plot.multi_plot_tillering(obs, fits, HS_converter, pars['delta_stop_del'])  
+    archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])  
     
     #tallage primary pour les 4 var   
-    archi_plot.tillering_primary(obs, fits, HS_converter, pars['delta_stop_del'])
+    archi_plot.tillering_primary(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])
     
     #tallage total pour les 4 var    
-    archi_plot.tillering_tot(obs, fits, HS_converter, delta_stop_del)
+    archi_plot.tillering_tot(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])
    
    # primary emissions
     archi_plot.graph_primary_emission(archidb)
@@ -522,8 +522,8 @@ class EchapReconstructions(object):
         
         self.pgen_base = self.pars['pgen_base']
         converter = HS_fit(reset=True)
-        self.density_fits = density_fits(converter, reset_data=reset_data, **self.pars)
-        self.tillering_fits = tillering_fits(HS_converter=converter, **self.pars)
+        self.density_fits = density_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
+        self.tillering_fits = tillering_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
         if median_leaf:
@@ -595,9 +595,9 @@ class EchapReconstructions(object):
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
         pars = self.get_pars(name=name, nplants=n_emerged, dimension = dimension)
-        axeT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][0] for k in pars])
-        dimT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][1] for k in pars])
-        phenT = reduce(lambda x,y : pandas.concat([x,y]),[pars[k]['adelT'][2] for k in pars])
+        axeT = pandas.concat([pars[k]['adelT'][0] for k in pars])
+        dimT = pandas.concat([pars[k]['adelT'][1] for k in pars])
+        phenT = pandas.concat([pars[k]['adelT'][2] for k in pars])
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
         

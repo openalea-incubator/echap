@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
+
+def varieties():
+    return ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
+    
+def colors():
+    return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+
+
 def dimension_plot_other(dimension_data, fits):
     plt.ion()
     
@@ -321,30 +329,22 @@ def dynamique_plot_GL_fits(HS_GL_SSI_data, HS_GL_fit, abs='TT', obs=True):
     plt.xlabel(abs)
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
 
-def density_plot(density_data, fits, HS_converter):
+def density_plot(density_data, density_fits, HS_converter):
     plt.ion()
-    grouped = density_data.groupby('Var')
+    col = colors()
+    names = varieties()
     
-    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
-    
-    for name,color in varieties:
+    grouped = density_data.groupby('Var')    
+    for name in names:
         dens = grouped.get_group(name)
         dens['HS'] = HS_converter[name](dens['TT'])
-        plt.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o'+color, label = name+' density')
-   
-    for g in fits:       
-        if g=='Mercia':
-            color='r'
-        elif g=='Rht3':
-            color='g'
-        elif g=='Tremie12':
-            color='b'
-        else:
-            color='m'
-        fits[g]['density_table'].plot('HS', 'density', style='-'+color, label=g+' density fits')
+        ax=plt.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o' + col[name], label=name + ' density')
+        #
+        density_fits[name]['density_table'].plot('HS', 'density', style='-' + col[name], label=name + ' density fits')
       
     plt.title("Plant density"); plt.xlabel("HS"); plt.xlim(xmax=25); plt.ylim(ymin=0); plt.ylim(ymax=350)
     plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    return ax
     
 '''
 def plot_tillering(name='Mercia', delta_stop_del=2.5):
@@ -363,9 +363,7 @@ def plot_tillering(name='Mercia', delta_stop_del=2.5):
 def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
     plt.ion()
     
-    if not isinstance(delta_stop_del,dict):
-        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-    
+   
     fig, axes = plt.subplots(nrows=2, ncols=2)
     ax0, ax1, ax2, ax3 = axes.flat
     

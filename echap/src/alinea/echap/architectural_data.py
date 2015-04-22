@@ -1064,6 +1064,7 @@ class ValidationData(object):
     
     def __init__(self):
         self.PlantDensity = PlantDensity()
+        self.tillers_per_plant = tillers_per_plant()
         
     def save(self, filename):
         with open(filename, 'w') as output:
