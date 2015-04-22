@@ -617,14 +617,36 @@ class EchapReconstructions(object):
         leaves = self.leaf_fits[name] 
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
-
-def save_EchapReconstructions():
-
-    filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
-    f = open(filename, 'w')
-    pickle.dump(EchapReconstructions(), f)
-    f.close()
     
+    def save(self, filename):
+        with open(filename, 'w') as output:
+            pickle.dump(self, output)
+    
+def echap_reconstructions(reset=False, reset_data=False):
+    filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
+    if not reset:
+        try:
+            with open(filename) as input:
+                return pickle.load(input)
+        except:
+            pass
+    Echap = EchapReconstructions(reset_data=reset_data)
+    Echap.save(filename)
+    return Echap   
+        
+
+# checks consistency adel/fits
+
+if run_plots:
+    e=echap_reconstructions()
+    adel = e.get_reconstruction()
+    df = adel.checkAxeDyn()
+    fit = e.density_fits['Mercia']['density_table']
+    ax=fit.plot('TT','density',style='-')
+    df.plot('TT','nbplants',style='--',ax=ax)
+    
+    
+    # future deprecated    
 def get_EchapReconstructions():
  
     filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
@@ -634,13 +656,5 @@ def get_EchapReconstructions():
     return reconst
     
     
-# checks consistency adel/fits
 
-if run_plots:
-    e=EchapReconstructions()
-    adel = e.get_reconstruction()
-    df = adel.checkAxeDyn()
-    fit = e.density_fits['Mercia']['density_table']
-    ax=fit.plot('TT','density',style='-')
-    df.plot('TT','nbplants',style='--',ax=ax)
     

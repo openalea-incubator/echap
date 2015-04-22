@@ -1057,7 +1057,7 @@ def reconstruction_data(reset=False):
         except:
             pass
     Data = ReconstructionData()
-    Data.save()
+    Data.save(filename)
     return Data
  
 class ValidationData(object):
