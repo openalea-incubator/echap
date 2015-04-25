@@ -75,10 +75,14 @@ def reconstruction_parameters():
     #
     # Plant Density
     #--------------
-    #thining period (comment out if constant density is desired). Make density decrease linearly between density at emergence and density at harvest
-    pars['thining_period'] = {'Mercia':[6,13], 'Rht3':[6,13], 'Tremie12': None, 'Tremie13': None}
-    # density adjust factor(multiplicative effect)
-    pars['adjust_density'] = None
+    # plant damages. Comment out to fit without damages
+    # when indicates the period (Haun stages) during which damage effectively occur (ie axes disappear). 
+    # damage indicates the proportion of plant lost during the period
+    pars['plant_damages'] = {'Mercia':{'when':[6,13], 'damage': 0.25}, #ammount estimated from plant density estmates 
+                             'Rht3':{'when':[7,13], 'damage': 0.3},
+                             'Tremie12': None, 'Tremie13': None}
+    # density tuning factor(multiplicative effect on density curve)
+    pars['density_tuning'] = None
     # Tillering
     #----------
     # max order of tillering or None
@@ -90,11 +94,15 @@ def reconstruction_parameters():
     pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
     # reduction of emmission
     pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
-    # damages to tillers (HS values define the interval at which axes are deleted)
+    # damages to tillers
+    # when indicates the period (Haun stages) during which damage effectively occur (ie axes disappear).
+    # when will be adapted for each tiller so that damaged tillers can emerge before dying    
+    # damage indicates the proportion of tiller lost during the period (as a relative proportion of tillers emited)
+    # natural regression participate to damage counts, and damaged tillers participate to natural regression (ie damage to a future regressing tiller is not inducing a new regression)
     #pars['tiller_damages'] = None
-    pars['tiller_damages'] = {'Mercia':{'HS':[4,9],'density':[1,0.7],'tillers':('T1','T2','T3')}, 
-                              'Rht3':{'HS':[4,9],'density':[1,0.6],'tillers':('T1','T2','T3')}, 
-                              'Tremie12':{'HS':[4.9,5.1],'density':[1,0.2],'tillers':['T3']},
+    pars['tiller_damages'] = {'Mercia':{'when':[4,9],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
+                              'Rht3':{'when':[4,9],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
+                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.8 for t in ['T3']}},
                               'Tremie13': None}
     #
     # Leaf geometry
@@ -372,26 +380,50 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
     data = archidb.reconstruction_data(reset=reset_data)
     pdb = data.Plot_data
     tdb = data.Tillering_data
+
+    damages = parameters.get('plant_damages')
     
-    # in case one density only is used, choose mean density or density at harvest if missing
-    plant_density = {k: round(pdb[k].get('mean_plant_density', 1. * pdb[k]['ear_density_at_harvest'] / tdb[k]['ears_per_plant'])) for k in pdb}
+    #compile density data
+    density_data = {}
+    for k in pdb:
+        hs =[]
+        d = []
+        if 'plant_density_at_emergence' in pdb[k]:
+            hs.append(HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
+            d.append(pdb[k]['plant_density_at_emergence'])
+        if 'plant_density' in pdb[k]:
+            for date,densities in pdb[k]['plant_density'].iteritems():
+                hs.extend([HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
+                d.extend(densities)
+        if 'raw_ear_density_at_harvest' in pdb[k]:
+            ear_d = numpy.array(pdb[k]['raw_ear_density_at_harvest']) / tdb[k]['ears_per_plant']
+            hs_harvest = HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['harvest']])
+            hs.extend([hs_harvest] * len(ear_d))
+            d.extend(ear_d.tolist())
+        density_data[k] = pandas.DataFrame({'HS':hs, 'density':d})
+
+    #estimate mean plant density or mean plant density after damages
+    if damages is not None:
+        for k in damages:
+            if damages[k] is not None:
+                density_data[k] = density_data[k].loc[density_data[k]['HS'] > max(damages[k]['when']),:]
+    mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in density_data}
     #
-    fits = {k: {'HS':[0,20],'density':[plant_density[k]] * 2} for k in plant_density}
+    fits = {k: {'HS':[0,20],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
     #
-    thining = parameters.get('thining_period')
-    if thining is not None:
-        for k in thining:
-            if thining[k] is not None:
-                density_at_emergence = round(pdb[k].get('plant_density_at_emergence',plant_density[k]))
-                density_at_harvest = round(1. * pdb[k]['ear_density_at_harvest'] / tdb[k]['ears_per_plant'])
-                fits[k] = {'HS':[0] + thining[k] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
+    if damages is not None:
+        for k in damages:
+            if damages[k] is not None:
+                density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
+                density_at_harvest = mean_plant_density[k]
+                fits[k] = {'HS':[0] + damages[k]['when'] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
     
     density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
                        'inter_row': pdb[k]['inter_row'],
                        'density_table': pandas.DataFrame(fits[k])} for k in fits}
 
                        
-    adjust = parameters.get('adjust_density')
+    adjust = parameters.get('density_tuning')
     if adjust is not None: 
         for k in adjust:
             if adjust[k] is not None:
