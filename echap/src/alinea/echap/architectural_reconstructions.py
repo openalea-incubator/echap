@@ -4,6 +4,8 @@ import pandas
 import numpy
 import math
 import scipy.stats as stats
+from scipy.interpolate import interp1d
+
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -89,20 +91,21 @@ def reconstruction_parameters():
     pars['max_order'] = None
     # delay between stop of growth and disparition of a tiller
     pars['delta_stop_del'] = pdict(2.)
-    # n_elongated internode is used to control HS of tiller regression start (start = nff - n_elongated_internode + delta_reg)
+    # n_elongated internode is used to control HS of tiller regression start for the mean plant (start = nff - n_elongated_internode + delta_reg)
     # if original plantgen model behaviour is desired (true decimal number of elongated internodes computed from dimension data), this value should be set to None
-    pars['n_elongated_internode'] = {'Mercia':3.5, 'Rht3':3., 'Tremie12':5, 'Tremie13':4}
+    pars['n_elongated_internode'] = {'Mercia':3.2, 'Rht3':3.1, 'Tremie12':4.2, 'Tremie13':4}
     # reduction of emmission
-    pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
+    # For Rht3, factor 2 of T5 compensates for absence of T6
+    pars['emission_reduction'] = {'Mercia':None, 'Rht3':{'T5':2.}, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
     # damages to tillers
     # when indicates the period (Haun stages) during which damage effectively occur (ie axes disappear).
     # when will be adapted for each tiller so that damaged tillers can emerge before dying    
     # damage indicates the proportion of tiller lost during the period (as a relative proportion of tillers emited)
     # natural regression participate to damage counts, and damaged tillers participate to natural regression (ie damage to a future regressing tiller is not inducing a new regression)
     #pars['tiller_damages'] = None
-    pars['tiller_damages'] = {'Mercia':{'when':[4,9],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
-                              'Rht3':{'when':[4,9],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
-                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.8 for t in ['T3']}},
+    pars['tiller_damages'] = {'Mercia':{'when':[6,13],'damage':{t:0.25 for t in ('T1','T2','T3')}}, 
+                              'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
+                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.5 for t in ['T3']}},
                               'Tremie13': None}
     #
     # Leaf geometry
@@ -256,7 +259,9 @@ if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
 '''    
    
-def fit_HS():    
+def fit_HS():
+    """ Linear regression for phyllochron data
+    """
     # linear reg on HS data : on cherche fit meme pente
     hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
     nff = archidb.mean_nff()
@@ -279,6 +284,8 @@ def fit_HS():
 
     
 def HS_fit(reset=False):
+    """ Handle fitted phyllochron persitent object
+    """
     filename = str(shared_data(alinea.echap)/'HS_fit.pckl')
     if not reset:
         try:
@@ -437,7 +444,8 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
         df['TT'] = HS_converter[k].TT(df['HS'])
         density_fits[k]['density_at_emergence'] = df['density'].iloc[0]
         density_fits[k]['density_at_harvest'] = df['density'].iloc[-1]
-
+        density_fits[k]['hs_curve'] = interp1d(df['HS'], df['density'])
+        density_fits[k]['TT_curve'] = interp1d(df['TT'], df['density'])
                 
     return density_fits
 
@@ -456,6 +464,7 @@ if run_plots:
 #****************
 #
 # fitting functions
+#future deprecated
 def _tsurvival(tiller_damages=None, HS_converter=None):
     survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
     if tiller_damages is not None:
@@ -471,21 +480,25 @@ def _tsurvival(tiller_damages=None, HS_converter=None):
                 survivals[k] = {T:df for T in tillers} 
     return survivals
 #
-def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_survival):
+def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
     ms_nff_probas = tdb['nff_probabilities']
     nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
     options={}
-    return WheatTillering(primary_tiller_probabilities=primary_emission, ears_per_plant = ears_per_plant, nff=nff,delta_stop_del=delta_stop_del,n_elongated_internode = n_elongated_internode, max_order=max_order, tiller_survival=tiller_survival)
+    return WheatTillering(primary_tiller_probabilities=primary_emission, 
+                          ears_per_plant = ears_per_plant,
+                          nff=nff,
+                          delta_stop_del=delta_stop_del,
+                          n_elongated_internode = n_elongated_internode,
+                          max_order=max_order,
+                          tiller_damages=tiller_damages)
 
 #
 # Fits
-def tillering_fits(HS_converter=None, reset_data=False, **parameters):
-    if HS_converter is None:
-        HS_converter = HS_fit()
+def tillering_fits(reset_data=False, **parameters):
 
-    # Emission probabilities
+    # Emission probabilities tuning
     #
     data = archidb.reconstruction_data(reset=reset_data)
     tdb = deepcopy(data.Tillering_data)    
@@ -497,20 +510,15 @@ def tillering_fits(HS_converter=None, reset_data=False, **parameters):
                 for T in emf[k]:
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
     
-    # Tiller damages
-    HS_converter = parameters.get('HS_converter')
-    tiller_damages = parameters.get('tiller_damages')
-    tiller_survival = _tsurvival(tiller_damages=tiller_damages, HS_converter=HS_converter)
-    
     # Wheat tillering model parameters
     delta_stop_del = parameters.get('delta_stop_del')
     n_elongated_internode = parameters.get('n_elongated_internode') 
     if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
         raise NotImplementedError("Not yet implemented")
-    #
     max_order = parameters.get('max_order')
+    tiller_damages = parameters.get('tiller_damages')
     
-    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_survival=tiller_survival[k]) for k in tdb}
+    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
 
     return t_fits
 
@@ -522,16 +530,16 @@ if run_plots:
     obs = archidb.validation_data()
     
     #1 graph tillering par var -> 4 graph sur une feuille
-    archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])  
+    archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit())  
     
     #tallage primary pour les 4 var   
-    archi_plot.tillering_primary(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])
+    archi_plot.tillering_primary(obs.tillers_per_plant, fits, HS_fit())
     
     #tallage total pour les 4 var    
-    archi_plot.tillering_tot(obs.tillers_per_plant, fits, HS_fit(), parameters['delta_stop_del'])
+    archi_plot.tillering_tot(obs.tillers_per_plant, fits, HS_fit())
    
    # primary emissions
-    archi_plot.graph_primary_emission(archidb)
+    archi_plot.graph_primary_emission(obs.emission_probabilities)
    
   
 def all_scan():
@@ -555,7 +563,7 @@ class EchapReconstructions(object):
         self.pgen_base = self.pars['pgen_base']
         converter = HS_fit(reset=True)
         self.density_fits = density_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
-        self.tillering_fits = tillering_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
+        self.tillering_fits = tillering_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.HS_GL_fits = HS_GL_fits(converter)
         if median_leaf:
@@ -569,12 +577,31 @@ class EchapReconstructions(object):
         """
         
         conv = self.HS_GL_fits[name]['HS']
-        density = self.density_fits[name]['density_at_emergence']
-                
-        Tillering = self.tillering_fits[name]
-        pgens = Tillering.to_pgen(nplants, density = density, phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0, pgen_base = self.pgen_base)
-        pars = {}
         
+        base={}
+        base.update(self.pgen_base)# avoid altering pgen_base
+        
+        # Tillering : Canopy level parameters        
+        # hypothesis : neither n_elongated internode nor delta_stop_del_TT varies with nff
+        Tillering = self.tillering_fits[name]
+        base.update(Tillering.pgen_base(phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0))
+        #
+        axeT = pgen_ext.axeT_user(nplants, Tillering)
+        #
+        # Generate plant gen parameters, for each modality
+        #
+        nff_canopy = Tillering.nff        
+        mods = pgen_ext.modalities(nff_canopy)
+        #mods not needed this is straightforward transform of axeT_user for pgen (split option ?)
+        pgens = {k: axeT['id_plt'][(axeT['id_axis'] == 'MS') & (axeT['N_phytomer_potential'] == k)].values.astype(int).tolist() for k in mods}        
+        pgens = {k:{'MS_leaves_number_probabilities': {str(k):1.0},#unused, except checking if axeT_user is given
+                   'axeT_user':axeT.ix[axeT['id_plt'].isin(v),:],
+                   'plants_number':len(v)} for k,v in pgens.iteritems() if len(v) > 0}        
+        for k in pgens:
+            pgens[k].update(base)
+        
+
+        pars = {}
         for k in pgens:
             dimT = deepdd(self.dimension_fits[name][k]).copy()
             dimT['W_blade'] = dimT['W_blade']*(math.sqrt(dimension))
