@@ -360,30 +360,29 @@ def plot_tillering(name='Mercia', delta_stop_del=2.5):
     obs.plot('HS', ['TP', 'TS', 'TPS','TT3F','FT'],style=['pb','pg','pr','py','pr'])
 '''  
   
-def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
+def multi_plot_tillering(obs_data, fits, HS_converter, legend=False):
     plt.ion()
     
-   
+    names = varieties()
     fig, axes = plt.subplots(nrows=2, ncols=2)
-    ax0, ax1, ax2, ax3 = axes.flat
+    grouped = obs_data.groupby('Var')
     
-    varieties = [['Mercia',ax0,delta_stop_del['Mercia']],['Rht3',ax1,delta_stop_del['Rht3']],['Tremie12',ax2,delta_stop_del['Tremie12']],['Tremie13',ax3,delta_stop_del['Tremie13']]]
+    for i,name in enumerate(names) :
     
-    for name,ax,delta_stop_del in varieties :
-
+        ax = axes.flat[i]
         fit = fits[name].axis_dynamics(include_MS = False)
 
         ax.plot(fit['HS'], fit['total'], '--r', label='Total')
         ax.plot(fit['HS'], fit['primary'], '-b', label='Primary')
-        ax.plot(fit['HS'], fit['others'], ':g', label= 'Others')
+        ax.plot(fit['HS'], fit['other'], ':g', label= 'Others')
         ax.plot(fit['HS'], fit['3F'], '--y', label= 'TT3F')
 
-        em = fits[name].emited_cohort_density()
+        em = fits[name].emited_cohorts()
         ax.stem(em['delay'],em['total_axis'], markerfmt='xr', linefmt='--r', basefmt='k', label='Total emited cohort density')
         ax.stem(em['delay'],em['other_axis'], markerfmt='xg', linefmt='--g', basefmt='k', label='Others emited cohort density')
         ax.stem(em['delay'],em['primary_axis'], markerfmt='xb', linefmt='--b', basefmt='k', label='Primary emited cohort density')
 
-        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs = grouped.get_group(name)
         obs['HS'] = HS_converter[name](obs['TT'])
         ax.plot(obs['HS'], obs['TP'], 'pb', label='TP')
         ax.plot(obs['HS'], obs['TS'], 'pg', label='TS')
@@ -394,45 +393,33 @@ def multi_plot_tillering(obs_data, fits, HS_converter, delta_stop_del):
         hs_debreg = fits[name].hs_debreg()
         ax.annotate('', xy=(hs_debreg, 0), xytext=(hs_debreg, 1), arrowprops=dict(facecolor='#FE9A2E', shrink=0.00))
 
-        if name is 'Mercia':
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
-        elif name is 'Rht3':
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
-        else :
-            ax.set_xlim([0, 18]); ax.set_ylim([0, 10]) 
-            
-        ax.set_title(name+', delta_stop_del : '+str(delta_stop_del), fontsize=10)
-    
-    ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
+        ax.set_xlim([0, 18]); ax.set_ylim([0, 10])        
+        ax.set_title(name, fontsize=10)
+        
+    if legend:
+        ax1.legend(numpoints=1, bbox_to_anchor=(1.2, 1.2), prop={'size': 9})
     fig.suptitle("Tillering")
     
-def tillering_primary(obs_data, fits, HS_converter, delta_stop_del):
+    return fig, axes
+    
+def tillering_primary(obs_data, fits, HS_converter):
+
     plt.ion()
+    col = colors()
+    names = varieties()
+    grouped = obs_data.groupby('Var')
     
-    if not isinstance(delta_stop_del,dict):
-        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-
-    varieties = [['Mercia',delta_stop_del['Mercia']],['Rht3',delta_stop_del['Rht3']],['Tremie12',delta_stop_del['Tremie12']],['Tremie13',delta_stop_del['Tremie13']]]
+    for name in names :
     
-    for name,delta_stop_del in varieties :
-    
-        if name=='Mercia':
-            color='r'
-        elif name=='Rht3':
-            color='g'
-        elif name=='Tremie12':
-            color='b'
-        elif name=='Tremie13':
-            color='m'
-
         fit = fits[name].axis_dynamics(include_MS = False)
-
+        color = col[name]
+        
         if name=='Mercia':
             plt.plot(fit['HS'], fit['primary'], '-'+color, label='Primary')
         else :
             plt.plot(fit['HS'], fit['primary'], '-'+color, label='_nolegend_')           
 
-        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs = grouped.get_group(name)
         obs['HS'] = HS_converter[name](obs['TT'])
         
         if name=='Mercia':
@@ -446,33 +433,23 @@ def tillering_primary(obs_data, fits, HS_converter, delta_stop_del):
     plt.xlabel('HS')
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
     
-def tillering_tot(obs_data, fits, HS_converter, delta_stop_del):
+def tillering_tot(obs_data, fits, HS_converter):
     plt.ion()
+    col = colors()
+    names = varieties()
+    grouped = obs_data.groupby('Var')
     
-    if not isinstance(delta_stop_del,dict):
-        delta_stop_del = {k:delta_stop_del for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-
-    varieties = [['Mercia',delta_stop_del['Mercia']],['Rht3',delta_stop_del['Rht3']],['Tremie12',delta_stop_del['Tremie12']],['Tremie13',delta_stop_del['Tremie13']]]
-    
-    for name,delta_stop_del in varieties :
-    
-        if name=='Mercia':
-            color='r'
-        elif name=='Rht3':
-            color='g'
-        elif name=='Tremie12':
-            color='b'
-        elif name=='Tremie13':
-            color='m'
+    for name in names :
 
         fit = fits[name].axis_dynamics(include_MS = False)
+        color = col[name]
 
         if name=='Mercia':
             plt.plot(fit['HS'], fit['total'], '-'+color, label='Total')
         else :
             plt.plot(fit['HS'], fit['total'], '-'+color, label='_nolegend_')        
 
-        grouped = obs_data.groupby('Var'); obs = grouped.get_group(name)
+        obs = grouped.get_group(name)
         obs['HS'] = HS_converter[name](obs['TT'])
         
         if name=='Mercia':
@@ -486,26 +463,18 @@ def tillering_tot(obs_data, fits, HS_converter, delta_stop_del):
     plt.xlabel('HS')
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
    
-def graph_primary_emission(archidb):
+def graph_primary_emission(obs_data):
     plt.ion()
-    varieties = [['Mercia','r'],['Rht3','g'],['Tremie12','b'],['Tremie13','m']]
+    col = colors()
+    names = varieties()
+    grouped = obs_data.groupby('variety')
     
-    for name,color in varieties :
-        if name is 'Mercia' :
-            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Mercia']
-        elif name is 'Rht3' :
-            tdb_name = archidb.Tillering_data_Mercia_Rht3_2010_2011()['Rht3']
-        elif name is 'Tremie12' :
-            tdb_name = archidb.Tillering_data_Tremie12_2011_2012()
-        else :
-            tdb_name = archidb.Tillering_data_Tremie13_2012_2013()
-
-        primary_emission_name = {k[1:]:v for k,v in tdb_name['emission_probabilities'].iteritems() if k != 'TC'}
-        df_name = pandas.DataFrame.from_dict(primary_emission_name, orient='index')
-        df_name = df_name.reset_index(); df_name.columns = ['talle', 'proba']
-            
-        df_name = df_name.sort(columns='talle')
-        df_name.plot('talle', 'proba', style='--o'+color, label=name)
+    for name in names :
+        color = col[name]
+        obs = grouped.get_group(name)
+        obs = obs.loc[obs['tiller'] != 'TC',:]
+        obs = obs.sort(columns='tiller')
+        obs.plot('tiller', 'probability', style='--o'+color, label=name)
     
     plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     plt.xlabel("Talle"); plt.ylabel("%")

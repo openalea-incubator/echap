@@ -1036,6 +1036,15 @@ def tillers_per_plant():
     ld.append(df)    
     return reduce(lambda x,y : pandas.concat([x,y]), ld)
     
+def emission_probabilities_table():
+    emdb = {}
+    emdb['Mercia'] = Tillering_data_Mercia_Rht3_2010_2011()['Mercia']['emission_probabilities']
+    emdb['Rht3'] = Tillering_data_Mercia_Rht3_2010_2011()['Rht3']['emission_probabilities']
+    emdb['Tremie12'] = Tillering_data_Tremie12_2011_2012()['emission_probabilities']
+    emdb['Tremie13'] = Tillering_data_Tremie13_2012_2013()['emission_probabilities']
+
+    dfs = [pandas.DataFrame({'variety':var, 'tiller':probas.keys(), 'probability': probas.values()}) for  var,probas in emdb.iteritems()]
+    return pandas.concat(dfs)
 
  
 class ReconstructionData(object):
@@ -1065,6 +1074,7 @@ class ValidationData(object):
     def __init__(self):
         self.PlantDensity = PlantDensity()
         self.tillers_per_plant = tillers_per_plant()
+        self.emission_probabilities = emission_probabilities_table()
         
     def save(self, filename):
         with open(filename, 'w') as output:
