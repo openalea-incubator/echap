@@ -145,7 +145,7 @@ fitLspl <- function(spl, a, splref, aref, deform=FALSE) {
   xref <- splref$x[which.max(splref$y)]
   yref <- max(splref$y)
   #
-  xfit <- seq(100,1500,10)
+  xfit <- seq(0,1500,10)
   xnorm <- (xfit - xmax) * a / aref + xref
   yfit <- predict(splref,xnorm)$y / yref * ymax
   if (deform) {
