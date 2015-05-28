@@ -138,8 +138,29 @@ hsfit <- function(phen) {
   if (length(unique(dat$TT)) > 1)
     fit <- lsfit(dat$TT,dat$HS)
 }
-
 #
+fitLspl <- function(spl, a, splref, aref, deform=FALSE) {
+  xmax <- spl$x[which.max(spl$y)]
+  ymax <- max(spl$y)
+  xref <- splref$x[which.max(splref$y)]
+  yref <- max(splref$y)
+  #
+  xfit <- seq(100,1500,10)
+  xnorm <- (xfit - xmax) * a / aref + xref
+  yfit <- predict(splref,xnorm)$y / yref * ymax
+  if (deform) {
+    # deformation for first leaves (before max)
+    xobs <- spl$data$x[spl$data$x < xmax]
+    yobs <- spl$data$y[spl$data$x < xmax]
+    xp <- (xobs - xmax) * a / aref + xref
+    yp <- predict(splref,xp)$y / yref * ymax
+    def <- smooth.spline(xobs,yobs / yp,df=3)
+    yfit <- yfit * ifelse(xfit < xmax, predict(def,xfit)$y, 1)
+  }
+  list(x=xfit, y=yfit)
+}
+
+
 
 #
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {
