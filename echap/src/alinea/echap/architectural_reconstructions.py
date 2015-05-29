@@ -107,6 +107,12 @@ def reconstruction_parameters():
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
                               'Tremie12':{'when':[4.9,5.1],'damage':{t:0.5 for t in ['T3']}},
                               'Tremie13': None}
+    # Haun Stage = f(TT), convergence between axis
+    #---------------------------------------------
+    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts
+    pars['cohort_flag_leaf_delays'] = pdict({'first': 60, 'increment': 10})
+    # delay (haun stage/leaf) between emergence of flag leaves of axis of the same cohort but with different nff 
+    pars['nff_flag_leaf_delay'] = pdict(0.25)
     #
     # Leaf geometry
     #--------------
@@ -233,35 +239,37 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
 #
 # Fit dynamique of median plant
 #
-# ---------------------------------------------------- Fitted HS = f(TT)
+# ---------------------------------------------------- Fit HS = f(TT)
 #
-class HaunStage(object):
-    """ Handle HaunStage = f (ThermalTime) fits
-    """
-    
-    def __init__(self, a_cohort = 1. / 110., TT_hs_0 = 0):
-        self.a_cohort = a_cohort
-        self.TT_hs_0 = TT_hs_0
-        
-    def __call__(self, TT):# HS
-        return (numpy.array(TT) - self.TT_hs_0) * self.a_cohort
-        
-    def TT(self, HS):
-        return self.TT_hs_0 + numpy.array(HS) / self.a_cohort
-        
-    def TTem(self, TT):
-        return numpy.array(TT) - self.TT_hs_0
-        
-    def phyllochron(self):
-        return 1. / self.a_cohort
+
 '''
 if run_plots:
     archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
 '''    
+
+def linreg_df(x,y):
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+    return pandas.Series({'slope':slope, 'intercept':intercept, 'r2': r_value**2, 'std_err':std_err})
    
 def fit_HS():
     """ Linear regression for phyllochron data
     """
+    # HS of mean plant (TO DO : get scan data for Tremie12)
+    data = archidb.reconstruction_data(reset=True)
+    pheno = data.Pheno_tagged
+    g = pheno.groupby('label')
+    def _fit(df):
+        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
+        nff = df.groupby('N').agg('mean')['nff'].mean()
+        res = linreg_df(dat['TT'],dat['HS'])
+        res['nff'] = nff
+        return res
+    hs_ms = g.apply(_fit)
+    # Flag leaf delay per leaf
+    TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
+    g = pheno.groupby(('label','nff'))
+    hs_nff = g.apply(_fit)
+    TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
     # linear reg on HS data : on cherche fit meme pente
     hsd = {k:v['HS'] for k,v in archidb.HS_GL_SSI_data().iteritems()}
     nff = archidb.mean_nff()
@@ -279,7 +287,7 @@ def fit_HS():
     # common fit
     a_cohort = stats.linregress(hsdec['TTdec'], hsdec['mean_pond'])[0]
     TTcol0 = {k:-numpy.mean(df['mean_pond'] - a_cohort * df['TT']) / a_cohort for k,df in hsd.iteritems()}
-    return {k: HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
+    return {k: pgen_ext.HaunStage(a_cohort, TTcol0[k]) for k in TTcol0}
     
 
     
@@ -307,7 +315,44 @@ if run_plots:
 #
 # Styrategie : pour premieres feuilles
 #
+class GL_model(object):
+    """
+    An object interface to a plantgen Green Leaf model variant
+    This variant handles cases where GL=f(HS) is fixed whatever nff
+    """
 
+    def __init__(self, HS, GL, nff=12, n0=4.4, n1=1.5, n2=5, hs_t1=8):
+        self.n0 = n0
+        self.n1 = n1 
+        self.hs_t1 = hs_t1
+        self.HS = HS
+        self.GL = GL
+        self.nff = nff
+        self.hs_t2 = nff
+        self.n2 = n2
+               
+    def GL_number(self):
+        GLpol = pandas.DataFrame({'HS':self.HS, 'GL':self.GL})
+        GLpol = GLpol.ix[GLpol['HS'] > self.hs_t2,:]
+        return GLpol
+     
+    def polyfit(self, a_start = -4e-9):
+        GLpol = self.GL_number()
+        c = (self.n2 - self.n1) / (self.hs_t2 - self.hs_t1) - 1
+        fixed_coefs = [0.0, c, self.n2]
+        a, rmse = tools.fit_poly((GLpol['HS'] - self.hs_t2), GLpol['GL'], fixed_coefs, a_start)
+        return numpy.poly1d([a] + fixed_coefs), rmse
+        
+    def curve(self, step = 0.1, a_start = -4e-9):
+        pol, rmse = self.polyfit(a_start) 
+        lin = pandas.DataFrame({'HS':[0, self.n0, self.hs_t1, self.hs_t2],
+                               'GL':[0, self.n0, self.n1, self.n2]})
+        xpol = numpy.arange(self.hs_t2, 2 * self.nff, step)
+        ypol = pol(xpol - self.hs_t2)
+        dpol = pandas.DataFrame({'HS':xpol,'GL':ypol})
+        dpol = dpol.ix[dpol['GL'] >= 0,:]
+        return pandas.concat([lin, dpol])     
+        
 def HS_GL_fits(HS_converter=None):
     if HS_converter is None:
         HS_converter = fit_HS()
@@ -326,7 +371,7 @@ def HS_GL_fits(HS_converter=None):
     #n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
     n1 = {'Mercia':3, 'Rht3': 3, 'Tremie12':3, 'Tremie13':3}# newparameter to avoid too short grean area lifetime for disease (should be 3.5 but pb in fitting)
     n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
-    fits = {k:pgen_ext.GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
+    fits = {k:GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
     #
     hsgl_fits = {k:{'HS': HS_converter[k], 'GL': fits[k]} for k in nff}
     return hsgl_fits

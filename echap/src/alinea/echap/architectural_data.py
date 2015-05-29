@@ -531,6 +531,12 @@ def dynamique_data():
     data = pandas.read_csv(dd,decimal='.',sep=';')
     return data
 
+# plant by plant data
+def pheno_archi_tagged():
+    filename = 'Compil_Pheno_treated_archi_tagged.csv'
+    file_path = shared_data(alinea.echap, 'architectural_measurements/'+filename)
+    return pandas.read_csv(file_path, sep = ',', decimal='.')
+    
 #
 # Reader for leaf by leaf data (G. Garin April 2015)
 # 
@@ -1052,6 +1058,7 @@ class ReconstructionData(object):
     def __init__(self):
         self.Plot_data = Plot_data()
         self.Tillering_data = Tillering_data()
+        self.Pheno_tagged = pheno_archi_tagged()
         
     def save(self, filename):
         with open(filename, 'w') as output:
