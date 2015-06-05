@@ -36,6 +36,7 @@ notations <- list(Mercia = c('tagged_plants_090611'),
                   Rht3 = c('tagged_plants_090611'),
                   Tremie12 = c(scanned[['Tremie12']][-2],
                                'silhouette_plants_120612',
-                               'tagged_plants_120712'))
+                               'tagged_plants_120712'),
+                  Tremie13 = scanned[['Tremie13']])
 #
 notdb <- sapply(names(notations), function(g) readNotations(prefix[g], notations[[g]], varname[g]), simplify=FALSE)

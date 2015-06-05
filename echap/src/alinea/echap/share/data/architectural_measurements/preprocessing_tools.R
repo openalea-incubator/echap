@@ -6,8 +6,8 @@
 #
 readScanned <- function(prefix, scanfiles, name=NULL) {
   scans <- sapply(scanfiles, function(x) read.table(paste(prefix,'_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE),simplify=FALSE)
-  cols <- c('prelevement','plant','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat',grep('^w',colnames(scans[[1]]),value=TRUE))
-  do.call('rbind',lapply(scans,function(x) x[,cols]))
+  cols <- c('prelevement','plant','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', 'Nflig', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
+  do.call('rbind',lapply(scans,function(x) x[,cols[cols%in%colnames(x)]]))
 }
 #
 # read notations files
