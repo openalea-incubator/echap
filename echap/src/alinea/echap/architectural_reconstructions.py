@@ -325,7 +325,7 @@ def HS_fit(reset=False):
 
 
 if run_plots:
-    HS_converter = fit_HS()
+    HS_converter = HS_fit()
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 #
@@ -371,7 +371,7 @@ class GL_model(object):
         
 def HS_GL_fits(HS_converter=None):
     if HS_converter is None:
-        HS_converter = fit_HS()
+        HS_converter = HS_fit()
     # common fit mercia, rht3, Tremie12
     conv = HS_converter['Tremie12']
     HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])

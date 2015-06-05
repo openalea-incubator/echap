@@ -3,22 +3,6 @@
 #
 source('preprocessing_tools.R')
 #
-genos <- c('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
-#
-prefix <- c('MerciaRht3', 'MerciaRht3','Tremie12', 'Tremie13')
-names(prefix) <- genos
-#
-varname <- c('Mercia','Rht3','Tremie','Tremie')
-names(varname) <- genos
-#
-# TT linear since sowing
-#
-TTlin <- sapply(genos, function(g) read.csv2(paste(prefix[g], '_TTlin_sowing.csv', sep='')), simplify=FALSE)
-#
-# dynamic notation tagged plants
-#
-tagged <- sapply(genos, function(g) readTagged(paste(prefix[g],'_suivis_plantes_baguees.txt', sep=''), TTlin[[g]], varname[g]), simplify=FALSE)
-#
 # compute mature leaf lengths per leaf per plant
 #
 dimP <- lapply(tagged, dimTagged)

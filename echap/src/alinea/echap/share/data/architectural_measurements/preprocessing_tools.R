@@ -2,6 +2,25 @@
 #
 #  Preprocessing functions
 #
+# read scan files
+#
+readScanned <- function(prefix, scanfiles, name=NULL) {
+  scans <- sapply(scanfiles, function(x) read.table(paste(prefix,'_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE),simplify=FALSE)
+  cols <- c('prelevement','plant','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat',grep('^w',colnames(scans[[1]]),value=TRUE))
+  do.call('rbind',lapply(scans,function(x) x[,cols]))
+}
+#
+# read notations files
+#
+readNotations <- function(prefix, notationfiles, name=NULL) {
+  notations <- sapply(notationfiles,function(x) {
+    res <- read.table(paste(prefix,'_notations_',x,'.txt',sep=''),sep='\t', dec=',',header=TRUE)
+    #filter data (Mercai/Rht3)
+    if (!is.null(name))
+      res<- res[res$var==name,]
+    res},simplify=FALSE)
+  notations
+}
 #
 # read suivis + TT
 #
