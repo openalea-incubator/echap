@@ -40,3 +40,7 @@ notations <- list(Mercia = c('tagged_plants_090611'),
                   Tremie13 = scanned[['Tremie13']])
 #
 notdb <- sapply(names(notations), function(g) readNotations(prefix[g], notations[[g]], varname[g]), simplify=FALSE)
+#
+# notations ssi Tremie13 02/04/2013
+dat <- readTagged('Tremie13_ssi_020413.txt', TTlin$Tremie13, 'Tremie')
+notdb$Tremie13$ssi_sample_020413 <- dat[,-grep('^Lg', colnames(dat))]

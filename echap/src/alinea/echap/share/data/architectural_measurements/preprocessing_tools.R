@@ -204,8 +204,23 @@ pheno_scan <- function(pl, dim) {
     if (fsen[which.min(pl$rank)] > 0.3)
       ssi <- min(pl$rank) - 1 + sum(fsen)
   }
-  data.frame(Date = pl$prelevement[1], N=pl$plant[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
-}    
+  data.frame(Date = pl$prelevement[1], N=pl$plant[1], nff=ifelse(pl$Nfvis[1]==0, pl$Nflig[1], NA), HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
+}
+#
+pheno_ssi <- function(ssitable) {
+  phen <- do.call('rbind',lapply(split(ssitable,ssitable$N),function(pl) {
+    pl$HS <- NA
+    ranks <- seq(grep('fsen',colnames(pl)))
+    pl$SSI <- sapply(seq(nrow(pl)), function(i) {
+      fsen <- pl[i,grep('fsen',colnames(pl))]
+      lim <- max(which(fsen >= 100))
+      ranks[lim] -1 + sum(fsen[lim:length(fsen)] / 100)
+      })
+    pl$GL <- pl$HS - pl$SSI
+    pl
+  }))
+  phen[,-c(grep('Lg',colnames(phen)), grep('fvert',colnames(phen)), grep('fsen',colnames(phen)))]
+}
   
 
 #

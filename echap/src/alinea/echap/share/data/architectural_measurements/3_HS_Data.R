@@ -39,8 +39,7 @@ write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen
 # -------------------------------------
 #
 phend <- NULL
-# scan data
-#Tremie 12
+#scan samples Tremie 12
 dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:9]
 not <- notdb$Tremie12[grep('scanned',names(notdb$Tremie12))]
 nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, plant=x$N,id_Axe=x$axe,Nflig=x$Nflig, Nfvis=x$Nfvis)))
@@ -49,23 +48,42 @@ dat <- merge(dat,nfl)
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- phen
-#Tremie13
+#scan samples Tremie13
 dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
 dat$Nfvis <- 1#force HS computing (all sampling occured before flag leaf)
 dat$A_bl_green <- dat$A_bl * dat$pcent_green / 100
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
 phen <- merge(phen, TTlin$Tremie13)
 phend$Tremie13 <- phen
+# silhouette data Tremie12 12/06/12
+dat <- notdb$Tremie12$silhouette_plants_120612[,1:9]
+dat <- dat[dat$axe=='MB',]
+phen <- data.frame(Date=dat$Date, N=dat$N, nff=dat$Nflig, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
+phen <- merge(phen, TTlin$Tremie12)
+phend$Tremie12 <- rbind(phend$Tremie12, phen)
+# ssi sample Tremie13 02/04/2013
+dat <- notdb$Tremie13$ssi_sample_020413
+phen <- pheno_ssi(dat)[,c('Date', 'N','nff','HS','SSI','GL','TT')]
+phend$Tremie13 <- rbind(phend$Tremie13, phen)
 #
-#GL silhouette data
+#check
 par(mfrow=c(2,2),mar=c(4,4,1,1))
 lapply(names(phendbf), function(g) {
   p <- phendbf[[g]]
-  plot(c(0,2500),c(0,13),type='n')
+  plot(c(0,2500),c(0,14),type='n')
   lapply(split(p,p$N), function(x) points(x$TT,x$HS,col=x$nff,pch=16))
+  lapply(split(p,p$N), function(x) points(x$TT,x$SSI,col=x$nff,pch=16,cex=0.7))
   lapply(split(p,p$N), function(x) points(x$TT,x$GL,col=x$nff,pch=16))
-  if (g =="Tremie12"){
-    points(phen$TT, phen$HS,pch=16,col=8)
-    points(phen$TT, phen$GL, pch=16, col=8)
+  if (g %in% names(phend)){
+    phen <- phend[[g]]
+    coul <- ifelse(is.na(phen$nff),8,nff)
+    symb <- ifelse(is.na(phen$nff),16,1)
+    points(phen$TT, phen$HS,pch=symb,col=coul)
+    points(phen$TT, phen$SSI, pch=symb, col=coul,cex=0.7)
+     points(phen$TT, phen$GL, pch=symb, col=coul)
   }
 })
+#
+# Export
+#
+write.csv(do.call('rbind', sapply(names(phend), function(g) {phen <- phend[[g]]; phen$label = g; phen[,c('Date', 'label', 'N', 'nff', 'TT', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_sampled.csv',row.names=FALSE)
