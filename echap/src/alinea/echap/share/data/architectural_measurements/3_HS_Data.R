@@ -87,3 +87,36 @@ lapply(names(phendbf), function(g) {
 # Export
 #
 write.csv(do.call('rbind', sapply(names(phend), function(g) {phen <- phend[[g]]; phen$label = g; phen[,c('Date', 'label', 'N', 'nff', 'TT', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_sampled.csv',row.names=FALSE)
+#
+# treated symptom tagged
+#
+phensym <- lapply(symtagged, pheno_symptom)
+#
+#check
+par(mfrow=c(2,2),mar=c(4,4,1,1))
+lapply(names(phendbf), function(g) {
+  p <- phendbf[[g]]
+  plot(c(0,2500),c(0,14),type='n')
+  lapply(split(p,p$N), function(x) points(x$TT,x$HS,col=x$nff,pch=16))
+  lapply(split(p,p$N), function(x) points(x$TT,x$SSI,col=x$nff,pch=16,cex=0.7))
+  lapply(split(p,p$N), function(x) points(x$TT,x$GL,col=x$nff,pch=16))
+  if (g %in% names(phend)){
+    phen <- phend[[g]]
+    coul <- ifelse(is.na(phen$nff),8,nff)
+    symb <- ifelse(is.na(phen$nff),16,1)
+    points(phen$TT, phen$HS,pch=symb,col=coul)
+    points(phen$TT, phen$SSI, pch=symb, col=coul,cex=0.7)
+    points(phen$TT, phen$GL, pch=symb, col=coul)
+  }
+  if (g %in% names(phensym)){
+    phen <- phensym[[g]]
+    points(phen$TT, phen$HS, col=phen$nff, pch=6)
+    points(phen$TT, phen$SSI, col=phen$nff, pch=6, cex=0.7)
+    points(phen$TT, phen$GL, col=phen$nff, pch=6)
+    points(phen$TT, phen$GLap, col=phen$nff, pch=21)
+  }
+})
+#
+# Export
+#
+write.csv(do.call('rbind', sapply(names(phensym), function(g) {phen <- phensym[[g]]; phen$label = g; phen[,c('Date', 'label', 'Rep', 'N', 'Axis', 'nff', 'TT', 'HS', 'SSI', 'GL', 'SSIap','GLap')]}, simplify=FALSE)), 'Compil_Pheno_treated_symptom_tagged.csv',row.names=FALSE)

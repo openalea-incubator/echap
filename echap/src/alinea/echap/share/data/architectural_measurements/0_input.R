@@ -18,6 +18,10 @@ TTlin <- sapply(genos, function(g) read.csv2(paste(prefix[g], '_TTlin_sowing.csv
 #
 tagged <- sapply(genos, function(g) readTagged(paste(prefix[g],'_suivis_plantes_baguees.txt', sep=''), TTlin[[g]], varname[g]), simplify=FALSE)
 #
+# dynamic notation (nec/symptom) tagged plant treated symptom
+#
+symtagged <- sapply(c('Tremie12', 'Tremie13'), function(g) readSymTagged(paste('../',g,'_treated_symptom_tagged.csv',sep=''), TTlin[[g]]), simplify=FALSE)
+#
 # destructive samplings
 #
 # misses : - scans Mercia/Rht3 09/06/2011 (tagged plants): images non analysees

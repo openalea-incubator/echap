@@ -22,6 +22,14 @@ readNotations <- function(prefix, notationfiles, name=NULL) {
   notations
 }
 #
+# read reference maladie
+#
+readSymTagged <- function(symfile, TT) {
+  symtagged <- read.csv2(symfile)
+  symtagged$Date <- sapply(as.character(symtagged$date),function(x) paste(strsplit(x,split='/',fixed=TRUE)[[1]][c(2,1,3)],collapse='/'))
+  symtagged <- merge(symtagged,TT)
+}
+#
 # read suivis + TT
 #
 readTagged <- function(taggedfile,TT, name=NULL) {
@@ -221,7 +229,23 @@ pheno_ssi <- function(ssitable) {
   }))
   phen[,-c(grep('Lg',colnames(phen)), grep('fvert',colnames(phen)), grep('fsen',colnames(phen)))]
 }
+#
+pheno_symptom <- function(symptom) {
   
+  phen <- do.call('rbind',lapply(split(symptom, list(symptom$Date, symptom$plant),drop=TRUE),function(pl) {
+  nleaf <- length(seq(min(pl$num_leaf_bottom),max(pl$num_leaf_bottom)))
+  ssinec <- NA
+  ssiap <- NA
+  hs <- max(pl$num_leaf_bottom)
+  if (hs < pl$fnl[1])
+    hs <- NA
+  if (nrow(pl) >= nleaf) {
+    ssinec <- min(pl$num_leaf_bottom) - 1 + sum(pl$necro_tot) / 100
+    ssiap <- min(pl$num_leaf_bottom) - 1 + sum(pl$necro) / 100
+  }
+  data.frame(Date=pl$Date[1], var='Tremie', Rep=pl$bloc[1], N=pl$plant[1], Axis=pl$axis[1], Nflig=pl$fnl[1], Nfvis=0, nff=pl$fnl[1], TT=pl$TT[1], HS=hs, SSI=ssinec, SSIap=ssiap, GL=hs - ssinec, GLap=hs - ssiap)
+}))
+}
 
 #
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {
