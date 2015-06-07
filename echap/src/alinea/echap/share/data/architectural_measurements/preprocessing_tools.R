@@ -174,12 +174,39 @@ fitLspl <- function(spl, a, splref, aref, deform=FALSE) {
     xp <- (xobs - xmax) * a / aref + xref
     yp <- predict(splref,xp)$y / yref * ymax
     def <- smooth.spline(xobs,yobs / yp,df=3)
-    yfit <- yfit * ifelse(xfit < xmax, predict(def,xfit)$y, 1)
+    coef <- predict(def,xfit)$y
+    coef[xfit <= min(spl$x)] <- predict(def,min(spl$x))$y
+    yfit <- yfit * ifelse(xfit < xmax, coef, 1)
   }
   list(x=xfit, y=yfit)
 }
-
-
+#
+# pheno on scanned plant
+#
+pheno_scan <- function(pl, dim) {
+  #print(paste(pl$prelevement[1], pl$plant[1]))
+  hs <- pl$Nflig[1]
+  frac = 0
+  if (pl$Nfvis[1] > 0) {
+    vis <- pl[pl$rank > pl$Nflig,]
+    if (nrow(vis) > 0) {
+      lig <- pl[pl$rank <= pl$Nflig & pl$stat < 3,]
+      sc <- 1
+      if (nrow(lig) > 0)
+        sc <- mean(lig$lmax / dim$L[match(lig$rank,dim$ranks)])
+      frac = sum(vis$lmax / sc / dim$L[match(vis$rank,dim$ranks)])
+    }
+  }
+  ssi <- NA
+  pl <- na.omit(pl)
+  if (nrow(pl) > (max(pl$rank) - min(pl$rank))) {
+    fsen <- 1 - pl$A_bl_green / pl$A_bl
+    if (fsen[which.min(pl$rank)] > 0.3)
+      ssi <- min(pl$rank) - 1 + sum(fsen)
+  }
+  data.frame(Date = pl$prelevement[1], N=pl$plant[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
+}    
+  
 
 #
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {

@@ -1,4 +1,4 @@
-Image	Date	Essai	Parcelle	plant	id_Axe	rank	A_bl	pcent_green	id_Feuille	stat	Nflig
+Image	Date	Essai	Parcelle	plant	id_Axe	rank_image	A_bl	pcent_green	rank	stat	Nflig
 Placette1_P1(rep)	22/04/2013	Echap	1	1	Talle	1	5.85998828	88.27755147	NA	NA	NA
 Placette1_P1(rep)	22/04/2013	Echap	1	1	Talle	0	12.612878	99.21483376	NA	NA	NA
 Placette1_P1(rep)	22/04/2013	Echap	1	1	MB	-1	5.55063406	38.22572209	6	2	9

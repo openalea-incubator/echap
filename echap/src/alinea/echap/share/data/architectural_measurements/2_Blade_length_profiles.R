@@ -53,10 +53,25 @@ sapply(seq(Lblade), function(ig) {
 #
 # new fit
 #
-spldb <- lapply(Lblade, function(dim) smooth.spline(dim$TTlig,dim$L,df=8))
+# add destructive data + Leaf 1 of Tremie13 for completing first ranks of Tremie12
+#
+scans12 <- scandb$Tremie12
+scans12 <- scans12[scans12$id_Axe=='MB' & scans12$stat < 3,1:9]
+Lb12 <- data.frame(N=NA,nff=NA,rank=scans12$rank, L=scans12$lmax, TTlig=TToM$Tremie12 + scans12$rank / slopeM$Tremie12)
+#
+par(mfrow=c(1,1))
+plot(c(0,1600),c(0,30),type='n')
+points(Lblade$Tremie12$TTlig, Lblade$Tremie12$L, col=2, pch=16)
+points(Lb12$TTlig, Lb12$L, col=1,pch=16)
+# keep rank 5,6,7,8
+Lb12 <- Lb12[Lb12$rank < 8,]
+#
+Lbladec <- Lblade
+Lbladec$Tremie12 <- rbind(Lblade$Tremie12, Lb12)
+spldb <- lapply(Lbladec, function(dim) smooth.spline(dim$TTlig,dim$L,df=8))
 splref <- spldb$Tremie13
 aref <- slopeM$Tremie13
-def <- c(TRUE, TRUE, FALSE, FALSE)
+def <- c(TRUE, TRUE, TRUE, FALSE)
 names(def) <- genos
 fitLdb <- sapply(genos, function(g) fitLspl(spldb[[g]], slopeM[[g]], splref, aref, deform=def[g]), simplify=FALSE)
 #
@@ -65,6 +80,8 @@ sapply(genos, function(g) {
   dim <- Lblade[[g]]
   plot(c(0,1600),c(0,30),type='n')
   lapply(split(dim,dim$N), function(x) points(x$TTlig,x$L,col=x$N,pch=16))
+  if (g=='Tremie12')
+    points(Lb12$TTlig, Lb12$L, pch=16, col=8)
   lines(fitLdb[[g]]$x, fitLdb[[g]]$y,col=2)
 })
 #

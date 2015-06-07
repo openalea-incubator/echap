@@ -34,3 +34,32 @@ lapply(phendbf, function(p) {
 # Export
 #
 write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen$label = g; phen[,c('Date', 'label', 'Trt', 'Rep', 'N', 'Axis', 'Nflig', 'Nfvis', 'nff', 'TT', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_tagged.csv',row.names=FALSE)
+#
+# HS/SSI data from detructive samplings
+# -------------------------------------
+#
+# scan data
+#
+#Tremie 12
+#
+dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:9]
+not <- notdb$Tremie12[grep('scanned',names(notdb$Tremie12))]
+nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, plant=x$N,id_Axe=x$axe,Nflig=x$Nflig, Nfvis=x$Nfvis)))
+nfl <- na.omit(nfl[nfl$id_Axe=='MB',])
+dat <- merge(dat,nfl)
+#
+phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
+phen <- merge(phen, TTlin$Tremie12)
+#
+#GL silhouette data
+par(mfrow=c(2,2),mar=c(4,4,1,1))
+lapply(names(phendbf), function(g) {
+  p <- phendbf[[g]]
+  plot(c(0,2500),c(0,13),type='n')
+  lapply(split(p,p$N), function(x) points(x$TT,x$HS,col=x$nff,pch=16))
+  lapply(split(p,p$N), function(x) points(x$TT,x$GL,col=x$nff,pch=16))
+  if (g =="Tremie12"){
+    points(phen$TT, phen$HS,pch=16,col=8)
+    points(phen$TT, phen$GL, pch=16, col=8)
+  }
+})
