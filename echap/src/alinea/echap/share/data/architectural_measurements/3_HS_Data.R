@@ -38,18 +38,24 @@ write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen
 # HS/SSI data from detructive samplings
 # -------------------------------------
 #
+phend <- NULL
 # scan data
-#
 #Tremie 12
-#
 dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:9]
 not <- notdb$Tremie12[grep('scanned',names(notdb$Tremie12))]
 nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, plant=x$N,id_Axe=x$axe,Nflig=x$Nflig, Nfvis=x$Nfvis)))
 nfl <- na.omit(nfl[nfl$id_Axe=='MB',])
 dat <- merge(dat,nfl)
-#
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
 phen <- merge(phen, TTlin$Tremie12)
+phend$Tremie12 <- phen
+#Tremie13
+dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
+dat$Nfvis <- 1#force HS computing (all sampling occured before flag leaf)
+dat$A_bl_green <- dat$A_bl * dat$pcent_green / 100
+phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
+phen <- merge(phen, TTlin$Tremie13)
+phend$Tremie13 <- phen
 #
 #GL silhouette data
 par(mfrow=c(2,2),mar=c(4,4,1,1))
