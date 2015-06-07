@@ -75,6 +75,11 @@ def reconstruction_parameters():
                          # delay  hs->collar apprearance (pyllochronic units)
                         'inner_params': {'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}}
     #
+    # Haun Stage = f(TT), convergence between axis
+    #---------------------------------------------
+    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts
+    pars['dTT_cohort'] = pdict({'first': 60, 'increment': 10})
+    #
     # Plant Density
     #--------------
     # plant damages. Comment out to fit without damages
@@ -107,10 +112,6 @@ def reconstruction_parameters():
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
                               'Tremie12':{'when':[4.9,5.1],'damage':{t:0.5 for t in ['T3']}},
                               'Tremie13': None}
-    # Haun Stage = f(TT), convergence between axis
-    #---------------------------------------------
-    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts
-    pars['dTT_cohort'] = pdict({'first': 60, 'increment': 10})
     #
     # Leaf geometry
     #--------------
@@ -120,6 +121,94 @@ def reconstruction_parameters():
     #
     #
     return pars
+
+#
+# --------------------------------------------------------------- Fit HS = f(TT)
+#
+
+def linreg_df(x,y):
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+    return pandas.Series({'slope':slope, 'intercept':intercept, 'r2': r_value**2, 'std_err':std_err})
+   
+def fit_HS(reset_data=False, **parameters):
+    """ Linear regression for phyllochron data
+    """
+    data = archidb.reconstruction_data(reset=reset_data)
+    tagged = data.Pheno_data['archi_tagged']
+    sampled = data.Pheno_data['archi_sampled']
+    dTT_cohort = parameters.get('dTT_cohort')
+    
+    # HS of mean plant 
+    #################################################TO DO : add scan data for Tremie12
+    g = tagged.groupby('label')
+    def _fit(df):
+        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
+        nff = df.groupby('N').agg('mean')['nff'].mean()
+        n = df.groupby('N').agg('mean')['nff'].count()
+        res = linreg_df(dat['TT'],dat['HS'])
+        res['nff'] = nff
+        res['n'] = n
+        return res
+    hs_ms = g.apply(_fit)
+    TTem = - hs_ms['intercept'] / hs_ms['slope']
+    # Flag leaf delay per nff
+    TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
+    g = tagged.groupby(('label','nff'))
+    hs_nff = g.apply(_fit)
+    TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
+    TT_flag = TT_nff_flag.reset_index().rename(columns={0:'flag'}).merge(TT_mean_flag.reset_index().rename(columns={0:'mean_flag'}))
+    TT_flag['dTT_flag'] = TT_flag['flag'] - TT_flag['mean_flag']
+    TT_flag = TT_flag.merge(hs_nff['n'].reset_index().rename(columns=({0:'n'})))
+    TT_flag = TT_flag.merge(hs_ms['nff'].reset_index().rename(columns=({'nff':'mean_nff'})))
+    TT_flag = TT_flag.merge(TTem.reset_index().rename(columns=({0:'mean_TTem'})))
+    dTTnff  = TT_flag.groupby('label').apply(lambda x: numpy.average(x['dTT_flag'] * 1. / (x['nff'] - x['mean_nff']), weights = x['n']))
+    # residual variabilityy of emergenece between plants
+    # mean slopes per nff: 
+    dat = TT_flag.set_index(['label', 'nff'], drop=False)
+    a_nff = dat['nff'] / (dat['flag'] - dat['mean_TTem']) 
+    #estimate dTTEm per plant wyth modeled slope
+    g = tagged.groupby(('label', 'N'))
+    def _TTem(df):
+        res = None
+        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
+        nff = df['nff'].values[0]
+        label = df['label'].values[0]
+        if not numpy.isnan(nff):
+            a = a_nff[(label, nff)]
+            b = numpy.mean(dat['HS'] - a * dat['TT'])
+            res = -1. * b / a
+        return res
+    TTem_p = g.apply(_TTem)
+    # standard deviation
+    std_TTem = TTem_p.reset_index().groupby('label').agg('std').loc[:,0]
+  
+    # HS fits
+    hs_fits = {k: pgen_ext.HaunStage(hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k], dTT_cohort[k]) for k in dTT_cohort}
+    return hs_fits
+    
+
+    
+def HS_fit(reset=False):
+    """ Handle fitted phyllochron persitent object
+    """
+    filename = str(shared_data(alinea.echap)/'HS_fit.pckl')
+    if not reset:
+        try:
+            with open(filename) as input:
+                return pickle.load(input)
+        except:
+            pass
+    parameters = reconstruction_parameters()
+    fit = fit_HS(**parameters)
+    with open(filename,'w') as output:
+        pickle.dump(fit, output)
+    return fit
+#
+
+
+if run_plots:
+    HS_converter = HS_fit()
+    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 
 # leaf geometry
@@ -232,101 +321,6 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
     #ici include mortality
 
 
-#
-# Parametres communs / Pre-traitement des donnees
-#
-# Fit dynamique of median plant
-#
-# ---------------------------------------------------- Fit HS = f(TT)
-#
-
-'''
-if run_plots:
-    archi_plot.dynamique_plot_nff(archidb.HS_GL_SSI_data(), dynamique_fits())   
-'''    
-
-def linreg_df(x,y):
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-    return pandas.Series({'slope':slope, 'intercept':intercept, 'r2': r_value**2, 'std_err':std_err})
-   
-def fit_HS(reset_data=False, **parameters):
-    """ Linear regression for phyllochron data
-    """
-    data = archidb.reconstruction_data(reset=reset_data)
-    pheno = data.Pheno_tagged
-    dTT_cohort = parameters.get('dTT_cohort')
-    
-    # HS of mean plant 
-    #################################################TO DO : add scan data for Tremie12
-    g = pheno.groupby('label')
-    def _fit(df):
-        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
-        nff = df.groupby('N').agg('mean')['nff'].mean()
-        n = df.groupby('N').agg('mean')['nff'].count()
-        res = linreg_df(dat['TT'],dat['HS'])
-        res['nff'] = nff
-        res['n'] = n
-        return res
-    hs_ms = g.apply(_fit)
-    TTem = - hs_ms['intercept'] / hs_ms['slope']
-    # Flag leaf delay per nff
-    TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
-    g = pheno.groupby(('label','nff'))
-    hs_nff = g.apply(_fit)
-    TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
-    TT_flag = TT_nff_flag.reset_index().rename(columns={0:'flag'}).merge(TT_mean_flag.reset_index().rename(columns={0:'mean_flag'}))
-    TT_flag['dTT_flag'] = TT_flag['flag'] - TT_flag['mean_flag']
-    TT_flag = TT_flag.merge(hs_nff['n'].reset_index().rename(columns=({0:'n'})))
-    TT_flag = TT_flag.merge(hs_ms['nff'].reset_index().rename(columns=({'nff':'mean_nff'})))
-    TT_flag = TT_flag.merge(TTem.reset_index().rename(columns=({0:'mean_TTem'})))
-    dTTnff  = TT_flag.groupby('label').apply(lambda x: numpy.average(x['dTT_flag'] * 1. / (x['nff'] - x['mean_nff']), weights = x['n']))
-    # residual variabilityy of emergenece between plants
-    # mean slopes per nff: 
-    dat = TT_flag.set_index(['label', 'nff'], drop=False)
-    a_nff = dat['nff'] / (dat['flag'] - dat['mean_TTem']) 
-    #estimate dTTEm per plant wyth modeled slope
-    g = pheno.groupby(('label', 'N'))
-    def _TTem(df):
-        res = None
-        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
-        nff = df['nff'].values[0]
-        label = df['label'].values[0]
-        if not numpy.isnan(nff):
-            a = a_nff[(label, nff)]
-            b = numpy.mean(dat['HS'] - a * dat['TT'])
-            res = -1. * b / a
-        return res
-    TTem_p = g.apply(_TTem)
-    # standard deviation
-    std_TTem = TTem_p.reset_index().groupby('label').agg('std').loc[:,0]
-  
-    # HS fits
-    hs_fits = {k: pgen_ext.HaunStage(hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k], dTT_cohort[k]) for k in dTT_cohort}
-    return hs_fits
-    
-
-    
-def HS_fit(reset=False):
-    """ Handle fitted phyllochron persitent object
-    """
-    filename = str(shared_data(alinea.echap)/'HS_fit.pckl')
-    if not reset:
-        try:
-            with open(filename) as input:
-                return pickle.load(input)
-        except:
-            pass
-    parameters = reconstruction_parameters()
-    fit = fit_HS(**parameters)
-    with open(filename,'w') as output:
-        pickle.dump(fit, output)
-    return fit
-#
-
-
-if run_plots:
-    HS_converter = HS_fit()
-    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
 #
 # Styrategie : pour premieres feuilles

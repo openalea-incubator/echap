@@ -1,20 +1,412 @@
 import pandas
 import numpy
-
-from openalea.deploy.shared_data import shared_data
-import alinea.echap
-from alinea.adel.plantgen.plantgen_interface import read_plantgen_inputs
-
 try:
     import cPickle as pickle
 except:
     import pickle
+    
+from openalea.deploy.shared_data import shared_data
+import alinea.echap
+
+#
+# ____________________________________________________________________________Plot data
+#
+
+def Plot_data_Mercia_Rht3_2010_2011():
+    """
+    Plot data for Boigneville 2010-2011 
+    
+    data include :
+    - estimates of plant density at emergence (id Archi12). Emergence means 75% plants emerged
+    - estimates of ear density at harvest (all axes, id Archi10)
+    
+    Notes :
+    - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)
+    """
+    d={'Mercia': {
+        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
+        'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
+        'sowing_density': 220, 
+        'plant_density_at_emergence' : 203, 
+        'raw_ear_density_at_harvest':[507,440,427,357,430,410,427,480,363, 350, 497, 410, 493, 340, 407, 467, 490, 433, 547, 450, 527, 427, 483, 493],
+        'inter_row': 0.15},
+        'Rht3': {
+        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
+        'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
+        'sowing_density': 220, 
+        'plant_density_at_emergence' : 211, 
+        'raw_ear_density_at_harvest':[440,420,330,433,347,410,387,367,360,397,357,377,427,367,380,347,330,420,423,397,383,367,377,377],
+        'inter_row': 0.15}}
+    for g in ('Mercia','Rht3'):
+        d[g]['ear_density_at_harvest'] = numpy.mean(d[g]['raw_ear_density_at_harvest'])
+        d[g]['ear_density_at_harvest_SD'] = numpy.nanstd(d[g]['raw_ear_density_at_harvest'])
+    return d
+
+def Plot_data_Tremie_2011_2012():
+    """
+    Plot data for Boigneville 2011-2012 
+    
+    Notes:
+    - No data found for density of emergence as this trial was followed only after winter (winter trial was on appache)
+    - plant density data at date 3 (11/04/2012) and 4 comes from axe counting/ LAI measurement data taken on  5 rank * 60 cm prelevement)
+    """
+    d = {
+    'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19', 'd3': '2012-04-11', 'd4': '2012-05-09', 'arvalis':'2012-03-20'}, 
+    'TT_date': {'2011-10-21':0, '2011-11-03':141, '2012-06-19':2135, '2012-03-20':1006, '2012-04-11':1240, '2012-05-09':1515},
+    'sowing_density': 280,
+    'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
+    'inter_row':0.143,
+    'plant_density':{'2012-03-20': [238, 304, 287, 237, 290, 301, 290, 287, 273],
+                     '2012-04-11': [301, 273, 315], 
+                     '2012-05-09':[257, 301, 263]},
+    'axe_density': {'2012-04-11': [918, 956, 979],
+                    '2012-05-09':[601, 585, 506]}, 
+    'fertile_axis_density':{'2012-05-09':[545, 569, 443]} 
+    }
+    d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
+    d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    return d
+    
+def Plot_data_Tremie_2012_2013():
+    """
+    Plot data for Boigneville 2012-2013 
+    
+    Notes
+    - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
+    - no date found for countings of ear density
+    - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 5 ranks * 0.6 m for LAI plots (0.45 m2) 
+    - *** IMPORTANT ***Plant density data measured for LAI estimation in excel files have consider 4 ranks instead of 5 (confirmed by Benjamin) (ie density and LAI should be multiplied by 0.8)
+    """
+    d = {
+   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13', 'harvest': '2013-06-09'},
+   'TT_date': {'2012-10-29':0, '2012-11-19':140, '2013-04-22':941, '2013-05-13':1185, '2013-01-03':421, '2013-04-09':811, '2013-06-09': 1548},
+   'sowing_density': 300,
+   'plant_density':{'2013-01-03': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253], #'2F'
+                    '2013-04-09': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], #'epis1cm'
+                    '2013-04-22':[328 * 0.8, 322 * 0.8, 356 * 0.8],
+                    '2013-05-13':[272* 0.8, 361 * 0.8, 350 * 0.8]},
+   'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
+    'inter_row':0.15
+    }
+    d['ear_density_at_harvest'] = numpy.mean(d['raw_ear_density_at_harvest'])
+    d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    return d
+
+def Plot_data():
+    d = Plot_data_Mercia_Rht3_2010_2011()
+    d.update({'Tremie12':Plot_data_Tremie_2011_2012(),
+              'Tremie13':Plot_data_Tremie_2012_2013()})
+    return d
+
+#
+# ____________________________________________________________________________Tillering data
+#
+# Utilities for processing tillering data
+def _maxna(x):
+    m = x.max()
+    if any(x.isnull()) and m == 0:
+        m = None
+    return m
+
+def emission_probabilities(df, last='T6'):
+    grouped = df.groupby('N',as_index=False)
+    em = grouped.agg(_maxna)
+    # em = em.reset_index()
+    s = em.ix[:,'TC':last].sum()
+    n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
+    probas = s / n
+    return probas.to_dict()
+    
+def plant_viability(df):
+    grouped = df.groupby('Date', as_index=False)
+    res = grouped.apply(lambda x: x['MB'].count() * 1.0 / len(x['MB']))
+    return {'Date':res.index.tolist(), 'viability':res.tolist()}
+  
+def axis_dynamics(df):
+    grouped = df.groupby('Date')
+    s = grouped.agg('sum').ix[:,'TP':]
+    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
+    axis =  s / n
+    axis = axis.replace(numpy.inf, numpy.nan)
+    res = axis.to_dict('list')
+    res.update({'Date':axis.index.tolist()})
+    return res
+    
+def nff_probabilities(df):
+    prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
+    d = dict(zip(range(len(prop)), prop))
+    return {k:v for k,v in d.iteritems() if v > 0}
+    
+
+def Tillering_data_Mercia_Rht3_2010_2011():
+    """Tillering data for Boigneville 2010-2011
+    
+    Data are from 36 tagged plant per cultivar, followed during the complete season.
+    
+    Data found in Archi11,Archi19, Archi33 were used to build a synthetic table containing :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F).
+        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
+        
+    
+    Notes :
+    - No tillering data at date 4 and 5
+    - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions 
+    - at date 3 , for the 2x 24 plants not measured in details, we invert column 'total primary' and 'total secondary' as it makes data much more consistent with date 2
+    - at date 3 TT3F was estimated as total primary  + delta secondary
+    - at date 3, on the 2 x 12 plants measured in details, it was possble to count presence/absence of living primary tillers (T1->T5). Living wes defined as Green leaves > 2 (minimal value of the GL model). 
+"""
+    
+    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'MerciaRht3_Tillering_data.csv')
+    data = pandas.read_csv(fn,decimal=',',sep='\t')
+    date_code = {'d1':'2011-01-19', 'd2':'2011-04-18', 'd3':'2011-04-27', 'd4':'2011-05-26', 'd5':'2011-06-01', 'd6':'2011-06-09'}
+    TT_code = {'d1':473, 'd2':1145, 'd3':1278, 'd4':1710, 'd5':1800, 'd6':1940}
+    
+    # infer emision at date 3 from Total primary present (TP)
+    #add statistics for T6 as well as it may be present at date 3    
+    def infer_d3(g):
+        g.insert(13,'T6',0.0)
+        g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
+        TP = g['TP']
+        date = g['Date']
+        if all(TP[date==3].notnull()) and all(pandas.isnull(g.ix[date==3,'TC':'T6'])):
+            infer = g.ix[date==2,'TC':'T6'] 
+            if all(TP[date==3] > TP[date==2]):
+                d = int(TP[date==3].values - TP[date==2].values)
+                try:
+                    lastT = int(max(2, max(numpy.where(infer > 0)[1])))
+                except ValueError:
+                    lastT = 2
+                infer.ix[:,(lastT+1):(lastT + 1 + d)] = 1                
+            g.ix[g['Date']==3,'TC':'T6'] = infer
+        return g
+        
+    grouped = data.groupby(['Var', 'N'],as_index=False)
+    newdata = grouped.apply(infer_d3)
+    
+    # compute emmission probability using notations before date 6
+    edata = newdata[newdata['Date'] < 6]
+    edata = edata.reset_index()
+    grouped = edata.groupby('Var',as_index=False)
+    emission = {k:emission_probabilities(v) for k,v in grouped}
+    
+    # compute nff probabilities
+    grouped = data.groupby('Var',as_index=False)
+    nff_prop = {k:nff_probabilities(v) for k,v in grouped}
+    
+    # compute ear_per_plante (including main stem) 
+    eardata = newdata[newdata['Date'] >= 6]
+    eardata = eardata.reset_index()
+    grouped = eardata.groupby('Var',as_index=False)
+    ears_per_plant = {k:  1  + (v['FT'].sum() / v['FT'].dropna().count()) for k,v in grouped}
+    
+    # compute plant viability
+    grouped = data.groupby('Var',as_index=False)
+    viability = {k:plant_viability(v) for k,v in grouped}
+    
+    #compute tillering dynamics
+    axdyn = {k:axis_dynamics(v) for k,v in grouped}
+    
+    obs = {k:{'emission_probabilities': emission[k],
+           'nff_probabilities': nff_prop[k],
+           'ears_per_plant': ears_per_plant[k],
+           'plant_survival': viability[k],
+           'tillers_per_plant': axdyn[k], 
+           'date_code' : date_code,
+           'TT_code' : TT_code} for k in ('Mercia', 'Rht3')}
+    return obs
+
+def Tillering_data_Tremie12_2011_2012():
+    """Tillering data for Boigneville 2011-2012
+    
+    Data come from sampled/scanned plants at date 1, from sampled + 'silhoueted' plants at date 6, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
+    Counting of axe per plant were also done at stage epis1cm on an independant set of plants, that was renamed here date 8.
+    
+    Data found in Archi2, Archi3, Archi14, Archi15 were :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F).  
+        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
+ 
+    Notes :
+    - at Date 1, it was noted 'due to freezing of plants, it was difficult to determine main stem'
+    - at date 2 there were damage due to to fly on Mb , T1, T2
+    - At date 3, Mariem noted "T7 almost always present on scaned plants"
+    - Emission of tiller 5 and 6 were never noted.
+    - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
+    """
+    
+    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie12_Tillering_data.csv')
+    data = pandas.read_csv(fn,decimal=',',sep='\t')
+    date_code = {'d1':'2012-03-09', 'd2':'2012-04-02', 'd3':'2012-04-11', 'd4':'2012-05-09', 'd5':'2012-05-29', 'd6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
+    TT_code = {'d1':905, 'd2':1160, 'd3':1240, 'd4':1515, 'd5':1813, 'd6':2031, 'd7':2536, 'd8':1179}
+    
+    # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
+    edata = data[data['Date'] == 1]
+    edata.loc[:, 'T7'] = data['T7'][data['Date'] == 3].values
+    edata = edata.reset_index()
+    emission = emission_probabilities(edata,last='T7')
+    
+    # compute nff probabilities
+    nff_prop = nff_probabilities(data)
+
+    # tiller dynamics
+    axdyn = axis_dynamics(data)
+    
+    # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
+    eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
+    pdata = Plot_data_Tremie_2011_2012()
+    ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1 #remove main stem to get FT count 
+    # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
+    ears_per_plant = 1 + numpy.array(ftd4.tolist() + eardata['FT'][eardata['Date'] == 6].tolist()).mean()
+
+    
+    obs = {'emission_probabilities': emission,
+           'nff_probabilities': nff_prop,
+           'ears_per_plant': ears_per_plant,
+           'tillers_per_plant': axdyn, 
+           'date_code' : date_code,
+           'TT_code' : TT_code}
+    return obs
+    
+def Tillering_data_Tremie13_2012_2013():
+    """Tillering data for Boigneville 2012-2013
+    
+    Data for presence/absence of primary tillers come from tagged plants. Data at date 3 are from other other plants.
+    
+    Data found in were :
+        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
+        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
+        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F). 
+        
+    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants
+
+    Notes :
+    - No data found  for direct counting of fertile tillers per plant on tagged plants) 
+    - data from date 3 are to be included
+    """
+    
+    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie13_Tillering_data.csv')
+    data = pandas.read_csv(fn,decimal=',',sep='\t')
+    date_code = {'d1':'2013-02-13', 'd2':'2013-03-29', 'd3': '2012-04-19'}
+    TT_code = {'d1':566, 'd2':739, 'd3':915}
+    
+    # compute emmission probability from data on tagged plants at date 1 and 2
+    edata = data[data['Date'] <= 2]
+    edata = edata.reset_index()
+    emission = emission_probabilities(edata,last='T5')
+    
+    # compute nff probabilities
+    nff_prop = nff_probabilities(data)
+    
+    # tiller dynamics
+    axdyn = axis_dynamics(data)
+    
+    #estimate ears per plant from plot data
+    pdata = Plot_data_Tremie_2012_2013()
+    ears_per_plant = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
 
 
-from math import sqrt
+    obs = {'emission_probabilities': emission,
+           'nff_probabilities': nff_prop,
+           'ears_per_plant': ears_per_plant,
+           'tillers_per_plant': axdyn, 
+           'date_code' : date_code,
+           'TT_code' : TT_code}
 
-import matplotlib.pyplot as plt
-plt.ion()
+    return obs
+ 
+
+def Tillering_data():
+    d = Tillering_data_Mercia_Rht3_2010_2011()
+    d.update({'Tremie12': Tillering_data_Tremie12_2011_2012(),
+             'Tremie13': Tillering_data_Tremie13_2012_2013()})
+    return d
+
+#
+# ____________________________________________________________________________Pheno data (HS, SSI, GL)
+#
+#
+
+def Pheno_data():
+    """ Phenological data (HS, GL, SSI) found for 
+        - Treated tagged plants followed for architectural notations
+        - Treated tagged plant followed for symptom notation (SSI/GL)
+        - some destructive samples (scan /silhouettes data
+        
+        Details in architectural_measurements R pre-processing scripts
+    """
+    file_names = {'archi_tagged': 'Compil_Pheno_treated_archi_tagged.csv',
+                  'archi_sampled':'Compil_Pheno_treated_archi_sampled.csv',
+                  'symptom_tagged': 'Compil_Pheno_treated_symptom_tagged.csv'}
+    file_path = {k:str(shared_data(alinea.echap)/'architectural_measurements'/v) for k,v in file_names.iteritems()}
+    return {k:pandas.read_csv(v, sep = ',', decimal='.') for k,v in file_path.iteritems()}
+    
+ 
+#deprecated: to be replaced by pre-processing of Pheno_data
+def GL_number():
+    GL = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55], '11':[3.5,3.4,3.774,2.670,1.732], '12':[3.6,3.6,4.036,3.010,1.903], '13':[4.4,3.4,4.7,3.8,2.5], 'mediane':[3.6,3.4,4.036,3.01,1.903]}),
+         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55], '11':[3.5,3.3,3.9,2.7,1.7], '12':[3.9,3.6,4.3,3,2.2], '10':[3.3,4,2.9,None,None], 'mediane':[3.5,3.6,3.9,2.85,1.95]}),
+         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[1.7,2.4,4.3,4.7,4.7,4.5,4.3,3.7,2.2,0.6], '13':[1.9,2.1,4.1,5.2,4.6,4.4,4.1,3.4,2.3,1.0], 'mediane':[1.8,2.25,4.2,4.95,4.65,4.45,4.2,3.55,2.25,0.8]}),
+         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[4.2,2.6,3.5,3.6,3.6,3.2,2.6,2,1.1,0.2], '12':[4.4,2.9,3.1,4.3,4.2,3.9,3.1,2,1.3,0.4], 'mediane':[4.3,2.75,3.3,3.95,3.9,3.55,2.85,2,1.2,0.3]})}
+    return GL
+    
+def SSI_number():
+    SSI = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55,2108.65], '11':[0.05,5.97,7.23,8.33,9.27,11], '12':[0.05,6.31,7.96,8.99,10.10,12.00], '13':[0,7.02,8.27,9.19,10.55,13], 'mediane':[0.05,6.31,7.96,8.99,10.1,12]}),
+         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55,2108.65], '11':[0.04,5.94,7.12,8.32,9.30,11.00], '12':[0.09,6.25,7.69,8.97,9.75,12], '10':[0.05,5.25,7.13,None,None,10], 'mediane':[0.05,5.94,7.13,8.645,9.525,11]}),
+         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[5.7,6.1,6.6,7.3,8,8.2,8.3,9,10.4,12.1], '13':[5.6,6.4,6.9,7.3,8.1,8.2,8.8,9.6,10.6,11.7], 'mediane':[5.65,6.25,6.75,7.3,8.05,8.2,8.55,9.3,10.5,11.9]}),
+         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[0.1,5.5,6.1,7.4,7.4,7.8,8.4,9,9.9,10.8], '12':[0.1,5.8,6.9,7.7,7.8,8.1,8.9,10,10.7,11.6], 'mediane':[0.1,5.65,6.5,7.55,7.6,7.95,8.65,9.5,10.3,11.2]})}
+    return SSI
+    
+def HS_number():
+    SSI = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1304.10,1732.10,1818.05,1959.55,2108.65], '11':[3.6,9.4,10.5,11,11,11,11], '12':[3.6,9.9,11.3,12.0,12.0,12.0,12.0], '13':[4.4,10.4,11.9,13,13,13,13], 'mediane':[3.6,9.9,11.3,12,12,12,12]}),
+         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1304.1,1732.10,1818.05,1959.55,2108.65], '11':[3.5,9.2,10.2,11.0,11.0,11.0,11.0], '12':[4.04,9.86,11.26,12,12,12,12], '10':[3.38,9.25,10.09,10,10,10,10], 'mediane':[3.5,9.25,10.2,11,11,11,11]}),
+         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1160.12,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[7.6,8.5,10.1,11,12,12.6,12.6,12.7,12.7,12.7,12.6], '13':[7.5,8.5,10.2,11.0,12.5,12.7,12.6,12.9,12.9,12.9,12.6], 'mediane':[7.55,8.5,10.15,11,12.25,12.65,12.6,12.8,12.8,12.8,12.6]}),
+         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[4.3,8.1,9.6,11,11,11,11,11,11,11], '12':[4.5,8.8,10,12,12,12,12,12,12,12], 'mediane':[4.4,8.45,9.8,11.5,11.5,11.5,11.5,11.5,11.5,11.5]})}
+    return SSI
+    
+# add mean dynamic point to HS, SSI, GL data using nff proba from tillering
+
+def _meanDyn(name):
+    df_GL = GL_number()[name]; df_HS = HS_number()[name]; df_SSI = SSI_number()[name]
+    nff_proba = Tillering_data()[name]['nff_probabilities']
+    df_GL['mean_pond'] = sum([df_GL[str(k)] * nff_proba[k] for k in nff_proba])
+    df_HS['mean_pond'] = sum([df_HS[str(k)] * nff_proba[k] for k in nff_proba])
+    df_SSI['mean_pond'] = sum([df_SSI[str(k)] * nff_proba[k] for k in nff_proba])
+    return {'GL':df_GL, 'HS':df_HS, 'SSI':df_SSI}
+    
+def HS_GL_SSI_data():
+    d={}
+    for name in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
+        d[name] = _meanDyn(name)
+    return d
+ 
+#
+# Reader for leaf by leaf data (G. Garin April 2015)
+# 
+
+def treated_archi_tagged_data(variety = 'Tremie12'):
+    filename = variety + '_treated_archi_tagged.csv'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = ';')
+    
+def treated_symptom_tagged_data(variety = 'Tremie12'):
+    filename = variety + '_treated_symptom_tagged.csv'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = ';')
+    
+def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
+    filename = 'Tremie12_scan_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
+    file_path = shared_data(alinea.echap, filename)
+    return pandas.read_csv(file_path, sep = "\t")
+
 
 #----------------------------------------------------- dimension
 def dimensions_data():
@@ -133,26 +525,7 @@ def plantgen_as_dict(inputs, dynT, dimT):
     d['dynT_user'], d['dimT_user'], d['plants_number'],d['plants_density'], d['decide_child_axis_probabilities'], d['MS_leaves_number_probabilities'], d['ears_density'], d['GL_number'], d['delais_TT_stop_del_axis'], d['TT_col_break'],d['inner_params'] =  read_plantgen_inputs(inputs, dynT, dimT)
     return d
     
-def GL_number():
-    GL = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55], '11':[3.5,3.4,3.774,2.670,1.732], '12':[3.6,3.6,4.036,3.010,1.903], '13':[4.4,3.4,4.7,3.8,2.5], 'mediane':[3.6,3.4,4.036,3.01,1.903]}),
-         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55], '11':[3.5,3.3,3.9,2.7,1.7], '12':[3.9,3.6,4.3,3,2.2], '10':[3.3,4,2.9,None,None], 'mediane':[3.5,3.6,3.9,2.85,1.95]}),
-         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[1.7,2.4,4.3,4.7,4.7,4.5,4.3,3.7,2.2,0.6], '13':[1.9,2.1,4.1,5.2,4.6,4.4,4.1,3.4,2.3,1.0], 'mediane':[1.8,2.25,4.2,4.95,4.65,4.45,4.2,3.55,2.25,0.8]}),
-         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[4.2,2.6,3.5,3.6,3.6,3.2,2.6,2,1.1,0.2], '12':[4.4,2.9,3.1,4.3,4.2,3.9,3.1,2,1.3,0.4], 'mediane':[4.3,2.75,3.3,3.95,3.9,3.55,2.85,2,1.2,0.3]})}
-    return GL
-    
-def SSI_number():
-    SSI = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55,2108.65], '11':[0.05,5.97,7.23,8.33,9.27,11], '12':[0.05,6.31,7.96,8.99,10.10,12.00], '13':[0,7.02,8.27,9.19,10.55,13], 'mediane':[0.05,6.31,7.96,8.99,10.1,12]}),
-         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1732.10,1818.05,1959.55,2108.65], '11':[0.04,5.94,7.12,8.32,9.30,11.00], '12':[0.09,6.25,7.69,8.97,9.75,12], '10':[0.05,5.25,7.13,None,None,10], 'mediane':[0.05,5.94,7.13,8.645,9.525,11]}),
-         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[5.7,6.1,6.6,7.3,8,8.2,8.3,9,10.4,12.1], '13':[5.6,6.4,6.9,7.3,8.1,8.2,8.8,9.6,10.6,11.7], 'mediane':[5.65,6.25,6.75,7.3,8.05,8.2,8.55,9.3,10.5,11.9]}),
-         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[0.1,5.5,6.1,7.4,7.4,7.8,8.4,9,9.9,10.8], '12':[0.1,5.8,6.9,7.7,7.8,8.1,8.9,10,10.7,11.6], 'mediane':[0.1,5.65,6.5,7.55,7.6,7.95,8.65,9.5,10.3,11.2]})}
-    return SSI
-    
-def HS_number():
-    SSI = {'Mercia': pandas.DataFrame({'TT':[485.90,1159.15,1304.10,1732.10,1818.05,1959.55,2108.65], '11':[3.6,9.4,10.5,11,11,11,11], '12':[3.6,9.9,11.3,12.0,12.0,12.0,12.0], '13':[4.4,10.4,11.9,13,13,13,13], 'mediane':[3.6,9.9,11.3,12,12,12,12]}),
-         'Rht3': pandas.DataFrame({'TT':[485.90,1159.15,1304.1,1732.10,1818.05,1959.55,2108.65], '11':[3.5,9.2,10.2,11.0,11.0,11.0,11.0], '12':[4.04,9.86,11.26,12,12,12,12], '10':[3.38,9.25,10.09,10,10,10,10], 'mediane':[3.5,9.25,10.2,11,11,11,11]}),
-         'Tremie12': pandas.DataFrame({'TT':[905.48,1012.13,1160.12,1239.42,1353.19,1437.19,1514.59,1610.27,1738.2,1850.26,2031.14], '12':[7.6,8.5,10.1,11,12,12.6,12.6,12.7,12.7,12.7,12.6], '13':[7.5,8.5,10.2,11.0,12.5,12.7,12.6,12.9,12.9,12.9,12.6], 'mediane':[7.55,8.5,10.15,11,12.25,12.65,12.6,12.8,12.8,12.8,12.6]}),
-         'Tremie13': pandas.DataFrame({'TT':[565.8,915,1048.8,1284.4,1351.4,1414.7,1545.7,1639,1762.5,1883.7], '11':[4.3,8.1,9.6,11,11,11,11,11,11,11], '12':[4.5,8.8,10,12,12,12,12,12,12,12], 'mediane':[4.4,8.45,9.8,11.5,11.5,11.5,11.5,11.5,11.5,11.5]})}
-    return SSI
+
 
 
     
@@ -206,108 +579,6 @@ def HS_data():
     grouped = data.groupby(['variety'],as_index=False)
     return grouped.aggregate('mean')
 '''  
-#
-# Plot data
-#
-def valSD(listeVal): #calcul moyenne/ecart type
-    nombre = 0
-    sommeValeurs = 0.0
-    sommeCarres = 0.0
-    for x in listeVal:
-        nombre += 1
-        sommeValeurs += x
-        sommeCarres += x * x
-    mean = sommeValeurs / nombre
-    SD = sqrt(sommeCarres / nombre - mean * mean)
-    return SD
-
-def Plot_data_Mercia_Rht3_2010_2011():
-    """
-    Plot data for Boigneville 2010-2011 
-    
-    data include :
-    - estimates of plant density at emergence (id Archi12). Emergence means 75% plants emerged
-    - estimates of ear density at harvest (all axes, id Archi10)
-    
-    Notes :
-    - Missing raw data for plant counts at emergence (Archi7, used Archi12 instead)
-    """
-    d={'Mercia': {
-        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
-        'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
-        'sowing_density': 220, 
-        'plant_density_at_emergence' : 203, 
-        'raw_ear_density_at_harvest':[507,440,427,357,430,410,427,480,363, 350, 497, 410, 493, 340, 407, 467, 490, 433, 547, 450, 527, 427, 483, 493],
-        'inter_row': 0.15},
-        'Rht3': {
-        'code_date': {'sowing':'2010-10-15', 'emergence':'2010-11-02', 'harvest':'2011-06-20'},
-        'TT_date': {'2010-10-15':0, '2010-11-02':143, '2011-06-20':2109},
-        'sowing_density': 220, 
-        'plant_density_at_emergence' : 211, 
-        'raw_ear_density_at_harvest':[440,420,330,433,347,410,387,367,360,397,357,377,427,367,380,347,330,420,423,397,383,367,377,377],
-        'inter_row': 0.15}}
-    for g in ('Mercia','Rht3'):
-        d[g]['ear_density_at_harvest'] = numpy.mean(d[g]['raw_ear_density_at_harvest'])
-        d[g]['ear_density_at_harvest_SD'] = valSD(d[g]['raw_ear_density_at_harvest'])
-    return d
-
-def Plot_data_Tremie_2011_2012():
-    """
-    Plot data for Boigneville 2011-2012 
-    
-    Notes:
-    - No data found for density of emergence as this trial was followed only after winter (winter trial was on appache)
-    - plant density data at date 3 (11/04/2012) and 4 comes from axe counting/ LAI measurement data taken on  5 rank * 60 cm prelevement)
-    """
-    d = {
-    'code_date':{'sowing': '2011-10-21','emergence': '2011-11-03', 'harvest':'2012-06-19', 'd3': '2012-04-11', 'd4': '2012-05-09', 'arvalis':'2012-03-20'}, 
-    'TT_date': {'2011-10-21':0, '2011-11-03':141, '2012-06-19':2135, '2012-03-20':1006, '2012-04-11':1240, '2012-05-09':1515},
-    'sowing_density': 280,
-    'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
-    'inter_row':0.143,
-    'plant_density':{'2012-03-20': [238, 304, 287, 237, 290, 301, 290, 287, 273],
-                     '2012-04-11': [301, 273, 315], 
-                     '2012-05-09':[257, 301, 263]},
-    'axe_density': {'2012-04-11': [918, 956, 979],
-                    '2012-05-09':[601, 585, 506]}, 
-    'fertile_axis_density':{'2012-05-09':[545, 569, 443]} 
-    }
-    d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
-    d['ear_density_at_harvest_SD'] = valSD(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
-    return d
-    
-def Plot_data_Tremie_2012_2013():
-    """
-    Plot data for Boigneville 2012-2013 
-    
-    Notes
-    - no date found for plant density counts at stage 2F and epis1cm (estimation epis 1cm : 9/04/2012)
-    - no date found for countings of ear density
-    - plant density and ear density were estimated on 2 ranks * 1m plots at stage 2F and epis1cm (0.3 m2), and on plots of 5 ranks * 0.6 m for LAI plots (0.45 m2) 
-    - *** IMPORTANT ***Plant density data measured for LAI estimation in excel files have consider 4 ranks instead of 5 (confirmed by Benjamin) (ie density and LAI should be multiplied by 0.8)
-    """
-    d = {
-   'code_date':{'sowing': '2012-10-29','emergence': '2012-11-19', '2F':'2013-01-03', 'epis1cm': '2013-04-09', 'LAI1':'2013-04-22', 'LAI2': '2013-05-13', 'harvest': '2013-06-09'},
-   'TT_date': {'2012-10-29':0, '2012-11-19':140, '2013-04-22':941, '2013-05-13':1185, '2013-01-03':421, '2013-04-09':811, '2013-06-09': 1548},
-   'sowing_density': 300,
-   'plant_density':{'2013-01-03': [237, 287, 217, 237, 293, 220, 253, 213, 220, 253], #'2F'
-                    '2013-04-09': [203, 203, 193, 207, 223, 203, 207, 207, 200, 197], #'epis1cm'
-                    '2013-04-22':[328 * 0.8, 322 * 0.8, 356 * 0.8],
-                    '2013-05-13':[272* 0.8, 361 * 0.8, 350 * 0.8]},
-   'raw_ear_density_at_harvest':[643, 580, 693, 813, 663, 670, 693, 763, 567, 590, 707, 637, 617, 747, 760, 693, 653, 670],
-    'inter_row':0.15
-    }
-    d['ear_density_at_harvest'] = numpy.mean(d['raw_ear_density_at_harvest'])
-    d['ear_density_at_harvest_SD'] = valSD(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
-    return d
-
-def Plot_data():
-    d = Plot_data_Mercia_Rht3_2010_2011()
-    d.update({'Tremie12':Plot_data_Tremie_2011_2012(),
-              'Tremie13':Plot_data_Tremie_2012_2013()})
-    return d
     
 #
 # LAI data
@@ -525,269 +796,7 @@ def surface_data():
     'Tremie13': pandas.DataFrame({'TT':[941,1096.3],'surface':[9.35,13.15]})}
     return d
 
-#GL/HS/SSI
-def dynamique_data():
-    dd = shared_data(alinea.echap, 'dynamique_data.csv')
-    data = pandas.read_csv(dd,decimal='.',sep=';')
-    return data
 
-# plant by plant data
-def pheno_archi_tagged():
-    filename = 'Compil_Pheno_treated_archi_tagged.csv'
-    file_path = shared_data(alinea.echap, 'architectural_measurements/'+filename)
-    return pandas.read_csv(file_path, sep = ',', decimal='.')
-    
-#
-# Reader for leaf by leaf data (G. Garin April 2015)
-# 
-
-def treated_archi_tagged_data(variety = 'Tremie12'):
-    filename = variety + '_treated_archi_tagged.csv'
-    file_path = shared_data(alinea.echap, filename)
-    return pandas.read_csv(file_path, sep = ';')
-    
-def treated_symptom_tagged_data(variety = 'Tremie12'):
-    filename = variety + '_treated_symptom_tagged.csv'
-    file_path = shared_data(alinea.echap, filename)
-    return pandas.read_csv(file_path, sep = ';')
-    
-def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
-    filename = 'Tremie12_scan_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
-    file_path = shared_data(alinea.echap, filename)
-    return pandas.read_csv(file_path, sep = "\t")
-
-#-------------------------------------------------------------------------------  
-# Utilities for processing tillering data
-
-def _maxna(x):
-    m = x.max()
-    if any(x.isnull()) and m == 0:
-        m = None
-    return m
-
-def emission_probabilities(df, last='T6'):
-    grouped = df.groupby('N',as_index=False)
-    em = grouped.agg(_maxna)
-    # em = em.reset_index()
-    s = em.ix[:,'TC':last].sum()
-    n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
-    probas = s / n
-    return probas.to_dict()
-    
-def plant_viability(df):
-    grouped = df.groupby('Date', as_index=False)
-    res = grouped.apply(lambda x: x['MB'].count() * 1.0 / len(x['MB']))
-    return {'Date':res.index.tolist(), 'viability':res.tolist()}
-  
-def axis_dynamics(df):
-    grouped = df.groupby('Date')
-    s = grouped.agg('sum').ix[:,'TP':]
-    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
-    axis =  s / n
-    axis = axis.replace(numpy.inf, numpy.nan)
-    res = axis.to_dict('list')
-    res.update({'Date':axis.index.tolist()})
-    return res
-    
-def nff_probabilities(df):
-    prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
-    d = dict(zip(range(len(prop)), prop))
-    return {k:v for k,v in d.iteritems() if v > 0}
-    
-    
-#-------------------------------------------------------------------------------  
-# TO DO : remove ears_per_plant (should be part of reconstruction)
-
-
-def Tillering_data_Mercia_Rht3_2010_2011():
-    """Tillering data for Boigneville 2010-2011
-    
-    Data are from 36 tagged plant per cultivar, followed during the complete season.
-    
-    Data found in Archi11,Archi19, Archi33 were used to build a synthetic table containing :
-        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
-        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F).
-        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
-        
-    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
-        
-    
-    Notes :
-    - No tillering data at date 4 and 5
-    - when information is available at date 1 or 3, question marks at date 2 were replaced by confirmed tiller positions 
-    - at date 3 , for the 2x 24 plants not measured in details, we invert column 'total primary' and 'total secondary' as it makes data much more consistent with date 2
-    - at date 3 TT3F was estimated as total primary  + delta secondary
-    - at date 3, on the 2 x 12 plants measured in details, it was possble to count presence/absence of living primary tillers (T1->T5). Living wes defined as Green leaves > 2 (minimal value of the GL model). 
-"""
-    
-    fn = shared_data(alinea.echap, 'Tillering_data_Mercia_Rht3_2010_2011.csv')
-    data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2011-01-19', 'd2':'2011-04-18', 'd3':'2011-04-27', 'd4':'2011-05-26', 'd5':'2011-06-01', 'd6':'2011-06-09'}
-    TT_code = {'d1':473, 'd2':1145, 'd3':1278, 'd4':1710, 'd5':1800, 'd6':1940}
-    
-    # infer emision at date 3 from Total primary present (TP)
-    #add statistics for T6 as well as it may be present at date 3    
-    def infer_d3(g):
-        g.insert(13,'T6',0.0)
-        g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
-        TP = g['TP']
-        date = g['Date']
-        if all(TP[date==3].notnull()) and all(pandas.isnull(g.ix[date==3,'TC':'T6'])):
-            infer = g.ix[date==2,'TC':'T6'] 
-            if all(TP[date==3] > TP[date==2]):
-                d = int(TP[date==3].values - TP[date==2].values)
-                try:
-                    lastT = int(max(2, max(numpy.where(infer > 0)[1])))
-                except ValueError:
-                    lastT = 2
-                infer.ix[:,(lastT+1):(lastT + 1 + d)] = 1                
-            g.ix[g['Date']==3,'TC':'T6'] = infer
-        return g
-        
-    grouped = data.groupby(['Var', 'N'],as_index=False)
-    newdata = grouped.apply(infer_d3)
-    
-    # compute emmission probability using notations before date 6
-    edata = newdata[newdata['Date'] < 6]
-    edata = edata.reset_index()
-    grouped = edata.groupby('Var',as_index=False)
-    emission = {k:emission_probabilities(v) for k,v in grouped}
-    
-    # compute nff probabilities
-    grouped = data.groupby('Var',as_index=False)
-    nff_prop = {k:nff_probabilities(v) for k,v in grouped}
-    
-    # compute ear_per_plante (including main stem) 
-    eardata = newdata[newdata['Date'] >= 6]
-    eardata = eardata.reset_index()
-    grouped = eardata.groupby('Var',as_index=False)
-    ears_per_plant = {k:  1  + (v['FT'].sum() / v['FT'].dropna().count()) for k,v in grouped}
-    
-    # compute plant viability
-    grouped = data.groupby('Var',as_index=False)
-    viability = {k:plant_viability(v) for k,v in grouped}
-    
-    #compute tillering dynamics
-    axdyn = {k:axis_dynamics(v) for k,v in grouped}
-    
-    obs = {k:{'emission_probabilities': emission[k],
-           'nff_probabilities': nff_prop[k],
-           'ears_per_plant': ears_per_plant[k],
-           'plant_survival': viability[k],
-           'tillers_per_plant': axdyn[k], 
-           'date_code' : date_code,
-           'TT_code' : TT_code} for k in ('Mercia', 'Rht3')}
-    return obs
-
-def Tillering_data_Tremie12_2011_2012():
-    """Tillering data for Boigneville 2011-2012
-    
-    Data come from sampled/scanned plants at date 1, from sampled + 'silhoueted' plants at date 6, from tagged plants at date 3 for presence / absence of T7 and at date 7 for counts of fertile tillers.
-    Counting of axe per plant were also done at stage epis1cm on an independant set of plants, that was renamed here date 8.
-    
-    Data found in Archi2, Archi3, Archi14, Archi15 were :
-        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
-        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F).  
-        - number of fertile tillers (column FT) at the end from the counting of tillers that are alive or that bears an ear 
-        
-    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants, plant mortality and  number of ears per plant
- 
-    Notes :
-    - at Date 1, it was noted 'due to freezing of plants, it was difficult to determine main stem'
-    - at date 2 there were damage due to to fly on Mb , T1, T2
-    - At date 3, Mariem noted "T7 almost always present on scaned plants"
-    - Emission of tiller 5 and 6 were never noted.
-    - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
-    """
-    
-    fn = shared_data(alinea.echap, 'Tillering_data_Tremie1_2011_2012.csv')
-    data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2012-03-09', 'd2':'2012-04-02', 'd3':'2012-04-11', 'd4':'2012-05-09', 'd5':'2012-05-29', 'd6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
-    TT_code = {'d1':905, 'd2':1160, 'd3':1240, 'd4':1515, 'd5':1813, 'd6':2031, 'd7':2536, 'd8':1179}
-    
-    # compute emmission probability from data at date 1, and adding data at date 3 for tiller 7 only
-    edata = data[data['Date'] == 1]
-    edata.loc[:, 'T7'] = data['T7'][data['Date'] == 3].values
-    edata = edata.reset_index()
-    emission = emission_probabilities(edata,last='T7')
-    
-    # compute nff probabilities
-    nff_prop = nff_probabilities(data)
-
-    # tiller dynamics
-    axdyn = axis_dynamics(data)
-    
-    # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
-    eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
-    pdata = Plot_data_Tremie_2011_2012()
-    ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1 #remove main stem to get FT count 
-    # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
-    ears_per_plant = 1 + numpy.array(ftd4.tolist() + eardata['FT'][eardata['Date'] == 6].tolist()).mean()
-
-    
-    obs = {'emission_probabilities': emission,
-           'nff_probabilities': nff_prop,
-           'ears_per_plant': ears_per_plant,
-           'tillers_per_plant': axdyn, 
-           'date_code' : date_code,
-           'TT_code' : TT_code}
-    return obs
-    
-def Tillering_data_Tremie13_2012_2013():
-    """Tillering data for Boigneville 2012-2013
-    
-    Data for presence/absence of primary tillers come from tagged plants. Data at date 3 are from other other plants.
-    
-    Data found in were :
-        - presence/absence of living mainstem (column MS, NA means the plant is dead) and number of leaf emited (Nff)
-        - presence/absence of primary tiller (column Tc-> Tn) whatever the state (dead or alive)
-        - total number of primary tillers (column TP) and/or secondary tillers (dead or alive, column TS), and/or total number of tiller present (primary or secondary, dead or alive), and/or total number of tiller with at least 2 ligulated leaves (column TT3F). 
-        
-    These data are aggregated to estimate primary emission probability, dynamics of mean number of axis present on plants
-
-    Notes :
-    - No data found  for direct counting of fertile tillers per plant on tagged plants) 
-    - data from date 3 are to be included
-    """
-    
-    fn = shared_data(alinea.echap, 'Tillering_data_Tremie_2012_2013.csv')
-    data = pandas.read_csv(fn,decimal=',',sep='\t')
-    date_code = {'d1':'2013-02-13', 'd2':'2013-03-29', 'd3': '2012-04-19'}
-    TT_code = {'d1':566, 'd2':739, 'd3':915}
-    
-    # compute emmission probability from data on tagged plants at date 1 and 2
-    edata = data[data['Date'] <= 2]
-    edata = edata.reset_index()
-    emission = emission_probabilities(edata,last='T5')
-    
-    # compute nff probabilities
-    nff_prop = nff_probabilities(data)
-    
-    # tiller dynamics
-    axdyn = axis_dynamics(data)
-    
-    #estimate ears per plant from plot data
-    pdata = Plot_data_Tremie_2012_2013()
-    ears_per_plant = pdata['ear_density_at_harvest'] / pdata['mean_plant_density']
-
-
-    obs = {'emission_probabilities': emission,
-           'nff_probabilities': nff_prop,
-           'ears_per_plant': ears_per_plant,
-           'tillers_per_plant': axdyn, 
-           'date_code' : date_code,
-           'TT_code' : TT_code}
-
-    return obs
- 
-
-def Tillering_data():
-    d = Tillering_data_Mercia_Rht3_2010_2011()
-    d.update({'Tremie12': Tillering_data_Tremie12_2011_2012(),
-             'Tremie13': Tillering_data_Tremie13_2012_2013()})
-    return d
     
 #-------------------------------------------------------------------------------  
 # Angles / formes a plat  
@@ -885,21 +894,7 @@ def median_leaf_trajectories():
 # Elaborated data
 #    
 
-# add mean dynamic point to HS, SSI, GL data using nff proba from tillering
 
-def _meanDyn(name):
-    df_GL = GL_number()[name]; df_HS = HS_number()[name]; df_SSI = SSI_number()[name]
-    nff_proba = Tillering_data()[name]['nff_probabilities']
-    df_GL['mean_pond'] = sum([df_GL[str(k)] * nff_proba[k] for k in nff_proba])
-    df_HS['mean_pond'] = sum([df_HS[str(k)] * nff_proba[k] for k in nff_proba])
-    df_SSI['mean_pond'] = sum([df_SSI[str(k)] * nff_proba[k] for k in nff_proba])
-    return {'GL':df_GL, 'HS':df_HS, 'SSI':df_SSI}
-    
-def HS_GL_SSI_data():
-    d={}
-    for name in ('Mercia','Rht3', 'Tremie12', 'Tremie13'):
-        d[name] = _meanDyn(name)
-    return d
     
 def _add_ghs(df, g):
     #hs_conv = HS_converter[g]
@@ -922,7 +917,7 @@ def PlantDensity():
                    pdata['plant_density_at_emergence'],
                    pdata['ear_density_at_harvest'] / tdata['ears_per_plant']]
         ear_data = numpy.array(pdata['raw_ear_density_at_harvest']) / tdata['ears_per_plant']
-        SD = [0,0,valSD(ear_data)]           
+        SD = [0,0,numpy.nanstd(ear_data)]           
         for w in events:
             date.append(pdata['code_date'][w])
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
@@ -954,10 +949,10 @@ def PlantDensity():
     for i,item in enumerate(pdata['raw_ear_density_at_harvest']):
         lab = pdata['raw_ear_density_at_harvest'][i]/tdata['ears_per_plant']
         ear_density_new.append(lab)
-    SD = [0, valSD(ear_density_new),
-         valSD(pdata['plant_density'][pdata['code_date']['d3']]), 
-         valSD(pdata['plant_density'][pdata['code_date']['d4']]), 
-         valSD(pdata['plant_density'][pdata['code_date']['arvalis']])
+    SD = [0, numpy.nanstd(ear_density_new),
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['d3']]), 
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['d4']]), 
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['arvalis']])
          ]
     for w in events:
         date.append(pdata['code_date'][w])
@@ -979,10 +974,10 @@ def PlantDensity():
                numpy.mean(pdata['plant_density'][pdata['code_date']['LAI2']])
                ]
     SD = [0,
-         valSD(pdata['plant_density'][pdata['code_date']['2F']]), 
-         valSD(pdata['plant_density'][pdata['code_date']['epis1cm']]), 
-         valSD(pdata['plant_density'][pdata['code_date']['LAI1']]),
-         valSD(pdata['plant_density'][pdata['code_date']['LAI2']])
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['2F']]), 
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['epis1cm']]), 
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['LAI1']]),
+         numpy.nanstd(pdata['plant_density'][pdata['code_date']['LAI2']])
          ]
     for w in events:
         date.append(pdata['code_date'][w])
@@ -1058,7 +1053,7 @@ class ReconstructionData(object):
     def __init__(self):
         self.Plot_data = Plot_data()
         self.Tillering_data = Tillering_data()
-        self.Pheno_tagged = pheno_archi_tagged()
+        self.Pheno_data = Pheno_data()
         
     def save(self, filename):
         with open(filename, 'w') as output:
