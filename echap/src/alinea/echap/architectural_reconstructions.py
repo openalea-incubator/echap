@@ -139,7 +139,6 @@ def fit_HS(reset_data=False, **parameters):
     dTT_cohort = parameters.get('dTT_cohort')
     
     # HS of mean plant 
-    #################################################TO DO : add scan data for Tremie12
     g = tagged.groupby('label')
     def _fit(df):
         dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
@@ -150,6 +149,17 @@ def fit_HS(reset_data=False, **parameters):
         res['n'] = n
         return res
     hs_ms = g.apply(_fit)
+    # complete fit if destructive sample available
+    gd = sampled.groupby('label')
+    for lab in gd.groups:
+        dat = g.get_group(lab)
+        dat = dat.loc[dat['HS'] < dat['nff'],('TT','HS')].dropna()
+        datd = gd.get_group(lab)
+        datd = datd.loc[(datd['HS'] < datd['nff']) | (numpy.isnan(datd['nff'])),('TT','HS')].dropna()
+        datreg = pandas.concat((dat,datd))
+        res = linreg_df(datreg['TT'],datreg['HS'])
+        hs_ms.loc[lab,'intercept':'std_err'] = res
+    # TTem per label
     TTem = - hs_ms['intercept'] / hs_ms['slope']
     # Flag leaf delay per nff
     TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
