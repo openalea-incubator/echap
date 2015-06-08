@@ -196,7 +196,6 @@ def fit_HS(reset_data=False, **parameters):
     hs_fits = {k: pgen_ext.HaunStage(hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k], dTT_cohort[k]) for k in dTT_cohort}
     return hs_fits
     
-
     
 def HS_fit(reset=False):
     """ Handle fitted phyllochron persitent object
@@ -220,7 +219,110 @@ if run_plots:
     HS_converter = HS_fit()
     archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
 
+#
+# --------------------------------------------------------------- Fit GL = f(HS since flag)
+#
+def GL_fit(reset_data=False, **parameters):
+    """ Regression for Green leaf data
+    """
+    
+    
+class GL_model(object):
+    """
+    An object interface to a plantgen Green Leaf model variant
+    This variant handles cases where GL=f(HS) is fixed whatever nff
+    """
 
+    def __init__(self, HS, GL, nff=12, n0=4.4, n1=1.5, n2=5, hs_t1=8):
+        self.n0 = n0
+        self.n1 = n1 
+        self.hs_t1 = hs_t1
+        self.HS = HS
+        self.GL = GL
+        self.nff = nff
+        self.hs_t2 = nff
+        self.n2 = n2
+               
+    def GL_number(self):
+        GLpol = pandas.DataFrame({'HS':self.HS, 'GL':self.GL})
+        GLpol = GLpol.ix[GLpol['HS'] > self.hs_t2,:]
+        return GLpol
+     
+    def polyfit(self, a_start = -4e-9):
+        GLpol = self.GL_number()
+        c = (self.n2 - self.n1) / (self.hs_t2 - self.hs_t1) - 1
+        fixed_coefs = [0.0, c, self.n2]
+        a, rmse = tools.fit_poly((GLpol['HS'] - self.hs_t2), GLpol['GL'], fixed_coefs, a_start)
+        return numpy.poly1d([a] + fixed_coefs), rmse
+        
+    def curve(self, step = 0.1, a_start = -4e-9):
+        pol, rmse = self.polyfit(a_start) 
+        lin = pandas.DataFrame({'HS':[0, self.n0, self.hs_t1, self.hs_t2],
+                               'GL':[0, self.n0, self.n1, self.n2]})
+        xpol = numpy.arange(self.hs_t2, 2 * self.nff, step)
+        ypol = pol(xpol - self.hs_t2)
+        dpol = pandas.DataFrame({'HS':xpol,'GL':ypol})
+        dpol = dpol.ix[dpol['GL'] >= 0,:]
+        return pandas.concat([lin, dpol])     
+        
+def HS_GL_fits(HS_converter=None):
+    if HS_converter is None:
+        HS_converter = HS_fit()
+    # common fit mercia, rht3, Tremie12
+    conv = HS_converter['Tremie12']
+    HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])
+    GL_ref = archidb.GL_number()['Tremie12']['mediane']
+    conv = HS_converter['Tremie13']
+    HS_T13 = conv(archidb.GL_number()['Tremie13']['TT'])
+    GL_T13 = archidb.GL_number()['Tremie13']['mediane']
+    HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
+    GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
+    nff = archidb.mean_nff()
+    #coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
+    coefs = {'n0': 4.7, 'hs_t1': 8.6} # newparameter to avoid too short grean area lifetime for disease
+    #n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
+    n1 = {'Mercia':3, 'Rht3': 3, 'Tremie12':3, 'Tremie13':3}# newparameter to avoid too short grean area lifetime for disease (should be 3.5 but pb in fitting)
+    n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
+    fits = {k:GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
+    #
+    hsgl_fits = {k:{'HS': HS_converter[k], 'GL': fits[k]} for k in nff}
+    return hsgl_fits
+#
+if run_plots:
+    #
+    data = archidb.HS_GL_SSI_data()
+    fits = HS_GL_fits()
+    #
+    #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
+    #
+    #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
+    archi_plot.dynamique_plot_nff(data)
+    # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
+
+def pars():
+    sim_all={}
+    e = EchapReconstructions()
+    for name in ('Mercia','Rht3','Tremie12','Tremie13'):
+        pars = e.get_pars(name=name, nplants=30)
+        nff_lst = pars.keys()
+        nff_proba = archidb.Tillering_data()[name]['nff_probabilities']
+
+        for nff in nff_lst:
+            select = pandas.Series([111,112,113,1111,1112,1113,10111,10112,10113])
+            pars[nff]['HS_GL_SSI_T'] = pars[nff]['HS_GL_SSI_T'][pars[nff]['HS_GL_SSI_T'].id_phen.isin(select)]
+            TT = pars[nff]['HS_GL_SSI_T']['TT']
+        
+        GL = sum([pars[k]['HS_GL_SSI_T']['GL'] * nff_proba[k] for k in nff_lst])
+        HS = sum([pars[k]['HS_GL_SSI_T']['HS'] * nff_proba[k] for k in nff_lst])
+        SSI = sum([pars[k]['HS_GL_SSI_T']['SSI'] * nff_proba[k] for k in nff_lst])
+        df = pandas.DataFrame({'TT':TT, 'GL':GL, 'HS':HS, 'SSI':SSI})
+        sim_all.update({name:df})
+    return sim_all
+    
+if run_plots:
+    HS_converter = fit_HS()
+    archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
+ 
 # leaf geometry
 
 # Processing of raw database to get data reabale or adel
@@ -332,105 +434,7 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
 
 
 
-#
-# Styrategie : pour premieres feuilles
-#
-class GL_model(object):
-    """
-    An object interface to a plantgen Green Leaf model variant
-    This variant handles cases where GL=f(HS) is fixed whatever nff
-    """
 
-    def __init__(self, HS, GL, nff=12, n0=4.4, n1=1.5, n2=5, hs_t1=8):
-        self.n0 = n0
-        self.n1 = n1 
-        self.hs_t1 = hs_t1
-        self.HS = HS
-        self.GL = GL
-        self.nff = nff
-        self.hs_t2 = nff
-        self.n2 = n2
-               
-    def GL_number(self):
-        GLpol = pandas.DataFrame({'HS':self.HS, 'GL':self.GL})
-        GLpol = GLpol.ix[GLpol['HS'] > self.hs_t2,:]
-        return GLpol
-     
-    def polyfit(self, a_start = -4e-9):
-        GLpol = self.GL_number()
-        c = (self.n2 - self.n1) / (self.hs_t2 - self.hs_t1) - 1
-        fixed_coefs = [0.0, c, self.n2]
-        a, rmse = tools.fit_poly((GLpol['HS'] - self.hs_t2), GLpol['GL'], fixed_coefs, a_start)
-        return numpy.poly1d([a] + fixed_coefs), rmse
-        
-    def curve(self, step = 0.1, a_start = -4e-9):
-        pol, rmse = self.polyfit(a_start) 
-        lin = pandas.DataFrame({'HS':[0, self.n0, self.hs_t1, self.hs_t2],
-                               'GL':[0, self.n0, self.n1, self.n2]})
-        xpol = numpy.arange(self.hs_t2, 2 * self.nff, step)
-        ypol = pol(xpol - self.hs_t2)
-        dpol = pandas.DataFrame({'HS':xpol,'GL':ypol})
-        dpol = dpol.ix[dpol['GL'] >= 0,:]
-        return pandas.concat([lin, dpol])     
-        
-def HS_GL_fits(HS_converter=None):
-    if HS_converter is None:
-        HS_converter = HS_fit()
-    # common fit mercia, rht3, Tremie12
-    conv = HS_converter['Tremie12']
-    HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])
-    GL_ref = archidb.GL_number()['Tremie12']['mediane']
-    conv = HS_converter['Tremie13']
-    HS_T13 = conv(archidb.GL_number()['Tremie13']['TT'])
-    GL_T13 = archidb.GL_number()['Tremie13']['mediane']
-    HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
-    GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
-    nff = archidb.mean_nff()
-    #coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
-    coefs = {'n0': 4.7, 'hs_t1': 8.6} # newparameter to avoid too short grean area lifetime for disease
-    #n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
-    n1 = {'Mercia':3, 'Rht3': 3, 'Tremie12':3, 'Tremie13':3}# newparameter to avoid too short grean area lifetime for disease (should be 3.5 but pb in fitting)
-    n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
-    fits = {k:GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
-    #
-    hsgl_fits = {k:{'HS': HS_converter[k], 'GL': fits[k]} for k in nff}
-    return hsgl_fits
-#
-if run_plots:
-    #
-    data = archidb.HS_GL_SSI_data()
-    fits = HS_GL_fits()
-    #
-    #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
-    #
-    #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
-    archi_plot.dynamique_plot_nff(data)
-    # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
-
-def pars():
-    sim_all={}
-    e = EchapReconstructions()
-    for name in ('Mercia','Rht3','Tremie12','Tremie13'):
-        pars = e.get_pars(name=name, nplants=30)
-        nff_lst = pars.keys()
-        nff_proba = archidb.Tillering_data()[name]['nff_probabilities']
-
-        for nff in nff_lst:
-            select = pandas.Series([111,112,113,1111,1112,1113,10111,10112,10113])
-            pars[nff]['HS_GL_SSI_T'] = pars[nff]['HS_GL_SSI_T'][pars[nff]['HS_GL_SSI_T'].id_phen.isin(select)]
-            TT = pars[nff]['HS_GL_SSI_T']['TT']
-        
-        GL = sum([pars[k]['HS_GL_SSI_T']['GL'] * nff_proba[k] for k in nff_lst])
-        HS = sum([pars[k]['HS_GL_SSI_T']['HS'] * nff_proba[k] for k in nff_lst])
-        SSI = sum([pars[k]['HS_GL_SSI_T']['SSI'] * nff_proba[k] for k in nff_lst])
-        df = pandas.DataFrame({'TT':TT, 'GL':GL, 'HS':HS, 'SSI':SSI})
-        sim_all.update({name:df})
-    return sim_all
-    
-if run_plots:
-    HS_converter = fit_HS()
-    archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
- 
 #
 # Fit plant density
 #
