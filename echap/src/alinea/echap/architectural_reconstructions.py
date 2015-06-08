@@ -119,6 +119,8 @@ def reconstruction_parameters():
     #
     # Leaf geometry
     #--------------
+    # flag for forcing median leaf shape = f(age) model instead of random shape sampling
+    pars['median_leaf'] = pdict(True)
     # number of top leaves to be considered erectophyl
     #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3} # values optimised for echap report december 2014
     pars['top_leaves'] = {'Mercia':4, 'Rht3':4, 'Tremie12':4, 'Tremie13':4}
@@ -201,7 +203,7 @@ def fit_HS(reset_data=False, **parameters):
     return hs_fits
     
     
-def HS_fit(reset=False):
+def HS_fit(reset=False, reset_data=False):
     """ Handle fitted phyllochron persitent object
     """
     filename = str(shared_data(alinea.echap)/'HS_fit.pckl')
@@ -212,7 +214,7 @@ def HS_fit(reset=False):
         except:
             pass
     parameters = reconstruction_parameters()
-    fit = fit_HS(**parameters)
+    fit = fit_HS(reset_data=reset_data, **parameters)
     with open(filename,'w') as output:
         pickle.dump(fit, output)
     return fit
@@ -395,10 +397,17 @@ def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages)
                           n_elongated_internode = n_elongated_internode,
                           max_order=max_order,
                           tiller_damages=tiller_damages)
-
+                          
+def _newtfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
+    ms_nff_probas = tdb['nff_probabilities']
+    ears_per_plant = tdb['ears_per_plant']
+    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    emission = pgen_ext.TillerEmission(primary_emission)
+    regression = pgen_ext.TillerRegression(ears_per_plant, n_elongated_internode, delta_stop_del)
+    return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order)
 #
 # Fits
-def tillering_fits(reset_data=False, **parameters):
+def tillering_fits(new=True, reset_data=False, **parameters):
 
     # Emission probabilities tuning
     #
@@ -415,13 +424,16 @@ def tillering_fits(reset_data=False, **parameters):
     # Wheat tillering model parameters
     delta_stop_del = parameters.get('delta_stop_del')
     n_elongated_internode = parameters.get('n_elongated_internode') 
+    
     if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
         raise NotImplementedError("Not yet implemented")
     max_order = parameters.get('max_order')
     tiller_damages = parameters.get('tiller_damages')
     
-    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
-
+    if new:
+        t_fits={k: _newtfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
+    else:
+        t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
     return t_fits
 
 
@@ -569,23 +581,21 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
 
 
 
-
-   
-  
-    
-
 class EchapReconstructions(object):
     
-    def __init__(self, reset_data=False,  median_leaf=True, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+    def __init__(self, reset_data=False):
         self.pars = reconstruction_parameters()
         
         self.pgen_base = self.pars['pgen_base']
-        converter = HS_fit(reset=True)
+        self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
+        converter = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
         self.tillering_fits = tillering_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
-        self.HS_GL_fits = HS_GL_fits(converter)
-        if median_leaf:
+        self.GL_fits = GL_fit(reset_data=reset_data, **self.pars)
+        median_leaf = self.pars['median_leaf']
+        top_leaves = self.pars['top_leaves']
+        if median_leaf:            
             self.leaf_fits = median_leaf_fits(top_leaves=top_leaves)
         else:
             self.leaf_fits = leaf_fits()
@@ -672,25 +682,29 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
-        pars = self.get_pars(name=name, nplants=n_emerged, dimension = dimension)
-        axeT = pandas.concat([pars[k]['adelT'][0] for k in pars])
-        dimT = pandas.concat([pars[k]['adelT'][1] for k in pars])
-        phenT = pandas.concat([pars[k]['adelT'][2] for k in pars])
+        #pars = self.get_pars(name=name, nplants=n_emerged, dimension = dimension)
+        #axeT = pandas.concat([pars[k]['adelT'][0] for k in pars])
+        #dimT = pandas.concat([pars[k]['adelT'][1] for k in pars])
+        #phenT = pandas.concat([pars[k]['adelT'][2] for k in pars])
+        axp = self.tillering_fits[name]
+        plants = axp.plant_list(n_emerged)
+        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name])
+        axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
         
         #adjust density according to density fit
-        if d['density_at_harvest']  < d['density_at_emergence'] and nplants > 1:
-            TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
-            #to do test for 4 lines table only
-            dt = d['density_table'].iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
-            devT = pgen_ext.adjust_density(devT, dt, TT_stop_del = TT_stop_del)
+        #if d['density_at_harvest']  < d['density_at_emergence'] and nplants > 1:
+        #    TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
+        #    #to do test for 4 lines table only
+        #    dt = d['density_table'].iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
+        #    devT = pgen_ext.adjust_density(devT, dt, TT_stop_del = TT_stop_del)
             
         # adjust tiller survival if early death occured
-        if self.tillering_fits[name].tiller_survival is not None:
-            TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
-            cohort_survival = self.tillering_fits[name].cohort_survival()
-            devT = pgen_ext.adjust_tiller_survival(devT, cohort_survival, TT_stop_del = TT_stop_del)
+        #if self.tillering_fits[name].tiller_survival is not None:
+        #    TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
+        #    cohort_survival = self.tillering_fits[name].cohort_survival()
+        #    devT = pgen_ext.adjust_tiller_survival(devT, cohort_survival, TT_stop_del = TT_stop_del)
             
         leaves = self.leaf_fits[name] 
         
