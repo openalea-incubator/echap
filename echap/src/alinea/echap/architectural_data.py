@@ -1047,7 +1047,63 @@ def emission_probabilities_table():
     dfs = [pandas.DataFrame({'variety':var, 'tiller':probas.keys(), 'probability': probas.values()}) for  var,probas in emdb.iteritems()]
     return pandas.concat(dfs)
 
- 
+def variance(lst):
+    """
+    Uses standard variance formula (sum of each (data point - mean) squared)
+    all divided by number of data points
+    """
+    mu = numpy.mean(lst)
+    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst]) if len(lst)>1 else 0.
+        
+def conf_int(lst, perc_conf=95):
+    """
+    Confidence interval - given a list of values compute the square root of
+    the variance of the list (v) divided by the number of entries (n)
+    multiplied by a constant factor of (c). This means that I can
+    be confident of a result +/- this amount from the mean.
+    The constant factor can be looked up from a table, for 95pcent confidence
+    on a reasonable size sample (>=500) 1.96 is used.
+    """
+    from scipy.stats import t
+    
+    n, v = len(lst), variance(lst)
+    c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
+    
+    return numpy.sqrt(v/n) * c
+
+def haun_stage_data():
+    """ Get mean, standard error and confidence interval for HS calibration data """
+    def aggregate(data, group = ['TT', 'label', 'nff'],
+                  func = numpy.mean, column_name = 'HS_mean'):
+        df = data.groupby(group).agg(func).loc[:, 'HS'].to_frame()
+        df = df.rename(columns={'HS':column_name})
+        return df
+    
+    # Get and select data
+    data = reconstruction_data(reset=True)
+    tagged = data.Pheno_data['archi_tagged']
+    tagged = tagged.loc[tagged['HS'] < tagged['nff'],('label', 'nff', 'TT', 'HS')].dropna()
+    sampled = data.Pheno_data['archi_sampled']
+    sampled = sampled.loc[(sampled['HS'] < sampled['nff']) | (numpy.isnan(sampled['nff'])),('label','TT','HS')].dropna()
+    
+    # Get mean, standard error and confidence interval for tagged plants by nff
+    df_HS_tagged = pandas.concat([aggregate(tagged, ['TT', 'label', 'nff'], numpy.mean, 'HS_mean'),
+                                  aggregate(tagged, ['TT', 'label', 'nff'], numpy.nanstd, 'HS_std'),
+                                  aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'HS_conf')], axis=1)
+    
+    # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
+    (df_HS_tagged_global, df_HS_sampled_global) = map(lambda x: pandas.concat(
+                                                  [aggregate(x, ['TT', 'label'], numpy.mean, 'HS_mean'),
+                                                   aggregate(x, ['TT', 'label'], numpy.nanstd, 'HS_std'),
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'HS_conf')], axis=1),
+                                                   (tagged, sampled))
+    df_HS_tagged_global['source'] = 'tagged'
+    df_HS_sampled_global['source'] = 'sampled'
+    df_HS_global = pandas.concat([df_HS_tagged_global, df_HS_sampled_global])
+    
+    (df_HS_tagged, df_HS_global) = map(lambda x: x.reset_index(), (df_HS_tagged, df_HS_global))
+    return df_HS_tagged, df_HS_global
+    
 class ReconstructionData(object):
 
     def __init__(self):

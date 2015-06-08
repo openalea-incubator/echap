@@ -5,7 +5,72 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
+def haun_stage_plot(df_HS_tagged, df_HS_global, fit_HS):
+    """ Plot HS against thermal time for all varieties 
+    
+        Parameters
+        ----------
+        - df_HS_tagged: pandas DataFrame
+            Observation data from tagged plants (aggregated with architectural_data>haun_stage_data)
+        - df_HS_global: pandas DataFrame
+            Observation data from tagged and sampled plants (aggregated with architectural_data>haun_stage_data)
+        - fit_HS: dict
+            Fit of haun stages by variety
+    """
+    varieties = np.unique(df_HS_tagged['label'])
 
+    fig, axs = plt.subplots(2, 2)
+    colors = {10:'m', 11:'g', 12:'r', 13:'c'}
+    markers = {10: 'd', 11:'o', 12:'^', 13:'s'}
+    proxys = [plt.Line2D((0,1),(0,0), color='b', linestyle='-'),
+              plt.Line2D((0,1),(0,0), linestyle='',
+              markerfacecolor='None', markeredgecolor='k', marker = 'o'),
+              plt.Line2D((0,1),(0,0), linestyle='',
+              markerfacecolor='None', markeredgecolor='k', marker = 's')]
+    labels = ['fit mean NFF', 'tagged mean NFF', 'sampled mean NFF']
+    for nff in colors.iterkeys():
+        labels += ['fit NFF %d' %nff, 'data NFF %d' %nff]
+        proxys += [plt.Line2D((0,1),(0,0), color=colors[nff], linestyle='-'),
+                   plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor=colors[nff],
+                   markeredgecolor=colors[nff], marker=markers[nff])]
+    
+    x = np.arange(0., 1500)
+    markersize = 7
+    for i, ax in enumerate(axs.flat):
+        variety = varieties[i]
+        curv_mean = fit_HS[variety].curve(nff=None)
+        ax.plot(x, curv_mean(x), 'b')
+        df_var = df_HS_tagged[df_HS_tagged['label']==variety]
+        
+        df_var_g = df_HS_global[df_HS_global['label']==variety]
+        df_ = df_var_g[df_var_g['source']=='tagged'].reset_index()
+        ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
+                    linestyle='', markerfacecolor='None', markeredgecolor='k',
+                    marker='o', markersize=markersize)
+        df_ = df_var_g[df_var_g['source']=='sampled'].reset_index()
+        ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
+                    linestyle='', markerfacecolor='None', markeredgecolor='k', 
+                    marker='s', markersize=markersize)
+        
+        for j, nff in enumerate(np.unique(df_var['nff'])):
+            df_nff = df_var[df_var['nff']==nff].reset_index()
+            curv_nff = fit_HS[variety].curve(nff=nff)
+            color = colors[nff]
+            ax.plot(x, curv_nff(x), color=color)
+            ax.errorbar(df_nff['TT'], df_nff['HS_mean'], yerr=df_nff['HS_std'], color = colors[nff], 
+                        linestyle='', markerfacecolor=colors[nff], markeredgecolor=colors[nff],
+                        marker=markers[nff], markersize=markersize)
+            ax.errorbar([fit_HS[variety].TT_hs_0, fit_HS[variety].TTflag(nff)],
+                        [0, nff], xerr=fit_HS[variety].std_TT_hs_0, color = 'k', 
+                        linestyle='', marker='', markersize=markersize)
+        ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+        ax.set_ylim([0, 14])
+        ax.set_ylabel('Haun Stage', fontsize = 16)
+        ax.set_xlabel('Thermal Time', fontsize = 16)
+        if i == 1:
+            ax.legend(proxys, labels, bbox_to_anchor=(1.02, 1), loc=2, borderaxespad=0.)
+        
+    
 def varieties():
     return ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
     
