@@ -80,6 +80,10 @@ def reconstruction_parameters():
     # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts
     pars['dTT_cohort'] = pdict({'first': 60, 'increment': 10})
     #
+    # Green Leaves (ssi) = f(HS)
+    #
+    pars['GLpars'] = pdict({'GL_start_senescence':4.8, 'GL_bolting':3.2, 'GL_flag': 4.8, 'n_elongated_internode': 4})
+    #
     # Plant Density
     #--------------
     # plant damages. Comment out to fit without damages
@@ -225,73 +229,17 @@ if run_plots:
 def GL_fit(reset_data=False, **parameters):
     """ Regression for Green leaf data
     """
+    GLpars = parameters.get('GLpars')
+    fits = {k:pgen_ext.GreenLeaves(**GLpars[k]) for k in GLpars}
+    #  TO DO : fit a (GreenLeaves method) with GL data
+    return fits
     
-    
-class GL_model(object):
-    """
-    An object interface to a plantgen Green Leaf model variant
-    This variant handles cases where GL=f(HS) is fixed whatever nff
-    """
 
-    def __init__(self, HS, GL, nff=12, n0=4.4, n1=1.5, n2=5, hs_t1=8):
-        self.n0 = n0
-        self.n1 = n1 
-        self.hs_t1 = hs_t1
-        self.HS = HS
-        self.GL = GL
-        self.nff = nff
-        self.hs_t2 = nff
-        self.n2 = n2
-               
-    def GL_number(self):
-        GLpol = pandas.DataFrame({'HS':self.HS, 'GL':self.GL})
-        GLpol = GLpol.ix[GLpol['HS'] > self.hs_t2,:]
-        return GLpol
-     
-    def polyfit(self, a_start = -4e-9):
-        GLpol = self.GL_number()
-        c = (self.n2 - self.n1) / (self.hs_t2 - self.hs_t1) - 1
-        fixed_coefs = [0.0, c, self.n2]
-        a, rmse = tools.fit_poly((GLpol['HS'] - self.hs_t2), GLpol['GL'], fixed_coefs, a_start)
-        return numpy.poly1d([a] + fixed_coefs), rmse
-        
-    def curve(self, step = 0.1, a_start = -4e-9):
-        pol, rmse = self.polyfit(a_start) 
-        lin = pandas.DataFrame({'HS':[0, self.n0, self.hs_t1, self.hs_t2],
-                               'GL':[0, self.n0, self.n1, self.n2]})
-        xpol = numpy.arange(self.hs_t2, 2 * self.nff, step)
-        ypol = pol(xpol - self.hs_t2)
-        dpol = pandas.DataFrame({'HS':xpol,'GL':ypol})
-        dpol = dpol.ix[dpol['GL'] >= 0,:]
-        return pandas.concat([lin, dpol])     
-        
-def HS_GL_fits(HS_converter=None):
-    if HS_converter is None:
-        HS_converter = HS_fit()
-    # common fit mercia, rht3, Tremie12
-    conv = HS_converter['Tremie12']
-    HS_ref = conv(archidb.GL_number()['Tremie12']['TT'])
-    GL_ref = archidb.GL_number()['Tremie12']['mediane']
-    conv = HS_converter['Tremie13']
-    HS_T13 = conv(archidb.GL_number()['Tremie13']['TT'])
-    GL_T13 = archidb.GL_number()['Tremie13']['mediane']
-    HS = {'Mercia':HS_ref, 'Rht3': HS_ref, 'Tremie12':HS_ref, 'Tremie13':HS_T13}
-    GL = {'Mercia':GL_ref, 'Rht3': GL_ref, 'Tremie12':GL_ref, 'Tremie13':GL_T13}
-    nff = archidb.mean_nff()
-    #coefs = {'n0': 4.4, 'hs_t1': 8.6}#n0=4.4 : Maxwell value
-    coefs = {'n0': 4.7, 'hs_t1': 8.6} # newparameter to avoid too short grean area lifetime for disease
-    #n1 = {'Mercia':1.9, 'Rht3': 1.9, 'Tremie12':1.9, 'Tremie13':2.8}
-    n1 = {'Mercia':3, 'Rht3': 3, 'Tremie12':3, 'Tremie13':3}# newparameter to avoid too short grean area lifetime for disease (should be 3.5 but pb in fitting)
-    n2 = {'Mercia':5, 'Rht3': 4.9, 'Tremie12':5, 'Tremie13':4.3}
-    fits = {k:GL_model(HS[k], GL[k], nff=nff[k], n2=n2[k],n1=n1[k],**coefs) for k in nff}
-    #
-    hsgl_fits = {k:{'HS': HS_converter[k], 'GL': fits[k]} for k in nff}
-    return hsgl_fits
-#
+# deprecated: to review with new data/objects
 if run_plots:
     #
     data = archidb.HS_GL_SSI_data()
-    fits = HS_GL_fits()
+    fits = GL_fit()
     #
     #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
     #
@@ -322,7 +270,194 @@ def pars():
 if run_plots:
     HS_converter = fit_HS()
     archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
- 
+#
+# --------------------------------------------------------------- Fit Plant density = f(HS)
+#
+#
+# use mean plant density and/or density at the end as fits
+class deepdd(pandas.DataFrame):
+
+    def deepcopy(self):
+        return self.copy(deep=True)
+#
+
+def density_fits(HS_converter=None, reset_data=False, **parameters):
+    """
+    Manual fit of plant density based on mean plant density and estimate of plant density at harvest
+    """
+
+    if HS_converter is None:
+        HS_converter = HS_fit()
+    
+    data = archidb.reconstruction_data(reset=reset_data)
+    pdb = data.Plot_data
+    tdb = data.Tillering_data
+
+    damages = parameters.get('plant_damages')
+    
+    #compile density data
+    density_data = {}
+    for k in pdb:
+        hs =[]
+        d = []
+        if 'plant_density_at_emergence' in pdb[k]:
+            hs.append(HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
+            d.append(pdb[k]['plant_density_at_emergence'])
+        if 'plant_density' in pdb[k]:
+            for date,densities in pdb[k]['plant_density'].iteritems():
+                hs.extend([HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
+                d.extend(densities)
+        if 'raw_ear_density_at_harvest' in pdb[k]:
+            ear_d = numpy.array(pdb[k]['raw_ear_density_at_harvest']) / tdb[k]['ears_per_plant']
+            hs_harvest = HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['harvest']])
+            hs.extend([hs_harvest] * len(ear_d))
+            d.extend(ear_d.tolist())
+        density_data[k] = pandas.DataFrame({'HS':hs, 'density':d})
+
+    #estimate mean plant density or mean plant density after damages
+    if damages is not None:
+        for k in damages:
+            if damages[k] is not None:
+                density_data[k] = density_data[k].loc[density_data[k]['HS'] > max(damages[k]['when']),:]
+    mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in density_data}
+    #
+    fits = {k: {'HS':[0,20],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
+    #
+    if damages is not None:
+        for k in damages:
+            if damages[k] is not None:
+                density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
+                density_at_harvest = mean_plant_density[k]
+                fits[k] = {'HS':[0] + damages[k]['when'] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
+    
+    density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
+                       'inter_row': pdb[k]['inter_row'],
+                       'density_table': pandas.DataFrame(fits[k])} for k in fits}
+
+                       
+    adjust = parameters.get('density_tuning')
+    if adjust is not None: 
+        for k in adjust:
+            if adjust[k] is not None:
+                df = density_fits[k]['density_table']
+                df['density'] *= adjust[k]
+                density_fits[k]['sowing_density'] *= adjust[k]
+                density_fits[k]['inter_row'] /= math.sqrt(adjust[k])
+
+    for k in density_fits:
+        df = density_fits[k]['density_table']
+        df['TT'] = HS_converter[k].TT(df['HS'])
+        density_fits[k]['density_at_emergence'] = df['density'].iloc[0]
+        density_fits[k]['density_at_harvest'] = df['density'].iloc[-1]
+        density_fits[k]['hs_curve'] = interp1d(df['HS'], df['density'])
+        density_fits[k]['TT_curve'] = interp1d(df['TT'], df['density'])
+                
+    return density_fits
+
+
+#
+if run_plots:
+    parameters = reconstruction_parameters()
+    fits = density_fits(**parameters)
+    obs = archidb.validation_data()
+    archi_plot.density_plot(obs.PlantDensity, fits, HS_fit())
+#
+# --------------------------------------------------------------- Fit Tillering
+#
+#
+# fitting functions
+#future deprecated
+def _tsurvival(tiller_damages=None, HS_converter=None):
+    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
+    if tiller_damages is not None:
+        if HS_converter is None:
+            HS_converter = fit_HS()
+        conv = HS_converter
+        for k in survivals:
+            damages = tiller_damages[k]
+            if damages is not None:
+                tillers = damages.pop('tillers')
+                df = pandas.DataFrame(damages)
+                df['TT'] = conv[k].TT(df['HS'])
+                survivals[k] = {T:df for T in tillers} 
+    return survivals
+#
+def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
+    ms_nff_probas = tdb['nff_probabilities']
+    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
+    ears_per_plant = tdb['ears_per_plant']
+    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    options={}
+    return WheatTillering(primary_tiller_probabilities=primary_emission, 
+                          ears_per_plant = ears_per_plant,
+                          nff=nff,
+                          delta_stop_del=delta_stop_del,
+                          n_elongated_internode = n_elongated_internode,
+                          max_order=max_order,
+                          tiller_damages=tiller_damages)
+
+#
+# Fits
+def tillering_fits(reset_data=False, **parameters):
+
+    # Emission probabilities tuning
+    #
+    data = archidb.reconstruction_data(reset=reset_data)
+    tdb = deepcopy(data.Tillering_data)    
+    # apply manual reductions
+    emf = parameters.get('emission_reduction')
+    if emf is not None:
+        for k in emf:
+            if emf[k] is not None:
+                for T in emf[k]:
+                    tdb[k]['emission_probabilities'][T] *= emf[k][T]
+    
+    # Wheat tillering model parameters
+    delta_stop_del = parameters.get('delta_stop_del')
+    n_elongated_internode = parameters.get('n_elongated_internode') 
+    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
+        raise NotImplementedError("Not yet implemented")
+    max_order = parameters.get('max_order')
+    tiller_damages = parameters.get('tiller_damages')
+    
+    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
+
+    return t_fits
+
+
+if run_plots:
+    # populate with fits
+    parameters = reconstruction_parameters()
+    fits = tillering_fits(**parameters)
+    obs = archidb.validation_data()
+    
+    #1 graph tillering par var -> 4 graph sur une feuille
+    archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit())  
+    
+    #tallage primary pour les 4 var   
+    archi_plot.tillering_primary(obs.tillers_per_plant, fits, HS_fit())
+    
+    #tallage total pour les 4 var    
+    archi_plot.tillering_tot(obs.tillers_per_plant, fits, HS_fit())
+   
+   # primary emissions
+    archi_plot.graph_primary_emission(obs.emission_probabilities)
+#
+# --------------------------------------------------------------- Fit dimensions
+#
+
+def all_scan():
+    df_obs_all = pandas.DataFrame()
+    for name in ['Tremie12','Tremie13']:
+        df_obs = archidb.treatment_scan(name)
+        df_obs['var'] = name
+        df_obs_all = df_obs_all.append(df_obs)
+    df_obs_all = df_obs_all[df_obs_all['moyenne id_Feuille'] <= df_obs_all['HS']]
+    return df_obs_all
+
+if run_plots:
+    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
+    
 # leaf geometry
 
 # Processing of raw database to get data reabale or adel
@@ -435,193 +570,8 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
 
 
 
-#
-# Fit plant density
-#
-# use mean plant density and/or density at the end as fits
-class deepdd(pandas.DataFrame):
-
-    def deepcopy(self):
-        return self.copy(deep=True)
-#
-
-def density_fits(HS_converter=None, reset_data=False, **parameters):
-    """
-    Manual fit of plant density based on mean plant density and estimate of plant density at harvest
-    """
-
-    if HS_converter is None:
-        HS_converter = HS_fit()
-    
-    data = archidb.reconstruction_data(reset=reset_data)
-    pdb = data.Plot_data
-    tdb = data.Tillering_data
-
-    damages = parameters.get('plant_damages')
-    
-    #compile density data
-    density_data = {}
-    for k in pdb:
-        hs =[]
-        d = []
-        if 'plant_density_at_emergence' in pdb[k]:
-            hs.append(HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
-            d.append(pdb[k]['plant_density_at_emergence'])
-        if 'plant_density' in pdb[k]:
-            for date,densities in pdb[k]['plant_density'].iteritems():
-                hs.extend([HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
-                d.extend(densities)
-        if 'raw_ear_density_at_harvest' in pdb[k]:
-            ear_d = numpy.array(pdb[k]['raw_ear_density_at_harvest']) / tdb[k]['ears_per_plant']
-            hs_harvest = HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['harvest']])
-            hs.extend([hs_harvest] * len(ear_d))
-            d.extend(ear_d.tolist())
-        density_data[k] = pandas.DataFrame({'HS':hs, 'density':d})
-
-    #estimate mean plant density or mean plant density after damages
-    if damages is not None:
-        for k in damages:
-            if damages[k] is not None:
-                density_data[k] = density_data[k].loc[density_data[k]['HS'] > max(damages[k]['when']),:]
-    mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in density_data}
-    #
-    fits = {k: {'HS':[0,20],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
-    #
-    if damages is not None:
-        for k in damages:
-            if damages[k] is not None:
-                density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
-                density_at_harvest = mean_plant_density[k]
-                fits[k] = {'HS':[0] + damages[k]['when'] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
-    
-    density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
-                       'inter_row': pdb[k]['inter_row'],
-                       'density_table': pandas.DataFrame(fits[k])} for k in fits}
-
-                       
-    adjust = parameters.get('density_tuning')
-    if adjust is not None: 
-        for k in adjust:
-            if adjust[k] is not None:
-                df = density_fits[k]['density_table']
-                df['density'] *= adjust[k]
-                density_fits[k]['sowing_density'] *= adjust[k]
-                density_fits[k]['inter_row'] /= math.sqrt(adjust[k])
-
-    for k in density_fits:
-        df = density_fits[k]['density_table']
-        df['TT'] = HS_converter[k].TT(df['HS'])
-        density_fits[k]['density_at_emergence'] = df['density'].iloc[0]
-        density_fits[k]['density_at_harvest'] = df['density'].iloc[-1]
-        density_fits[k]['hs_curve'] = interp1d(df['HS'], df['density'])
-        density_fits[k]['TT_curve'] = interp1d(df['TT'], df['density'])
-                
-    return density_fits
-
-
-#
-if run_plots:
-    parameters = reconstruction_parameters()
-    fits = density_fits(**parameters)
-    obs = archidb.validation_data()
-    archi_plot.density_plot(obs.PlantDensity, fits, HS_fit())
-                    
-                
-
-#
-# Fit tillering
-#****************
-#
-# fitting functions
-#future deprecated
-def _tsurvival(tiller_damages=None, HS_converter=None):
-    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-    if tiller_damages is not None:
-        if HS_converter is None:
-            HS_converter = fit_HS()
-        conv = HS_converter
-        for k in survivals:
-            damages = tiller_damages[k]
-            if damages is not None:
-                tillers = damages.pop('tillers')
-                df = pandas.DataFrame(damages)
-                df['TT'] = conv[k].TT(df['HS'])
-                survivals[k] = {T:df for T in tillers} 
-    return survivals
-#
-def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
-    ms_nff_probas = tdb['nff_probabilities']
-    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    ears_per_plant = tdb['ears_per_plant']
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
-    options={}
-    return WheatTillering(primary_tiller_probabilities=primary_emission, 
-                          ears_per_plant = ears_per_plant,
-                          nff=nff,
-                          delta_stop_del=delta_stop_del,
-                          n_elongated_internode = n_elongated_internode,
-                          max_order=max_order,
-                          tiller_damages=tiller_damages)
-
-#
-# Fits
-def tillering_fits(reset_data=False, **parameters):
-
-    # Emission probabilities tuning
-    #
-    data = archidb.reconstruction_data(reset=reset_data)
-    tdb = deepcopy(data.Tillering_data)    
-    # apply manual reductions
-    emf = parameters.get('emission_reduction')
-    if emf is not None:
-        for k in emf:
-            if emf[k] is not None:
-                for T in emf[k]:
-                    tdb[k]['emission_probabilities'][T] *= emf[k][T]
-    
-    # Wheat tillering model parameters
-    delta_stop_del = parameters.get('delta_stop_del')
-    n_elongated_internode = parameters.get('n_elongated_internode') 
-    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
-        raise NotImplementedError("Not yet implemented")
-    max_order = parameters.get('max_order')
-    tiller_damages = parameters.get('tiller_damages')
-    
-    t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
-
-    return t_fits
-
-
-if run_plots:
-    # populate with fits
-    parameters = reconstruction_parameters()
-    fits = tillering_fits(**parameters)
-    obs = archidb.validation_data()
-    
-    #1 graph tillering par var -> 4 graph sur une feuille
-    archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit())  
-    
-    #tallage primary pour les 4 var   
-    archi_plot.tillering_primary(obs.tillers_per_plant, fits, HS_fit())
-    
-    #tallage total pour les 4 var    
-    archi_plot.tillering_tot(obs.tillers_per_plant, fits, HS_fit())
-   
-   # primary emissions
-    archi_plot.graph_primary_emission(obs.emission_probabilities)
    
   
-def all_scan():
-    df_obs_all = pandas.DataFrame()
-    for name in ['Tremie12','Tremie13']:
-        df_obs = archidb.treatment_scan(name)
-        df_obs['var'] = name
-        df_obs_all = df_obs_all.append(df_obs)
-    df_obs_all = df_obs_all[df_obs_all['moyenne id_Feuille'] <= df_obs_all['HS']]
-    return df_obs_all
-
-if run_plots:
-    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
 
 class EchapReconstructions(object):
