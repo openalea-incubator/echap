@@ -1071,7 +1071,7 @@ def conf_int(lst, perc_conf=95):
     
     return numpy.sqrt(v/n) * c
 
-def haun_stage_data():
+def haun_stage_aggregated():
     """ Get mean, standard error and confidence interval for HS calibration data """
     def aggregate(data, group = ['TT', 'label', 'nff'],
                   func = numpy.mean, column_name = 'HS_mean'):
@@ -1080,10 +1080,10 @@ def haun_stage_data():
         return df
     
     # Get and select data
-    data = reconstruction_data(reset=True)
-    tagged = data.Pheno_data['archi_tagged']
+    data = Pheno_data()
+    tagged = data['archi_tagged']
     tagged = tagged.loc[tagged['HS'] < tagged['nff'],('label', 'nff', 'TT', 'HS')].dropna()
-    sampled = data.Pheno_data['archi_sampled']
+    sampled = data['archi_sampled']
     sampled = sampled.loc[(sampled['HS'] < sampled['nff']) | (numpy.isnan(sampled['nff'])),('label','TT','HS')].dropna()
     
     # Get mean, standard error and confidence interval for tagged plants by nff
@@ -1133,6 +1133,7 @@ class ValidationData(object):
         self.PlantDensity = PlantDensity()
         self.tillers_per_plant = tillers_per_plant()
         self.emission_probabilities = emission_probabilities_table()
+        self.haun_stage = haun_stage_aggregated()
         
     def save(self, filename):
         with open(filename, 'w') as output:

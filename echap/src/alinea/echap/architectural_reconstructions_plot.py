@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
-def haun_stage_plot(df_HS_tagged, df_HS_global, fit_HS):
+def haun_stage_plot(obs_HS, fit_HS):
     """ Plot HS against thermal time for all varieties 
     
         Parameters
@@ -17,6 +17,7 @@ def haun_stage_plot(df_HS_tagged, df_HS_global, fit_HS):
         - fit_HS: dict
             Fit of haun stages by variety
     """
+    df_HS_tagged, df_HS_global = obs_HS
     varieties = np.unique(df_HS_tagged['label'])
 
     fig, axs = plt.subplots(2, 2)

@@ -226,8 +226,11 @@ def HS_fit(reset=False, reset_data=False):
 
 
 if run_plots:
-    HS_converter = HS_fit()
-    archi_plot.dynamique_plot(archidb.HS_GL_SSI_data(), converter = HS_converter) # weighted (frequency of nff modalities) mean 
+    parameters = reconstruction_parameters()
+    fits = HS_fit(reset=True) 
+    obs = archidb.validation_data()
+    archi_plot.haun_stage_plot(obs.haunstage, fits)
+
 
 #
 # --------------------------------------------------------------- Fit GL = f(HS since flag)
