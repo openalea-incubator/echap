@@ -1125,6 +1125,11 @@ def green_leaves_aggregated(HS_fit):
         data_est['GL'] = data_est['GL'].astype(float)
         return data_est
         
+    def get_HS(label, nff, TT):
+        if numpy.isnan(nff):
+            nff = None
+        return HS_fit[label].HS(TT, nff)
+        
     def get_HS_flag(label, nff):
         if numpy.isnan(nff):
             nff = None
@@ -1136,12 +1141,14 @@ def green_leaves_aggregated(HS_fit):
         return HS_fit[label].TTflag(nff)
         
     def add_HS_TT_flag(data):
-        fun_HS = numpy.frompyfunc(get_HS_flag, 2, 1)
+        fun_HS = numpy.frompyfunc(get_HS, 3, 1)
+        fun_HSflag = numpy.frompyfunc(get_HS_flag, 2, 1)
         fun_TT = numpy.frompyfunc(get_TT_flag, 2, 1)
         if 'nff' not in data.columns:
             data['nff'] = [numpy.nan for i in range(len(data))]
-        data['HSflag'] = fun_HS(data['label'], data['nff'])
-        data['TTflag'] = fun_HS(data['label'], data['nff'])
+        data['HS'] = fun_HS(data['label'], data['nff'], data['TT'])
+        data['HSflag'] = fun_HSflag(data['label'], data['nff'])
+        data['TTflag'] = fun_TT(data['label'], data['nff'])
         return data
     
     # Get and select data

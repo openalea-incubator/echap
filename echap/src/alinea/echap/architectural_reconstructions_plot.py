@@ -71,6 +71,51 @@ def haun_stage_plot(obs_HS, fit_HS):
         if i == 1:
             ax.legend(proxys, labels, bbox_to_anchor=(1.02, 1), loc=2, borderaxespad=0.)
         
+def green_leaves_plot(obs_GL, fit_GL, fit_HS):
+    df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
+    varieties = np.unique(df_GL_obs_nff['label'])
+    
+    fig, axs = plt.subplots(2, 2)
+    colors = {10:'m', 11:'g', 12:'r', 13:'c'}
+    markers = {10: 'd', 11:'o', 12:'^', 13:'s'}
+    proxys = [plt.Line2D((0,1),(0,0), color='b', linestyle='-'),
+              plt.Line2D((0,1),(0,0), linestyle='',
+              markerfacecolor='k', markeredgecolor='k', marker = 'o'),
+              plt.Line2D((0,1),(0,0), linestyle='',
+              markerfacecolor='None', markeredgecolor='k', marker = 'o')]
+    labels = ['fit mean NFF', 'obs mean NFF', 'est mean NFF']
+    for nff in colors.iterkeys():
+        labels += ['fit NFF %d' %nff, 'obs NFF %d' %nff, 'est NFF %d' %nff]
+        proxys += [plt.Line2D((0,1),(0,0), color=colors[nff], linestyle='-'),
+                   plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor=colors[nff],
+                   markeredgecolor=colors[nff], marker=markers[nff]),
+                   plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor='None',
+                   markeredgecolor=colors[nff], marker=markers[nff])]
+    
+    x = np.arange(0, 20, 0.1)
+    markersize = 7
+    for i, ax in enumerate(axs.flat):
+        variety = varieties[i]
+        HSflag_mean = fit_HS[variety].HSflag(nff=None)
+        curv_mean = fit_GL[variety].curve(HSflag_mean)
+        ax.plot(x-HSflag_mean, curv_mean(x), 'b')
+        
+        df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety]
+        x = df_var_g_obs['HS'] - df_var_g_obs['HSflag']
+        ax.errorbar(x, df_var_g_obs['GL_mean'], 
+                    yerr=df_var_g_obs['GL_std'], color = 'k', 
+                    linestyle='', markerfacecolor='k', markeredgecolor='k',
+                    marker='o', markersize=markersize)
+        df_var_g_est = df_GL_est_global[df_GL_est_global['label']==variety]
+        x = df_var_g_est['HS'] - df_var_g_est['HSflag']
+        ax.errorbar(x, df_var_g_est['GL_mean'], 
+                    yerr=df_var_g_est['GL_std'], color = 'k', 
+                    linestyle='', markerfacecolor='None', markeredgecolor='k', 
+                    marker='s', markersize=markersize)
+    
+    # pour x obs: HS - HSflag
+    # pour x sim : HS - HS_fit.HSflag(nff)
+    # pour y sim : fit_GL.curve(HS, hs_flag = HS_fit.HSflag(nff))
     
 def varieties():
     return ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
