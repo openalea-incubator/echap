@@ -1103,6 +1103,124 @@ def haun_stage_aggregated():
     
     (df_HS_tagged, df_HS_global) = map(lambda x: x.reset_index(), (df_HS_tagged, df_HS_global))
     return df_HS_tagged, df_HS_global
+
+def green_leaves_aggregated(HS_fit):
+    """ Get mean, standard error and confidence interval for GL calibration data """
+    def aggregate(data, group = ['TT', 'label', 'nff'],
+                  func = numpy.mean, column_name = 'GL_mean'):
+        df = data.groupby(group).agg(func).loc[:, 'GL'].to_frame()
+        df = df.rename(columns={'GL':column_name})
+        return df
+    
+    def estimate_HS(label, nff, TT):
+        if numpy.isnan(nff):
+            nff = None
+        return HS_fit[label].HS(TT, nff)
+    
+    def estimate_GL(data_est):
+        fun = numpy.frompyfunc(estimate_HS, 3, 1)
+        if 'nff' not in data_est.columns:
+            data_est['nff'] = [numpy.nan for i in range(len(data_est))]
+        data_est['GL'] = fun(data_est['label'], data_est['nff'], data_est['TT'])
+        data_est['GL'] = data_est['GL'].astype(float)
+        return data_est
+        
+    def get_HS_flag(label, nff):
+        if numpy.isnan(nff):
+            nff = None
+        return HS_fit[label].HSflag(nff)
+        
+    def get_TT_flag(label, nff):
+        if numpy.isnan(nff):
+            nff = None
+        return HS_fit[label].TTflag(nff)
+        
+    def add_HS_TT_flag(data):
+        fun_HS = numpy.frompyfunc(get_HS_flag, 2, 1)
+        fun_TT = numpy.frompyfunc(get_TT_flag, 2, 1)
+        if 'nff' not in data.columns:
+            data['nff'] = [numpy.nan for i in range(len(data))]
+        data['HSflag'] = fun_HS(data['label'], data['nff'])
+        data['TTflag'] = fun_HS(data['label'], data['nff'])
+        return data
+    
+    # Get and select data
+    data = Pheno_data()
+    tagged = data['archi_tagged']
+    tagged_obs = tagged.loc[~numpy.isnan(tagged['GL']), ('label', 'nff', 'TT', 'GL')]
+    tagged_est_nff = tagged.loc[(numpy.isnan(tagged['GL'])) & 
+                                (~numpy.isnan(tagged['nff'])) & 
+                                (~numpy.isnan(tagged['SSI'])), 
+                                ('label', 'nff', 'TT', 'GL', 'SSI')]
+    tagged_est_global = tagged.loc[(numpy.isnan(tagged['GL'])) & 
+                                    (numpy.isnan(tagged['nff'])) &
+                                    (~numpy.isnan(tagged['SSI'])), 
+                                    ('label', 'TT', 'GL', 'SSI')]
+    sampled = data['archi_sampled']
+    sampled_obs_nff = sampled.loc[(~numpy.isnan(sampled['GL'])) &
+                                  (~numpy.isnan(sampled['nff'])),
+                                  ('label', 'nff', 'TT', 'GL')]
+    sampled_obs_global = sampled.loc[~numpy.isnan(sampled['GL']), ('label', 'TT', 'GL')]
+    sampled_est_global = sampled.loc[(numpy.isnan(sampled['GL'])) & 
+                                    (numpy.isnan(sampled['nff'])) &
+                                    (~numpy.isnan(sampled['SSI'])), 
+                                    ('label', 'TT', 'GL', 'SSI')]
+    symptom = data['symptom_tagged']
+    symptom_obs = symptom.loc[~numpy.isnan(symptom['GL']), ('label', 'nff', 'TT', 'GL')]
+    symptom_est = symptom.loc[numpy.isnan(symptom['GL'])&
+                             (~numpy.isnan(symptom['SSI'])), ('label', 'nff', 'TT', 'GL', 'SSI')]
+    
+    # Get mean, standard error and confidence interval of observed GL for plants with known nff
+    (df_GL_tagged_obs, df_GL_sampled_obs, df_GL_symptom_obs) = map(lambda x: 
+                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean_obs'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std_obs'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf_obs')], axis=1),
+                                                     (tagged_obs, sampled_obs_nff, symptom_obs))
+    df_GL_tagged_obs['source'] = 'tagged'
+    df_GL_sampled_obs['source'] = 'sampled'
+    df_GL_symptom_obs['source'] = 'symptom'
+    df_GL_obs_nff = pandas.concat([df_GL_tagged_obs, df_GL_sampled_obs, df_GL_symptom_obs])
+    
+    # Get mean, standard error and confidence interval of estimated GL for plants with known nff
+    (tagged_est_nff, symptom_est) = map(lambda x: estimate_GL(x), (tagged_est_nff, symptom_est))
+    (df_GL_tagged_est, df_GL_symptom_est) = map(lambda x: 
+                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean_est'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std_est'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf_est')], axis=1),
+                                                     (tagged_est_nff, symptom_est))
+    df_GL_tagged_est['source'] = 'tagged'
+    df_GL_symptom_est['source'] = 'symptom'
+    df_GL_est_nff = pandas.concat([df_GL_tagged_est, df_GL_symptom_est])
+    
+    # Get mean, standard error and confidence interval of observed GL for all NFFs for 
+    # tagged plants, sampled plants and symptom plants
+    (df_GL_tagged_global, df_GL_sampled_global, df_GL_symptom_global) = map(lambda x: pandas.concat(
+                                                  [aggregate(x, ['TT', 'label'], numpy.mean, 'GL_mean'),
+                                                   aggregate(x, ['TT', 'label'], numpy.nanstd, 'GL_std'),
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'GL_conf')], axis=1),
+                                                   (tagged_obs, sampled_obs_global, symptom_obs))
+    df_GL_tagged_global['source'] = 'tagged'
+    df_GL_sampled_global['source'] = 'sampled'
+    df_GL_symptom_global['source'] = 'symptom'
+    df_GL_obs_global = pandas.concat([df_GL_tagged_global, df_GL_sampled_global, df_GL_symptom_global])
+    
+    # Get mean, standard error and confidence interval of estimated GL for all NFFs for 
+    # tagged plants, sampled plants and symptom plants
+    (tagged_est_global, sampled_est_global, symptom_est) = map(lambda x: estimate_GL(x), 
+                                                                (tagged_est_global, sampled_est_global, symptom_est))
+    (df_GL_tagged_global, df_GL_symptom_global, df_GL_sampled_global) = map(lambda x: pandas.concat(
+                                                  [aggregate(x, ['TT', 'label'], numpy.mean, 'GL_mean'),
+                                                   aggregate(x, ['TT', 'label'], numpy.nanstd, 'GL_std'),
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'GL_conf')], axis=1),
+                                                   (tagged_est_global, sampled_est_global, symptom_est))
+    df_GL_tagged_global['source'] = 'tagged'
+    df_GL_sampled_global['source'] = 'sampled'
+    df_GL_symptom_global['source'] = 'symptom'
+    df_GL_est_global = pandas.concat([df_GL_tagged_global, df_GL_sampled_global, df_GL_symptom_global])
+    
+    (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global) = map(lambda x: x.reset_index(), (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global))
+    (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global) = map(lambda x: add_HS_TT_flag(x), (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global))
+    return df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global
     
 class ReconstructionData(object):
 
