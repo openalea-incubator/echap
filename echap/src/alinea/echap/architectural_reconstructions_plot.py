@@ -443,7 +443,7 @@ def multi_plot_tillering(obs_data, fits, HS_converter, legend=False):
         ax.plot(fit['HS'], fit['other'], ':g', label= 'Others')
         ax.plot(fit['HS'], fit['3F'], '--y', label= 'TT3F')
 
-        em = fits[name].emited_cohorts()
+        em = fits[name].curve_emission_table()
         ax.stem(em['delay'],em['total_axis'], markerfmt='xr', linefmt='--r', basefmt='k', label='Total emited cohort density')
         ax.stem(em['delay'],em['other_axis'], markerfmt='xg', linefmt='--g', basefmt='k', label='Others emited cohort density')
         ax.stem(em['delay'],em['primary_axis'], markerfmt='xb', linefmt='--b', basefmt='k', label='Primary emited cohort density')

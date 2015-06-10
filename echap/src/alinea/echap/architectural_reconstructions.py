@@ -375,49 +375,28 @@ if run_plots:
 #
 #
 # fitting functions
-#future deprecated
-def _tsurvival(tiller_damages=None, HS_converter=None):
-    survivals = {k:None for k in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']}
-    if tiller_damages is not None:
-        if HS_converter is None:
-            HS_converter = fit_HS()
-        conv = HS_converter
-        for k in survivals:
-            damages = tiller_damages[k]
-            if damages is not None:
-                tillers = damages.pop('tillers')
-                df = pandas.DataFrame(damages)
-                df['TT'] = conv[k].TT(df['HS'])
-                survivals[k] = {T:df for T in tillers} 
-    return survivals
-#
-def _tfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
-    ms_nff_probas = tdb['nff_probabilities']
-    nff = sum([int(k)*v for k,v in ms_nff_probas.iteritems()]) 
-    ears_per_plant = tdb['ears_per_plant']
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
-    options={}
-    return WheatTillering(primary_tiller_probabilities=primary_emission, 
-                          ears_per_plant = ears_per_plant,
-                          nff=nff,
-                          delta_stop_del=delta_stop_del,
-                          n_elongated_internode = n_elongated_internode,
-                          max_order=max_order,
-                          tiller_damages=tiller_damages)
+
                           
-def _newtfit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
+def _axepop_fit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
-    primary_emission = {k:v for k,v in tdb['emission_probabilities'].iteritems() if v > 0}
+    primary_emission = tdb['emission_probabilities']
     emission = pgen_ext.TillerEmission(primary_emission)
     regression = pgen_ext.TillerRegression(ears_per_plant, n_elongated_internode, delta_stop_del)
     return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order)
 #
 # Fits
-def tillering_fits(new=True, reset_data=False, **parameters):
+def axepop_fits(new=True, reset_data=False, **parameters):
 
+    # tillering model parameters
+    delta_stop_del = parameters.get('delta_stop_del')
+    n_elongated_internode = parameters.get('n_elongated_internode')
+    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
+        raise NotImplementedError("Not yet implemented")
+    max_order = parameters.get('max_order')
+    tiller_damages = parameters.get('tiller_damages')
     # Emission probabilities tuning
-    #
+    #  
     data = archidb.reconstruction_data(reset=reset_data)
     tdb = deepcopy(data.Tillering_data)    
     # apply manual reductions
@@ -427,27 +406,16 @@ def tillering_fits(new=True, reset_data=False, **parameters):
             if emf[k] is not None:
                 for T in emf[k]:
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
+
+    fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
     
-    # Wheat tillering model parameters
-    delta_stop_del = parameters.get('delta_stop_del')
-    n_elongated_internode = parameters.get('n_elongated_internode') 
-    
-    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
-        raise NotImplementedError("Not yet implemented")
-    max_order = parameters.get('max_order')
-    tiller_damages = parameters.get('tiller_damages')
-    
-    if new:
-        t_fits={k: _newtfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
-    else:
-        t_fits={k: _tfit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
-    return t_fits
+    return fits
 
 
 if run_plots:
     # populate with fits
     parameters = reconstruction_parameters()
-    fits = tillering_fits(**parameters)
+    fits = axepop_fits(**parameters)
     obs = archidb.validation_data()
     
     #1 graph tillering par var -> 4 graph sur une feuille
@@ -597,7 +565,7 @@ class EchapReconstructions(object):
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
         converter = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
-        self.tillering_fits = tillering_fits(reset_data=reset_data, **self.pars)
+        self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.GL_fits = GL_fit(reset_data=reset_data, **self.pars)
         median_leaf = self.pars['median_leaf']
@@ -607,76 +575,10 @@ class EchapReconstructions(object):
         else:
             self.leaf_fits = leaf_fits()
 
-    def get_pars(self, name='Mercia', nplants=1, dimension=1):
-        """ 
-        Construct devT tables from models, considering one reconstruction per nff (ie composite)
-        """
-        
-        conv = self.HS_GL_fits[name]['HS']
-        
-        base={}
-        base.update(self.pgen_base)# avoid altering pgen_base
-        
-        # Tillering : Canopy level parameters        
-        # hypothesis : neither n_elongated internode nor delta_stop_del_TT varies with nff
-        Tillering = self.tillering_fits[name]
-        base.update(Tillering.pgen_base(phyllochron = conv.phyllochron(), TTem = conv.TT_hs_0))
-        #
-        axeT = pgen_ext.axeT_user(nplants, Tillering)
-        #
-        # Generate plant gen parameters, for each modality
-        #
-        nff_canopy = Tillering.nff        
-        mods = pgen_ext.modalities(nff_canopy)
-        #mods not needed this is straightforward transform of axeT_user for pgen (split option ?)
-        pgens = {k: axeT['id_plt'][(axeT['id_axis'] == 'MS') & (axeT['N_phytomer_potential'] == k)].values.astype(int).tolist() for k in mods}        
-        pgens = {k:{'MS_leaves_number_probabilities': {str(k):1.0},#unused, except checking if axeT_user is given
-                   'axeT_user':axeT.ix[axeT['id_plt'].isin(v),:],
-                   'plants_number':len(v)} for k,v in pgens.iteritems() if len(v) > 0}        
-        for k in pgens:
-            pgens[k].update(base)
-        
-
-        pars = {}
-        for k in pgens:
-            dimT = deepdd(self.dimension_fits[name][k]).copy()
-            dimT['W_blade'] = dimT['W_blade']*(math.sqrt(dimension))
-            dimT['L_blade'] = dimT['L_blade']*(math.sqrt(dimension))
-            
-            nff = k
-            glfit = self.HS_GL_fits[name]['GL']
-            
-            TT_t1 = conv.TT(glfit.hs_t1)
-            TT_t2 = conv.TT(glfit.hs_t2)
-            a_nff = nff * 1.0 / (TT_t2 - conv.TT_hs_0)
-            dynpars = {'a_cohort': a_nff, 
-                       'TT_hs_0': conv.TT_hs_0,
-                       'TT_hs_N_phytomer_potential': TT_t2,
-                       'n0': glfit.n0,
-                       'n1': glfit.n1,
-                       'n2': glfit.n2}
-                                   
-            dynT = pgen_ext.dynT_user(dynpars, Tillering.primary_tiller_probabilities.keys())
-            
-            GL = glfit.GL_number()
-            GL['TT'] = conv.TT(GL['HS'])
-            GL = dict(zip(GL['TT'],GL['GL']))
-            
-            pgens[k].update({'dimT_user':dimT, 'dynT_user':dynT, 'GL_number':GL, 'TT_t1_user':TT_t1})
-            
-                
-            pars[k] = pgen_ext.pgen_tables(pgens[k])
-            axeT, dimT, phenT = pars[k]['adelT']
-            tx = k * 10000
-            axeT['id_dim'] = axeT['id_dim']+tx; dimT['id_dim'] = dimT['id_dim']+tx
-            axeT['id_phen'] = axeT['id_phen']+tx; phenT['id_phen'] = phenT['id_phen']+tx
-        
-        return pars
    
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
-        
-        
+                
         run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1}
         if name == 'Rht3':
             incT=75
@@ -689,30 +591,13 @@ class EchapReconstructions(object):
         stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04)       
         n_emerged, domain, positions, area = stand.stand(nplants, aspect)
                
-        #pars = self.get_pars(name=name, nplants=n_emerged, dimension = dimension)
-        #axeT = pandas.concat([pars[k]['adelT'][0] for k in pars])
-        #dimT = pandas.concat([pars[k]['adelT'][1] for k in pars])
-        #phenT = pandas.concat([pars[k]['adelT'][2] for k in pars])
-        axp = self.tillering_fits[name]
+        axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
         pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name])
         axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
-        
-        #adjust density according to density fit
-        #if d['density_at_harvest']  < d['density_at_emergence'] and nplants > 1:
-        #    TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
-        #    #to do test for 4 lines table only
-        #    dt = d['density_table'].iloc[1:-1]# remove flat part to avoid ambiguity in time_of_death
-        #    devT = pgen_ext.adjust_density(devT, dt, TT_stop_del = TT_stop_del)
-            
-        # adjust tiller survival if early death occured
-        #if self.tillering_fits[name].tiller_survival is not None:
-        #    TT_stop_del = self.tillering_fits[name].delta_stop_del / self.HS_GL_fits[name]['HS'].a_cohort
-        #    cohort_survival = self.tillering_fits[name].cohort_survival()
-        #    devT = pgen_ext.adjust_tiller_survival(devT, cohort_survival, TT_stop_del = TT_stop_del)
-            
+                    
         leaves = self.leaf_fits[name] 
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
