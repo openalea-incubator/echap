@@ -105,7 +105,7 @@ def green_leaves_plot(obs_GL, fit_GL, fit_HS):
         proxys += [plt.Line2D((0,1),(0,0), linestyle='-', color = col)]
         labels += ['NFF: %d' %nff]
     
-    x = np.arange(0, 20, 0.1)
+    x = np.arange(0, 30, 0.1)
     for i, ax in enumerate(axs.flat):
         variety = varieties[i]
         HSflag_mean = fit_HS[variety].HSflag(nff=None)
@@ -147,9 +147,9 @@ def green_leaves_plot_mean(obs_GL, fit_GL, fit_HS):
     fig, ax = plt.subplots(1, 1)
     markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}
     
+    x = np.arange(0, 30, 0.1)
     for variety in varieties:
         color = colors()[variety]
-        x = np.arange(0, 20, 0.1)
         HSflag_mean = fit_HS[variety].HSflag(nff=None)
         curv_mean = fit_GL[variety].curve(HSflag_mean)
         ax.plot(x-HSflag_mean, curv_mean(x), color=color)

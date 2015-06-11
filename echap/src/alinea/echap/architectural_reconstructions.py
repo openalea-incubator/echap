@@ -82,7 +82,7 @@ def reconstruction_parameters():
     #
     # Green Leaves (ssi) = f(HS)
     #
-    pars['GLpars'] = pdict({'GL_start_senescence':4.8, 'GL_bolting':3.2, 'GL_flag': 4.8, 'n_elongated_internode': 4})
+    pars['GLpars'] = pdict({'GL_start_senescence':4.8, 'GL_bolting':2.7, 'GL_flag': 4.8, 'n_elongated_internode': 4})
     #
     # Plant Density
     #--------------
@@ -241,6 +241,11 @@ def GL_fit(reset_data=False, **parameters):
     GLpars = parameters.get('GLpars')
     fits = {k:pgen_ext.GreenLeaves(**GLpars[k]) for k in GLpars}
     #  TO DO : fit a (GreenLeaves method) with GL data
+    df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = archidb.green_leaves_aggregated(HS_fit())
+    obs = pandas.concat([df_GL_obs_global, df_GL_est_global])
+    for k in fits:
+        fits[k].fit_a(obs['HS'].astype(float).values-obs['HSflag'].astype(float).values,
+                      obs['GL_mean'].astype(float).values)
     return fits
     
 
@@ -253,36 +258,6 @@ if run_plots:
     # Compare nff
     archi_plot.green_leaves_plot(obs, fits, HS_fit())
 
-    # deprecated: to review with new data/objects
-    #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
-    #
-    #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
-    # archi_plot.dynamique_plot_nff(data)
-    # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
-
-def pars():
-    sim_all={}
-    e = EchapReconstructions()
-    for name in ('Mercia','Rht3','Tremie12','Tremie13'):
-        pars = e.get_pars(name=name, nplants=30)
-        nff_lst = pars.keys()
-        nff_proba = archidb.Tillering_data()[name]['nff_probabilities']
-
-        for nff in nff_lst:
-            select = pandas.Series([111,112,113,1111,1112,1113,10111,10112,10113])
-            pars[nff]['HS_GL_SSI_T'] = pars[nff]['HS_GL_SSI_T'][pars[nff]['HS_GL_SSI_T'].id_phen.isin(select)]
-            TT = pars[nff]['HS_GL_SSI_T']['TT']
-        
-        GL = sum([pars[k]['HS_GL_SSI_T']['GL'] * nff_proba[k] for k in nff_lst])
-        HS = sum([pars[k]['HS_GL_SSI_T']['HS'] * nff_proba[k] for k in nff_lst])
-        SSI = sum([pars[k]['HS_GL_SSI_T']['SSI'] * nff_proba[k] for k in nff_lst])
-        df = pandas.DataFrame({'TT':TT, 'GL':GL, 'HS':HS, 'SSI':SSI})
-        sim_all.update({name:df})
-    return sim_all
-    
-if run_plots:
-    HS_converter = fit_HS()
-    archi_plot.dynamique_plot_sim(archidb.HS_GL_SSI_data(), pars(), converter = HS_converter)
 #
 # --------------------------------------------------------------- Fit Plant density = f(HS)
 #
