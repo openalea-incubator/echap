@@ -87,6 +87,8 @@ def plot_dot_GL_by_source(ax, data, color='k', markerfacecolor='k',
                     
 def green_leaves_plot(obs_GL, fit_GL, fit_HS):        
     df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
+    df_GL_obs_global = df_GL_obs_global[df_GL_obs_global['source']!='symptom_ap']
+    df_GL_est_global = df_GL_est_global[df_GL_est_global['source']!='symptom_ap']
     varieties = np.unique(df_GL_obs_nff['label'])
     
     fig, axs = plt.subplots(2, 2)
@@ -145,7 +147,7 @@ def green_leaves_plot_mean(obs_GL, fit_GL, fit_HS):
     varieties = np.unique(df_GL_obs_nff['label'])
     
     fig, ax = plt.subplots(1, 1)
-    markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    markers = {'tagged':'s', 'sampled':'^', 'symptom':'o', 'symptom_ap':'d'}
     
     x = np.arange(0, 30, 0.1)
     for variety in varieties:

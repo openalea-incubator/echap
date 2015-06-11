@@ -82,7 +82,8 @@ def reconstruction_parameters():
     #
     # Green Leaves (ssi) = f(HS)
     #
-    pars['GLpars'] = pdict({'GL_start_senescence':4.8, 'GL_bolting':2.7, 'GL_flag': 4.8, 'n_elongated_internode': 4})
+    pars['GLpars'] = pdict({'GL_start_senescence':4.4, 'GL_bolting':2.5, 'GL_flag': 4.6, 'n_elongated_internode': 3.7})
+    pars['GLpars']['Tremie12']={'GL_start_senescence':4.4, 'GL_bolting':2.5, 'GL_flag': 5, 'n_elongated_internode': 4}
     #
     # Plant Density
     #--------------
@@ -244,8 +245,14 @@ def GL_fit(reset_data=False, **parameters):
     df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = archidb.green_leaves_aggregated(HS_fit())
     obs = pandas.concat([df_GL_obs_global, df_GL_est_global])
     for k in fits:
-        fits[k].fit_a(obs['HS'].astype(float).values-obs['HSflag'].astype(float).values,
-                      obs['GL_mean'].astype(float).values)
+        if k=='Tremie12':
+            obsk=obs[obs['label']=='Tremie12']
+        else:
+            obsk=obs[obs['label']!='Tremie12']
+            x = obsk['HS'].astype(float).values-obsk['HSflag'].astype(float).values
+            obsk=obsk[x<10]
+        fits[k].fit_a(obsk['HS'].astype(float).values-obsk['HSflag'].astype(float).values,
+                      obsk['GL_mean'].astype(float).values)
     return fits
     
 
