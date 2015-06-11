@@ -39,6 +39,9 @@ def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Tartrazine'%(date, dose)
     application_data = pesticide_applications(applications)
     interceptor = InterceptModel({'Tartrazine':{'Tartrazine': 1}}) # consider a 1g.l-1 tartrazine solution
+    
+    
+    ########################### ATTENTION : si pas de domain, on est pas en couvert infini!!!!!!!!!!!!!!!!!!!!!!!!
     g,_ = pesticide_interception(g, interceptor, application_data)
     do_record(g, application_data, recorder, header={'TT':age, 'HS':hs})
     df =  recorder.get_records()

@@ -337,7 +337,7 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
             if damages[k] is not None:
                 density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
                 density_at_harvest = mean_plant_density[k]
-                fits[k] = {'HS':[0] + damages[k]['when'] + [20], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
+                fits[k] = {'HS':[0] + damages[k]['when'] + [30], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
     
     density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
                        'inter_row': pdb[k]['inter_row'],
@@ -588,9 +588,9 @@ class EchapReconstructions(object):
             dep=7
             
         d = self.density_fits[name]
-        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04)       
-        n_emerged, domain, positions, area = stand.stand(nplants, aspect)
-               
+        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04, density_curve = d['TT_curve'])       
+        #n_emerged, domain, positions, area = stand.stand(nplants, aspect)
+        n_emerged = nplants#adel uses smart stand       
         axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
         pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name])
