@@ -377,16 +377,16 @@ if run_plots:
 # fitting functions
 
                           
-def _axepop_fit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages):
+def _axepop_fit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages, std_em):
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = tdb['emission_probabilities']
     emission = pgen_ext.TillerEmission(primary_emission)
     regression = pgen_ext.TillerRegression(ears_per_plant, n_elongated_internode, delta_stop_del)
-    return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order)
+    return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order, std_em=std_em)
 #
 # Fits
-def axepop_fits(new=True, reset_data=False, **parameters):
+def axepop_fits(reset_data=False, **parameters):
 
     # tillering model parameters
     delta_stop_del = parameters.get('delta_stop_del')
@@ -407,7 +407,11 @@ def axepop_fits(new=True, reset_data=False, **parameters):
                 for T in emf[k]:
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
 
-    fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k]) for k in tdb}
+    # variability of emergence
+    hs = HS_fit()
+    std_em = {k:hs[k].std_TT_hs_0 for k in hs}
+                    
+    fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k], std_em = std_em[k]) for k in tdb}
     
     return fits
 
@@ -576,7 +580,7 @@ class EchapReconstructions(object):
             self.leaf_fits = leaf_fits()
 
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, sample='sequence', disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
                 
         run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1}
@@ -600,7 +604,9 @@ class EchapReconstructions(object):
                     
         leaves = self.leaf_fits[name] 
         
-        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample=sample, leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
+        std_emergence = self.HS_fit[name].std_TT_hs_0
+        
+        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , std_em = std_emergence, seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
     
     def save(self, filename):
         with open(filename, 'w') as output:
