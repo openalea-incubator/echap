@@ -244,16 +244,20 @@ def GL_fit(reset_data=False, **parameters):
     return fits
     
 
-# deprecated: to review with new data/objects
 if run_plots:
-    #
-    data = archidb.HS_GL_SSI_data()
-    fits = GL_fit()
-    #
+    parameters = reconstruction_parameters()
+    fits = GL_fit(**parameters) 
+    obs = archidb.green_leaves_aggregated(HS_fit())
+    # Compare varieties
+    archi_plot.green_leaves_plot_mean(obs, fits, HS_fit())
+    # Compare nff
+    archi_plot.green_leaves_plot(obs, fits, HS_fit())
+
+    # deprecated: to review with new data/objects
     #archi_plot.dynamique_plot_GL_fits(data, fits , abs='HS')
     #
     #archi_plot.dynamique_plot_GL_fits(data, fits, abs='TT', obs=False)
-    archi_plot.dynamique_plot_nff(data)
+    # archi_plot.dynamique_plot_nff(data)
     # conc : GL dynamique identique whatever nff => on change plutot acohort par nff, tq TTem_t2 et TTem_t1 restent les memes.
 
 def pars():
