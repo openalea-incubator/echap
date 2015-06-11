@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
+def varieties():
+    return ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
+    
+def colors():
+    return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+
 def haun_stage_plot(obs_HS, fit_HS):
     """ Plot HS against thermal time for all varieties 
     
@@ -70,59 +76,110 @@ def haun_stage_plot(obs_HS, fit_HS):
         ax.set_xlabel('Thermal Time', fontsize = 16)
         if i == 1:
             ax.legend(proxys, labels, bbox_to_anchor=(1.02, 1), loc=2, borderaxespad=0.)
-        
-def green_leaves_plot(obs_GL, fit_GL, fit_HS):
+
+def plot_dot_GL_by_source(ax, data, color='k', markerfacecolor='k', 
+                          markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}, markersize = 7.):
+    data.groupby('source').apply(lambda df: ax.errorbar(df['HS'].astype(float).values-df['HSflag'].astype(float).values, 
+                df['GL_mean'].astype(float).values, 
+                yerr=df['GL_std'].astype(float).values, color=color, 
+                linestyle='', markerfacecolor=markerfacecolor, markeredgecolor=color,
+                marker=markers[df['source'].values[0]], markersize=markersize))
+                    
+def green_leaves_plot(obs_GL, fit_GL, fit_HS):        
     df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
     varieties = np.unique(df_GL_obs_nff['label'])
     
     fig, axs = plt.subplots(2, 2)
-    colors = {10:'m', 11:'g', 12:'r', 13:'c'}
-    markers = {10: 'd', 11:'o', 12:'^', 13:'s'}
-    proxys = [plt.Line2D((0,1),(0,0), color='b', linestyle='-'),
-              plt.Line2D((0,1),(0,0), linestyle='',
-              markerfacecolor='k', markeredgecolor='k', marker = 'o'),
-              plt.Line2D((0,1),(0,0), linestyle='',
-              markerfacecolor='None', markeredgecolor='k', marker = 'o')]
-    labels = ['fit mean NFF', 'obs mean NFF', 'est mean NFF']
-    for nff in colors.iterkeys():
-        labels += ['fit NFF %d' %nff, 'obs NFF %d' %nff, 'est NFF %d' %nff]
-        proxys += [plt.Line2D((0,1),(0,0), color=colors[nff], linestyle='-'),
-                   plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor=colors[nff],
-                   markeredgecolor=colors[nff], marker=markers[nff]),
-                   plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor='None',
-                   markeredgecolor=colors[nff], marker=markers[nff])]
+    colors = {10:'m', 11:'g', 12:'r', 13:'c', 14:'y'}
+    markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
+    labels = ['fit mean NFF']
+    for mark, symb in markers.iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='k', markeredgecolor='k', marker = symb)]
+        labels += ['source: ' + mark]
+    proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='None', markeredgecolor='k', marker = symb)]
+    labels += ['estimated' ]
+    for nff, col in colors.iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='-', color = col)]
+        labels += ['NFF: %d' %nff]
     
     x = np.arange(0, 20, 0.1)
-    markersize = 7
     for i, ax in enumerate(axs.flat):
         variety = varieties[i]
         HSflag_mean = fit_HS[variety].HSflag(nff=None)
         curv_mean = fit_GL[variety].curve(HSflag_mean)
-        ax.plot(x-HSflag_mean, curv_mean(x), 'b')
-        
-        df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety]
-        x = df_var_g_obs['HS'] - df_var_g_obs['HSflag']
-        ax.errorbar(x, df_var_g_obs['GL_mean'], 
-                    yerr=df_var_g_obs['GL_std'], color = 'k', 
-                    linestyle='', markerfacecolor='k', markeredgecolor='k',
-                    marker='o', markersize=markersize)
-        df_var_g_est = df_GL_est_global[df_GL_est_global['label']==variety]
-        x = df_var_g_est['HS'] - df_var_g_est['HSflag']
-        ax.errorbar(x, df_var_g_est['GL_mean'], 
-                    yerr=df_var_g_est['GL_std'], color = 'k', 
-                    linestyle='', markerfacecolor='None', markeredgecolor='k', 
-                    marker='s', markersize=markersize)
-    
-    # pour x obs: HS - HSflag
-    # pour x sim : HS - HS_fit.HSflag(nff)
-    # pour y sim : fit_GL.curve(HS, hs_flag = HS_fit.HSflag(nff))
-    
-def varieties():
-    return ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
-    
-def colors():
-    return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+        ax.plot(x-HSflag_mean, curv_mean(x), 'k')
 
+        df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety].reset_index()
+        plot_dot_GL_by_source(ax, df_var_g_obs, color='k', markerfacecolor='k', markers = markers)
+        df_var_g_est = df_GL_est_global[df_GL_est_global['label']==variety].reset_index()
+        plot_dot_GL_by_source(ax, df_var_g_est, color='k', markerfacecolor='k', markers = markers)  
+        
+        df_obs_nff_var = df_GL_obs_nff[df_GL_obs_nff['label']==variety]
+        df_est_nff_var = df_GL_est_nff[df_GL_est_nff['label']==variety]
+        for j, nff in enumerate(np.unique(df_obs_nff_var['nff'])):
+            df_nff = df_obs_nff_var[df_obs_nff_var['nff']==nff].reset_index()
+            HSflag_nff = fit_HS[variety].HSflag(nff=nff)
+            curv_nff = fit_GL[variety].curve(HSflag_nff)
+            color = colors[nff]
+            ax.plot(x-HSflag_nff, curv_nff(x), color = color)
+            
+            plot_dot_GL_by_source(ax, df_nff, color=colors[nff],
+                                  markerfacecolor=colors[nff], markers = markers)
+            if nff in np.unique(df_est_nff_var['nff']):
+                df_nff_est = df_est_nff_var[df_est_nff_var['nff']==nff].reset_index()
+                plot_dot_GL_by_source(ax, df_nff_est, color=colors[nff], 
+                                      markerfacecolor=colors[nff], markers = markers)
+        
+        ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+        ax.set_ylim([0, 6])
+        ax.set_ylabel('Green Leaves', fontsize = 16)
+        ax.set_xlabel('Haun Stage since flag leaf', fontsize = 16)
+        if i == 1:
+            ax.legend(proxys, labels, bbox_to_anchor=(1., 1), loc=2, borderaxespad=0.)
+    
+def green_leaves_plot_mean(obs_GL, fit_GL, fit_HS):
+    df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
+    varieties = np.unique(df_GL_obs_nff['label'])
+    
+    fig, ax = plt.subplots(1, 1)
+    markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    
+    for variety in varieties:
+        color = colors()[variety]
+        x = np.arange(0, 20, 0.1)
+        HSflag_mean = fit_HS[variety].HSflag(nff=None)
+        curv_mean = fit_GL[variety].curve(HSflag_mean)
+        ax.plot(x-HSflag_mean, curv_mean(x), color=color)
+    
+        df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety].reset_index()
+        plot_dot_GL_by_source(ax, df_var_g_obs, color=color, 
+                              markerfacecolor=color, markers = markers)
+        
+        df_var_g_est = df_GL_est_global[df_GL_est_global['label']==variety].reset_index()
+        plot_dot_GL_by_source(ax, df_var_g_est, color=color, 
+                              markerfacecolor='None', markers = markers)
+    
+    ax.set_ylim([0, 6])
+    ax.set_ylabel('Green Leaves', fontsize = 18)
+    ax.set_xlabel('Haun Stage since flag leaf', fontsize = 18)
+    
+    proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
+    labels = ['fit mean']
+    for mark, symb in markers.iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='k', markeredgecolor='k', marker = symb)]
+        labels += ['source: ' + mark]
+    proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='None', markeredgecolor='k', marker = symb)]
+    labels += ['estimated' ]
+    for variety, col in colors().iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
+                    markerfacecolor=col, markeredgecolor=col, marker = symb)]
+        labels += [variety]
+    ax.legend(proxys, labels, loc=1)
 
 def dimension_plot_other(dimension_data, fits):
     plt.ion()

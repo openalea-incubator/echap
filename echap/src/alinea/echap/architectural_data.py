@@ -1115,13 +1115,13 @@ def green_leaves_aggregated(HS_fit):
     def estimate_HS(label, nff, TT):
         if numpy.isnan(nff):
             nff = None
-        return HS_fit[label].HS(TT, nff)
+        return min(nff, HS_fit[label].HS(TT, nff))
     
     def estimate_GL(data_est):
         fun = numpy.frompyfunc(estimate_HS, 3, 1)
         if 'nff' not in data_est.columns:
             data_est['nff'] = [numpy.nan for i in range(len(data_est))]
-        data_est['GL'] = fun(data_est['label'], data_est['nff'], data_est['TT'])
+        data_est['GL'] = fun(data_est['label'], data_est['nff'], data_est['TT']) - data_est['SSI']
         data_est['GL'] = data_est['GL'].astype(float)
         return data_est
         
@@ -1179,9 +1179,9 @@ def green_leaves_aggregated(HS_fit):
     
     # Get mean, standard error and confidence interval of observed GL for plants with known nff
     (df_GL_tagged_obs, df_GL_sampled_obs, df_GL_symptom_obs) = map(lambda x: 
-                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean_obs'),
-                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std_obs'),
-                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf_obs')], axis=1),
+                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf')], axis=1),
                                                      (tagged_obs, sampled_obs_nff, symptom_obs))
     df_GL_tagged_obs['source'] = 'tagged'
     df_GL_sampled_obs['source'] = 'sampled'
@@ -1191,9 +1191,9 @@ def green_leaves_aggregated(HS_fit):
     # Get mean, standard error and confidence interval of estimated GL for plants with known nff
     (tagged_est_nff, symptom_est) = map(lambda x: estimate_GL(x), (tagged_est_nff, symptom_est))
     (df_GL_tagged_est, df_GL_symptom_est) = map(lambda x: 
-                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean_est'),
-                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std_est'),
-                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf_est')], axis=1),
+                                      pandas.concat([aggregate(x, ['TT', 'label', 'nff'], numpy.mean, 'GL_mean'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], numpy.nanstd, 'GL_std'),
+                                                     aggregate(x, ['TT', 'label', 'nff'], conf_int, 'GL_conf')], axis=1),
                                                      (tagged_est_nff, symptom_est))
     df_GL_tagged_est['source'] = 'tagged'
     df_GL_symptom_est['source'] = 'symptom'
@@ -1215,7 +1215,7 @@ def green_leaves_aggregated(HS_fit):
     # tagged plants, sampled plants and symptom plants
     (tagged_est_global, sampled_est_global, symptom_est) = map(lambda x: estimate_GL(x), 
                                                                 (tagged_est_global, sampled_est_global, symptom_est))
-    (df_GL_tagged_global, df_GL_symptom_global, df_GL_sampled_global) = map(lambda x: pandas.concat(
+    (df_GL_tagged_global, df_GL_sampled_global, df_GL_symptom_global) = map(lambda x: pandas.concat(
                                                   [aggregate(x, ['TT', 'label'], numpy.mean, 'GL_mean'),
                                                    aggregate(x, ['TT', 'label'], numpy.nanstd, 'GL_std'),
                                                    aggregate(x, ['TT', 'label'], conf_int, 'GL_conf')], axis=1),
