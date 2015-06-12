@@ -230,8 +230,7 @@ pheno_ssi <- function(ssitable) {
   phen[,-c(grep('Lg',colnames(phen)), grep('fvert',colnames(phen)), grep('fsen',colnames(phen)))]
 }
 #
-pheno_symptom <- function(symptom) {
-  
+pheno_symptom <- function(symptom) { 
   phen <- do.call('rbind',lapply(split(symptom, list(symptom$Date, symptom$plant),drop=TRUE),function(pl) {
   nleaf <- length(seq(min(pl$num_leaf_bottom),max(pl$num_leaf_bottom)))
   ssinec <- NA
@@ -246,7 +245,81 @@ pheno_symptom <- function(symptom) {
   data.frame(Date=pl$Date[1], var='Tremie', Rep=pl$bloc[1], N=pl$plant[1], Axis=pl$axis[1], Nflig=pl$fnl[1], Nfvis=0, nff=pl$fnl[1], TT=pl$TT[1], HS=hs, SSI=ssinec, SSIap=ssiap, GL=hs - ssinec, GLap=hs - ssiap)
 }))
 }
-
+#
+dim_notations <- function(not, what='sheath_length', as='sheath')  {
+  sources <- names(not)
+  sources <- sources[sapply(sources, function(x) length(grep(what,colnames(not[[x]]))) > 0)]
+  res <- NULL  
+  if (length(sources) > 0) {
+    res <- do.call('rbind', lapply(sources, function(s) {
+      nt <- not[[s]]
+      cols <- grep(what,colnames(nt))
+      sel <- seq(nrow(nt))
+      if ('axe' %in% colnames(nt))
+        sel <- nt$axe=='MB'
+      lg <- nt[sel,cols]
+      lg$N=nt$N[sel]
+      lg$nff = NA
+      lg$Nflig = NA
+      if ('Nflig' %in% colnames(nt)) {
+        lg$Nflig = nt$Nflig[sel]
+        if ('Nfvis' %in% colnames(nt)) {
+          lg$nff = ifelse(nt$Nfvis[sel] == 0, nt$Nflig[sel], NA)
+        } else {
+          lg$nff = lg$Nflig#if Nfvis absent, nff=Nflig
+          }
+      }
+      numphy <- sapply(colnames(nt)[cols], function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
+      dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N, nff=x$nff, organ=as,rank=numphy, L=unlist(x[1,seq(length(cols))]))))
+      dat[!is.na(dat$L),]
+    }))
+  }
+  res
+}
+#
+plant_notations <- function(not)  {
+  what <- c('Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','H_last_col')
+  columns <- c('Source','N','nff','Nflig',what)
+  sources <- names(not)
+  sources <- sources[sapply(sources, function(x) any(what%in%colnames(not[[x]])))]
+  res <- NULL
+  if (length(sources) > 0) {
+    res <- do.call('rbind', lapply(sources, function(s) {
+      nt <- not[[s]]
+      cols <- what[what%in%colnames(nt)]
+      sel <- seq(nrow(nt))
+      if ('axe' %in% colnames(nt))
+        sel <- nt$axe=='MB'
+      
+      dat <- nt[sel,cols]
+      if (is.null(dim(dat))) {
+        data <- dat
+        dat <- data.frame(Source=rep(s,length(dat)))
+        dat[[cols]] <- data
+      }
+      
+      dat$Source <- s
+      dat$N <- nt$N[sel]
+      dat$nff <- NA
+      dat$Nflig <- NA
+      if ('Nflig' %in% colnames(nt)) {
+        dat$Nflig = nt$Nflig[sel]
+        if ('Nfvis' %in% colnames(nt)) {
+          dat$nff = ifelse(nt$Nfvis[sel] == 0, nt$Nflig[sel], NA)
+        } else {
+          dat$nff = lg$Nflig#if Nfvis absent, nff=Nflig
+        }
+      }
+      for (w in what[!what %in% cols])
+        dat[[w]] <- NA
+      dat <- dat[,match(columns,colnames(dat))]
+      dat
+    }))
+  }
+  res
+}
+#
+#
 #
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {
   ndelsen <- max(ssisenT$ndel)
