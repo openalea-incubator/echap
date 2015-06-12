@@ -230,7 +230,7 @@ if run_plots:
     parameters = reconstruction_parameters()
     fits = HS_fit(reset=True) 
     obs = archidb.validation_data()
-    archi_plot.haun_stage_plot(obs.haunstage, fits)
+    archi_plot.haun_stage_plot(obs.haun_stage, fits)
 
 
 #
