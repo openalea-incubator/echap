@@ -14,7 +14,7 @@ names(varname) <- genos
 #
 TTlin <- sapply(genos, function(g) read.csv2(paste(prefix[g], '_TTlin_sowing.csv', sep='')), simplify=FALSE)
 #
-# dynamic notation tagged plants
+# dynamic notation tagged plants treated archi
 #
 tagged <- sapply(genos, function(g) readTagged(paste(prefix[g],'_suivis_plantes_baguees.txt', sep=''), TTlin[[g]], varname[g]), simplify=FALSE)
 #
@@ -25,6 +25,7 @@ symtagged <- sapply(c('Tremie12', 'Tremie13'), function(g) readSymTagged(paste('
 # destructive samplings
 #
 # misses : - scans Mercia/Rht3 09/06/2011 (tagged plants): images non analysees
+#          - silhouettes Mercia/Rht3
 #          - 2 scans Tremie 13  (Benjamin)
 #
 # scans
@@ -33,6 +34,13 @@ scanned <- list(Tremie12 = paste('scanned_plants', c('090312','020412','110412',
                 Tremie13 = paste('scanned_plants', c('220413','030513'), sep='_'))
 #
 scandb <- sapply(names(scanned), function(g) readScanned(prefix[g], scanned[[g]]),simplify=FALSE)
+#
+# silhouettes
+#
+curvature <- list(Tremie12 = paste('silhouette_plants', c('090312','110412', '090512', '120612'),sep='_'),
+                  Tremie13 = paste('silhouette_plants', c('290413'),sep='_'))
+#
+curvdb <- sapply(names(curvature), function(g) readCurv(prefix[g], curvature[[g]]), simplify=FALSE)
 #
 # notations (sheath, internode, diameter, stage)
 #

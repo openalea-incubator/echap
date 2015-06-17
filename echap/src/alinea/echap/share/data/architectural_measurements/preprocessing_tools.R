@@ -5,9 +5,25 @@
 # read scan files
 #
 readScanned <- function(prefix, scanfiles, name=NULL) {
-  scans <- sapply(scanfiles, function(x) read.table(paste(prefix,'_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE),simplify=FALSE)
-  cols <- c('prelevement','plant','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', 'Nflig', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
+  scans <- sapply(scanfiles, function(x) {
+    df <- read.table(paste(prefix,'_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE)
+    df$Source <- x
+    df$N <- df$plant
+    df},simplify=FALSE)
+  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', 'Nflig', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
   do.call('rbind',lapply(scans,function(x) x[,cols[cols%in%colnames(x)]]))
+}
+#
+# read silhouette files
+#
+readCurv <- function(prefix, scanfiles, name=NULL) {
+  curvs <- sapply(scanfiles, function(x) {
+    df <- read.table(paste(prefix,'_',x,'.csv',sep=''),sep=';', dec=',',header=TRUE)
+    df$Source <- x
+    df$N <- df$ID_Plant
+    df$rank <- df$ID_Metamer
+    df},simplify=FALSE)
+  do.call('rbind',curvs)
 }
 #
 # read notations files
@@ -193,26 +209,29 @@ fitLspl <- function(spl, a, splref, aref, deform=FALSE) {
 #
 pheno_scan <- function(pl, dim) {
   #print(paste(pl$prelevement[1], pl$plant[1]))
-  hs <- pl$Nflig[1]
-  frac = 0
-  if (pl$Nfvis[1] > 0) {
-    vis <- pl[pl$rank > pl$Nflig,]
-    if (nrow(vis) > 0) {
-      lig <- pl[pl$rank <= pl$Nflig & pl$stat < 3,]
-      sc <- 1
-      if (nrow(lig) > 0)
-        sc <- mean(lig$lmax / dim$L[match(lig$rank,dim$ranks)])
-      frac = sum(vis$lmax / sc / dim$L[match(vis$rank,dim$ranks)])
+  hs <- NA
+  if (!is.na(pl$Nfvis[1])) {
+    hs <- pl$Nflig[1]
+    frac = 0
+    if (pl$Nfvis[1] > 0) {
+      vis <- pl[pl$rank > pl$Nflig,]
+      if (nrow(vis) >= pl$Nfvis[1]) {
+        lig <- pl[pl$rank <= pl$Nflig & pl$stat < 3,]
+        sc <- 1
+        if (nrow(lig) > 0)
+          sc <- mean(lig$lmax / dim$L[match(lig$rank,dim$ranks)])
+        frac = sum(vis$lmax / sc / dim$L[match(vis$rank,dim$ranks)])
+      }
     }
   }
   ssi <- NA
-  pl <- na.omit(pl)
-  if (nrow(pl) > (max(pl$rank) - min(pl$rank))) {
-    fsen <- 1 - pl$A_bl_green / pl$A_bl
-    if (fsen[which.min(pl$rank)] > 0.3)
-      ssi <- min(pl$rank) - 1 + sum(fsen)
+  p <-pl[!is.na(pl$rank) & !is.na(pl$A_bl_green) & !is.na(pl$A_bl),]
+  if (nrow(p) > (max(p$rank) - min(p$rank))) {
+    fsen <- 1 - p$A_bl_green / p$A_bl
+    if (fsen[which.min(p$rank)] > 0.3)
+      ssi <- min(p$rank) - 1 + sum(fsen)
   }
-  data.frame(Date = pl$prelevement[1], N=pl$plant[1], nff=ifelse(pl$Nfvis[1]==0, pl$Nflig[1], NA), HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
+  data.frame(Source=pl$Source[1], Date = pl$prelevement[1], N=pl$plant[1], nff=pl$nff[1], Nflig=pl$Nflig[1], Nfvis=pl$Nfvis[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
 }
 #
 pheno_ssi <- function(ssitable) {

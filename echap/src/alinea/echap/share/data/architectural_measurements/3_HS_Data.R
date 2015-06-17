@@ -40,30 +40,35 @@ write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen
 #
 phend <- NULL
 #scan samples Tremie 12
-dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:9]
+dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:10]
 not <- notdb$Tremie12[grep('scanned',names(notdb$Tremie12))]
 nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, plant=x$N,id_Axe=x$axe,Nflig=x$Nflig, Nfvis=x$Nfvis)))
 nfl <- na.omit(nfl[nfl$id_Axe=='MB',])
 dat <- merge(dat,nfl)
+dat$nff <- ifelse(dat$Nfvis==0, dat$Nflig, NA)
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- phen
 #scan samples Tremie13
 dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
-dat$Nfvis <- 1#force HS computing (all sampling occured before flag leaf)
+dat$Nfvis <- NA
 dat$A_bl_green <- dat$A_bl * dat$pcent_green / 100
+dat$nff <- NA
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
 phen <- merge(phen, TTlin$Tremie13)
 phend$Tremie13 <- phen
 # silhouette data Tremie12 12/06/12
 dat <- notdb$Tremie12$silhouette_plants_120612[,1:9]
 dat <- dat[dat$axe=='MB',]
-phen <- data.frame(Date=dat$Date, N=dat$N, nff=dat$Nflig, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
+phen <- data.frame(Source='silhouette_120613',Date=dat$Date, N=dat$N, nff=dat$Nflig, Nflig=dat$Nflig, Nfvis=0, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- rbind(phend$Tremie12, phen)
 # ssi sample Tremie13 02/04/2013
 dat <- notdb$Tremie13$ssi_sample_020413
-phen <- pheno_ssi(dat)[,c('Date', 'N','nff','HS','SSI','GL','TT')]
+dat$Source='ssisample_020413'
+dat$Nflig <- NA
+dat$Nfvis <- NA
+phen <- pheno_ssi(dat)[,c('Source','Date', 'N','nff','Nflig', 'Nfvis', 'HS','SSI','GL','TT')]
 phend$Tremie13 <- rbind(phend$Tremie13, phen)
 #
 #check
