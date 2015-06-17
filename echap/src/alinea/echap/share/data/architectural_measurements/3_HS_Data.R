@@ -42,19 +42,21 @@ phend <- NULL
 #scan samples Tremie 12
 dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:10]
 not <- notdb$Tremie12[grep('scanned',names(notdb$Tremie12))]
-nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, plant=x$N,id_Axe=x$axe,Nflig=x$Nflig, Nfvis=x$Nfvis)))
-nfl <- na.omit(nfl[nfl$id_Axe=='MB',])
+nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, N=x$N,id_Axe=x$axe,nff=x$nff,Nflig=x$Nflig, Nfvis=x$Nfvis)))
+nfl <- nfl[nfl$id_Axe=='MB',]
 dat <- merge(dat,nfl)
-dat$nff <- ifelse(dat$Nfvis==0, dat$Nflig, NA)
-phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
+phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$N), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- phen
 #scan samples Tremie13
 dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
-dat$Nfvis <- NA
 dat$A_bl_green <- dat$A_bl * dat$pcent_green / 100
-dat$nff <- NA
-phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$plant), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
+#proxy for HS dim scale
+dat$lmax <- sqrt(dat$A_bl)
+not <- notdb$Tremie13[grep('scanned',names(notdb$Tremie13))]
+nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, N=x$N,nff=x$nff,Nflig=x$Nflig, Nfvis=x$Nfvis)))
+dat <- merge(dat,nfl)
+phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$N), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
 phen <- merge(phen, TTlin$Tremie13)
 phend$Tremie13 <- phen
 # silhouette data Tremie12 12/06/12

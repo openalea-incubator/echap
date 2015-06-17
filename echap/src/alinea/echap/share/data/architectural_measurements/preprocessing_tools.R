@@ -10,7 +10,7 @@ readScanned <- function(prefix, scanfiles, name=NULL) {
     df$Source <- x
     df$N <- df$plant
     df},simplify=FALSE)
-  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', 'Nflig', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
+  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
   do.call('rbind',lapply(scans,function(x) x[,cols[cols%in%colnames(x)]]))
 }
 #
@@ -31,6 +31,34 @@ readCurv <- function(prefix, scanfiles, name=NULL) {
 readNotations <- function(prefix, notationfiles, name=NULL) {
   notations <- sapply(notationfiles,function(x) {
     res <- read.table(paste(prefix,'_notations_',x,'.txt',sep=''),sep='\t', dec=',',header=TRUE)
+    # complete Nflig and  nff
+    nflig <- rep(NA,nrow(res))
+    nff <- rep(NA,nrow(res))
+    if ('nff' %in% colnames(res))
+      nff <- res$nff
+    if ('Nflig' %in% colnames(res)) {
+      nflig <- res$Nflig
+      if ('Nfvis' %in% colnames(res) & !('nff' %in% colnames(res)))
+        nff <- ifelse(res$Nfvis == 0, res$Nflig, NA)
+    }
+    res$Nflig <- as.numeric(nflig)
+    res$nff <- as.numeric(nff)
+    # if Nflig and Hcol present split into Hcol_Fx, and keep Hcol only for Nflig unknonwn
+    if (length(na.omit(res$Nflig)) > 0 & 'Hcol' %in% colnames(res)) {
+      for (i in sort(unique(na.omit(res$Nflig))))
+        res[[paste('Hcol_F',i,sep='')]] <- ifelse(res$Nflig==i,res$Hcol,NA)
+      res$Hcol <- ifelse(is.na(res$Nflig), res$Hcol, NA)
+    }
+    if ('nb_elongated_internode' %in% colnames(res) & length(na.omit(res$nff)) > 0) {
+      last_null = res$nff - res$nb_elongated_internode
+      for (i in seq(max(last_null)))
+        res[[paste('internode_length_F',i,sep='')]] <- ifelse(i <= last_null,0,NA)
+    }
+    if ('first_elongated_internode' %in% colnames(res)) {
+      last_null = res$first_elongated_internode - 1
+      for (i in seq(max(last_null)))
+        res[[paste('internode_length_F',i,sep='')]] <- ifelse(i <= last_null,0,NA)
+    }
     #filter data (Mercai/Rht3)
     if (!is.null(name))
       res<- res[res$var==name,]
@@ -208,7 +236,7 @@ fitLspl <- function(spl, a, splref, aref, deform=FALSE) {
 # pheno on scanned plant
 #
 pheno_scan <- function(pl, dim) {
-  #print(paste(pl$prelevement[1], pl$plant[1]))
+  #print(paste(pl$prelevement[1], pl$N[1]))
   hs <- NA
   if (!is.na(pl$Nfvis[1])) {
     hs <- pl$Nflig[1]
@@ -221,6 +249,8 @@ pheno_scan <- function(pl, dim) {
         if (nrow(lig) > 0)
           sc <- mean(lig$lmax / dim$L[match(lig$rank,dim$ranks)])
         frac = sum(vis$lmax / sc / dim$L[match(vis$rank,dim$ranks)])
+      } else {
+        hs <- NA
       }
     }
   }
@@ -231,7 +261,7 @@ pheno_scan <- function(pl, dim) {
     if (fsen[which.min(p$rank)] > 0.3)
       ssi <- min(p$rank) - 1 + sum(fsen)
   }
-  data.frame(Source=pl$Source[1], Date = pl$prelevement[1], N=pl$plant[1], nff=pl$nff[1], Nflig=pl$Nflig[1], Nfvis=pl$Nfvis[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
+  data.frame(Source=pl$Source[1], Date = pl$prelevement[1], N=pl$N[1], nff=pl$nff[1], Nflig=pl$Nflig[1], Nfvis=pl$Nfvis[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)
 }
 #
 pheno_ssi <- function(ssitable) {
@@ -278,16 +308,8 @@ dim_notations <- function(not, what='sheath_length', as='sheath')  {
         sel <- nt$axe=='MB'
       lg <- nt[sel,cols]
       lg$N=nt$N[sel]
-      lg$nff = NA
-      lg$Nflig = NA
-      if ('Nflig' %in% colnames(nt)) {
-        lg$Nflig = nt$Nflig[sel]
-        if ('Nfvis' %in% colnames(nt)) {
-          lg$nff = ifelse(nt$Nfvis[sel] == 0, nt$Nflig[sel], NA)
-        } else {
-          lg$nff = lg$Nflig#if Nfvis absent, nff=Nflig
-          }
-      }
+      lg$nff = nt$nff[sel]
+      lg$Nflig = nt$Nflig[sel]
       numphy <- sapply(colnames(nt)[cols], function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
       dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N, nff=x$nff, organ=as,rank=numphy, L=unlist(x[1,seq(length(cols))]))))
       dat[!is.na(dat$L),]
@@ -297,7 +319,7 @@ dim_notations <- function(not, what='sheath_length', as='sheath')  {
 }
 #
 plant_notations <- function(not)  {
-  what <- c('Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','H_last_col')
+  what <- c('Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','first_elongated_internode')
   columns <- c('Source','N','nff','Nflig',what)
   sources <- names(not)
   sources <- sources[sapply(sources, function(x) any(what%in%colnames(not[[x]])))]
@@ -319,16 +341,8 @@ plant_notations <- function(not)  {
       
       dat$Source <- s
       dat$N <- nt$N[sel]
-      dat$nff <- NA
-      dat$Nflig <- NA
-      if ('Nflig' %in% colnames(nt)) {
-        dat$Nflig = nt$Nflig[sel]
-        if ('Nfvis' %in% colnames(nt)) {
-          dat$nff = ifelse(nt$Nfvis[sel] == 0, nt$Nflig[sel], NA)
-        } else {
-          dat$nff = lg$Nflig#if Nfvis absent, nff=Nflig
-        }
-      }
+      dat$nff <- nt$nff[sel]
+      dat$Nflig <- nt$Nflig[sel]
       for (w in what[!what %in% cols])
         dat[[w]] <- NA
       dat <- dat[,match(columns,colnames(dat))]
@@ -338,6 +352,34 @@ plant_notations <- function(not)  {
   res
 }
 #
+# view dimension from notation
+#
+view_notdim <- function(data, ylim=c(0,30)) {
+  par(mfrow=c(2,2),mar=c(4,4,1,1))
+  lapply(data, function(dim) {
+    plot(c(0,15),ylim,type='n')
+    if (!is.null(dim))
+      lapply(split(dim,dim$N), function(x) points(x$rank,x$L,col=x$N,pch=16,type='b'))
+  })
+}
+#
+# add dimension data from a notation source for tagged plants
+#
+add_dim <- function(db, notsource, as='Ls'){
+  if (is.null(notsource)) {
+    db[[as]] <- as.numeric(NA)
+  } else {
+    dat <- notsource[grep('tagged', notsource$Source),]
+    if (nrow(dat) <=0) {
+      db[[as]] <- as.numeric(NA)
+    } else {
+      dat[[as]] <- dat$L
+      dat <- dat[,c('N','nff','rank',as)]
+      db <- merge(db,dat,all=TRUE)
+    }
+  }
+  db
+}
 #
 #
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {
