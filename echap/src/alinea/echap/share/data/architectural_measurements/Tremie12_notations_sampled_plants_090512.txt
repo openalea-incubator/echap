@@ -1,4 +1,4 @@
-Date	var	N	axe	Nflig	Nfvis	fertile	Daxe	Hcol_or_plant	sheath_lenth_F8	sheath_lenth_F9	sheath_lenth_F10	sheath_lenth_F11	sheath_lenth_F12	sheath_lenth_F13	sheath_lenth_F14	internode_length_F8	internode_length_F9	internode_length_F10	internode_length_F11	internode_length_F12	internode_length_F13	internode_length_F14
+Date	var	N	axe	Nflig	Nfvis	fertile	Daxe	Hc_plant	sheath_lenth_F8	sheath_lenth_F9	sheath_lenth_F10	sheath_lenth_F11	sheath_lenth_F12	sheath_lenth_F13	sheath_lenth_F14	internode_length_F8	internode_length_F9	internode_length_F10	internode_length_F11	internode_length_F12	internode_length_F13	internode_length_F14
 09/05/2012	Tremie	1	MB	13	0	x	4,04	53		10,5	9,2	11,7	12,1	13				1,7	8,9	13,2	11,2	
 09/05/2012	Tremie	1	T1			x	4	51,5														
 09/05/2012	Tremie	2	MB	13	0	x	4,51	57		9,2	12,5	11,5	13,3	13,5				3	6,5	12,5	13,6	

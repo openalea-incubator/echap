@@ -30,15 +30,15 @@ symtagged <- sapply(c('Tremie12', 'Tremie13'), function(g) readSymTagged(paste('
 #
 # scans
 #
-scanned <- list(Tremie12 = paste('scanned_plants', c('090312','020412','110412', '090512'),sep='_'),
-                Tremie13 = paste('scanned_plants', c('220413','030513'), sep='_'))
+scanned <- list(Tremie12 = paste('sampled_plants', c('090312','020412','110412', '090512'),sep='_'),
+                Tremie13 = paste('sampled_plants', c('220413','030513'), sep='_'))
 #
 scandb <- sapply(names(scanned), function(g) readScanned(prefix[g], scanned[[g]]),simplify=FALSE)
 #
 # silhouettes
 #
-curvature <- list(Tremie12 = paste('silhouette_plants', c('090312','110412', '090512', '120612'),sep='_'),
-                  Tremie13 = paste('silhouette_plants', c('290413'),sep='_'))
+curvature <- list(Tremie12 = paste('sampled_plants', c('090312','110412', '090512', '120612'),sep='_'),
+                  Tremie13 = paste('sampled_plants', c('290413'),sep='_'))
 #
 curvdb <- sapply(names(curvature), function(g) readCurv(prefix[g], curvature[[g]]), simplify=FALSE)
 #
@@ -47,12 +47,11 @@ curvdb <- sapply(names(curvature), function(g) readCurv(prefix[g], curvature[[g]
 notations <- list(Mercia = c('tagged_plants_090611'),
                   Rht3 = c('tagged_plants_090611'),
                   Tremie12 = c(scanned[['Tremie12']][-2],
-                               'silhouette_plants_120612',
+                               'sampled_plants_120612',
                                'tagged_plants_120712'),
                   Tremie13 = scanned[['Tremie13']])
 #
 notdb <- sapply(names(notations), function(g) readNotations(prefix[g], notations[[g]], varname[g]), simplify=FALSE)
-#
-# notations ssi Tremie13 02/04/2013
-dat <- readTagged('Tremie13_ssi_020413.txt', TTlin$Tremie13, 'Tremie')
-notdb$Tremie13$ssi_sample_020413 <- dat[,-grep('^Lg', colnames(dat))]
+# special reader for notations ssi Tremie13 02/04/2013
+dat <- readTagged('Tremie13_notations_sampled_plants_020413.txt', TTlin$Tremie13, 'Tremie')
+notdb$Tremie13$sampled_plants_020413 <- dat[,-grep('^Lg', colnames(dat))]

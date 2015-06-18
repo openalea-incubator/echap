@@ -16,8 +16,17 @@ view_notdim(Linternode)
 view_notdim(Hcol,c(0,80))
 view_notdim(Lbnot)
 #
-# TO DO : extraction hcol from silhouete
-# + Lb from silhouette (if not available elsewhere)
+# extraction hcol,lmax from silhouettes
+#
+hclbc <- lapply(curvdb, HcLbCurv)
+# compare Hcol to Hcol from notations for Tremie12
+hcnot <- Hcol$Tremie12
+Lbnot <- Lbnot$Tremie12
+new <- hclbc$Tremie12
+new$Source <- sapply(new$Source,function(x) sub('silhouette','scanned',x))
+comph <- merge(hcnot,new)
+}
+
 #
 # Dimensions tagged plants
 #

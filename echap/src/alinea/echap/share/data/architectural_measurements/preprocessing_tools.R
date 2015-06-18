@@ -6,7 +6,7 @@
 #
 readScanned <- function(prefix, scanfiles, name=NULL) {
   scans <- sapply(scanfiles, function(x) {
-    df <- read.table(paste(prefix,'_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE)
+    df <- read.table(paste(prefix,'_scan_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE)
     df$Source <- x
     df$N <- df$plant
     df},simplify=FALSE)
@@ -18,12 +18,35 @@ readScanned <- function(prefix, scanfiles, name=NULL) {
 #
 readCurv <- function(prefix, scanfiles, name=NULL) {
   curvs <- sapply(scanfiles, function(x) {
-    df <- read.table(paste(prefix,'_',x,'.csv',sep=''),sep=';', dec=',',header=TRUE)
+    df <- read.table(paste(prefix,'_curvature_',x,'.csv',sep=''),sep=';', dec=',',header=TRUE)
     df$Source <- x
     df$N <- df$ID_Plant
     df$rank <- df$ID_Metamer
     df},simplify=FALSE)
   do.call('rbind',curvs)
+}
+#
+# Extration leaf length, hcol from silhouettes
+#
+HcLbCurv <- function(curv) {
+  do.call('rbind',lapply(split(curv,list(curv$Source,curv$N),drop=TRUE), function(pl) {
+    #print(paste(pl$Source[1],pl$N[1]))
+    stem <- na.omit(data.frame(x=unlist(pl[pl$Organ==0 & pl$XY==0,grep('^Pt',colnames(pl))]),y=unlist(pl[pl$Organ==0 & pl$XY==1,grep('^Pt',colnames(pl))])))
+    phiP <- mean(atan2(diff(stem$y),diff(stem$x)))
+    ranks <- pl[pl$Organ > 0 & pl$XY==0,'ID_Metamer']
+    xbase <- pl[pl$Organ > 0 & pl$XY==0,'Pt1'] - stem$x[1]
+    ybase <- pl[pl$Organ > 0 & pl$XY==1,'Pt1'] - stem$y[1]
+    #corrective rotation to align with vertical
+    theta <- pi / 2 - phiP
+    xybase <- list(x = xbase * cos(theta) - sin(theta) * ybase, y = sin(theta) * xbase + cos(theta) * ybase)
+    # leaf lengths
+    lpl <- pl[pl$Organ > 0,]
+    lb <- sapply(split(lpl,lpl$ID_Metamer), function(mat) {
+      xy <- na.omit(t(mat[,grep("Pt",colnames(mat))]))
+      sum(sqrt(diff(xy[,1])^2+diff(xy[,2])^2))
+    })
+    data.frame(Source=pl$Source[1], N=pl$N[1],rank=ranks, Hcol=xybase$y, Lb=lb)
+  }))
 }
 #
 # read notations files
@@ -301,6 +324,7 @@ dim_notations <- function(not, what='sheath_length', as='sheath')  {
   res <- NULL  
   if (length(sources) > 0) {
     res <- do.call('rbind', lapply(sources, function(s) {
+      #print(s)
       nt <- not[[s]]
       cols <- grep(what,colnames(nt))
       sel <- seq(nrow(nt))
