@@ -51,9 +51,9 @@ HcLbCurv <- function(curv) {
 #
 # read notations files
 #
-readNotations <- function(prefix, notationfiles, name=NULL) {
+readNotations <- function(pref, notationfiles, name=NULL) {
   notations <- sapply(notationfiles,function(x) {
-    res <- read.table(paste(prefix,'_notations_',x,'.txt',sep=''),sep='\t', dec=',',header=TRUE)
+    res <- read.table(paste(pref,'_notations_',x,'.txt',sep=''),sep='\t', dec=',',header=TRUE)
     # complete Nflig and  nff
     nflig <- rep(NA,nrow(res))
     nff <- rep(NA,nrow(res))
@@ -66,12 +66,35 @@ readNotations <- function(prefix, notationfiles, name=NULL) {
     }
     res$Nflig <- as.numeric(nflig)
     res$nff <- as.numeric(nff)
+    # if sheath_length present + (internode_length measured or rank <=6): compute hins_Fx = Lstem_x + sheath length
+    if (length(grep('sheath_length', colnames(res))) > 0) {
+      #print(paste(res$Date[1],res$var[1],collapse=' '))
+      shcols <- colnames(res)[grep('sheath_length', colnames(res))]
+      numphy <- sapply(shcols, function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
+      if (length(grep('internode_length', colnames(res))) > 0) {
+        encols <- colnames(res)[grep('internode_length', colnames(res))]
+        numen <- sapply(encols, function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
+        en <- res[,grep('internode_length', colnames(res))]
+        sel <- seq(nrow(en))[apply(en,1,function(e) any(!is.na(e)))]
+        first <- sapply(sel, function(irow) min(which(!is.na(unlist(en[irow,])))))
+        for (i in seq(length(first)))
+          en[sel[i],1:max(1,(first[i] - 1))] <- 0
+        for (i in numphy) {
+          stem <- sapply(seq(nrow(en)), function(irow) sum(en[irow,1:match(i,numen)]))
+          res[[paste('Hins_F',i,sep='')]] <- stem + res[[paste('sheath_length_F',i,sep='')]]
+        }
+      } else {#no internodes
+        for (i in numphy[numphy <= 6])
+          res[[paste('Hins_F',i,sep='')]] <- res[[paste('sheath_length_F',i,sep='')]]
+      }
+    }      
     # if Nflig and Hcol present split into Hcol_Fx, and keep Hcol only for Nflig unknonwn
     if (length(na.omit(res$Nflig)) > 0 & 'Hcol' %in% colnames(res)) {
       for (i in sort(unique(na.omit(res$Nflig))))
         res[[paste('Hcol_F',i,sep='')]] <- ifelse(res$Nflig==i,res$Hcol,NA)
       res$Hcol <- ifelse(is.na(res$Nflig), res$Hcol, NA)
     }
+    # if number of elongated internode known, set non elongated internode length to zero
     if ('nb_elongated_internode' %in% colnames(res) & length(na.omit(res$nff)) > 0) {
       last_null = res$nff - res$nb_elongated_internode
       for (i in seq(max(last_null)))
