@@ -2,6 +2,7 @@
 #          Preprocessing 1: generation of HS data per plant on tagged plants
 #
 source('preprocessing_tools.R')
+source('0_input.R')
 #
 # compute mature leaf lengths per leaf per plant
 #

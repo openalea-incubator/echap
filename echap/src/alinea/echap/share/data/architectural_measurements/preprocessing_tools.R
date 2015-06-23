@@ -39,13 +39,16 @@ HcLbCurv <- function(curv) {
     #corrective rotation to align with vertical
     theta <- pi / 2 - phiP
     xybase <- list(x = xbase * cos(theta) - sin(theta) * ybase, y = sin(theta) * xbase + cos(theta) * ybase)
+    # corrective factor for insertion heigth taking into account curved stems
+    lstem <- sum(sqrt(diff(stem$x)^2 + diff(stem$y)^2))
+    sc <- lstem / max(stem$y)
     # leaf lengths
     lpl <- pl[pl$Organ > 0,]
     lb <- sapply(split(lpl,lpl$ID_Metamer), function(mat) {
       xy <- na.omit(t(mat[,grep("Pt",colnames(mat))]))
       sum(sqrt(diff(xy[,1])^2+diff(xy[,2])^2))
     })
-    data.frame(Source=pl$Source[1], N=pl$N[1],rank=ranks, Hcol=xybase$y, Lb=lb)
+    data.frame(Source=pl$Source[1], N=pl$N[1],rank=ranks, Hcol=xybase$y * sc, Lb=lb)
   }))
 }
 #
@@ -406,7 +409,7 @@ view_notdim <- function(data, ylim=c(0,30)) {
   lapply(data, function(dim) {
     plot(c(0,15),ylim,type='n')
     if (!is.null(dim))
-      lapply(split(dim,dim$N), function(x) points(x$rank,x$L,col=x$N,pch=16,type='b'))
+      lapply(split(dim,list(dim$Source,dim$N)), function(x) points(x$rank,x$L,col=x$N,pch=16,type='b'))
   })
 }
 #
