@@ -26,7 +26,9 @@ view_dim(Lbnot)
 # add rank to Tremie13 data
 TT <- TTlin$Tremie13$TT[TTlin$Tremie13$Date=='29/04/2013']
 HS <- (TT - TToM$Tremie13) * slopeM$Tremie13
+stem <- curvdb$Tremie13$ranktop == 0
 curvdb$Tremie13$rank <- HS - curvdb$Tremie13$ranktop + 1
+curvdb$Tremie13$rank[stem] <- 0
 hclbc <- lapply(curvdb, HcLbCurv)
 #
 view_dim(hclbc,'Hcol',ylim=c(0,80))
@@ -196,8 +198,12 @@ view_dim(dimsdb,'Hc', c(0,80))
 #
 cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
 write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {dim <- dimsdb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_Dim_treated_archi_sampled.csv',row.names=FALSE)
-
-
 #
 # plant level variables
-# ToDo : add area/cumul length par plant from scanned data
+#
+# Stem diameters
+# 
+diams <- lapply(msdb, function(dim) dim[!is.na(dim$Daxe_mm),c('Source','N','nff','Daxe_mm')])
+write.csv(do.call('rbind', sapply(names(diams), function(g) {dim <- diams[[g]]; dim$d=dim$Daxe_mm / 10;dim$label = g; dim[,c('label','Source','N','nff','d')]}, simplify=FALSE)), 'Compil_Diameter.csv',row.names=FALSE)
+#
+# ToDo : cumul area/cumul length par plant from scanned data
