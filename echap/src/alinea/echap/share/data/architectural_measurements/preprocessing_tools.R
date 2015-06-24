@@ -21,7 +21,10 @@ readCurv <- function(prefix, scanfiles, name=NULL) {
     df <- read.table(paste(prefix,'_curvature_',x,'.csv',sep=''),sep=';', dec=',',header=TRUE)
     df$Source <- x
     df$N <- df$ID_Plant
-    df$rank <- df$ID_Metamer
+    if ('ID_Metamer' %in% colnames(df))
+      df$rank <- df$ID_Metamer
+    if ('ID_Metamer_top' %in% colnames(df))
+      df$ranktop <- df$ID_Metamer
     df},simplify=FALSE)
   do.call('rbind',curvs)
 }
@@ -33,7 +36,7 @@ HcLbCurv <- function(curv) {
     #print(paste(pl$Source[1],pl$N[1]))
     stem <- na.omit(data.frame(x=unlist(pl[pl$Organ==0 & pl$XY==0,grep('^Pt',colnames(pl))]),y=unlist(pl[pl$Organ==0 & pl$XY==1,grep('^Pt',colnames(pl))])))
     phiP <- mean(atan2(diff(stem$y),diff(stem$x)))
-    ranks <- pl[pl$Organ > 0 & pl$XY==0,'ID_Metamer']
+    ranks <- pl[pl$Organ > 0 & pl$XY==0,'rank']
     xbase <- pl[pl$Organ > 0 & pl$XY==0,'Pt1'] - stem$x[1]
     ybase <- pl[pl$Organ > 0 & pl$XY==1,'Pt1'] - stem$y[1]
     #corrective rotation to align with vertical
@@ -44,7 +47,7 @@ HcLbCurv <- function(curv) {
     sc <- lstem / max(stem$y)
     # leaf lengths
     lpl <- pl[pl$Organ > 0,]
-    lb <- sapply(split(lpl,lpl$ID_Metamer), function(mat) {
+    lb <- sapply(split(lpl,lpl$rank), function(mat) {
       xy <- na.omit(t(mat[,grep("Pt",colnames(mat))]))
       sum(sqrt(diff(xy[,1])^2+diff(xy[,2])^2))
     })
@@ -87,7 +90,7 @@ readNotations <- function(pref, notationfiles, name=NULL) {
           res[[paste('Hins_F',i,sep='')]] <- stem + res[[paste('sheath_length_F',i,sep='')]]
         }
       } else {#no internodes
-        for (i in numphy[numphy <= 6])
+        for (i in numphy[numphy <= 7])
           res[[paste('Hins_F',i,sep='')]] <- res[[paste('sheath_length_F',i,sep='')]]
       }
     }      
@@ -344,7 +347,7 @@ pheno_symptom <- function(symptom) {
 }))
 }
 #
-dim_notations <- function(not, what='sheath_length', as='sheath')  {
+dim_notations <- function(not, what='sheath_length')  {
   sources <- names(not)
   sources <- sources[sapply(sources, function(x) length(grep(what,colnames(not[[x]]))) > 0)]
   res <- NULL  
@@ -358,10 +361,8 @@ dim_notations <- function(not, what='sheath_length', as='sheath')  {
         sel <- nt$axe=='MB'
       lg <- nt[sel,cols]
       lg$N=nt$N[sel]
-      lg$nff = nt$nff[sel]
-      lg$Nflig = nt$Nflig[sel]
       numphy <- sapply(colnames(nt)[cols], function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
-      dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N, nff=x$nff, organ=as,rank=numphy, L=unlist(x[1,seq(length(cols))]))))
+      dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N,rank=numphy, L=unlist(x[1,seq(length(cols))]))))
       dat[!is.na(dat$L),]
     }))
   }
@@ -404,18 +405,18 @@ plant_notations <- function(not)  {
 #
 # view dimension from notation
 #
-view_notdim <- function(data, ylim=c(0,30)) {
+view_dim <- function(data, what='L',ylim=c(0,30)) {
   par(mfrow=c(2,2),mar=c(4,4,1,1))
   lapply(data, function(dim) {
     plot(c(0,15),ylim,type='n')
     if (!is.null(dim))
-      lapply(split(dim,list(dim$Source,dim$N)), function(x) points(x$rank,x$L,col=x$N,pch=16,type='b'))
+      lapply(split(dim,list(dim$Source,dim$N)), function(x) points(x$rank,x[[what]],col=x$N,pch=16,type='b'))
   })
 }
 #
 # add dimension data from a notation source for tagged plants
 #
-add_dim <- function(db, notsource, as='Ls'){
+add_dimt <- function(db, notsource, as='Ls'){
   if (is.null(notsource)) {
     db[[as]] <- as.numeric(NA)
   } else {
@@ -424,6 +425,9 @@ add_dim <- function(db, notsource, as='Ls'){
       db[[as]] <- as.numeric(NA)
     } else {
       dat[[as]] <- dat$L
+      #add nff
+      nff <- db[,c('N','nff')]
+      dat <- merge(dat, nff[!duplicated(nff),])
       dat <- dat[,c('N','nff','rank',as)]
       db <- merge(db,dat,all=TRUE)
     }
@@ -431,7 +435,24 @@ add_dim <- function(db, notsource, as='Ls'){
   db
 }
 #
+# add dimension data from a notation source for sampled non-tagged plants
 #
+add_dims <- function(db, newsource, as='Ls') {
+  for (g in names(newsource)) {
+    if (is.null(newsource[[g]])) {
+      if (!is.null(db[[g]]))
+        db[[g]][[as]] <- NA
+    } else {
+      new <- newsource[[g]]
+      new[[as]] <- new$L
+      dat <- merge(db[[g]], new[,c('Source','N','rank',as)],all=TRUE)
+      db[[g]] <- dat
+    }
+  }
+  db
+}
+#
+# deprecated ?
 rssi_patternT <- function(n,nf,ssisenT=data.frame(ndel=1:4,rate1=0.07, dssit1=c(0,1.2,2.5,3),dssit2=c(1.2,2.5,3.7,4)),hasEar=TRUE) {
   ndelsen <- max(ssisenT$ndel)
   pattern <- list(t=c(-1, 0),p=c(0,1))
