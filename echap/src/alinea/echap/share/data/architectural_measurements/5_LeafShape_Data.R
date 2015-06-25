@@ -36,5 +36,5 @@ for (g in names(xydb)) {
 #
 # Export
 #
-cols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS', 'nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', paste('Pt',1:18,sep=''))
+cols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS', 'nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'XY', paste('Pt',1:18,sep=''))
 write.csv(do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_curvature.csv',row.names=FALSE)
