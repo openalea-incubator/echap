@@ -24,7 +24,7 @@ readCurv <- function(prefix, scanfiles, name=NULL) {
     if ('ID_Metamer' %in% colnames(df))
       df$rank <- df$ID_Metamer
     if ('ID_Metamer_top' %in% colnames(df))
-      df$ranktopcur <- df$ID_Metamer
+      df$relative_ranktop <- df$ID_Metamer
     df},simplify=FALSE)
   do.call('rbind',curvs)
 }

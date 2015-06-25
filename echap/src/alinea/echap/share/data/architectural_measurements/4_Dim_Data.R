@@ -26,8 +26,8 @@ view_dim(Lbnot)
 # add rank to Tremie13 data
 TT <- TTlin$Tremie13$TT[TTlin$Tremie13$Date=='29/04/2013']
 HS <- (TT - TToM$Tremie13) * slopeM$Tremie13
-stem <- curvdb$Tremie13$ranktop == 0
-curvdb$Tremie13$rank <- HS - curvdb$Tremie13$ranktopcur + 1
+stem <- curvdb$Tremie13$Organ == 0
+curvdb$Tremie13$rank <- HS - curvdb$Tremie13$relative_ranktop + 1
 curvdb$Tremie13$rank[stem] <- 0
 hclbc <- lapply(curvdb, HcLbCurv)
 #
