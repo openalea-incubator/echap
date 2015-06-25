@@ -10,8 +10,8 @@
 phenM <- lapply(phendb, function(dat) {res <- aggregate(dat$HS, list(nff=dat$nff,TT=dat$TT), mean, na.rm=TRUE);res$HS=res$x;res})
 fitM <- lapply(phenM, function(dat) lapply(split(dat,dat$nff), hsfit))
 slopes <- lapply(fitM,function(fit) lapply(fit, function(f) f$coeff[2]))
-# TTo per plant
-TTo <- lapply(fitM,function(fit) mean(sapply(fit, function(f) -f$coeff[1]/f$coeff[2])))
+# TTo per nff
+TTo <- lapply(fitM,function(fit) lapply(fit, function(f) -f$coeff[1]/f$coeff[2]))
 # TT_ligulation per leaf per plant
 TTem <- sapply(genos,function(g) do.call('rbind',lapply(split(phendb[[g]],phendb[[g]]$N), function(dat) TTleaf(dat,slopes[[g]][[as.character(dat$nff[1])]]))), simplify=FALSE)
 #

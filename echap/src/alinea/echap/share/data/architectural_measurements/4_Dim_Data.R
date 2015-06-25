@@ -27,7 +27,7 @@ view_dim(Lbnot)
 TT <- TTlin$Tremie13$TT[TTlin$Tremie13$Date=='29/04/2013']
 HS <- (TT - TToM$Tremie13) * slopeM$Tremie13
 stem <- curvdb$Tremie13$ranktop == 0
-curvdb$Tremie13$rank <- HS - curvdb$Tremie13$ranktop + 1
+curvdb$Tremie13$rank <- HS - curvdb$Tremie13$ranktopcur + 1
 curvdb$Tremie13$rank[stem] <- 0
 hclbc <- lapply(curvdb, HcLbCurv)
 #
@@ -206,4 +206,13 @@ write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {dim <- dimsdb[[g]]
 diams <- lapply(msdb, function(dim) dim[!is.na(dim$Daxe_mm),c('Source','N','nff','Daxe_mm')])
 write.csv(do.call('rbind', sapply(names(diams), function(g) {dim <- diams[[g]]; dim$d=dim$Daxe_mm / 10;dim$label = g; dim[,c('label','Source','N','nff','d')]}, simplify=FALSE)), 'Compil_Diameter.csv',row.names=FALSE)
 #
-# ToDo : cumul area/cumul length par plant from scanned data
+# Area per plant from scanned data
+#
+cols <- c('prelevement','N','lmax','A_bl','A_bl_green','pcent_green')
+plantarea <- lapply(scandb, function(x) x[,cols[cols%in%colnames(x)]])
+plantarea$Tremie13$lmax <- as.numeric(NA)
+plantarea$Tremie13$A_bl_green <- plantarea$Tremie13$A_bl * plantarea$Tremie13$pcent_green / 100
+plantarea <- lapply(plantarea, function(x) aggregate(x[,c('lmax','A_bl','A_bl_green')],list(Date=x$prelevement, N=x$N),sum))
+#
+#export
+write.csv(do.call('rbind', sapply(names(plantarea), function(g) {dim <- plantarea[[g]];dim$label = g; dim[,c('label','Date','N','lmax','A_bl','A_bl_green')]}, simplify=FALSE)), 'Compil_PlantArea.csv',row.names=FALSE)

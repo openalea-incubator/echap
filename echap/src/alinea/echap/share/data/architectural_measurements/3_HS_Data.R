@@ -33,7 +33,7 @@ lapply(phendbf, function(p) {
 #
 # Export
 #
-write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen$label = g; phen[,c('Date', 'label', 'Trt', 'Rep', 'N', 'Axis', 'Nflig', 'Nfvis', 'nff', 'TT', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_tagged.csv',row.names=FALSE)
+write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen$label = g; phen[,c('Date', 'label', 'Trt', 'Rep', 'N', 'Axis', 'Nflig', 'Nfvis', 'nff', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_tagged.csv',row.names=FALSE)
 #
 # HS/SSI data from detructive samplings
 # -------------------------------------
@@ -93,7 +93,7 @@ lapply(names(phendbf), function(g) {
 #
 # Export
 #
-write.csv(do.call('rbind', sapply(names(phend), function(g) {phen <- phend[[g]]; phen$label = g; phen[,c('Date', 'label', 'N', 'nff', 'TT', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_sampled.csv',row.names=FALSE)
+write.csv(do.call('rbind', sapply(names(phend), function(g) {phen <- phend[[g]]; phen$label = g; phen[,c('Date', 'label', 'N', 'nff', 'HS', 'SSI', 'GL')]}, simplify=FALSE)), 'Compil_Pheno_treated_archi_sampled.csv',row.names=FALSE)
 #
 # treated symptom tagged
 #
@@ -126,4 +126,4 @@ lapply(names(phendbf), function(g) {
 #
 # Export
 #
-write.csv(do.call('rbind', sapply(names(phensym), function(g) {phen <- phensym[[g]]; phen$label = g; phen[,c('Date', 'label', 'Rep', 'N', 'Axis', 'nff', 'TT', 'HS', 'SSI', 'GL', 'SSIap','GLap')]}, simplify=FALSE)), 'Compil_Pheno_treated_symptom_tagged.csv',row.names=FALSE)
+write.csv(do.call('rbind', sapply(names(phensym), function(g) {phen <- phensym[[g]]; phen$label = g; phen[,c('Date', 'label', 'Rep', 'N', 'Axis', 'nff', 'HS', 'SSI', 'GL', 'SSIap','GLap')]}, simplify=FALSE)), 'Compil_Pheno_treated_symptom_tagged.csv',row.names=FALSE)

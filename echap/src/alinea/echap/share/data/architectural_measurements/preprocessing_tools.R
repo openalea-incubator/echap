@@ -24,7 +24,7 @@ readCurv <- function(prefix, scanfiles, name=NULL) {
     if ('ID_Metamer' %in% colnames(df))
       df$rank <- df$ID_Metamer
     if ('ID_Metamer_top' %in% colnames(df))
-      df$ranktop <- df$ID_Metamer
+      df$ranktopcur <- df$ID_Metamer
     df},simplify=FALSE)
   do.call('rbind',curvs)
 }
@@ -370,8 +370,8 @@ dim_notations <- function(not, what='sheath_length')  {
 }
 #
 plant_notations <- function(not)  {
-  what <- c('Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','first_elongated_internode')
-  columns <- c('Source','N','nff','Nflig',what)
+  what <- c('nff','Nflig','Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','first_elongated_internode')
+  columns <- c('Source','N',what)
   sources <- names(not)
   sources <- sources[sapply(sources, function(x) any(what%in%colnames(not[[x]])))]
   res <- NULL
