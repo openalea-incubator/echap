@@ -10,7 +10,13 @@ def varieties():
     
 def colors():
     return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+    
+def colors_nff():
+    return {10:'m', 11:'g', 12:'r', 13:'c', 14:'y'}
 
+def markers_source():
+    return {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    
 def haun_stage_plot(obs_HS, fit_HS):
     """ Plot HS against thermal time for all varieties 
     
@@ -92,8 +98,8 @@ def green_leaves_plot(obs_GL, fit_GL, fit_HS):
     varieties = np.unique(df_GL_obs_nff['label'])
     
     fig, axs = plt.subplots(2, 2)
-    colors = {10:'m', 11:'g', 12:'r', 13:'c', 14:'y'}
-    markers = {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    colors = colors_nff()
+    markers = markers_source()
     proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
     labels = ['fit mean NFF']
     for mark, symb in markers.iteritems():
@@ -209,7 +215,36 @@ def dimension_plot_other(dimension_data, fits):
         ax2.set_title('W_internode nff maj', fontsize=9)
         ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
 
-def dimension_plot(dimension_data, fits, leaf_fits, scan, scan_old):
+def dimension_plot(dimension_data, dimension = 'Lb'):
+    df_dim, df_dim_nff = dimension_data
+    
+    fig, axs = plt.subplots(2, 2)
+    vars = iter(varieties())
+    cols = colors()
+    markers = markers_source()
+    proxys = []
+    labels = []
+    for src in np.unique(df_dim['Source']):
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='None', markeredgecolor='k', marker = markers[src])]
+        labels += [src]
+    
+    for i, ax in enumerate(axs.flat):
+        variety = next(vars)
+        df = df_dim[df_dim['label']==variety]
+        df_nff = df_dim_nff[df_dim_nff['label']==variety]
+        for src in np.unique(df['Source']):
+            df_src = df[df['Source']==src]
+            ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], yerr=df_src[dimension+'_std'],
+                        linestyle='', color = 'k', markerfacecolor='None', markeredgecolor='k',
+                        marker=markers[src], markersize=7)
+        ax.set_title(variety, fontsize = 16)
+        ax.set_ylabel(dimension, fontsize = 16)
+        ax.set_xlabel('Leaf Rank', fontsize = 16)
+        if i == 1:
+            ax.legend(proxys, labels, bbox_to_anchor=(1., 1), loc=2, borderaxespad=0.)
+        
+def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
     plt.ion()
     
     fig, axes = plt.subplots(nrows=2, ncols=3)

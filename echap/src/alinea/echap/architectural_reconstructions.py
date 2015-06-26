@@ -433,7 +433,8 @@ def all_scan():
     return df_obs_all
 
 if run_plots:
-    archi_plot.dimension_plot(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
+    archi_plot.dimension_plot(archidb.Dim_data(), archidb.dimension_fits())
+    archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
 # leaf geometry
 

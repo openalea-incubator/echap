@@ -8,6 +8,28 @@ except:
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
+def dateparse(x):
+    return pandas.datetime.strptime(x, '%d/%m/%Y')
+    
+def TT_lin(df_TT = None, labels = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'], count=0):
+    lab = labels[count]
+    count += 1
+    if lab in ['Mercia', 'Rht3']:
+        filepath = shared_data(alinea.echap, 'architectural_measurements/MerciaRht3_TTlin_sowing.csv')
+    else:
+        filepath = shared_data(alinea.echap, 'architectural_measurements/'+lab+'_TTlin_sowing.csv')
+    df = pandas.read_csv(filepath, sep=';', decimal = ',')
+    df['Date'] = df['Date'].apply(dateparse)
+    df['label'] = lab
+    if df_TT is None:
+        df_TT =  df
+    else:
+        df_TT = pandas.concat([df_TT, df])
+    if count < len(labels):
+        return TT_lin(df_TT, labels, count)
+    else:
+        return df_TT
+
 #
 # ____________________________________________________________________________Plot data
 #
@@ -335,7 +357,8 @@ def Tillering_data():
 #
 #
 
-def Pheno_data():
+def Pheno_data(pheno_dict = {}, sources = ['archi_tagged', 'archi_sampled', 'symptom_tagged'], 
+                count = 0):
     """ Phenological data (HS, GL, SSI) found for 
         - Treated tagged plants followed for architectural notations
         - Treated tagged plant followed for symptom notation (SSI/GL)
@@ -343,13 +366,27 @@ def Pheno_data():
         
         Details in architectural_measurements R pre-processing scripts
     """
-    file_names = {'archi_tagged': 'Compil_Pheno_treated_archi_tagged.csv',
-                  'archi_sampled':'Compil_Pheno_treated_archi_sampled.csv',
-                  'symptom_tagged': 'Compil_Pheno_treated_symptom_tagged.csv'}
-    file_path = {k:str(shared_data(alinea.echap)/'architectural_measurements'/v) for k,v in file_names.iteritems()}
-    return {k:pandas.read_csv(v, sep = ',', decimal='.') for k,v in file_path.iteritems()}
+
+    src = sources[count]
+    count += 1
+    filename = 'Compil_Pheno_treated_' + src +'.csv'
+    filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
+    df = pandas.read_csv(filepath, sep = ',', decimal='.')
+    df['Date'] = df['Date'].apply(dateparse)
+    df_TT = TT_lin(labels = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'])
+    df = pandas.merge(df, df_TT)
+    pheno_dict[src] = df
+    if count < len(sources):
+        return Pheno_data(pheno_dict, sources, count)
+    else:
+        return pheno_dict
     
- 
+    
+    # file_names = {'archi_tagged': 'Compil_Pheno_treated_archi_tagged.csv',
+                  # 'archi_sampled':'Compil_Pheno_treated_archi_sampled.csv',
+                  # 'symptom_tagged': 'Compil_Pheno_treated_symptom_tagged.csv'}
+    # file_path = {k:str(shared_data(alinea.echap)/'architectural_measurements'/v) for k,v in file_names.iteritems()}
+    # return {k:pandas.read_csv(v, sep = ',', decimal='.') for k,v in file_path.iteritems()}
  
 #
 # Reader for leaf by leaf data (G. Garin April 2015)
@@ -388,6 +425,16 @@ def dimensions_data():
                     fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
                 dim[var,nff] = pandas.read_csv(fn)
     return dim
+    
+def Dim_data():
+    def read_dim_data(source = 'sampled'):
+        filepath = shared_data(alinea.echap,
+                    'architectural_measurements/Compil_Dim_treated_archi_'+source+'.csv')
+        df = pandas.read_csv(filepath, na_values=('NA'), sep=',')
+        df['Source'] = source
+        return df
+    sources = ['sampled', 'tagged']
+    return pandas.concat(map(lambda source: read_dim_data(source), sources))
     
 # blade dimension data from Corinne/Tino scans in 2009/2010
 
@@ -1207,6 +1254,29 @@ def green_leaves_aggregated(HS_fit):
     (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global) = map(lambda x: add_HS_TT_flag(x), (df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global))
     return df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global
     
+def dimensions_aggregated():
+    def _aggregate(data, group = ['label', 'Source', 'rank'], func = numpy.mean, column_name = 'mean'):
+        df = data.groupby(group).agg(func).loc[:, ['Lb', 'Wb', 'Ab', 'Ls', 'Li', 'Hc']]
+        df = df.rename(columns={col:col+'_'+column_name for col in df.columns})
+        return df.reset_index()
+
+    def get_aggregate(data, group = ['label', 'Source', 'rank']):
+        funcs = {'mean':numpy.mean, 'std':numpy.std, 'conf':conf_int}
+        df_ag = None
+        for name, func in funcs.iteritems():
+            if df_ag is None:
+                df_ag = _aggregate(df_dim, func=func, column_name=name)
+            else:
+                df_ag = pandas.merge(df_ag, _aggregate(df_dim, group=group, 
+                                                        func=func, column_name=name))
+        return df_ag
+        
+    df_dim = Dim_data()
+    df_ag = get_aggregate(df_dim, group = ['label', 'Source', 'rank'])
+    df_dim = df_dim[~numpy.isnan(df_dim['nff'])]
+    df_ag_nff = get_aggregate(df_dim, group = ['label', 'Source', 'nff', 'rank'])
+    return df_ag, df_ag_nff
+    
 class ReconstructionData(object):
 
     def __init__(self):
@@ -1235,7 +1305,7 @@ class ValidationData(object):
     def __init__(self):
         self.PlantDensity = PlantDensity()
         self.tillers_per_plant = tillers_per_plant()
-        self.emission_probabilities = emission_probabilities_table()
+        self.emission_probabilities = emission_probabilities_table()    
         self.haun_stage = haun_stage_aggregated()
         
     def save(self, filename):
