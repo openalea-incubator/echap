@@ -50,7 +50,6 @@ phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- phen
 #scan samples Tremie13
 dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
-dat$A_bl_green <- dat$A_bl * dat$pcent_green / 100
 #proxy for HS dim scale
 dat$lmax <- sqrt(dat$A_bl)
 not <- notdb$Tremie13[names(notdb$Tremie13) %in% unique(dat$Source)]

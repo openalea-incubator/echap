@@ -13,7 +13,7 @@ xydb <- curvdb
 for (g in names(xydb)) {
   xydb[[g]] <- merge(xydb[[g]],msdb[[g]][,c('Source', 'N', 'nff', 'Nflig')], all.x=TRUE)
   xydb[[g]] <- merge(xydb[[g]],phend[[g]][,c('Source', 'N', 'HS')], all.x=TRUE)
-  cols <- c('Source', 'N', 'rank','relative_ranktop','stat','lmax','wmax','A_bl')
+  cols <- c('Source', 'N', 'rank','relative_ranktop','stat','lmax','wmax','A_bl','A_bl_green')
   xydb[[g]] <- merge(xydb[[g]],scandim[[g]][,colnames(scandim[[g]])%in%cols], all.x=TRUE)
   for (c in cols)
     if (!c%in%colnames(xydb[[g]]))
@@ -36,5 +36,5 @@ for (g in names(xydb)) {
 #
 # Export
 #
-cols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS', 'nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'XY', paste('Pt',1:18,sep=''))
+cols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS', 'nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'A_bl_green', 'XY', paste('Pt',1:18,sep=''))
 write.csv(do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_curvature.csv',row.names=FALSE)

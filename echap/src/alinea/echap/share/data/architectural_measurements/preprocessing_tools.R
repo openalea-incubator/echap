@@ -9,8 +9,10 @@ readScanned <- function(prefix, scanfiles, name=NULL) {
     df <- read.table(paste(prefix,'_scan_',x,'.txt',sep=''),sep='\t', dec='.',header=TRUE)
     df$Source <- x
     df$N <- df$plant
+    if ('pcent_green'%in%colnames(df))
+      df$A_bl_green <- df$A_bl * df$pcent_green / 100
     df},simplify=FALSE)
-  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat','pcent_green', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
+  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
   do.call('rbind',lapply(scans,function(x) x[,cols[cols%in%colnames(x)]]))
 }
 #
