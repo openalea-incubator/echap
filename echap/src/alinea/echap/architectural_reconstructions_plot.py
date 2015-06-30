@@ -215,35 +215,99 @@ def dimension_plot_other(dimension_data, fits):
         ax2.set_title('W_internode nff maj', fontsize=9)
         ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
 
-def dimension_plot(dimension_data, dimension = 'Lb'):
+def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
     df_dim, df_dim_nff = dimension_data
     
     fig, axs = plt.subplots(2, 2)
     vars = iter(varieties())
-    cols = colors()
+    cols = colors_nff()
     markers = markers_source()
-    proxys = []
-    labels = []
+    
+    proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
+    labels = ['fit mean NFF']
     for src in np.unique(df_dim['Source']):
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
-                    markerfacecolor='None', markeredgecolor='k', marker = markers[src])]
-        labels += [src]
+                    markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
+        labels += ['source: ' + src]
+    for nff, col in cols.iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='-', color = col)]
+        labels += ['NFF: %d' %nff]
     
     for i, ax in enumerate(axs.flat):
         variety = next(vars)
+        fit_dim = fit[variety].table(nff = None)
         df = df_dim[df_dim['label']==variety]
         df_nff = df_dim_nff[df_dim_nff['label']==variety]
         for src in np.unique(df['Source']):
             df_src = df[df['Source']==src]
+            ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = 'k')
             ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], yerr=df_src[dimension+'_std'],
-                        linestyle='', color = 'k', markerfacecolor='None', markeredgecolor='k',
+                        linestyle='', color = 'k', markerfacecolor='k', markeredgecolor='k',
                         marker=markers[src], markersize=7)
-        ax.set_title(variety, fontsize = 16)
-        ax.set_ylabel(dimension, fontsize = 16)
-        ax.set_xlabel('Leaf Rank', fontsize = 16)
+            
+            df_src_nff = df_nff[df_nff['Source']==src]
+            for nff in np.unique(df_src_nff['nff']):
+                color = cols[nff]
+                df_ = df_src_nff[df_src_nff['nff']==nff].reset_index()
+                fit_nff = fit[variety].table(nff = nff)
+                ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
+                ax.errorbar(df_['rank'], df_[dimension+'_mean'], yerr=df_[dimension+'_std'],
+                            linestyle='', color = color, markerfacecolor=color,
+                            markeredgecolor=color, marker=markers[src], markersize=7)
+
+        ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+        ax.set_ylabel(dimension, fontsize = 18)
+        ax.set_xlabel('Leaf Rank', fontsize = 18)
+        if dimension.startswith('L'):
+            ax.set_ylim([0,30])
+        elif dimension.startswith('H'):
+            ax.set_ylim([0,80])
+        else:
+            ax.set_ylim([0,3])
+        ax.set_xlim([0,14])
         if i == 1:
             ax.legend(proxys, labels, bbox_to_anchor=(1., 1), loc=2, borderaxespad=0.)
-        
+
+def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade'):
+    df_dim, df_dim_nff = dimension_data
+    varieties = np.unique(df_dim['label'])
+            
+    fig, ax = plt.subplots(1, 1)
+    markers = markers_source()
+    cols = colors()
+    for variety in varieties:
+        color = cols[variety]
+        fit_dim = fit[variety].table(nff = None)
+        df_dim_var = df_dim[df_dim['label']==variety]
+        ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = color)
+        for src in np.unique(df_dim_var['Source']):
+            df_src = df_dim_var[df_dim_var['Source']==src]
+            ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], 
+                        yerr=df_src[dimension+'_std'], linestyle='', color = color,
+                        markerfacecolor=color, markeredgecolor=color,
+                        marker=markers[src], markersize=7)
+                        
+        if dimension.startswith('L'):
+            ax.set_ylim([0,30])
+        elif dimension.startswith('H'):
+            ax.set_ylim([0,80])
+        else:
+            ax.set_ylim([0,3])
+        ax.set_ylabel(dimension, fontsize = 18)
+        ax.set_xlabel('Leaf rank', fontsize = 18)
+    
+    proxys = []
+    labels = []
+    for src in np.unique(df_dim['Source']):
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
+        labels += ['source: ' + src]
+    for variety, col in colors().iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
+                    markerfacecolor=col, markeredgecolor=col, marker = symb)]
+        labels += [variety]
+    ax.legend(proxys, labels, loc=1)
+    
 def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
     plt.ion()
     

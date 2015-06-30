@@ -433,8 +433,14 @@ def all_scan():
     return df_obs_all
 
 if run_plots:
-    archi_plot.dimension_plot(archidb.Dim_data(), archidb.dimension_fits())
-    archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
+    parameters = reconstruction_parameters()
+    axepfits = axepop_fits(**parameters)
+    hs = HS_fit()
+    fits = {k: pgen_ext.WheatDimensions(axepfits[k].mean_nff(), hs[k].dHS_nff(),1.2) for k in hs}
+    obs = archidb.validation_data()
+    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'L_blade')
+    archi_plot.dimension_plot_mean(obs.dimensions, fit = fits, dimension = 'L_blade')
+    # archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
 # leaf geometry
 
