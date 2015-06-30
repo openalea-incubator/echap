@@ -268,11 +268,12 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
         if i == 1:
             ax.legend(proxys, labels, bbox_to_anchor=(1., 1), loc=2, borderaxespad=0.)
 
-def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade'):
+def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade', ax = None, legend = True):
     df_dim, df_dim_nff = dimension_data
     varieties = np.unique(df_dim['label'])
             
-    fig, ax = plt.subplots(1, 1)
+    if ax == None:
+        fig, ax = plt.subplots(1, 1)
     markers = markers_source()
     cols = colors()
     for variety in varieties:
@@ -306,7 +307,32 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade'):
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
                     markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
         labels += [variety]
-    ax.legend(proxys, labels, loc=1)
+    if legend == True:
+        ax.legend(proxys, labels, loc=1)
+        
+def dimension_plot_varieties(dimension_data, fit = None):
+    df_dim, df_dim_nff = dimension_data
+    dimensions = ['L_blade', 'W_blade', 'A_blade', 'L_sheath', 'L_internode', 'H_col']
+    varieties = np.unique(df_dim['label'])
+    markers = markers_source()
+    fig, axs = plt.subplots(2, 3)
+    for i, ax in enumerate(axs.flat):
+        # Temp
+        if dimensions[i] != 'A_blade':
+            dimension_plot_mean(dimension_data, fit = fit, dimension = dimensions[i], 
+                                ax = ax, legend = False)
+        ax.annotate(dimensions[i], xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+    proxys = []
+    labels = []
+    for src in np.unique(df_dim['Source']):
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='',
+                    markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
+        labels += ['source: ' + src]
+    for variety, col in colors().iteritems():
+        proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
+                    markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
+        labels += [variety]
+    ax.legend(proxys, labels, bbox_to_anchor=(1.02, 1), loc=2, borderaxespad=0.)
     
 def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
     plt.ion()
@@ -447,20 +473,25 @@ def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
 
 
 def density_plot(density_data, density_fits, HS_converter):
-    plt.ion()
+    # plt.ion()
     col = colors()
     names = varieties()
     
+    fig, ax = plt.subplots()
     grouped = density_data.groupby('Var')    
     for name in names:
         dens = grouped.get_group(name)
         dens['HS'] = HS_converter[name](dens['TT'])
-        ax=plt.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o' + col[name], label=name + ' density')
+        ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o' + col[name], label=name + ' density')
         #
-        density_fits[name]['density_table'].plot('HS', 'density', style='-' + col[name], label=name + ' density fits')
+        df = density_fits[name]['density_table']
+        ax.plot(df['HS'], df['density'], '-' + col[name], label=name + ' density fits')
       
-    plt.title("Plant density"); plt.xlabel("HS"); plt.xlim(xmax=25); plt.ylim(ymin=0); plt.ylim(ymax=350)
-    plt.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    ax.set_title("Plant density")
+    ax.set_xlabel("HS")
+    ax.set_xlim([0, 25])
+    ax.set_ylim([0, 350])
+    ax.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     return ax
     
 '''
