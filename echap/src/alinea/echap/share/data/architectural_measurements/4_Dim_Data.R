@@ -138,7 +138,15 @@ lapply(dimtdb, function(dim) {
 # Export
 #
 cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
-write.csv(do.call('rbind', sapply(genos, function(g) {dim <- dimtdb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_Dim_treated_archi_tagged.csv',row.names=FALSE)
+noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','L_internode','H_col')
+names(cols) <- noms
+write.csv(do.call('rbind', sapply(genos, function(g) {
+  dim <- dimtdb[[g]]
+  dim$label = g
+  for (w in noms)
+    dim[[w]] <- dim[[cols[w]]]
+  dim[,noms]
+}, simplify=FALSE)), 'Compil_Dim_treated_archi_tagged.csv',row.names=FALSE)
 #
 # Dimension data from other detructive samplings
 # ----------------------------------------------
@@ -197,7 +205,15 @@ view_dim(dimsdb,'Hc', c(0,80))
 # Export
 #
 cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
-write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {dim <- dimsdb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_Dim_treated_archi_sampled.csv',row.names=FALSE)
+noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','L_internode','H_col')
+names(cols) <- noms
+write.csv(do.call('rbind', sapply(genos, function(g) {
+  dim <- dimtdb[[g]]
+  dim$label = g
+  for (w in noms)
+    dim[[w]] <- dim[[cols[w]]]
+  dim[,noms]
+}, simplify=FALSE)), 'Compil_Dim_treated_archi_sampled.csv',row.names=FALSE)
 #
 # plant level variables
 #
