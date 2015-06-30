@@ -325,7 +325,7 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
                 density_at_harvest = mean_plant_density[k]
                 fits[k] = {'HS':[0] + damages[k]['when'] + [30], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
     
-    density_fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
+    fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
                        'inter_row': pdb[k]['inter_row'],
                        'density_table': pandas.DataFrame(fits[k])} for k in fits}
 
@@ -334,20 +334,18 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
     if adjust is not None: 
         for k in adjust:
             if adjust[k] is not None:
-                df = density_fits[k]['density_table']
+                df = fits[k]['density_table']
                 df['density'] *= adjust[k]
-                density_fits[k]['sowing_density'] *= adjust[k]
-                density_fits[k]['inter_row'] /= math.sqrt(adjust[k])
+                fits[k]['sowing_density'] *= adjust[k]
+                fits[k]['inter_row'] /= math.sqrt(adjust[k])
 
-    for k in density_fits:
-        df = density_fits[k]['density_table']
+    for k in fits:
+        df = fits[k]['density_table']
         df['TT'] = HS_converter[k].TT(df['HS'])
-        density_fits[k]['density_at_emergence'] = df['density'].iloc[0]
-        density_fits[k]['density_at_harvest'] = df['density'].iloc[-1]
-        density_fits[k]['hs_curve'] = interp1d(df['HS'], df['density'])
-        density_fits[k]['TT_curve'] = interp1d(df['TT'], df['density'])
-                
-    return density_fits
+        fits[k]['density_at_emergence'] = df['density'].iloc[0]
+        fits[k]['density_at_harvest'] = df['density'].iloc[-1]
+
+    return fits
 
 
 #
@@ -451,8 +449,8 @@ if run_plots:
     archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'L_internode')
     archi_plot.dimension_plot_mean(obs.dimensions, fit = fits, dimension = 'L_internode')
     
-    # archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'H_col')
-    # archi_plot.dimension_plot_mean(obs.dimensions, fit = fits, dimension = 'H_col')
+    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'H_col')
+    archi_plot.dimension_plot_mean(obs.dimensions, fit = fits, dimension = 'H_col')
     
     # archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
@@ -574,8 +572,7 @@ class EchapReconstructions(object):
         
         self.pgen_base = self.pars['pgen_base']
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
-        converter = HS_fit(reset=True, reset_data=reset_data)
-        self.density_fits = density_fits(HS_converter=converter, reset_data=reset_data, **self.pars)
+        self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
         self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
         self.GL_fits = GL_fit(reset_data=reset_data, **self.pars)
@@ -599,7 +596,7 @@ class EchapReconstructions(object):
             dep=7
             
         d = self.density_fits[name]
-        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04, density_curve = d['TT_curve'])       
+        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04, density_curve_data = d['density_table'])       
         #n_emerged, domain, positions, area = stand.stand(nplants, aspect)
         n_emerged = nplants#adel uses smart stand       
         axp = self.axepop_fits[name]
@@ -610,10 +607,9 @@ class EchapReconstructions(object):
         devT = devCsv(axeT, dimT, phenT)
                     
         leaves = self.leaf_fits[name] 
+       
         
-        std_emergence = self.HS_fit[name].std_TT_hs_0
-        
-        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , std_em = std_emergence, seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
+        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
     
     def save(self, filename):
         with open(filename, 'w') as output:

@@ -10,8 +10,7 @@ from math import sqrt
 from openalea.deploy.shared_data import shared_data
 from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
-from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
-                                                        get_EchapReconstructions, 
+from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
                                                         fit_HS, density_fits)
 from alinea.adel.postprocessing import axis_statistics, plot_statistics, ground_cover
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
@@ -22,7 +21,7 @@ from alinea.caribu.label import Label
 def get_lai_properties(g, adel, nplants):
     df_lai = adel.get_exposed_areas(g, convert=True)
     if not df_lai.empty:
-        df_axstat = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
+        df_axstat,_ = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
         return plot_statistics(df_axstat, nplants, adel.domain_area)
     else: 
         colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
@@ -78,16 +77,13 @@ def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
     
 def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = None,
                         age_range = [400., 2600.], time_steps = [20, 100], 
-                        scale_povray = 1., reset_reconst = False):
-    if reset_reconst == False:
-        reconst = get_EchapReconstructions()
-    else:
-        reconst = EchapReconstructions()
-    HSconv = reconst.HS_GL_fits[variety]['HS']
+                        scale_povray = 1., reset = False, reset_data = False):
+    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+    HSconv = reconst.HS_fit[variety]
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
-    ages_1 = range(age_range[0], age_range[1], time_steps[0])
-    ages_2 = range(age_range[0], age_range[1], time_steps[1])
-    for age in numpy.unique(ages_1+ages_2):
+    ages_1 = numpy.arange(age_range[0], age_range[1], time_steps[0])
+    ages_2 = numpy.arange(age_range[0], age_range[1], time_steps[1])
+    for age in numpy.unique(ages_1.tolist()+ages_2.tolist()):
         # Get canopy properties
         g = adel.setup_canopy(age=age)
         if age in ages_1:
