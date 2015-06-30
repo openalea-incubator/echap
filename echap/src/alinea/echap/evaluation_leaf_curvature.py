@@ -9,8 +9,7 @@ import collections
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
-from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
-                                                        get_EchapReconstructions)
+from alinea.echap.architectural_reconstructions import echap_reconstructions
 
 def get_file_name(variety = 'Tremie12', nplants = 30,):
     return 'curvature_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
@@ -21,14 +20,12 @@ def get_file_path(variety = 'Tremie12', nplants = 30):
                                                         
 # Run Simulations
 #
-def simulation_curvatures(variety = 'Tremie12', nplants = 30, reset_reconst = False):
+def simulation_curvatures(variety = 'Tremie12', nplants = 30, 
+                          reset = False, reset_data = False):
     harvests={'Tremie12':{1: 7.4, 2:11.5,3:13, 4:17.8}, 'Tremie13':{1:11.1}, 'Mercia':{1:4,2:7, 3:8, 4:13}, 'Rht3':{1:4,2:6, 3:8, 5:15.5}}
     harvests = harvests[variety]
-    if reset_reconst == False:
-        reconst = get_EchapReconstructions()
-    else:
-        reconst = EchapReconstructions()
-    HSconv = reconst.HS_GL_fits[variety]['HS']
+    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+    HSconv = reconst.HS_fit[variety]
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
     sims = {h:adel.get_midribs(adel.setup_canopy(age=HSconv.TT(harvests[h])),resample=True) for h in harvests}
     ldf = []
@@ -45,8 +42,10 @@ def simulation_curvatures(variety = 'Tremie12', nplants = 30, reset_reconst = Fa
     df = df.reset_index(drop=True)
     return df
     
-def save_simulation_curvatures(variety = 'Tremie12', nplants = 30, reset_reconst = False):
-    df = simulation_curvatures(variety=variety, nplants=nplants, reset_reconst = reset_reconst)
+def save_simulation_curvatures(variety = 'Tremie12', nplants = 30, 
+                                reset = False, reset_data = False):
+    df = simulation_curvatures(variety=variety, nplants=nplants, 
+                                reset=reset, reset_data=reset_data)
     df.to_csv(get_file_path(variety = variety, nplants = nplants), index = False)
   
 def load_simulation_curvature(variety = 'Tremie12', nplants = 30):
@@ -56,7 +55,7 @@ def load_simulation_curvature(variety = 'Tremie12', nplants = 30):
 def is_iterable(obj):
     return isinstance(obj, collections.Iterable)
 
-def plot_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop', 
+def plot_leaf_curvature(name = 'Tremie12', nplants = 30, numbering = 'relative_ranktop', 
                         alternate = True, hins_mean = False, 
                         fixed_color = None, alpha = 1., axs = None, 
                         fixed_xlims = [-15, 15], fixed_ylims = [-10, 90], set_lims = True, add_sim=False):
@@ -96,7 +95,7 @@ def plot_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop',
                         ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_pl.loc[:,'hins'], 
                                 color = color, alpha = alpha)
         if add_sim:
-            dfsim = load_simulation_curvature(name)
+            dfsim = load_simulation_curvature(name, nplants=nplants)
             ax.set_color_cycle(None)
             colors = ax._get_lines.color_cycle
             df_h = dfsim[dfsim['harvest'] == h]
@@ -136,14 +135,15 @@ def plot_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop',
                 ax.set_xlim(fixed_xlims)
                 ax.set_ylim(fixed_ylims)
         
-def plot_mean_by_point_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop', 
+def plot_mean_by_point_leaf_curvature(name = 'Tremie12', nplants = 30,
+                                      numbering = 'relative_ranktop', 
                                       hins_mean = True, fixed_xlims = [-15, 15],
                                       fixed_ylims = [-10, 90], set_lims = False):
     df = xydb_reader(name = name)
     df.loc[:, 'i_point'] = [float(i)%20 for i in df.index]
     fig, axs = plt.subplots(1, len(numpy.unique(df['harvest'])))
     
-    plot_leaf_curvature(name = name, numbering = numbering, 
+    plot_leaf_curvature(name = name, nplants = nplants, numbering = numbering, 
                         alternate = True, hins_mean = hins_mean, alpha = 0.2, axs = axs,
                         fixed_xlims = fixed_xlims,  fixed_ylims = fixed_ylims, set_lims = False)
     if is_iterable(axs):
@@ -191,7 +191,7 @@ def mean_leaf(leaves):
     x,y = curvature2xy(*mean_curv)
     return pandas.DataFrame({'x':x,'y':y})
     
-def plot_mean_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop', 
+def plot_mean_leaf_curvature(name = 'Tremie12', nplants = 30, numbering = 'relative_ranktop', 
                               hins_mean = True, fixed_xlims = [-15, 15],
                               fixed_ylims = [-10, 90], set_lims = False, add_simu = True):
     # TODO :
@@ -200,15 +200,13 @@ def plot_mean_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop',
     df = xydb_reader(name = name)
     fig, axs = plt.subplots(1, len(numpy.unique(df['harvest'])))
     
-    plot_leaf_curvature(name = name, alternate = True, 
+    plot_leaf_curvature(name = name, nplants = nplants, alternate = True, 
                         numbering = numbering, hins_mean = hins_mean, 
-                        alpha = 0.2, axs = axs, set_lims = False, add_sim=add_sim)
+                        alpha = 0.2, axs = axs, set_lims = False, add_sim=add_simu)
     if is_iterable(axs):
         iter_ax = axs.flat
     else:
         iter_ax = iter([axs])
-    
-    
     
     for h in numpy.unique(df['harvest']):
         ax = next(iter_ax)
@@ -225,7 +223,7 @@ def plot_mean_leaf_curvature(name = 'Tremie12', numbering = 'relative_ranktop',
             df_mean.loc[:, 'x'] *= numpy.power(-1, leaf%2)
             ax.plot(df_mean.loc[:,'x'], df_mean.loc[:,'y']+df_grouped.loc[leaf,'hins'],
                         color = color, linewidth = 2, linestyle='-')
-        if add_sim_mean:
+        if add_simu:
             dfsim = load_simulation_curvature(name)                
             ax.set_color_cycle(None)
             colors = ax._get_lines.color_cycle                

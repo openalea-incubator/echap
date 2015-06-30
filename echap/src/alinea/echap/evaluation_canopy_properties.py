@@ -20,13 +20,15 @@ from alinea.caribu.label import Label
 # Run and save canopy properties ###################################################################
 def get_lai_properties(g, adel, nplants):
     df_lai = adel.get_exposed_areas(g, convert=True)
+    colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
+                    'PAI_tot', 'PAI_vert']
     if not df_lai.empty:
-        df_axstat,_ = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
-        return plot_statistics(df_axstat, nplants, adel.domain_area)
+        df_axstat, _ = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
+        df_axstat = plot_statistics(df_axstat, nplants, adel.domain_area)
+        return df_axstat.loc[:, colnames]
     else: 
         colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
-                    'PAI_tot', 'PAI_vert', 'Nbr.axe.tot.m2', 'Nbr.axe.actif.m2.old', 
-                    'number_of_active_axes_per_m2']
+                    'PAI_tot', 'PAI_vert']
         return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
 
 def draft_TC(g, adel, domain, zenith, rep, scale = 1):
