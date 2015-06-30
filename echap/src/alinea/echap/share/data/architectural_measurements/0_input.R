@@ -44,8 +44,8 @@ curvdb <- sapply(names(curvature), function(g) readCurv(prefix[g], curvature[[g]
 #
 # notations (sheath, internode, diameter, stage)
 #
-notations <- list(Mercia = c('tagged_plants_090611'),
-                  Rht3 = c('tagged_plants_090611'),
+notations <- list(Mercia = c('tagged_plants_010611','tagged_plants_090611'),
+                  Rht3 = c('tagged_plants_010611','tagged_plants_090611'),
                   Tremie12 = c(scanned[['Tremie12']][-2],
                                'sampled_plants_120612',
                                'tagged_plants_120712'),

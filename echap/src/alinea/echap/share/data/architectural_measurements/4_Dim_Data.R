@@ -3,8 +3,9 @@
 #           Compilations donees dimensions
 #
 #
-# extraction raw dimensions per rank from notations files
+# extraction raw dimensions per rank from notations files: TO DO : witdh data + add Hcol mercia/rht in Hcdb
 #
+Wblade <- lapply(notdb, function(x) dim_notations(x,'blade_width'))
 Lsheath <- lapply(notdb, function(x) dim_notations(x,'sheath_length'))
 Linternode <- lapply(notdb, function(x) dim_notations(x,'internode_length'))
 #Hcol are directe notation oof collar heights
@@ -16,6 +17,7 @@ Lbnot <- lapply(notdb, function(x) dim_notations(x,'blade_length'))
 msdb <- lapply(notdb, function(x) plant_notations(x))
 #
 # Visual check notations
+view_dim(Wblade,ylim=c(0,3))
 view_dim(Lsheath)
 view_dim(Linternode)
 view_dim(Hcol,ylim=c(0,80))
