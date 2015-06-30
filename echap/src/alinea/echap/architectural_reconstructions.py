@@ -77,8 +77,8 @@ def reconstruction_parameters():
     #
     # Haun Stage = f(TT), convergence between axis
     #---------------------------------------------
-    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts
-    pars['dTT_cohort'] = pdict({'first': 60, 'increment': 10})
+    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts (60 is for Maxwell that has quite large desynchronisation, 30 may be more realistic)
+    pars['dTT_cohort'] = pdict({'first': 30, 'increment': 10})
     #
     # Green Leaves (ssi) = f(HS)
     #

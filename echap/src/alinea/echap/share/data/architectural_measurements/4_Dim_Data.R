@@ -36,7 +36,7 @@ view_dim(hclbc,'Lb')
 #
 # extraction of main stem dimension data from scandb
 scandim <- lapply(scandb, function(x) {
-  cols <- c('Source', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl')
+  cols <- c('Source', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
   x[x$id_Axe=='MB',cols[cols%in%colnames(x)]]})
 #
 # Consolidation of Tremie12 data by crossing of sources

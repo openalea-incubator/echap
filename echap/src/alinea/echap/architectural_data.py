@@ -11,24 +11,19 @@ import alinea.echap
 def dateparse(x):
     return pandas.datetime.strptime(x, '%d/%m/%Y')
     
-def TT_lin(df_TT = None, labels = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'], count=0):
-    lab = labels[count]
-    count += 1
-    if lab in ['Mercia', 'Rht3']:
-        filepath = shared_data(alinea.echap, 'architectural_measurements/MerciaRht3_TTlin_sowing.csv')
-    else:
-        filepath = shared_data(alinea.echap, 'architectural_measurements/'+lab+'_TTlin_sowing.csv')
-    df = pandas.read_csv(filepath, sep=';', decimal = ',')
-    df['Date'] = df['Date'].apply(dateparse)
-    df['label'] = lab
-    if df_TT is None:
-        df_TT =  df
-    else:
-        df_TT = pandas.concat([df_TT, df])
-    if count < len(labels):
-        return TT_lin(df_TT, labels, count)
-    else:
-        return df_TT
+def TT_lin():
+    filename = {'Mercia': 'MerciaRht3_TTlin_sowing.csv', 
+               'Rht3': 'MerciaRht3_TTlin_sowing.csv', 
+               'Tremie12': 'Tremie12_TTlin_sowing.csv', 
+               'Tremie13': 'Tremie13_TTlin_sowing.csv'}
+    def _read(filepath, label):
+        df = pandas.read_csv(filepath, sep=';', decimal = ',')
+        df['Date'] = df['Date'].apply(dateparse)
+        df['label'] = label
+        return df
+    data = {k:_read(shared_data(alinea.echap)+ '/architectural_measurements/' + v, k) for k,v in filename.iteritems()}
+    return pandas.concat(data.values())
+
 
 #
 # ____________________________________________________________________________Plot data
@@ -373,7 +368,7 @@ def Pheno_data(pheno_dict = {}, sources = ['archi_tagged', 'archi_sampled', 'sym
     filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
     df = pandas.read_csv(filepath, sep = ',', decimal='.')
     df['Date'] = df['Date'].apply(dateparse)
-    df_TT = TT_lin(labels = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13'])
+    df_TT = TT_lin()
     df = pandas.merge(df, df_TT)
     pheno_dict[src] = df
     if count < len(sources):
@@ -1283,6 +1278,7 @@ class ReconstructionData(object):
         self.Plot_data = Plot_data()
         self.Tillering_data = Tillering_data()
         self.Pheno_data = Pheno_data()
+        self.Dimension_data = Dim_data()
         
     def save(self, filename):
         with open(filename, 'w') as output:
@@ -1307,6 +1303,8 @@ class ValidationData(object):
         self.tillers_per_plant = tillers_per_plant()
         self.emission_probabilities = emission_probabilities_table()    
         self.haun_stage = haun_stage_aggregated()
+        self.dimensions = dimensions_aggregated()
+        #self.green_leaves = green_leaves_aggregated(HS_fit())
         
     def save(self, filename):
         with open(filename, 'w') as output:
