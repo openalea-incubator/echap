@@ -304,7 +304,7 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade'):
         labels += ['source: ' + src]
     for variety, col in colors().iteritems():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
-                    markerfacecolor=col, markeredgecolor=col, marker = symb)]
+                    markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
         labels += [variety]
     ax.legend(proxys, labels, loc=1)
     
