@@ -207,8 +207,9 @@ view_dim(dimsdb,'Hc', c(0,80))
 cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
 noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','L_internode','H_col')
 names(cols) <- noms
-write.csv(do.call('rbind', sapply(genos, function(g) {
-  dim <- dimtdb[[g]]
+write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {
+  print(g)
+  dim <- dimsdb[[g]]
   dim$label = g
   for (w in noms)
     dim[[w]] <- dim[[cols[w]]]
