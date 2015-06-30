@@ -61,7 +61,8 @@ def haun_stage_plot(obs_HS, fit_HS):
                     linestyle='', markerfacecolor='None', markeredgecolor='k',
                     marker='o', markersize=markersize)
         df_ = df_var_g[df_var_g['source']=='sampled'].reset_index()
-        ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
+        if len(df_) > 0:
+            ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
                     linestyle='', markerfacecolor='None', markeredgecolor='k', 
                     marker='s', markersize=markersize)
         
