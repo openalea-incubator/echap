@@ -6,8 +6,7 @@ import numpy
 import datetime
 import matplotlib.pyplot as plt
 
-from alinea.echap.architectural_reconstructions import (EchapReconstructions, 
-                                                        get_EchapReconstructions, fit_HS)
+from alinea.echap.architectural_reconstructions import echap_reconstructions, HS_fit
 import alinea.echap.architectural_data as archidb
 from alinea.adel.newmtg import adel_labels
 from alinea.astk.plantgl_utils import get_height
@@ -99,7 +98,7 @@ class AdelLeafRecorder:
                     self.data.loc[df_date.index, 'cur_num_leaf_top'] = cur_max_leaf_top - df_date['num_leaf_top'] + 1
     
     def add_haun_stage(self):
-        HSconv = fit_HS()[self.variety]
+        HSconv = HS_fit[self.variety]
         self.data['HS'] = HSconv(self.data['degree_days'])
     
     def post_treatment(self):
@@ -165,11 +164,9 @@ def ddays_and_notations_filter(seq, weather, delay = 20.):
     df[df.index[0]] = True
     return df
     
-def set_adel_canopy(variety = 'Tremie12', nplants = 30, age = 0., reset_reconst = False):
-    if reset_reconst == False:
-        reconst = get_EchapReconstructions()
-    else:
-        reconst = EchapReconstructions()
+def set_adel_canopy(variety = 'Tremie12', nplants = 30, age = 0., 
+                    reset = False, reset_data = False):
+    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
     return reconst.get_reconstruction(name = variety, nplants = nplants)
     
 def get_weather(variety = 'Tremie12'):
@@ -180,13 +177,14 @@ def get_weather(variety = 'Tremie12'):
     seq = pandas.date_range(start = start, end = end, freq='H')
     return weather, seq
     
-def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20., reset_reconst = False):
+def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20., 
+                reset = False, reset_data = False):
     adel = None
     while adel is None:
         try:
             # Initialize wheat canopy
             adel = set_adel_canopy(variety = variety, nplants = nplants, age = 0., 
-                                    reset_reconst = reset_reconst)
+                                    reset = reset, reset_data = reset_data)
         except:
             pass
     recorder = AdelLeafRecorder()
@@ -294,7 +292,7 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
 def add_hs_and_degree_days(df, variety = 'Tremie12'):
     weather = read_weather_variety(variety = variety)
     df['degree_days'] = weather.data.degree_days[df['date']].values
-    HSconv = fit_HS()[variety]
+    HSconv = HS_fit[variety]
     df['HS'] = HSconv(df['degree_days'])
 
 def get_archi_tagged_data(variety = 'Tremie12'):
