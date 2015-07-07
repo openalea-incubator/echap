@@ -207,6 +207,12 @@ def run_and_save(variety = 'Tremie12', nplants = 30, delay = 20.,
     filename = get_file_path(variety = variety, nplants = nplants)
     recorder.save(filename = filename)
 
+def run_and_save_all_varieties(nplants = 30, delay = 20., 
+                                reset = False, reset_data = False):
+    for variety in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']:
+        run_and_save(variety=variety, nplants=nplants, delay=delay,
+                      reset=reset, reset_data=reset_data)
+    
 def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
     file_path = get_file_path(variety = variety, nplants = nplants, group = group)
     df = pandas.read_csv(file_path)
