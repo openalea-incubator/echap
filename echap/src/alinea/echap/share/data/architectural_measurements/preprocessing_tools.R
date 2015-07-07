@@ -443,7 +443,8 @@ add_dims <- function(db, newsource, as='Ls') {
   for (g in names(newsource)) {
     if (is.null(newsource[[g]])) {
       if (!is.null(db[[g]]))
-        db[[g]][[as]] <- NA
+        if (!as%in%names(db[[g]]))
+          db[[g]][[as]] <- NA
     } else {
       new <- newsource[[g]]
       new[[as]] <- new$L

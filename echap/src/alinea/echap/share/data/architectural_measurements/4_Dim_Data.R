@@ -86,7 +86,8 @@ head(comp[order(-abs(comp$Lins-comp$Hcol)),],20)
 # Compil Hcol data
 Hcdb <- Hins
 # add hcol data
-Hcdb$Tremie13 <- Hcol$Tremie13
+for (g in c('Mercia','Rht3', 'Tremie13'))
+  Hcdb[[g]] <- Hcol[[g]]
 hcol <- Hcol$Tremie12
 hcol$Lhcol <- hcol$L
 hcol <- hcol[,-grep('L$',colnames(hcol))]
@@ -111,13 +112,13 @@ dimtdb <- lapply(tagged, function(x) {df <- dimTagged(x);df$Lb <- df$L;df[,-grep
 # sheath, internode, col from notations on final sampling (always occcured after full expansion)
 for (g in genos) {
   dimtdb[[g]]$Source <- 'tagged_plants'
-  dimtdb[[g]]$Wb <- NA
   dimtdb[[g]]$Ab <- NA
+  dimtdb[[g]] <- add_dimt(dimtdb[[g]], Wblade[[g]], 'Wb')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Lsheath[[g]], 'Ls')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Linternode[[g]], 'Li')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Hcdb[[g]], 'Hc')
   #remove data from sampled dimensions objects
-  for (w in c('Lsheath','Linternode','Hcdb')) {
+  for (w in c('Lsheath','Linternode','Hcdb','Wblade')) {
     data <- get(w)
     if (length(grep('tagged', as.character(data[[g]]$Source))) > 0)
       data[[g]] <- data[[g]][-grep('tagged', as.character(data[[g]]$Source)),]
@@ -132,9 +133,10 @@ par(mfrow=c(2,2),mar=c(4,4,1,1))
 lapply(dimtdb, function(dim) {
   plot(c(0,15),c(0,50),type='n')
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Lb,col=x$N,pch=16,type='b'))
+  lapply(split(dim,dim$N), function(x) points(x$rank,x$Wb*3,col=x$N,pch='x',type='p'))
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Ls,col=x$N,pch=1,type='b'))
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Li,col=x$N,pch=16,cex=0.7,type='b'))
-  lapply(split(dim,dim$N), function(x) points(x$rank,x$Hc/2,col=x$N,pch=1,cex=0.7,type='p'))
+  lapply(split(dim,dim$N), function(x) points(x$rank,x$Hc/1.5,col=x$N,pch=1,cex=0.7,type='p'))
 })
 #
 # Export
@@ -170,6 +172,7 @@ dimsdb <- lapply(scandim,function(dim) {
   dat
 })
 # add organ dimensions
+dimsdb <- add_dims(dimsdb, Wblade, 'Wb')
 dimsdb <- add_dims(dimsdb, Lsheath, 'Ls')
 dimsdb <- add_dims(dimsdb, Linternode, 'Li')
 dimsdb <- add_dims(dimsdb, Hcdb, 'Hc')
