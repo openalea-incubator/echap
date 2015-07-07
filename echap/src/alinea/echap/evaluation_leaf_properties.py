@@ -177,7 +177,7 @@ def get_weather(variety = 'Tremie12'):
     seq = pandas.date_range(start = start, end = end, freq='H')
     return weather, seq
     
-def annual_loop(variety = 'Tremie12', nplants = 30, delay = 20., 
+def run_and_save(variety = 'Tremie12', nplants = 30, delay = 20., 
                 reset = False, reset_data = False):
     adel = None
     while adel is None:
