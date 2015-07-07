@@ -316,14 +316,14 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
                 density_data[k] = density_data[k].loc[density_data[k]['HS'] > max(damages[k]['when']),:]
     mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in density_data}
     #
-    fits = {k: {'HS':[0,20],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
+    fits = {k: {'HS':[-20,50],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
     #
     if damages is not None:
         for k in damages:
             if damages[k] is not None:
                 density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
                 density_at_harvest = mean_plant_density[k]
-                fits[k] = {'HS':[0] + damages[k]['when'] + [30], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
+                fits[k] = {'HS':[-20] + damages[k]['when'] + [50], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
     
     fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
                        'inter_row': pdb[k]['inter_row'],

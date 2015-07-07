@@ -236,22 +236,34 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
     
     for i, ax in enumerate(axs.flat):
         variety = next(vars)
-        fit_dim = fit[variety].table(nff = None)
+        try:
+            fit_dim = fit[variety].table(nff = None)
+        except:
+            pass
         df = df_dim[df_dim['label']==variety]
         df_nff = df_dim_nff[df_dim_nff['label']==variety]
         for src in np.unique(df['Source']):
             df_src = df[df['Source']==src]
-            ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = 'k')
+            try:
+                ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = 'k')
+            except:
+                pass
             ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], yerr=df_src[dimension+'_std'],
                         linestyle='', color = 'k', markerfacecolor='k', markeredgecolor='k',
                         marker=markers[src], markersize=7)
             
             df_src_nff = df_nff[df_nff['Source']==src]
+            # if variety == 'Tremie12' and src == 'tagged':
+                # import pdb
+                # pdb.set_trace()
             for nff in np.unique(df_src_nff['nff']):
                 color = cols[nff]
                 df_ = df_src_nff[df_src_nff['nff']==nff].reset_index()
-                fit_nff = fit[variety].table(nff = nff)
-                ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
+                try:
+                    fit_nff = fit[variety].table(nff = nff)
+                    ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
+                except:
+                    pass
                 ax.errorbar(df_['rank'], df_[dimension+'_mean'], yerr=df_[dimension+'_std'],
                             linestyle='', color = color, markerfacecolor=color,
                             markeredgecolor=color, marker=markers[src], markersize=7)
