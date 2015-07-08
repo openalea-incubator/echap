@@ -11,7 +11,7 @@ from openalea.deploy.shared_data import shared_data
 from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
 from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
-                                                        fit_HS, density_fits)
+                                                        HS_fit, density_fits)
 from alinea.adel.postprocessing import axis_statistics, plot_statistics, ground_cover
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
 from alinea.adel.postprocessing import ground_cover
@@ -115,13 +115,13 @@ def run_multi_simu(variety = 'Tremie12', nplants = 30,
                     variability_type = None,
                     age_range = [400, 2600], time_steps = [20, 100],
                     filename = 'canopy_properties_tremie12_5rep.csv',
-                    nrep = 5, scale_povray = 1., reset_reconst = False):
+                    nrep = 5, scale_povray = 1., reset = False, reset_data = False):
     df_props = []
     for rep in range(nrep):
         df_prop = run_one_simulation(variety = variety, nplants = nplants, 
                                        variability_type = variability_type, 
                                        age_range = age_range, time_steps = time_steps,
-                                       scale_povray = scale_povray, reset_reconst = reset_reconst)
+                                       scale_povray = scale_povray, reset = reset, reset_data = reset_data)
         df_prop.loc[:,'rep'] = rep
         df_props.append(df_prop)
     df_props = pandas.concat(df_props)
@@ -132,11 +132,11 @@ def get_file_name(variety = 'Tremie12', nplants = 30, nrep = 5):
     
 def run_and_save_one_simu(variety = 'Tremie12', nplants = 30, variability_type = None,
                           age_range = [400, 2600], time_steps = [20, 100],
-                          scale_povray = 1., reset_reconst = False):                         
+                          scale_povray = 1., reset = False, reset_data = False):                         
     df_save = run_one_simulation(variety = variety, nplants = nplants, 
                                  variability_type = variability_type, age_range = age_range,
                                  time_steps = time_steps, scale_povray = scale_povray,
-                                 reset_reconst = reset_reconst)
+                                 reset = reset, reset_data = reset_data)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = 1)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
@@ -144,11 +144,11 @@ def run_and_save_one_simu(variety = 'Tremie12', nplants = 30, variability_type =
 def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30, 
                             variability_type = None,
                             age_range = [400, 2600], time_steps = [20, 100],
-                            nrep = 5, scale_povray = 1., reset_reconst = False):
+                            nrep = 5, scale_povray = 1., reset = False, reset_data = False):
     df_save = run_multi_simu(variety = variety, nplants = nplants, 
                              variability_type = variability_type, age_range = age_range,
                              time_steps = time_steps, nrep = nrep,
-                             scale_povray = scale_povray, reset_reconst = reset_reconst)
+                             scale_povray = scale_povray, reset = reset, reset_data = reset_data)
     filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
@@ -274,7 +274,7 @@ def get_lai_obs(variety = 'Tremie12', origin = 'biomass'):
             variable = 'PAI_vert_photo'
 
         df_obs = df_obs.rename(columns = {variable:'LAI_vert', 'TT_date':'ThermalTime'})
-        HSconv = fit_HS()[variety]
+        HSconv = HS_fit()[variety]
         df_obs['HS'] = HSconv(df_obs['ThermalTime'])
         df_obs['origin'] = origin_
         if 'date' in df_obs.columns:
@@ -304,7 +304,7 @@ def get_TC_obs(variety = 'Tremie12'):
     df_obs['Gapgreen'] = 1 - df_obs['TCgreen']
     df_obs['Gapgreen_57'] = 1 - df_obs['TCgreen_57']
     df_obs = df_obs.rename(columns = {'TT':'ThermalTime'})
-    HSconv = fit_HS()[variety]
+    HSconv = HS_fit()[variety]
     df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     return df_obs
     
@@ -317,7 +317,7 @@ def get_radiation_obs(variety = 'Tremie12'):
     df_obs = df_obs.rename(columns = {'datetime':'date'})
     df_obs['date'] = df_obs['date'].apply(lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
     df_obs['ThermalTime'] = weather.data.degree_days[df_obs['date']].values
-    HSconv = fit_HS()[variety]
+    HSconv = HS_fit()[variety]
     df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     df_obs['LightInterception_0'] = 1 - df_obs['LightPenetration_0']
     df_obs['LightInterception_20'] = 1 - df_obs['LightPenetration_20']
