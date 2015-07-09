@@ -1252,7 +1252,7 @@ def green_leaves_aggregated(HS_fit):
 def dimensions_aggregated():
     def _aggregate(data, group = ['label', 'Source', 'rank'], func = numpy.mean, column_name = 'mean'):
         df = data.groupby(group).agg(func).loc[:, ['L_blade', 'W_blade', 'A_blade',
-                                                    'L_sheath', 'L_internode', 'H_col']]
+                                                    'L_sheath', 'W_sheath', 'L_internode', 'H_col']]
         df = df.rename(columns={col:col+'_'+column_name for col in df.columns})
         return df.reset_index()
 

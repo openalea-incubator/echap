@@ -3,10 +3,11 @@
 #           Compilations donees dimensions
 #
 #
-# extraction raw dimensions per rank from notations files: TO DO : witdh data + add Hcol mercia/rht in Hcdb
+# extraction raw dimensions per rank from notations files
 #
 Wblade <- lapply(notdb, function(x) dim_notations(x,'blade_width'))
 Lsheath <- lapply(notdb, function(x) dim_notations(x,'sheath_length'))
+Wsheath <- lapply(notdb, function(x) dim_notations(x,'sheath_diameter'))
 Linternode <- lapply(notdb, function(x) dim_notations(x,'internode_length'))
 #Hcol are directe notation oof collar heights
 Hcol <- lapply(notdb, function(x) dim_notations(x,'Hcol_'))
@@ -18,6 +19,7 @@ msdb <- lapply(notdb, function(x) plant_notations(x))
 #
 # Visual check notations
 view_dim(Wblade,ylim=c(0,3))
+view_dim(Wsheath,ylim=c(0,1))
 view_dim(Lsheath)
 view_dim(Linternode)
 view_dim(Hcol,ylim=c(0,80))
@@ -115,10 +117,11 @@ for (g in genos) {
   dimtdb[[g]]$Ab <- NA
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Wblade[[g]], 'Wb')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Lsheath[[g]], 'Ls')
+  dimtdb[[g]] <- add_dimt(dimtdb[[g]], Wsheath[[g]], 'Ws')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Linternode[[g]], 'Li')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Hcdb[[g]], 'Hc')
   #remove data from sampled dimensions objects
-  for (w in c('Lsheath','Linternode','Hcdb','Wblade')) {
+  for (w in c('Lsheath','Linternode','Hcdb','Wblade','Wsheath')) {
     data <- get(w)
     if (length(grep('tagged', as.character(data[[g]]$Source))) > 0)
       data[[g]] <- data[[g]][-grep('tagged', as.character(data[[g]]$Source)),]
@@ -137,12 +140,13 @@ lapply(dimtdb, function(dim) {
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Ls,col=x$N,pch=1,type='b'))
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Li,col=x$N,pch=16,cex=0.7,type='b'))
   lapply(split(dim,dim$N), function(x) points(x$rank,x$Hc/1.5,col=x$N,pch=1,cex=0.7,type='p'))
+  lapply(split(dim,dim$N), function(x) points(x$rank,x$Ws*60,col=x$N,pch='.',type='p'))
 })
 #
 # Export
 #
-cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
-noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','L_internode','H_col')
+cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Ws','Li','Hc')
+noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','W_sheath','L_internode','H_col')
 names(cols) <- noms
 write.csv(do.call('rbind', sapply(genos, function(g) {
   dim <- dimtdb[[g]]
@@ -171,9 +175,11 @@ dimsdb <- lapply(scandim,function(dim) {
     dat$Ab <- ifelse(dim$stat < 2, dim$A_bl, NA)
   dat
 })
+#
 # add organ dimensions
 dimsdb <- add_dims(dimsdb, Wblade, 'Wb')
 dimsdb <- add_dims(dimsdb, Lsheath, 'Ls')
+dimsdb <- add_dims(dimsdb, Wsheath, 'Ws')
 dimsdb <- add_dims(dimsdb, Linternode, 'Li')
 dimsdb <- add_dims(dimsdb, Hcdb, 'Hc')
 # add plant notations (nff, Nflig) and estimate HS
@@ -194,7 +200,7 @@ dimsdb <- lapply(dimsdb, function(dim) {
   for (w in c('Li','Hc'))
     dim[[w]] <-  ifelse(((dim$rank + 1.6) <= dim$HS) | (dim$rank < 8), dim[[w]], NA)
   # filter empty lines
-  empty <- sapply(seq(nrow(dim)), function(irow) all(is.na(unlist(dim[irow,c('Lb','Wb','Ab','Ls','Li','Hc')]))))
+  empty <- sapply(seq(nrow(dim)), function(irow) all(is.na(unlist(dim[irow,c('Lb','Wb','Ab','Ls','Ws','Li','Hc')]))))
   dim[!empty,]
 })
 #
@@ -204,13 +210,14 @@ view_dim(dimsdb,'Lb')
 view_dim(dimsdb,'Wb', c(0,3))
 view_dim(dimsdb,'Ab', c(0,45))
 view_dim(dimsdb,'Ls')
+view_dim(dimsdb,'Ws',c(0,1))
 view_dim(dimsdb,'Li')
 view_dim(dimsdb,'Hc', c(0,80))
 #
 # Export
 #
-cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Li','Hc')
-noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','L_internode','H_col')
+cols <- c('label', 'Source', 'N', 'nff', 'rank', 'Lb','Wb','Ab','Ls','Ws','Li','Hc')
+noms <- c('label', 'Source', 'N', 'nff', 'rank', 'L_blade','W_blade','A_blade','L_sheath','W_sheath','L_internode','H_col')
 names(cols) <- noms
 write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {
   print(g)
@@ -223,10 +230,6 @@ write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {
 #
 # plant level variables
 #
-# Stem diameters
-# 
-diams <- lapply(msdb, function(dim) dim[!is.na(dim$Daxe_mm),c('Source','N','nff','Daxe_mm')])
-write.csv(do.call('rbind', sapply(names(diams), function(g) {dim <- diams[[g]]; dim$d=dim$Daxe_mm / 10;dim$label = g; dim[,c('label','Source','N','nff','d')]}, simplify=FALSE)), 'Compil_Diameter.csv',row.names=FALSE)
 #
 # Area per plant from scanned data
 #

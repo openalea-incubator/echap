@@ -113,6 +113,9 @@ readNotations <- function(pref, notationfiles, name=NULL) {
       for (i in seq(max(last_null)))
         res[[paste('internode_length_F',i,sep='')]] <- ifelse(i <= last_null,0,NA)
     }
+    # if Daxe_mm measured, set sheath_diameter_F6 = D / 10
+    if ('Daxe_mm' %in% colnames(res))
+      res$sheath_diameter_F6 <- res$Daxe_mm / 10
     #filter data (Mercai/Rht3)
     if (!is.null(name))
       res<- res[res$var==name,]
