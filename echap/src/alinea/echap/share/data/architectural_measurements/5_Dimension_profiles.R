@@ -8,7 +8,6 @@
 profdb <- dimtdb
 for (g in names(profdb)) {
   dat <- merge(dimtdb[[g]],TTem[[g]])
-  dat$Ws <- as.numeric(NA)
   rphy <- dat$TTlig * slopeM[[g]]
   dat$rank_phy <- rphy
   dat <- dat[!is.na(rphy),]
@@ -99,18 +98,21 @@ for (w in names(ym)) {
   plot(c(-10,5),c(0,ym[[w]]),xlab=' normalised phyllochronic rank',ylab=w,type='n')
   points(pdb$xn,pdb[[w]],col=as.factor(pdb$label),pch=16)
   lines(fits[[w]],col=2,lwd=2)
-  lines(predict(fits[[w]],seq(-10,5,0.1)),col=2)
+  lines(predict(fits[[w]],seq(-15,5,0.1)),col=2)
 }
 #
 # export profiles, normalised by value at xn=0
 #
-xn <- seq(-10,5,0.1)
+xn <- seq(-13,4.5,0.1)
 cols <- list(L_blade='Lb',W_blade='Wb',L_sheath='Ls', L_internode='Li',W_sheath='Ws',Hcol='Hc')
 profiles <- data.frame(xn=xn)
 for (w in names(cols))
-  profiles[[w]] <- predict(fits[[cols[[w]]]], xn)$y /  predict(fits[[cols[[w]]]], 0)$y
+  profiles[[w]] <- predict(fits[[cols[[w]]]], xn)$y
 # check negative values
 profiles$L_internode[1:max(which(profiles$L_internode < 0))] <- 0
+#flaten Ws and add W_internode
+profiles$W_sheath <- mean(na.omit(profiles$W_sheath))
+profiles$W_internode <- profiles$W_sheath
 #
 write.csv(profiles, '../Dimension_profiles.csv',row.names=FALSE)
 

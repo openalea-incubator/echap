@@ -236,10 +236,7 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
     
     for i, ax in enumerate(axs.flat):
         variety = next(vars)
-        try:
-            fit_dim = fit[variety].table(nff = None)
-        except:
-            pass
+        fit_dim = fit[variety].dimT(nff = None)
         df = df_dim[df_dim['label']==variety]
         df_nff = df_dim_nff[df_dim_nff['label']==variety]
         for src in np.unique(df['Source']):
@@ -259,11 +256,8 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
             for nff in np.unique(df_src_nff['nff']):
                 color = cols[nff]
                 df_ = df_src_nff[df_src_nff['nff']==nff].reset_index()
-                try:
-                    fit_nff = fit[variety].table(nff = nff)
-                    ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
-                except:
-                    pass
+                fit_nff = fit[variety].dimT(nff = nff)
+                ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
                 ax.errorbar(df_['rank'], df_[dimension+'_mean'], yerr=df_[dimension+'_std'],
                             linestyle='', color = color, markerfacecolor=color,
                             markeredgecolor=color, marker=markers[src], markersize=7)
@@ -291,7 +285,7 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade', ax = 
     cols = colors()
     for variety in varieties:
         color = cols[variety]
-        fit_dim = fit[variety].table(nff = None)
+        fit_dim = fit[variety].dimT(nff = None)
         df_dim_var = df_dim[df_dim['label']==variety]
         ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = color)
         for src in np.unique(df_dim_var['Source']):
@@ -331,8 +325,8 @@ def dimension_plot_varieties(dimension_data, fit = None):
     fig, axs = plt.subplots(2, 3)
     for i, ax in enumerate(axs.flat):
         # Temp
-        if dimensions[i] != 'A_blade':
-            dimension_plot_mean(dimension_data, fit = fit, dimension = dimensions[i], 
+        #if dimensions[i] != 'A_blade':
+        dimension_plot_mean(dimension_data, fit = fit, dimension = dimensions[i], 
                                 ax = ax, legend = False)
         ax.annotate(dimensions[i], xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
     proxys = []

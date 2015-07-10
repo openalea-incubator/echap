@@ -364,10 +364,9 @@ dim_notations <- function(not, what='sheath_length')  {
       sel <- seq(nrow(nt))
       if ('axe' %in% colnames(nt))
         sel <- nt$axe=='MB'
-      lg <- nt[sel,cols]
-      lg$N=nt$N[sel]
+      lg <- nt[sel,c(grep('^N$',colnames(nt)),cols)]
       numphy <- sapply(colnames(nt)[cols], function(x) as.numeric(strsplit(x,'_F')[[1]][2]))
-      dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N,rank=numphy, L=unlist(x[1,seq(length(cols))]))))
+      dat <- do.call('rbind', lapply(split(lg, lg$N), function(x) data.frame(Source=s, N=x$N,rank=numphy, L=unlist(x[1,grep(what,colnames(lg))]))))
       dat[!is.na(dat$L),]
     }))
   }

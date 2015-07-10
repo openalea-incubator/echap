@@ -432,22 +432,25 @@ def all_scan():
 
 if run_plots:
     parameters = reconstruction_parameters()
-    axepfits = axepop_fits(**parameters)
+    #axepfits = axepop_fits(**parameters)
     hs = HS_fit()
-    # fits = {k: pgen_ext.WheatDimensions(axepfits[k].mean_nff(), hs[k].dHS_nff(),1.2) for k in hs}
-    fits = {k: pgen_ext.WheatDimensions(axepfits[k].mean_nff(), 0.25, 1.2) for k in hs}
-    obs = archidb.validation_data()
-    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'L_blade')
+    #fits = {k: pgen_ext.WheatDimensions(axepfits[k].mean_nff(), hs[k].dHS_nff(),1) for k in hs}
+    fits = {k: pgen_ext.WheatDimensions(hs[k]) for k in hs}
+    obs = archidb.ReconstructionData().Dimension_data
+    for k in fits:
+        fits[k].fit_dimensions(obs[obs['label'] == k])
+    obs = archidb.validation_data().dimensions
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
     
-    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'W_blade')
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade')
     
-    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'L_sheath')
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_sheath')
     
-    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'L_internode')
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_internode')
     
-    archi_plot.dimension_plot(obs.dimensions, fit = fits, dimension = 'H_col')
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'H_col')
     
-    archi_plot.dimension_plot_varieties(obs.dimensions, fit = fits)
+    archi_plot.dimension_plot_varieties(obs, fit = fits)
     
     # archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
