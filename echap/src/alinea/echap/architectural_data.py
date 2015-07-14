@@ -432,59 +432,6 @@ def plantgen_as_dict(inputs, dynT, dimT):
     return d
     
 
-
-
-    
-'''   
-
-     
-def Mercia_2010_plantgen():
-    dynT = shared_data(alinea.echap, 'Mercia_dynT_user.csv')
-    dimT = shared_data(alinea.echap, 'Mercia_dimT_user.csv')
-    inputs = shared_data(alinea.echap, 'Mercia_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-    
-# composite ---
-def Mercia_2010_nff11_plantgen():
-    dynT = shared_data(alinea.echap, 'Mercia_dynT11_user.csv')
-    dimT = shared_data(alinea.echap, 'Mercia_dimT11_user.csv')
-    inputs = shared_data(alinea.echap, 'Mercia_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-def Mercia_2010_nff12_plantgen():
-    dynT = shared_data(alinea.echap, 'Mercia_dynT12_user.csv')
-    dimT = shared_data(alinea.echap, 'Mercia_dimT12_user.csv')
-    inputs = shared_data(alinea.echap, 'Mercia_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-def Mercia_2010_nff13_plantgen():
-    dynT = shared_data(alinea.echap, 'Mercia_dynT13_user.csv')
-    dimT = shared_data(alinea.echap, 'Mercia_dimT13_user.csv') #pas donnees excel => ajout de la ligne 13 a dimT12
-    inputs = shared_data(alinea.echap, 'Mercia_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-    
-def Rht3_2010_nff11_plantgen():
-    dynT = shared_data(alinea.echap, 'Rht3_dynT11_user.csv')
-    dimT = shared_data(alinea.echap, 'Rht3_dimT11_user.csv')
-    inputs = shared_data(alinea.echap, 'Rht3_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-def Rht3_2010_nff12_plantgen():
-    dynT = shared_data(alinea.echap, 'Rht3_dynT12_user.csv')
-    dimT = shared_data(alinea.echap, 'Rht3_dimT12_user.csv')
-    inputs = shared_data(alinea.echap, 'Rht3_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-#---
-    
-def Rht3_2010_plantgen():
-    dynT = shared_data(alinea.echap, 'Rht3_dynT_user.csv')
-    dimT = shared_data(alinea.echap, 'Rht3_dimT_user.csv')
-    inputs = shared_data(alinea.echap, 'Rht3_plantgen_inputs_MIN.py')
-    return plantgen_as_dict(inputs, dynT, dimT)
-
-def HS_data():
-    fn = shared_data(alinea.echap, 'HS_data_Mercia_Rht3_2010_2011.csv')
-    data = pandas.read_csv(fn,decimal=',',sep='\t')
-    grouped = data.groupby(['variety'],as_index=False)
-    return grouped.aggregate('mean')
-'''  
     
 #
 # LAI data
