@@ -404,22 +404,6 @@ def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
 
 
 #----------------------------------------------------- dimension
-def dimensions_data():
-    dim = {}
-    for var in ['Mercia','Rht3','Tremie12','Tremie13']:
-        if var=='Tremie12':
-            for nff in [12,13]:
-                fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
-                dim[var,nff] = pandas.read_csv(fn)
-        elif var=='Mercia' or var=='Rht3' or var=='Tremie13':
-            for nff in [11,12]:
-                # HACK
-                if var == 'Tremie13' and nff == 11:
-                    fn = shared_data(alinea.echap, var+'_dimT%d_user.csv'%(nff))
-                else:
-                    fn = shared_data(alinea.echap, var+'_dimT%d_user_base.csv'%(nff))
-                dim[var,nff] = pandas.read_csv(fn)
-    return dim
     
 def Dim_data():
     def read_dim_data(source = 'sampled'):
@@ -440,89 +424,6 @@ def blade_dimensions_MerciaRht3_2009_2010():
     fn = shared_data(alinea.echap, 'scaned_blade_dimensions_MerciaRht3_2010.csv')
     return pandas.read_csv(fn,na_values=('NA'),sep=' ')
 
-#----------------------------------------------------- Fitted dimension
-
-def Mercia_2011_fitted_dimensions():
-    dim = {}
-    for nff in [11,12,13]:
-        fn = shared_data(alinea.echap, 'Mercia_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)
-    return dim
-    
-def Rht3_2011_fitted_dimensions():
-    dim = {}
-    for nff in [11,12]:
-        fn = shared_data(alinea.echap, 'rht3_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)
-    return dim
-    
-def Tremie12_fitted_dimensions():
-    dim = {}
-    for nff in [12,13]:
-        fn = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)
-    return dim
-    
-def Tremie13_fitted_dimensions():
-    dim = {}
-    for nff in [12]:
-        fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)
-        # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
-        fn_tremie12 = shared_data(alinea.echap, 'Tremie12_dimT%d_user.csv'%(nff))
-        dim_tremie12 = pandas.read_csv(fn_tremie12)
-        dim[nff]['L_sheath'] = [3,3,3,2.5,3,5,6.5,8,9.5,11,13,14]
-        dim[nff]['L_internode'] = dim_tremie12['L_internode']
-        dim[nff]['W_blade'] = dim_tremie12['W_blade']
-        
-        #ajustement largeur grace au plot dimension dans architectural_reconstruction_plot
-        for i in [4,5,6,7,8,9,10,11]:
-            dim[nff]['W_blade'][i] = dim[nff]['W_blade'][i]*1.3
-            
-        dim[nff]['W_sheath'] = dim_tremie12['W_sheath']
-        dim[nff]['W_internode'] = dim_tremie12['W_internode']
-        dim[nff]['L_internode'] = dim_tremie12['L_internode'] # fait buguer le script
-        # on complete la colonne L_internode
-        #dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
-        # creation de dim[11]
-        dim[nff-1] = dim[nff].copy()
-        dim[nff-1] = dim[nff-1][0:11]
-        dim[nff-1]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
-    return dim
-    '''dim = {}
-    for nff in [11, 12]:
-        fn = shared_data(alinea.echap, 'Tremie13_dimT%d_user.csv'%(nff))
-        dim[nff] = pandas.read_csv(fn)
-        # on recupere L_sheath et L_internode, W_blade, W_sheath et W_internode de Tremie12
-        fn_rht3 = shared_data(alinea.echap, 'Rht3_dimT%d_user.csv'%(nff))
-        dim_rht3 = pandas.read_csv(fn_rht3)
-        dim[nff]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
-        dim[nff]['L_sheath'] = dim_rht3['L_sheath']
-        dim[nff]['L_internode'] = dim_rht3['L_internode']
-        dim[nff]['W_blade'] = dim_rht3['W_blade']
-        
-        #ajustement largeur grace au plot dimension dans architectural_reconstruction_plot
-        for i in [4,5,6,7,8,9,10,11]:
-            dim[nff]['W_blade'][i] = dim[nff]['W_blade'][i]*1.3
-            
-        dim[nff]['W_sheath'] = dim_rht3['W_sheath']
-        dim[nff]['W_internode'] = dim_rht3['W_internode']
-        dim[nff]['L_internode'] = dim_rht3['L_internode'] # fait buguer le script
-        # on complete la colonne L_internode
-        #dim[nff]['L_internode'] = [0,0,0,0,0,0,0,4.23,14.16,14.92,14.98,15.06]
-        # creation de dim[11]
-        dim[nff-1] = dim[nff].copy()
-        dim[nff-1] = dim[nff-1][0:11]
-        dim[nff-1]['L_blade'] = [6.8,8.2,9.7,10.0,10.7,11.4,13.9,17.5,22.0,23.4,14.7]
-    return dim'''
-
-def dimension_fits():
-    d = {'Mercia': Mercia_2011_fitted_dimensions(),
-        'Rht3': Rht3_2011_fitted_dimensions(),
-        'Tremie12': Tremie12_fitted_dimensions(),
-        'Tremie13': Tremie13_fitted_dimensions()}
-    return d
-    
 
 #----------------------------------------------------- Plantgen
 def plantgen_as_dict(inputs, dynT, dimT):
