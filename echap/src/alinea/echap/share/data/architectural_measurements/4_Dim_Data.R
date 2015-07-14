@@ -233,10 +233,9 @@ write.csv(do.call('rbind', sapply(names(dimsdb), function(g) {
 #
 # Area per plant from scanned data
 #
-cols <- c('prelevement','N','lmax','A_bl','A_bl_green','pcent_green')
+cols <- c('prelevement','N','lmax','A_bl','A_bl_green')
 plantarea <- lapply(scandb, function(x) x[,cols[cols%in%colnames(x)]])
 plantarea$Tremie13$lmax <- as.numeric(NA)
-plantarea$Tremie13$A_bl_green <- plantarea$Tremie13$A_bl * plantarea$Tremie13$pcent_green / 100
 plantarea <- lapply(plantarea, function(x) aggregate(x[,c('lmax','A_bl','A_bl_green')],list(Date=x$prelevement, N=x$N),sum))
 #
 #export

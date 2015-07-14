@@ -16,7 +16,7 @@ Date	var	N	axe	Nflig	Nfvis	fertile	Daxe	Hcol	sheath_length_F8	sheath_length_F9	s
 09/05/2012	Tremie	7	MB	13	0	x	4,9	60		8	12	13,9	14,7	14,5			2,1	4	9,4	16,4	14,3	
 09/05/2012	Tremie	7	T1			x	4,8	56														
 09/05/2012	Tremie	7	T2			x	4	53														
-09/05/2012	Tremie	8	MB	12	0	x	4,8	57		11,3	13,2	14	14,2				3	9,5	15,3			
+09/05/2012	Tremie	8	MB	13	0	x	4,8	57			11,3	13,2	14	14,2				3	9,5	15,3		
 09/05/2012	Tremie	8	T1			x	4,4	51														
 09/05/2012	Tremie	9	MB	13	0	x	5	63		11,2	13,4	12,5	13	13				3,6	8,2	13,3	14,2	
 09/05/2012	Tremie	9	T1			x	4,6	58,5														
@@ -30,7 +30,7 @@ Date	var	N	axe	Nflig	Nfvis	fertile	Daxe	Hcol	sheath_length_F8	sheath_length_F9	s
 09/05/2012	Tremie	14	MB	13	0	x	5,3	53		11	13,5	14	14,2				1	4,3	8,2	14		
 09/05/2012	Tremie	14	T1			x	4,6	50														
 09/05/2012	Tremie	14	T2			x	3,55	39														
-09/05/2012	Tremie	15	MB	13	0	x	4,9	56		12	12,3	13,7	13,2			2,8	4	10,8	14,3			
+09/05/2012	Tremie	15	MB	13	0	x	4,9	56			12	12,3	13,7	13,2			2,8	4	10,8	14,3		
 09/05/2012	Tremie	15	T1			x	3,8	52														
 09/05/2012	Tremie	16	MB	13	0	x	5,14	57			11,8	11,5	14,5	14,6				1,8	4,5	11,2	13,5	
 09/05/2012	Tremie	16	T1			x	4,4	47														
@@ -50,7 +50,7 @@ Date	var	N	axe	Nflig	Nfvis	fertile	Daxe	Hcol	sheath_length_F8	sheath_length_F9	s
 09/05/2012	Tremie	23	MB	13	0	x	4,7	53,5		8,1	12	10,7	11,3	12,8			2	5,2	10,5	13,2		
 09/05/2012	Tremie	24	MB	13	0	x	5,6	57		9,5	12,5	10,2	12,8	13,5				2,9	4,5	11,5	14	
 09/05/2012	Tremie	24	T1			x	4,2	55														
-09/05/2012	Tremie	25	MB	13	0	x	5,3	54		9	11,2	10	12	14				1,5	1,7	9	15,3	
+09/05/2012	Tremie	25	MB	12	0	x	5,3	54	9	11,2	10	12	14				1,5	1,7	9	15,3		
 09/05/2012	Tremie	25	T1			0	2,8	31,5														
 09/05/2012	Tremie	25	T2			0	2,4	23,4														
 09/05/2012	Tremie	26	MB	13	0	x	5,12	60,2		10,5	13	12	14,2	13,7				3	7,5	11,8	14,3	
