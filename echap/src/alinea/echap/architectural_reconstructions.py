@@ -26,8 +26,11 @@ import alinea.echap.architectural_data as archidb
 import alinea.echap.architectural_reconstructions_plot as archi_plot
 
 import alinea.adel.plantgen_extensions as pgen_ext
-run_plots = False # prevent ipython %run to make plots
 
+run_plots = False # prevent ipython %run to make plots
+reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
+
+    
 
 class NotImplementedError(Exception):
     pass
@@ -47,6 +50,12 @@ def sen(pgen):
     # HS_GL_SSI_T.to_csv('C:/Users/Administrateur/openaleapkg/echap/test/HS_GL_SSI_T_test.csv')
     
     return HS_GL_SSI_T
+    
+def plantgen_as_dict(inputs, dynT, dimT):
+    d={}
+    d['dynT_user'], d['dimT_user'], d['plants_number'],d['plants_density'], d['decide_child_axis_probabilities'], d['MS_leaves_number_probabilities'], d['ears_density'], d['GL_number'], d['delais_TT_stop_del_axis'], d['TT_col_break'],d['inner_params'] =  read_plantgen_inputs(inputs, dynT, dimT)
+    return d
+    
 '''
    
 def setAdel(**kwds):    
@@ -62,7 +71,7 @@ def setAdel(**kwds):
 def pdict(value):
     """ create a parameter dict for all echap cultivar with value
     """
-    return {k:value for k in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')}
+    return {k:deepcopy(value) for k in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')}
 #
 def reconstruction_parameters():
     """ Manual parameters used for fitting Echap experiments
@@ -82,8 +91,10 @@ def reconstruction_parameters():
     #
     # Green Leaves (ssi) = f(HS)
     #
-    pars['GLpars'] = pdict({'GL_start_senescence':4.4, 'GL_bolting':2.5, 'GL_flag': 4.6, 'n_elongated_internode': 3.7})
-    pars['GLpars']['Tremie12']={'GL_start_senescence':4.4, 'GL_bolting':2.5, 'GL_flag': 5, 'n_elongated_internode': 4}
+    pars['GLpars'] = pdict({'GL_start_senescence':4.4, 'GL_bolting':2.2, 'GL_flag': 4.4, 'dHS_bolting': 3.7, 'curvature' : -0.002})
+    pars['GLpars']['Tremie12'].update({'GL_bolting':1.7, 'GL_flag': 5, 'dHS_bolting': 4, 'curvature' : -0.007})
+    pars['GLpars']['Tremie13'].update({'GL_bolting':2.1})
+    pars['GLpars']['Rht3'].update({'GL_bolting':2.3})
     #
     # Plant Density
     #--------------
@@ -129,6 +140,7 @@ def reconstruction_parameters():
     #
     return pars
 
+parameters = reconstruction_parameters()
 #
 # --------------------------------------------------------------- Fit HS = f(TT)
 #
@@ -204,7 +216,7 @@ def fit_HS(reset_data=False, **parameters):
     std_TTem = TTem_p.reset_index().groupby('label').agg('std').loc[:,0]
   
     # HS fits
-    hs_fits = {k: pgen_ext.HaunStage(hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k], dTT_cohort[k]) for k in dTT_cohort}
+    hs_fits = {k: pgen_ext.HaunStage(1. / hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k] / hs_ms['slope'][k], dTT_cohort[k]) for k in dTT_cohort}
     return hs_fits
     
     
@@ -224,46 +236,53 @@ def HS_fit(reset=False, reset_data=False):
         pickle.dump(fit, output)
     return fit
 #
-
+if reset_data:
+    HSfit = HS_fit(reset=True, reset_data=True)
+    vdata = archidb.validation_data(reset=True, HS_fit=HSfit)
+    rdata = archidb.reconstruction_data(reset=True)
+else:
+    HSfit = HS_fit()
+    vdata = vdata = archidb.validation_data()
+    rdata = archidb.reconstruction_data()
+    
 
 if run_plots:
-    parameters = reconstruction_parameters()
-    fits = HS_fit(reset=True) 
-    obs = archidb.validation_data()
-    archi_plot.haun_stage_plot(obs.haun_stage, fits)
+    fits = HSfit
+    obs = vdata.haun_stage
+    archi_plot.haun_stage_plot(obs, fits)
 
 
 #
 # --------------------------------------------------------------- Fit GL = f(HS since flag)
 #
-def GL_fit(reset_data=False, **parameters):
+def GL_fit(data, **parameters):
     """ Regression for Green leaf data
     """
     GLpars = parameters.get('GLpars')
-    fits = {k:pgen_ext.GreenLeaves(**GLpars[k]) for k in GLpars}
-    #  TO DO : fit a (GreenLeaves method) with GL data
-    df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = archidb.green_leaves_aggregated(HS_fit())
-    obs = pandas.concat([df_GL_obs_global, df_GL_est_global])
-    for k in fits:
-        if k=='Tremie12':
-            obsk=obs[obs['label']=='Tremie12']
-        else:
-            obsk=obs[obs['label']!='Tremie12']
-            x = obsk['HS'].astype(float).values-obsk['HSflag'].astype(float).values
-            obsk=obsk[x<10]
-        fits[k].fit_a(obsk['HS'].astype(float).values-obsk['HSflag'].astype(float).values,
-                      obsk['GL_mean'].astype(float).values)
-    return fits
     
+    #df_GL_obs_nff,  df_GL_obs_global = data.green_leaves
+    #df_GL_est_nff,  df_GL_est_global = data.green_leaves_estimated   
+    #obs = pandas.concat([df_GL_obs_global, df_GL_est_global])
+    ## compute curvature using Tremie12 data
+    #obsT12 = obs[obs['label']=='Tremie12']
+    #fitT12 = pgen_ext.GreenLeaves(**GLpars['Tremie12'])
+    #fitT12.fit_a(obsT12['HS'].astype(float).values - obsT12['HSflag'].astype(float).values,
+    #                  obsT12['GL_mean'].astype(float).values)
+    #print fitT12.a
+    #
+    return {k:pgen_ext.GreenLeaves(HSfit[k], **GLpars[k]) for k in GLpars}
 
+    
 if run_plots:
-    parameters = reconstruction_parameters()
-    fits = GL_fit(**parameters) 
-    obs = archidb.green_leaves_aggregated(HS_fit())
+    gl_obs_nff, gl_obs = vdata.green_leaves
+    gl_est_nff, gl_est = vdata.green_leaves_estimated
     # Compare varieties
-    archi_plot.green_leaves_plot_mean(obs, fits, HS_fit())
+    obs = (gl_obs, gl_est)
+    fits = GL_fit(vdata,**parameters)
+    archi_plot.green_leaves_plot_mean(obs, fits)
     # Compare nff
-    archi_plot.green_leaves_plot(obs, fits, HS_fit())
+    obs = (gl_obs_nff, gl_est_nff, gl_obs, gl_est)
+    archi_plot.green_leaves_plot(obs, fits)
 
 #
 # --------------------------------------------------------------- Fit Plant density = f(HS)

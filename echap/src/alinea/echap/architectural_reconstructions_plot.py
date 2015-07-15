@@ -92,7 +92,7 @@ def plot_dot_GL_by_source(ax, data, color='k', markerfacecolor='k',
                 linestyle='', markerfacecolor=markerfacecolor, markeredgecolor=color,
                 marker=markers[df['source'].values[0]], markersize=markersize))
                     
-def green_leaves_plot(obs_GL, fit_GL, fit_HS):        
+def green_leaves_plot(obs_GL, fit_GL):        
     df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
     df_GL_obs_global = df_GL_obs_global[df_GL_obs_global['source']!='symptom_ap']
     df_GL_est_global = df_GL_est_global[df_GL_est_global['source']!='symptom_ap']
@@ -117,9 +117,9 @@ def green_leaves_plot(obs_GL, fit_GL, fit_HS):
     x = np.arange(0, 30, 0.1)
     for i, ax in enumerate(axs.flat):
         variety = varieties[i]
-        HSflag_mean = fit_HS[variety].HSflag(nff=None)
-        curv_mean = fit_GL[variety].curve(HSflag_mean)
-        ax.plot(x-HSflag_mean, curv_mean(x), 'k')
+        HSflag_mean = fit_GL[variety].hs_t2()
+        curv_mean = fit_GL[variety].curve()
+        ax.plot(x - HSflag_mean, curv_mean(x), 'k')
 
         df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety].reset_index()
         plot_dot_GL_by_source(ax, df_var_g_obs, color='k', markerfacecolor='k', markers = markers)
@@ -130,10 +130,10 @@ def green_leaves_plot(obs_GL, fit_GL, fit_HS):
         df_est_nff_var = df_GL_est_nff[df_GL_est_nff['label']==variety]
         for j, nff in enumerate(np.unique(df_obs_nff_var['nff'])):
             df_nff = df_obs_nff_var[df_obs_nff_var['nff']==nff].reset_index()
-            HSflag_nff = fit_HS[variety].HSflag(nff=nff)
-            curv_nff = fit_GL[variety].curve(HSflag_nff)
+            HSflag_nff = fit_GL[variety].hs_t2(nff)
+            curv_nff = fit_GL[variety].curve(nff)
             color = colors[nff]
-            ax.plot(x-HSflag_nff, curv_nff(x), color = color)
+            ax.plot(x - HSflag_nff, curv_nff(x), color = color)
             
             plot_dot_GL_by_source(ax, df_nff, color=colors[nff],
                                   markerfacecolor=colors[nff], markers = markers)
@@ -149,9 +149,9 @@ def green_leaves_plot(obs_GL, fit_GL, fit_HS):
         if i == 1:
             ax.legend(proxys, labels, bbox_to_anchor=(1., 1), loc=2, borderaxespad=0.)
     
-def green_leaves_plot_mean(obs_GL, fit_GL, fit_HS):
-    df_GL_obs_nff, df_GL_est_nff, df_GL_obs_global, df_GL_est_global = obs_GL
-    varieties = np.unique(df_GL_obs_nff['label'])
+def green_leaves_plot_mean(obs_GL, fit_GL):
+    df_GL_obs_global, df_GL_est_global = obs_GL
+    varieties = np.unique(df_GL_obs_global['label'])
     
     fig, ax = plt.subplots(1, 1)
     markers = {'tagged':'s', 'sampled':'^', 'symptom':'o', 'symptom_ap':'d'}
@@ -159,8 +159,8 @@ def green_leaves_plot_mean(obs_GL, fit_GL, fit_HS):
     x = np.arange(0, 30, 0.1)
     for variety in varieties:
         color = colors()[variety]
-        HSflag_mean = fit_HS[variety].HSflag(nff=None)
-        curv_mean = fit_GL[variety].curve(HSflag_mean)
+        HSflag_mean = fit_GL[variety].hs_t2()
+        curv_mean = fit_GL[variety].curve()
         ax.plot(x-HSflag_mean, curv_mean(x), color=color)
     
         df_var_g_obs = df_GL_obs_global[df_GL_obs_global['label']==variety].reset_index()
@@ -319,7 +319,7 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade', ax = 
         
 def dimension_plot_varieties(dimension_data, fit = None):
     df_dim, df_dim_nff = dimension_data
-    dimensions = ['L_blade', 'W_blade', 'A_blade', 'L_sheath', 'L_internode', 'H_col']
+    dimensions = ['L_blade', 'W_blade', 'L_sheath', 'W_sheath', 'L_internode', 'H_col']
     varieties = np.unique(df_dim['label'])
     markers = markers_source()
     fig, axs = plt.subplots(2, 3)
