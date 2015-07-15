@@ -448,7 +448,7 @@ def dimension_fits(hsfit,reset_data=False, **parameters):
     return fits
 
 if run_plots:
-
+#bizzare : mercia nff 13 = 1 plante, mais on a des bares d'erreur !
     fits = dimension_fits(HSfit, **parameters)
     obs = vdata.dimensions
     
