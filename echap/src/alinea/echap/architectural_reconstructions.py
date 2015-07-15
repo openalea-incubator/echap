@@ -91,6 +91,7 @@ def reconstruction_parameters():
     #
     # Green Leaves (ssi) = f(HS)
     #
+    # in the original pgen, dHS_bolting is estimated as the decimal number of elongated internodes
     pars['GLpars'] = pdict({'GL_start_senescence':4.4, 'GL_bolting':2.2, 'GL_flag': 4.4, 'dHS_bolting': 3.7, 'curvature' : -0.002})
     pars['GLpars']['Tremie12'].update({'GL_bolting':1.7, 'GL_flag': 5, 'dHS_bolting': 4, 'curvature' : -0.007})
     pars['GLpars']['Tremie13'].update({'GL_bolting':2.1})
@@ -112,12 +113,10 @@ def reconstruction_parameters():
     pars['max_order'] = None
     # delay between stop of growth and disparition of a tiller
     pars['delta_stop_del'] = pdict(2.)
-    # n_elongated internode is used to control HS of tiller regression start for the mean plant (start = nff - n_elongated_internode + delta_reg)
-    # if original plantgen model behaviour is desired (true decimal number of elongated internodes computed from dimension data), this value should be set to None
-    pars['n_elongated_internode'] = {'Mercia':3.2, 'Rht3':3.1, 'Tremie12':4.2, 'Tremie13':4}
+    # in the original pgen, dHS_reg is estimated as the decimal number of elongated internode + 0.36
+    pars['dHS_reg'] = {'Mercia':3.7, 'Rht3':3.7, 'Tremie12':4., 'Tremie13':3.7}
     # reduction of emmission
-    # For Rht3, factor 2 of T5 compensates for absence of T6
-    pars['emission_reduction'] = {'Mercia':None, 'Rht3':{'T5':2.}, 'Tremie12':None, 'Tremie13':{'T3':0.5, 'T4':0.5}}
+    pars['emission_reduction'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':{'T4':0.5}}
     # damages to tillers
     # when indicates the period (Haun stages) during which damage effectively occur (ie axes disappear).
     # when will be adapted for each tiller so that damaged tillers can emerge before dying    
@@ -126,7 +125,7 @@ def reconstruction_parameters():
     #pars['tiller_damages'] = None
     pars['tiller_damages'] = {'Mercia':{'when':[6,13],'damage':{t:0.25 for t in ('T1','T2','T3')}}, 
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
-                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.5 for t in ['T3']}},
+                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.2 for t in ['T3']}},
                               'Tremie13': None}
     #
     # Leaf geometry
@@ -255,7 +254,7 @@ if run_plots:
 #
 # --------------------------------------------------------------- Fit GL = f(HS since flag)
 #
-def GL_fit(data, **parameters):
+def GL_fits(hsfit, **parameters):
     """ Regression for Green leaf data
     """
     GLpars = parameters.get('GLpars')
@@ -270,7 +269,7 @@ def GL_fit(data, **parameters):
     #                  obsT12['GL_mean'].astype(float).values)
     #print fitT12.a
     #
-    return {k:pgen_ext.GreenLeaves(HSfit[k], **GLpars[k]) for k in GLpars}
+    return {k:pgen_ext.GreenLeaves(hsfit[k], **GLpars[k]) for k in GLpars}
 
     
 if run_plots:
@@ -278,7 +277,7 @@ if run_plots:
     gl_est_nff, gl_est = vdata.green_leaves_estimated
     # Compare varieties
     obs = (gl_obs, gl_est)
-    fits = GL_fit(vdata,**parameters)
+    fits = GL_fits(HSfit,**parameters)
     archi_plot.green_leaves_plot_mean(obs, fits)
     # Compare nff
     obs = (gl_obs_nff, gl_est_nff, gl_obs, gl_est)
@@ -369,10 +368,9 @@ def density_fits(HS_converter=None, reset_data=False, **parameters):
 
 #
 if run_plots:
-    parameters = reconstruction_parameters()
     fits = density_fits(**parameters)
-    obs = archidb.validation_data()
-    archi_plot.density_plot(obs.PlantDensity, fits, HS_fit())
+    obs = vdata.PlantDensity
+    archi_plot.density_plot(obs, fits, HSfit)
 #
 # --------------------------------------------------------------- Fit Tillering
 #
@@ -380,12 +378,12 @@ if run_plots:
 # fitting functions
 
                           
-def _axepop_fit(tdb, delta_stop_del, n_elongated_internode, max_order, tiller_damages, std_em):
+def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages, std_em):
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = tdb['emission_probabilities']
     emission = pgen_ext.TillerEmission(primary_emission)
-    regression = pgen_ext.TillerRegression(ears_per_plant, n_elongated_internode, delta_stop_del)
+    regression = pgen_ext.TillerRegression(ears_per_plant, dHS_reg, delta_stop_del)
     return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order, std_em=std_em)
 #
 # Fits
@@ -393,9 +391,7 @@ def axepop_fits(reset_data=False, **parameters):
 
     # tillering model parameters
     delta_stop_del = parameters.get('delta_stop_del')
-    n_elongated_internode = parameters.get('n_elongated_internode')
-    if n_elongated_internode is None: # to do :use wheat Tillering decimal internode number and dimension fits to compute it as did plantgen
-        raise NotImplementedError("Not yet implemented")
+    dHS_reg = parameters.get('dHS_reg')
     max_order = parameters.get('max_order')
     tiller_damages = parameters.get('tiller_damages')
     # Emission probabilities tuning
@@ -414,16 +410,15 @@ def axepop_fits(reset_data=False, **parameters):
     hs = HS_fit()
     std_em = {k:hs[k].std_TT_hs_0 for k in hs}
                     
-    fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],n_elongated_internode=n_elongated_internode[k], max_order=max_order, tiller_damages=tiller_damages[k], std_em = std_em[k]) for k in tdb}
+    fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],dHS_reg=dHS_reg[k], max_order=max_order, tiller_damages=tiller_damages[k], std_em = std_em[k]) for k in tdb}
     
     return fits
 
 
 if run_plots:
     # populate with fits
-    parameters = reconstruction_parameters()
     fits = axepop_fits(**parameters)
-    obs = archidb.validation_data()
+    obs = vdata
     
     #1 graph tillering par var -> 4 graph sur une feuille
     archi_plot.multi_plot_tillering(obs.tillers_per_plant, fits, HS_fit())  
@@ -440,38 +435,31 @@ if run_plots:
 # --------------------------------------------------------------- Fit dimensions
 #
 
-def all_scan():
-    df_obs_all = pandas.DataFrame()
-    for name in ['Tremie12','Tremie13']:
-        df_obs = archidb.treatment_scan(name)
-        df_obs['var'] = name
-        df_obs_all = df_obs_all.append(df_obs)
-    df_obs_all = df_obs_all[df_obs_all['moyenne id_Feuille'] <= df_obs_all['HS']]
-    return df_obs_all
-
-if run_plots:
-    parameters = reconstruction_parameters()
-    #axepfits = axepop_fits(**parameters)
-    hs = HS_fit()
-    #fits = {k: pgen_ext.WheatDimensions(axepfits[k].mean_nff(), hs[k].dHS_nff(),1) for k in hs}
-    fits = {k: pgen_ext.WheatDimensions(hs[k]) for k in hs}
-    obs = archidb.ReconstructionData().Dimension_data
+def dimension_fits(hsfit,reset_data=False, **parameters):
+    """ semi-manual fit of dimension data
+    """
+    
+    data = archidb.reconstruction_data(reset=reset_data)
+    obs = data.Dimension_data
+    fits = {k: pgen_ext.WheatDimensions(hsfit[k]) for k in hsfit}
     for k in fits:
         fits[k].fit_dimensions(obs[obs['label'] == k])
-    obs = archidb.validation_data().dimensions
+        
+    return fits
+
+if run_plots:
+
+    fits = dimension_fits(HSfit, **parameters)
+    obs = vdata.dimensions
+    
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
-    
-    archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade')
-    
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade')  
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_sheath')
-    
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_internode')
-    
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'H_col')
     
     archi_plot.dimension_plot_varieties(obs, fit = fits)
     
-    # archi_plot.dimension_plot_old(archidb.dimensions_data(), archidb.dimension_fits(), leaf_fits(), all_scan(), archidb.blade_dimensions_MerciaRht3_2009_2010())
     
 # leaf geometry
 
@@ -594,7 +582,7 @@ class EchapReconstructions(object):
         self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
         self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = archidb.dimension_fits()
-        self.GL_fits = GL_fit(reset_data=reset_data, **self.pars)
+        self.GL_fits = GL_fits(self.HS_fit, **self.pars)
         median_leaf = self.pars['median_leaf']
         top_leaves = self.pars['top_leaves']
         if median_leaf:            

@@ -113,13 +113,13 @@ view_notdim(Hcdb,c(0,80))
 dimtdb <- lapply(tagged, function(x) {df <- dimTagged(x);df$Lb <- df$L;df[,-grep('L$',colnames(df))]})
 # sheath, internode, col from notations on final sampling (always occcured after full expansion)
 for (g in genos) {
-  dimtdb[[g]]$Source <- 'tagged_plants'
-  dimtdb[[g]]$Ab <- NA
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Wblade[[g]], 'Wb')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Lsheath[[g]], 'Ls')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Wsheath[[g]], 'Ws')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Linternode[[g]], 'Li')
   dimtdb[[g]] <- add_dimt(dimtdb[[g]], Hcdb[[g]], 'Hc')
+  dimtdb[[g]]$Source <- 'tagged_plants'
+  dimtdb[[g]]$Ab <- NA
   #remove data from sampled dimensions objects
   for (w in c('Lsheath','Linternode','Hcdb','Wblade','Wsheath')) {
     data <- get(w)

@@ -104,7 +104,7 @@ for (w in names(ym)) {
 # export profiles, normalised by value at xn=0
 #
 xn <- seq(-13,4.5,0.1)
-cols <- list(L_blade='Lb',W_blade='Wb',L_sheath='Ls', L_internode='Li',W_sheath='Ws',Hcol='Hc')
+cols <- list(L_blade='Lb',W_blade='Wb',L_sheath='Ls', L_internode='Li',W_sheath='Ws',H_col='Hc')
 profiles <- data.frame(xn=xn)
 for (w in names(cols))
   profiles[[w]] <- predict(fits[[cols[[w]]]], xn)$y
