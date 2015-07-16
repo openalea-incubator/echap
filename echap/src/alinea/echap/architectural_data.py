@@ -1089,10 +1089,11 @@ def dimensions_aggregated():
         df_ag = None
         for name, func in funcs.iteritems():
             if df_ag is None:
-                df_ag = _aggregate(df_dim, func=func, column_name=name)
+                df_ag = _aggregate(data, group=group, func=func, column_name=name)
             else:
-                df_ag = pandas.merge(df_ag, _aggregate(df_dim, group=group, 
-                                                        func=func, column_name=name))
+                df_ag = pandas.merge(df_ag, _aggregate(data, group=group, 
+                                                        func=func, column_name=name),
+                                       on=group)
         return df_ag
         
     df_dim = Dim_data()
