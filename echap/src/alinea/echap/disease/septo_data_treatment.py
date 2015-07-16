@@ -339,7 +339,7 @@ def plot_by_leaf_sample(data, weather, variable = 'severity',
 
     # Isolate data for particular leaf
     df = data.copy()
-    change_index(df, ['plant'])
+    change_index(df, ['num_plant'])
     df = df[df['num_leaf_top']==leaf]
     
     # Set color cycle
@@ -1242,7 +1242,7 @@ def get_date_threshold(data, weather, variable = 'severity', xaxis = 'degree_day
                        threshold = 5, fit_function_name = None):
     """ Get date at which variable overpass given threshold """
     df = data.copy()
-    change_index(df, ['plant'])
+    change_index(df, ['num_plant'])
     
     if from_top == True:
         num_leaf = 'num_leaf_top'
@@ -1374,7 +1374,7 @@ def compare_thr_dates_with_fit(data, weather, threshold = 5, fig_size=(8,6)):
 def get_value_at_age(data, weather, variable = 'severity', age = 300, fit_function_name = None):
     """ Get value of variable by leaf at age in argument """
     df = data.copy()
-    change_index(df, ['plant'])
+    change_index(df, ['num_plant'])
     
     df_dates = pd.DataFrame()
     for lf in set(df['num_leaf_top']):
@@ -1477,7 +1477,7 @@ def get_nb_risk_by_leaf(adel, weather, age_inf = 0, age_sup = 500,
 def get_speed(data, weather, variable = 'severity', from_top = True):
     """ Get speed of curve to reach value max  """
     df = data.copy()
-    change_index(df, ['plant'])
+    change_index(df, ['num_plant'])
 
     if from_top == True:
         num_leaf = 'num_leaf_top'
@@ -1503,7 +1503,7 @@ def get_speed(data, weather, variable = 'severity', from_top = True):
 def get_max_value(data, weather, variable = 'severity', from_top = True):
     """ Get value max of curve on each sample """
     df = data.copy()
-    change_index(df, ['plant'])
+    change_index(df, ['num_plant'])
 
     if from_top == True:
         num_leaf = 'num_leaf_top'

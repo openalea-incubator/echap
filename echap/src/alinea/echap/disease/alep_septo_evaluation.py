@@ -13,7 +13,7 @@ from alinea.echap.disease.septo_data_treatment import *
 def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
     """ Translate recorder object in DataFrame with the same format as disease notations """
     data_sim = recorder.data
-    data_sim = data_sim.rename(columns = {'num_plant':'plant'})
+    data_sim = data_sim.rename(columns = {'num_plant':'num_plant'})
     
     # Convert ratios in percentage
     list_of_ratios = [var for var in data_sim.columns if 
@@ -35,8 +35,8 @@ def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
             nan_dates = df_lf[df_lf<df_lf.max()].reset_index().loc[:,'Date']
             if len(nan_dates)>0:
                 for variable in data_sim.columns:
-                    if variable not in ['datetime', 'degree_days', 'date_death',
-                                        'variety', 'plant', 'num_leaf_top', 'num_leaf_bottom']:
+                    if variable not in ['date', 'degree_days', 'date_death',
+                                        'variety', 'num_plant', 'num_leaf_top', 'num_leaf_bottom']:
                         data_sim[variable][(data_sim['num_leaf_top']==lf) & 
                                 (data_sim.index.isin([d for d in nan_dates]))] = np.nan
     return data_sim
@@ -54,7 +54,7 @@ def get_mean_one_leaf_sim(df, variable = 'severity', xaxis = 'degree_days',
         df = df[df['num_leaf_top'] == num_leaf]
     else:
         df = df[df['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         return df.groupby(xaxis).mean()[variable]
     elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig']:
         df_mean = df.groupby('degree_days').mean()[variable]

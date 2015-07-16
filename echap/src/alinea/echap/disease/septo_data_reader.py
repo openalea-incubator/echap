@@ -83,7 +83,7 @@ def str2int(x):
 def is_iterable(obj):
     return isinstance(obj, collections.Iterable)
     
-def change_index(df, new_index = 'datetime'):
+def change_index(df, new_index = 'date'):
     """ Set new index on dataframe """
     df.reset_index(inplace=True)
     df.set_index(new_index, inplace = True)
@@ -104,13 +104,13 @@ def get_fnl_by_plant(data):
     df = data.xs(max(set(data.index)))
     df = df[df['num_leaf_top']==1]
     # Group plant ids by final number of leaves (FNL)
-    grps = {fnl:[plant for plant in df[df['num_leaf_bottom']==fnl]['plant']] for fnl in set(df['num_leaf_bottom'])}
+    grps = {fnl:[plant for plant in df[df['num_leaf_bottom']==fnl]['num_plant']] for fnl in set(df['num_leaf_bottom'])}
     # Find fnl if missing value for a leaf on last notation
-    if len(sum(grps.itervalues(),[]))<max(data['plant']):
-        miss = get_missing(np.sort(sum(grps.itervalues(),[])), start=1, end=max(data['plant']))
+    if len(sum(grps.itervalues(),[]))<max(data['num_plant']):
+        miss = get_missing(np.sort(sum(grps.itervalues(),[])), start=1, end=max(data['num_plant']))
         for m in miss:
-            if len(data[data['plant']==m])>0:
-                fnl = max(data['num_leaf_bottom'][data['plant']==m]) + min(data['num_leaf_top'][data['plant']==m]) - 1
+            if len(data[data['num_plant']==m])>0:
+                fnl = max(data['num_leaf_bottom'][data['num_plant']==m]) + min(data['num_leaf_top'][data['num_plant']==m]) - 1
                 grps[fnl].append(m)
     return grps               
 
@@ -123,23 +123,23 @@ def group_by_fnl(data, from_top = True):
     grps = get_fnl_by_plant(data)
     # Get data by FNL
     if from_top == True:
-        return {fnl:data[data['plant'].isin(grps[fnl])] for fnl in grps.iterkeys()}
+        return {fnl:data[data['num_plant'].isin(grps[fnl])] for fnl in grps.iterkeys()}
     else:
         groups = {}
         for fnl in grps.iterkeys():
-            group = data[data['plant'].isin(grps[fnl])]
+            group = data[data['num_plant'].isin(grps[fnl])]
             groups[fnl] = group
         return groups
         
 def get_fnls(adel):
     """ Get final leaf numbers over all plants in wheat canopy simulated with adel """
-    return set(adel.phenT().set_index('plant').groupby(level=0).count()['n'] - 1)
+    return set(adel.phenT().set_index('num_plant').groupby(level=0).count()['n'] - 1)
     
 def data_reader_2011(data_file='mercia_2011.csv'):       
     """ Read data of septoria measurements from Grignon 2011 (Mercia or Rht3 wheat) """
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
-    df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
-    df['plant'] += 30*(df['bloc']-1)
+    df = pd.read_csv(file_path, parse_dates={'date':[1]}, sep=';', index_col=[0])
+    df['num_plant'] += 30*(df['bloc']-1)
     df['septo_necro'] = np.nan*df.septo_green
     df['num_leaf_bottom'] = 13 - df['num_leaf_top']
     return df
@@ -159,7 +159,7 @@ def data_reader_tremis(data_file='tremis_2012_tnt.csv', green_on_green = True):
         return septo_green_on_green
     
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
-    df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
+    df = pd.read_csv(file_path, parse_dates={'date':[1]}, sep=';', index_col=[0])
     
     df['septo_green_tot'] = df['septo_green'].copy()
     if green_on_green == True:
@@ -188,8 +188,8 @@ def zeros_green_to_nan(data):
     df = pd.DataFrame()
     for lf in set(data_pl['num_leaf_top']):
         data_lf = data_pl[data_pl['num_leaf_top']==lf]
-        for pl in set(data_lf['plant']):
-            df_ = data_lf[data_lf['plant']==pl]
+        for pl in set(data_lf['num_plant']):
+            df_ = data_lf[data_lf['num_plant']==pl]
             if is_iterable(df_['septo_green']):
                 mask = df_['septo_green'].diff()<0
                 if mask.iloc[-1] == True:
@@ -220,8 +220,8 @@ def zeros_green_to_nan(data):
 def get_leaf_dates(adel, event='tip', nff = None):
     """ Get dates of leaf developmental stage in wheat canopy simulated with adel """
     df_phenT = adel.phenT()
-    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n'] - 1
-    df_phenT['nff'] =  [nffs[v] for v in df_phenT['plant']]
+    nffs = df_phenT.set_index('num_plant').groupby(level=0).count()['n'] - 1
+    df_phenT['nff'] =  [nffs[v] for v in df_phenT['num_plant']]
     df_phenT['n_from_top'] = df_phenT['nff'] - df_phenT['n']
     if nff != None:
         df_phenT = df_phenT[df_phenT['nff']==nff]
@@ -308,7 +308,7 @@ def get_count_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df = df[df['num_leaf_top'] == num_leaf]
     else:
         df = df[df['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         return df.groupby(xaxis).count()[variable]
     elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         df_count = df.groupby('degree_days').count()[variable]
@@ -316,7 +316,7 @@ def get_count_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df_count.index -= df_dates.loc[num_leaf, xaxis].astype(int)
         return df_count
         
-def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'datetime',
+def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'date',
                             add_ddays=True, from_top = True):
     """ Get number of notations of argument variable on all leaves over all plants in canopy """
     df = data.copy()
@@ -324,13 +324,13 @@ def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'date
         num_leaf = 'num_leaf_top'
     else:
         num_leaf = 'num_leaf_bottom'
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         change_index(df, new_index = [xaxis, num_leaf])
         df.index.rename(['Date', 'Leaf number'], inplace=True)
         df = df.groupby(level=[0,1]).count()
         df = df[variable].unstack()
         df[(np.isnan(df)) | (df==0)]='-'
-        if xaxis=='datetime' and add_ddays == True:
+        if xaxis=='date' and add_ddays == True:
             df = add_index_ddays(df, weather)
         return df
     elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
@@ -368,7 +368,7 @@ def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
     
     grp_fnls = get_fnl_by_plant(df)
 
-    df['FNL'] = map(lambda x: {vv:k for k,v in grp_fnls.iteritems() for vv in v }[x], df['plant'])
+    df['FNL'] = map(lambda x: {vv:k for k,v in grp_fnls.iteritems() for vv in v }[x], df['num_plant'])
 
     dict_emerg = {}
     dict_lig = {}
@@ -522,9 +522,9 @@ def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_
                                   green_on_green = green_on_green)
     
     if year in [2012, 2013] and from_file == 'global':
-        data['plant'] += 30*(data['bloc']-1)
+        data['num_plant'] += 30*(data['bloc']-1)
     elif year in [2012, 2013] and from_file == 'senescence':
-        data[data['data_set']=='tagged']['plant'] *= 2
+        data[data['data_set']=='tagged']['num_plant'] *= 2
     
     # Read weather data
     start, end = format_date(start_date, end_date)
