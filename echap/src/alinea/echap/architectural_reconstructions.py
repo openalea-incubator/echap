@@ -435,31 +435,7 @@ if run_plots:
 # --------------------------------------------------------------- Fit dimensions
 #
 
-def dimension_fits(hsfit,reset_data=False, **parameters):
-    """ semi-manual fit of dimension data
-    """
-    
-    data = archidb.reconstruction_data(reset=reset_data)
-    obs = data.Dimension_data
-    fits = {k: pgen_ext.WheatDimensions(hsfit[k]) for k in hsfit}
-    for k in fits:
-        fits[k].fit_dimensions(obs[obs['label'] == k])
-    # Tremie13: use Hcol scales for sheath and internode
-    for lab in ['Tremie13']:
-        sc = fits[lab].scale['H_col']
-        fits[lab].set_scale({'L_internode':sc, 'L_sheath':sc})
-    # Mercia / Rht3 : use Hcol and sheath
-    for lab in ['Mercia','Rht3']:
-        fits[lab].set_scale({'L_internode':1})
-        stem = fits[lab].predict('H_col') - fits[lab].predict('L_sheath')
-        Li = [stem[0]] + numpy.diff(stem).tolist()
-        pred = fits[lab].predict('L_internode')
-        r = Li / pred
-        sc = numpy.mean(r[(r > 0) & (numpy.isfinite(r))])
-        fits[lab].set_scale({'L_internode':sc})
-    return fits
-
-def estimate_Wb_Tremie13(dim_fit, data = rdata.Dimension_data, sep_up_down=4):
+def estimate_Wb_Tremie13(dim_fit, data, sep_up_down=4):
     def get_estimate(A, L, ff):
         return float(A)/(L*ff)
     data = data.reset_index()
@@ -483,7 +459,7 @@ def estimate_Wb_Tremie13(dim_fit, data = rdata.Dimension_data, sep_up_down=4):
                 ff = fits['Tremie13'].form_factor()[2]
             A = data.loc[ind, 'A_blade']
             if numpy.isnan(data.loc[ind, 'L_blade']):
-                L = dim_fit['Tremie13'].predict('L_blade', num_leaf_bottom, data.loc[ind, 'nff'])[0]
+                L = dim_fit.predict('L_blade', num_leaf_bottom, data.loc[ind, 'nff'])[0]
             else:
                 L = data.loc[ind, 'L_blade']
             W_blades.append(get_estimate(A, L, ff))
@@ -492,16 +468,45 @@ def estimate_Wb_Tremie13(dim_fit, data = rdata.Dimension_data, sep_up_down=4):
             W_blades.append(data.loc[ind, 'W_blade'])
             estimated.append(False)
     data['W_blade'] = W_blades
-    data['blade_estimated'] = estimated
-    data = data[data['blade_estimated']==True]
-    data = data.drop('blade_estimated', 1)
+    #data['blade_estimated'] = estimated
+    #data = data[data['blade_estimated']==True]
+    #data = data.drop('blade_estimated', 1)
     return data
+
+def dimension_fits(hsfit,reset_data=False, **parameters):
+    """ semi-manual fit of dimension data
+    """
+    fits = {k: pgen_ext.WheatDimensions(hsfit[k], lower=6) for k in hsfit}
+    data = archidb.reconstruction_data(reset=reset_data)
+    obs = data.Dimension_data
+    # add W estimates for Tremie 13
+    w_est = estimate_Wb_Tremie13(fits['Tremie13'], obs[obs['label']=='Tremie13'].copy())
+    obs = pandas.concat((obs[obs['label']!='Tremie13'],w_est))
+    for k in fits:
+        fits[k].fit_dimensions(obs[obs['label'] == k])
+    # Tremie13: use Hcol scales for sheath and internode
+    for lab in ['Tremie13']:
+        sc = fits[lab].scale['H_col']
+        fits[lab].set_scale({'L_internode':sc, 'L_sheath':sc})
+    # Mercia / Rht3 : use Hcol and sheath
+    for lab in ['Mercia','Rht3']:
+        fits[lab].set_scale({'L_internode':1})
+        stem = fits[lab].predict('H_col') - fits[lab].predict('L_sheath')
+        Li = [stem[0]] + numpy.diff(stem).tolist()
+        pred = fits[lab].predict('L_internode')
+        r = Li / pred
+        sc = numpy.mean(r[(r > 0) & (numpy.isfinite(r))])
+        fits[lab].set_scale({'L_internode':sc})
+    return fits
+
+
     
 if run_plots:
 
     fits = dimension_fits(HSfit, **parameters)
     obs = vdata.dimensions
-    estimates_Wb_Tremie13 = archidb.dimensions_aggregated(estimate_Wb_Tremie13(fits))
+    t13 = rdata.Dimension_data[rdata.Dimension_data['label'] == 'Tremie13'].copy()
+    estimates_Wb_Tremie13 = archidb.dimensions_aggregated(estimate_Wb_Tremie13(fits['Tremie13'], t13))
     
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade',
