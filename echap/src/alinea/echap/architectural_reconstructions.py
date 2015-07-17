@@ -241,7 +241,7 @@ if reset_data:
     rdata = archidb.reconstruction_data(reset=True)
 else:
     HSfit = HS_fit()
-    vdata = vdata = archidb.validation_data()
+    vdata = archidb.validation_data()
     rdata = archidb.reconstruction_data()
     
 
@@ -459,13 +459,53 @@ def dimension_fits(hsfit,reset_data=False, **parameters):
         fits[lab].set_scale({'L_internode':sc})
     return fits
 
+def estimate_Wb_Tremie13(dim_fit, data = rdata.Dimension_data, sep_up_down=4):
+    def get_estimate(A, L, ff):
+        return float(A)/(L*ff)
+    data = data.reset_index()
+    data = data[data['label']=='Tremie13']
+    hs = HS_fit()
+    fits = median_leaf_fits()
+    W_blades = []
+    estimated = []
+    for ind in data.index:
+        if (numpy.isnan(data.loc[ind, 'W_blade']) and
+            not numpy.isnan(data.loc[ind, 'A_blade'])):
+            if numpy.isnan(data.loc[ind, 'nff']):
+                nff = int(round(hs['Tremie13'].mean_nff))
+            else:
+                nff = data.loc[ind, 'nff']
+            num_leaf_bottom = data.loc[ind, 'rank']
+            num_leaf_top = data.loc[ind, 'rank']-nff+1
+            if num_leaf_top>sep_up_down:
+                ff = fits['Tremie13'].form_factor()[1]
+            else:
+                ff = fits['Tremie13'].form_factor()[2]
+            A = data.loc[ind, 'A_blade']
+            if numpy.isnan(data.loc[ind, 'L_blade']):
+                L = dim_fit['Tremie13'].predict('L_blade', num_leaf_bottom, data.loc[ind, 'nff'])[0]
+            else:
+                L = data.loc[ind, 'L_blade']
+            W_blades.append(get_estimate(A, L, ff))
+            estimated.append(True)
+        else:
+            W_blades.append(data.loc[ind, 'W_blade'])
+            estimated.append(False)
+    data['W_blade'] = W_blades
+    data['blade_estimated'] = estimated
+    data = data[data['blade_estimated']==True]
+    data = data.drop('blade_estimated', 1)
+    return data
+    
 if run_plots:
 
     fits = dimension_fits(HSfit, **parameters)
     obs = vdata.dimensions
+    estimates_Wb_Tremie13 = archidb.dimensions_aggregated(estimate_Wb_Tremie13(fits))
     
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
-    archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade')  
+    archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade',
+                                estimates_Wb_Tremie13 = estimates_Wb_Tremie13)  
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_sheath')
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_internode')
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'H_col')

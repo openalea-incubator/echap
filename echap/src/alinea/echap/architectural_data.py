@@ -1077,7 +1077,7 @@ def add_HS_green_leaves(data, HS_fit):
     return data
 
     
-def dimensions_aggregated():
+def dimensions_aggregated(df_dim = Dim_data()):
     def _aggregate(data, group = ['label', 'Source', 'rank'], func = numpy.mean, column_name = 'mean'):
         df = data.groupby(group).agg(func).loc[:, ['L_blade', 'W_blade', 'A_blade',
                                                     'L_sheath', 'W_sheath', 'L_internode', 'H_col']]
@@ -1095,11 +1095,13 @@ def dimensions_aggregated():
                                                         func=func, column_name=name),
                                        on=group)
         return df_ag
-        
-    df_dim = Dim_data()
+
     df_ag = get_aggregate(df_dim, group = ['label', 'Source', 'rank'])
     df_dim = df_dim[~numpy.isnan(df_dim['nff'])]
-    df_ag_nff = get_aggregate(df_dim, group = ['label', 'Source', 'nff', 'rank'])
+    if len(df_dim)>0:
+        df_ag_nff = get_aggregate(df_dim, group = ['label', 'Source', 'nff', 'rank'])
+    else:
+        df_ag_nff = None
     return df_ag, df_ag_nff
     
 class ReconstructionData(object):

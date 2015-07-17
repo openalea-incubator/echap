@@ -15,7 +15,7 @@ def colors_nff():
     return {10:'m', 11:'g', 12:'r', 13:'c', 14:'y'}
 
 def markers_source():
-    return {'tagged':'s', 'sampled':'^', 'symptom':'o'}
+    return {'tagged':'s', 'sampled':'^', 'symptom':'o', 'estimated_sampled':'*'}
     
 def haun_stage_plot(obs_HS, fit_HS):
     """ Plot HS against thermal time for all varieties 
@@ -216,8 +216,13 @@ def dimension_plot_other(dimension_data, fits):
         ax2.set_title('W_internode nff maj', fontsize=9)
         ax2.legend(numpoints=1, bbox_to_anchor=(1.3, 1.1), prop={'size': 9})
 
-def dimension_plot(dimension_data, fit = None, dimension = 'L_blade'):
+def dimension_plot(dimension_data, fit = None, dimension = 'L_blade', estimates_Wb_Tremie13 = None):
     df_dim, df_dim_nff = dimension_data
+    if dimension == 'W_blade' and estimates_Wb_Tremie13 is not None:
+        add_estimate = True
+        df_dim_est, _ = estimates_Wb_Tremie13
+        df_dim_est['Source'] = 'estimated_sampled'
+        df_dim = pandas.concat([df_dim, df_dim_est])
     
     fig, axs = plt.subplots(2, 2)
     vars = iter(varieties())
