@@ -444,11 +444,23 @@ def dimension_fits(hsfit,reset_data=False, **parameters):
     fits = {k: pgen_ext.WheatDimensions(hsfit[k]) for k in hsfit}
     for k in fits:
         fits[k].fit_dimensions(obs[obs['label'] == k])
-        
+    # Tremie13: use Hcol scales for sheath and internode
+    for lab in ['Tremie13']:
+        sc = fits[lab].scale['H_col']
+        fits[lab].set_scale({'L_internode':sc, 'L_sheath':sc})
+    # Mercia / Rht3 : use Hcol and sheath
+    for lab in ['Mercia','Rht3']:
+        fits[lab].set_scale({'L_internode':1})
+        stem = fits[lab].predict('H_col') - fits[lab].predict('L_sheath')
+        Li = [stem[0]] + numpy.diff(stem).tolist()
+        pred = fits[lab].predict('L_internode')
+        r = Li / pred
+        sc = numpy.mean(r[(r > 0) & (numpy.isfinite(r))])
+        fits[lab].set_scale({'L_internode':sc})
     return fits
 
 if run_plots:
-#bizzare : mercia nff 13 = 1 plante, mais on a des bares d'erreur !
+
     fits = dimension_fits(HSfit, **parameters)
     obs = vdata.dimensions
     
