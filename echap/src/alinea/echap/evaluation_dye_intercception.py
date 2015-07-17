@@ -3,7 +3,7 @@
 
 import pandas
 from openalea.deploy.shared_data import shared_data
-import alinea.echap.architectural_reconstructions as reconstructions
+from alinea.echap.architectural_reconstructions import echap_reconstructions
 import alinea.echap.interception_data as idata
 from alinea.echap.interception_leaf import InterceptModel, pesticide_applications
 from alinea.echap.interfaces import pesticide_interception
@@ -17,13 +17,16 @@ def get_file_path(variety = 'Tremie12', nplants = 30):
     filename = get_file_name(variety = variety, nplants = nplants)
     return str(shared_data(alinea.echap)/'interception_simulations'/filename)    
 
-def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1, 
-                               nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3):
+def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density=1, dimension=1,
+                                reset=False, reset_data=False):
     """ 10000 l ha-1 is for 1 l/m2 """
     HS_applications = idata.dye_applications()
-    HSconv = reconstructions.fit_HS()
-    Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
-    adel = Reconstructions_appli.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
+    # If adjustment needed : import echap parameters, modify parameters and create new reconstruction method
+    # nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3
+    #Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
+    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+    conv = reconst.HS_fit[name]
+    adel = reconst.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
     
     appdate_ref = ['T1-0.4', 'T1-0.2', 'T1', 'T1+0.2', 'T1+0.4',
             'T2-2.5', 'T2-2', 'T2-1.5', 'T2-1', 'T2-0.5', 'T2-0.4', 'T2-0.2', 'T2', 'T2+0.2', 'T2+0.4', 'T2+0.5', 'T2+1', 'T2+1.5', 'T2+2', 'T2+2.5']
@@ -31,7 +34,6 @@ def repartition_at_application(name, appdate='T1', dose=1e4, nplants=30, density
         date, hs = HS_applications[name][appdate]
     else :
         hs = float(appdate); date = ''
-    conv = HSconv[name] 
     age = conv.TT(hs)
     g = adel.setup_canopy(age)
     
