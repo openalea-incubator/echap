@@ -574,9 +574,8 @@ def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':
 
 class EchapReconstructions(object):
     
-    def __init__(self, reset_data=False):
-        self.pars = reconstruction_parameters()
-        
+    def __init__(self, reset_data=False, pars = reconstruction_parameters()):
+        self.pars = pars
         self.pgen_base = self.pars['pgen_base']
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
