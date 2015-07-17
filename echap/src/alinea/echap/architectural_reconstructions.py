@@ -476,12 +476,16 @@ def estimate_Wb_Tremie13(dim_fit, data, sep_up_down=4):
 def dimension_fits(hsfit,reset_data=False, **parameters):
     """ semi-manual fit of dimension data
     """
-    fits = {k: pgen_ext.WheatDimensions(hsfit[k], lower=6) for k in hsfit}
+    
     data = archidb.reconstruction_data(reset=reset_data)
     obs = data.Dimension_data
     # add W estimates for Tremie 13
-    w_est = estimate_Wb_Tremie13(fits['Tremie13'], obs[obs['label']=='Tremie13'].copy())
+    fit=pgen_ext.WheatDimensions(hsfit['Tremie13'])
+    fit.fit_dimensions(obs[obs['label'] == 'Tremie13'])#fit L to be used
+    w_est = estimate_Wb_Tremie13(fit, obs[obs['label']=='Tremie13'].copy())
     obs = pandas.concat((obs[obs['label']!='Tremie13'],w_est))
+    fits = {k: pgen_ext.WheatDimensions(hsfit[k]) for k in hsfit}
+    
     for k in fits:
         fits[k].fit_dimensions(obs[obs['label'] == k])
     # Tremie13: use Hcol scales for sheath and internode
@@ -637,7 +641,7 @@ class EchapReconstructions(object):
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
         self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
-        self.dimension_fits = archidb.dimension_fits()
+        self.dimension_fits = dimension_fits(self.HS_fit)
         self.GL_fits = GL_fits(self.HS_fit, **self.pars)
         median_leaf = self.pars['median_leaf']
         top_leaves = self.pars['top_leaves']
