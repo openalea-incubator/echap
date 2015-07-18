@@ -6,6 +6,9 @@ import math
 import scipy.stats as stats
 from scipy.interpolate import interp1d
 
+#import warnings
+#warnings.simplefilter('ignore', numpy.RankWarning)
+
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -127,6 +130,16 @@ def reconstruction_parameters():
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
                               'Tremie12':{'when':[4.9,5.1],'damage':{t:0.2 for t in ['T3']}},
                               'Tremie13': None}
+    # Dimensions
+    #-----------
+    #
+    #deformation of the standard profile at cardinal points
+    #
+    pars['card_scale'] = {'Mercia':{'L_blade':(1, 1.3, 1)},
+                          'Rht3':{'L_blade':(1, 0.7, 1)}, 
+                          'Tremie12':{'L_blade':(0.7, 1, 1)},
+                          'Tremie13':{'L_blade':(0.7, 1, 1), 'L_sheath':(0.7,1,1)}
+                          }
     #
     # Leaf geometry
     #--------------
@@ -479,12 +492,14 @@ def dimension_fits(hsfit,reset_data=False, **parameters):
     
     data = archidb.reconstruction_data(reset=reset_data)
     obs = data.Dimension_data
+    card_scale = parameters.get('card_scale')
     # add W estimates for Tremie 13
-    fit=pgen_ext.WheatDimensions(hsfit['Tremie13'])
-    fit.fit_dimensions(obs[obs['label'] == 'Tremie13'])#fit L to be used
+    fit=pgen_ext.WheatDimensions(hsfit['Tremie13'],card_scale=card_scale['Tremie13'])
+    fit.fit_dimensions(obs[obs['label'] == 'Tremie13'])#fit L to estimate width from area
     w_est = estimate_Wb_Tremie13(fit, obs[obs['label']=='Tremie13'].copy())
     obs = pandas.concat((obs[obs['label']!='Tremie13'],w_est))
-    fits = {k: pgen_ext.WheatDimensions(hsfit[k]) for k in hsfit}
+    
+    fits = {k: pgen_ext.WheatDimensions(hsfit[k], card_scale=card_scale[k]) for k in hsfit}
     
     for k in fits:
         fits[k].fit_dimensions(obs[obs['label'] == k])
@@ -509,12 +524,14 @@ if run_plots:
 
     fits = dimension_fits(HSfit, **parameters)
     obs = vdata.dimensions
-    t13 = rdata.Dimension_data[rdata.Dimension_data['label'] == 'Tremie13'].copy()
-    estimates_Wb_Tremie13 = archidb.dimensions_aggregated(estimate_Wb_Tremie13(fits['Tremie13'], t13))
     
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
+    
+    t13 = rdata.Dimension_data[rdata.Dimension_data['label'] == 'Tremie13'].copy()
+    estimates_Wb_Tremie13 = archidb.dimensions_aggregated(estimate_Wb_Tremie13(fits['Tremie13'], t13))
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'W_blade',
                                 estimates_Wb_Tremie13 = estimates_Wb_Tremie13)  
+                                
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_sheath')
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_internode')
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'H_col')
@@ -593,7 +610,7 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
 
 def _addLindex(dfxy, dfsr): 
     dfxy['Lindex'] = 1
-    dfxy['Lindex'][dfxy['ranktop'] <= 4] = 2
+    dfxy.loc[dfxy['ranktop'] <= 4,'Lindex'] = 2
     dfsr['Lindex'] = dfsr['rankclass']
     return dfxy, dfsr
     
@@ -641,7 +658,7 @@ class EchapReconstructions(object):
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
         self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
-        self.dimension_fits = dimension_fits(self.HS_fit)
+        self.dimension_fits = dimension_fits(self.HS_fit, reset_data=reset_data,**self.pars)
         self.GL_fits = GL_fits(self.HS_fit, **self.pars)
         median_leaf = self.pars['median_leaf']
         top_leaves = self.pars['top_leaves']
