@@ -374,6 +374,7 @@ def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
     dict_lig = {}
     dict_flag_lig = {}
     dict_flag_emg = {}
+    #TODO use plantgen extensions HS_fit : TTem_leaf, TTlig_leaf
     for fnl in grp_fnls.iterkeys():
         if filename is None:
             assert adel is not None, ("Provide either an adel canopy mock up or file with emergence and ligulation dates")

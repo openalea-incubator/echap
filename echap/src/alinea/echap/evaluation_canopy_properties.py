@@ -18,36 +18,46 @@ from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.label import Label
 
 # Run and save canopy properties ###################################################################
-def get_lai_properties(g, adel, nplants):
-    df_lai = adel.get_exposed_areas(g, convert=True)
+def aggregate_lai(df_lai, adel, nplants):
     colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
-                    'PAI_tot', 'PAI_vert']
+                 'PAI_tot', 'PAI_vert']
     if not df_lai.empty:
         df_axstat, _ = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
         df_axstat = plot_statistics(df_axstat, nplants, adel.domain_area)
         return df_axstat.loc[:, colnames]
     else: 
-        colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
-                    'PAI_tot', 'PAI_vert']
         return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
 
-def draft_TC(g, adel, domain, zenith, rep, scale = 1):
+def get_lai_properties(g, adel, nplants):
+    df_lai = adel.get_exposed_areas(g, convert=True)
+    df_lai_tot = aggregate_lai(df_lai, adel, nplants)
+    df_lai_MS = aggregate_lai(df_lai[df_lai['axe_id']=='MS'], adel, nplants)
+    df_lai_MS.rename(columns = {col:col+'_MS' for col in ['LAI_tot', 'LAI_vert', 
+                                                         'PAI_tot', 'PAI_vert']}, inplace=True)
+    df_lai_ferti = aggregate_lai(df_lai[df_lai['HS_final']>=df_lai['nff']], adel, nplants)
+    df_lai_ferti.rename(columns = {col:col+'_ferti' for col in ['LAI_tot', 'LAI_vert', 
+                                                            'PAI_tot', 'PAI_vert']}, inplace=True)
+    df_lai = pandas.merge(df_lai_tot, df_lai_MS)
+    df_lai = pandas.merge(df_lai, df_lai_ferti)
+    return df_lai
+    
+def draft_TC(g, adel, zenith, rep, scale = 1):
     echap_top_camera =  {'type':'perspective', 'distance':200., 
                          'fov':50., 'azimuth':0, 'zenith':zenith}
-    gc, im, box = ground_cover(g, domain, camera=echap_top_camera, image_width = int(2144 * scale), 
+    gc, im, box = ground_cover(g, adel.domain, camera=echap_top_camera, image_width = int(2144 * scale), 
                                 image_height = int(1424*scale), getImages=True, replicate=rep)
     return gc
         
 def get_cover_fraction_properties(g, adel, nplants, scale = 1):
     df_TC = pandas.DataFrame(columns = ['TCgreen', 'TCsen', 'TCtot',
-                                         'TCgreen_57', 'TCsen_57', 'TCtot_57',])
+                                         'TCgreen_57', 'TCsen_57', 'TCtot_57'])
     if nplants <= 30:
         reps = [1,2]
     else:
         reps = [1,1]
         
     for zenith, rep in zip([0,57],reps):
-        dict_TC = draft_TC(g, adel, adel.domain, zenith, rep, scale)
+        dict_TC = draft_TC(g, adel, zenith, rep, scale)
         if zenith == 0:
             suffix = ''
         elif zenith == 57:
@@ -60,10 +70,10 @@ def get_cover_fraction_properties(g, adel, nplants, scale = 1):
         df_TC.loc[0, 'Gaptot'+suffix] = 1 - df_TC.loc[0, 'TCtot'+suffix]
     return df_TC
 
-def draft_light(g, adel, domain, z_level):
+def draft_light(g, adel, z_level):
     scene = adel.scene(g)
     sources = diffuse_source(46)
-    out = run_caribu(sources, scene, domain=domain, zsoil = z_level)
+    out = run_caribu(sources, scene, domain=adel.domain, zsoil = z_level)
     labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
     ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
     return float(numpy.mean(ei_soil))
@@ -71,15 +81,15 @@ def draft_light(g, adel, domain, z_level):
 def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
     df_radiation = pandas.DataFrame(columns = ['LightPenetration_%d' %lev for lev in z_levels])
     for z_level in z_levels:
-        df_radiation.loc[0, 'LightPenetration_%d' %z_level] = draft_light(g, adel, 
-                                                                          adel.domain, z_level)
+        df_radiation.loc[0, 'LightPenetration_%d' %z_level] = draft_light(g, adel, z_level)
         df_radiation.loc[0, 'LightInterception_%d' %z_level] = 1 - df_radiation.loc[0, 
                                                                     'LightPenetration_%d' %z_level]
     return df_radiation
     
 def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = None,
-                        age_range = [400., 2600.], time_steps = [20, 100], 
-                        scale_povray = 1., reset = False, reset_data = False):
+                        age_range = [400., 2600.], time_steps = [20, 100],
+                        scale_povray = 1., z_levels = [0, 5, 20, 25], 
+                        reset = False, reset_data = False, only_lai = False):
     reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
     HSconv = reconst.HS_fit[variety]
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
@@ -91,9 +101,15 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
         if age in ages_1:
             df_lai = get_lai_properties(g, adel, nplants)
         if age in ages_2:
-            df_cover = get_cover_fraction_properties(g, adel, nplants, scale_povray)
-            df_radiation = get_radiation_properties(g, adel)
-        
+            if only_lai==False:
+                df_cover = get_cover_fraction_properties(g, adel, nplants, scale_povray)
+                df_radiation = get_radiation_properties(g, adel, z_levels)
+            else:
+                cols = ['TCgreen', 'TCsen', 'TCtot', 'TCgreen_57', 'TCsen_57', 'TCtot_57',]
+                df_cover = pandas.DataFrame([[numpy.nan for col in cols]], columns = cols)
+                cols = ['LightPenetration_%d' %lev for lev in z_levels]
+                df_radiation = pandas.DataFrame([[numpy.nan for col in cols]], columns = cols)
+                
         # Group in same dataframe
         if age == age_range[0]:
             df_prop = pandas.DataFrame(columns = ['variety', 'HS']+
@@ -115,47 +131,75 @@ def run_multi_simu(variety = 'Tremie12', nplants = 30,
                     variability_type = None,
                     age_range = [400, 2600], time_steps = [20, 100],
                     filename = 'canopy_properties_tremie12_5rep.csv',
-                    nrep = 5, scale_povray = 1., reset = False, reset_data = False):
+                    nrep = 5, scale_povray = 1., reset = False, reset_data = False,
+                    only_lai=False):
     df_props = []
     for rep in range(nrep):
         df_prop = run_one_simulation(variety = variety, nplants = nplants, 
                                        variability_type = variability_type, 
                                        age_range = age_range, time_steps = time_steps,
-                                       scale_povray = scale_povray, reset = reset, reset_data = reset_data)
+                                       scale_povray = scale_povray, reset = reset, 
+                                       reset_data = reset_data, only_lai = only_lai)
         df_prop.loc[:,'rep'] = rep
         df_props.append(df_prop)
     df_props = pandas.concat(df_props)
     return df_props.reset_index(drop = True)
 
-def get_file_name(variety = 'Tremie12', nplants = 30, nrep = 5):
-    return variety.lower() + '_' + str(nplants) + 'pl_' + str(nrep) + 'rep.csv'
+def get_file_name(variety = 'Tremie12', nplants = 30, nrep = 5, only_lai=False):
+    if only_lai==False:
+        return variety.lower() + '_' + str(nplants) + 'pl_' + str(nrep) + 'rep.csv'
+    else:
+        return variety.lower() + '_' + str(nplants) + 'pl_' + str(nrep) + 'rep_lai.csv'
     
 def run_and_save_one_simu(variety = 'Tremie12', nplants = 30, variability_type = None,
                           age_range = [400, 2600], time_steps = [20, 100],
-                          scale_povray = 1., reset = False, reset_data = False):                         
+                          scale_povray = 1., reset = False, reset_data = False, only_lai=False):                         
     df_save = run_one_simulation(variety = variety, nplants = nplants, 
                                  variability_type = variability_type, age_range = age_range,
                                  time_steps = time_steps, scale_povray = scale_povray,
-                                 reset = reset, reset_data = reset_data)
-    filename = get_file_name(variety = variety, nplants = nplants, nrep = 1)
+                                 reset = reset, reset_data = reset_data, only_lai=only_lai)
+    filename = get_file_name(variety = variety, nplants = nplants, nrep = 1, only_lai=only_lai)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
     
-def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30, 
-                            variability_type = None,
+def run_and_save_multi_simu(variety = 'Tremie12', nplants = 30, variability_type = None,
                             age_range = [400, 2600], time_steps = [20, 100],
-                            nrep = 5, scale_povray = 1., reset = False, reset_data = False):
+                            nrep = 5, scale_povray = 1., reset = False, reset_data = False,
+                            only_lai=False):
     df_save = run_multi_simu(variety = variety, nplants = nplants, 
                              variability_type = variability_type, age_range = age_range,
                              time_steps = time_steps, nrep = nrep,
-                             scale_povray = scale_povray, reset = reset, reset_data = reset_data)
-    filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
+                             scale_povray = scale_povray, reset = reset, reset_data = reset_data,
+                             only_lai=only_lai)
+    filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep, only_lai=only_lai)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     df_save.to_csv(file_path)
     
+def run_and_save_one_simu_all_varieties(nplants = 30,  variability_type = None,
+                                        age_range = [400, 2600], time_steps = [20, 100],
+                                        scale_povray = 1., reset = False, 
+                                        reset_data = False, only_lai=False):
+    varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']
+    for variety in varieties:
+        run_and_save_one_simu(variety=variety, nplants=nplants, variability_type=variability_type,
+                              age_range=age_range, time_steps=time_steps,
+                              scale_povray=scale_povray, reset=reset,
+                              reset_data=reset_data, only_lai=only_lai)
+                              
+def run_and_save_multi_simu_all_varieties(nplants = 30,  variability_type = None,
+                                        age_range = [400, 2600], time_steps = [20, 100],
+                                        nrep = 5, scale_povray = 1., reset = False, 
+                                        reset_data = False, only_lai=False):
+    varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']
+    for variety in varieties:
+        run_and_save_one_simu(variety=variety, nplants=nplants, variability_type=variability_type,
+                              age_range=age_range, time_step=stime_steps, nrep=nrep,
+                              scale_povray=scale_povray, reset=reset,
+                              reset_data=reset_data, only_lai=only_lai)
+    
 # Get and plot canopy properties ###################################################################
-def get_simu_results(variety = 'Tremie12', nplants = 30, nrep = 1):
-    filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep)
+def get_simu_results(variety = 'Tremie12', nplants = 30, nrep = 1, only_lai=False):
+    filename = get_file_name(variety = variety, nplants = nplants, nrep = nrep, only_lai=only_lai)
     file_path = str(shared_data(alinea.echap)/'architectural_simulations'/filename)
     return pandas.read_csv(file_path)
 
@@ -231,22 +275,16 @@ def plot_sum(data, variable = 'LAI_vert', xaxis = 'ThermalTime',
               title = None, xlabel = None, ylabel = None,
               xlims = None, ylims = None, ax = None, return_ax = False):
     
-    def get_mean_data(variable):
-        if variable in data.columns:
-            df_sum.loc[:, variable] = df_mean.loc[:, variable]
     
     if variable in data.columns:
         if ax == None:
             fig, ax = plt.subplots()
         df = data[pandas.notnull(data.loc[:,variable])]
-        df_mean = df.groupby(xaxis).mean()
 
-        df_sum = df.groupby(xaxis).sum()
-        for var in ['HS', 'num_leaf_bottom', 'num_leaf_top', 'fnl', 
-                    'cur_max_leaf_top', 'cur_num_leaf_top']:
-            if var != 'xaxis':
-                get_mean_data(var)
-
+        df_sum = df.groupby([xaxis, 'num_plant']).sum()
+        df_sum = df_sum.reset_index()
+        df_sum = df_sum.groupby(xaxis).mean()
+        
         ax.plot(df_sum.index, df_sum[variable], color = color, 
                     marker = marker, linestyle = linestyle)
         if title is not None:
@@ -407,10 +445,32 @@ def test_architecture_canopy(varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie1
                                         axs = axs, tight_layout = tight_layout)
         proxy += [plt.Line2D((0,1),(0,0), color=color, marker='', linestyle='-')]
     axs[1][1].legend(proxy, varieties, loc='center left', bbox_to_anchor=(1, 0.5))
-    
-# variety = 'Tremie12'
-# nplants = 30
-# nrep = 1
-# df_sim = get_simu_results(variety = variety, nplants = nplants, nrep = nrep)
-# df_dens = density_fits()['Tremie12']
+
+def compare_lai_by_axis(variety = 'Tremie12', nplants = 30, nrep = 1,
+                         fig_size = (10, 10), color = 'b', title = None, 
+                         tight_layout = False, only_lai=False):
+    fig, axs = plt.subplots(2,2, figsize = fig_size)
+    linestyles = {'total':'-', 'MS':'--', 'ferti':'*-'}
+    colors = {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
+    axs_iter = iter(axs.flat())
+    for variety in varieties:
+        df_sim = get_simu_results(variety = variety, nplants = nplants, nrep = nrep, only_lai=only_lai)
+        df_obs = get_all_obs(variety = variety, origin_lai_data = 'biomass')
+        ax = next(axs_iter)
+        color = colors[variety]
+        plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
+                     colors = [color, color], markers = ['', 'o'], 
+                     linestyles = [linestyles['total'], ''],
+                     error_bars = [False, True], legend = False, ax = ax)
+        plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert_MS', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
+                     colors = [color, color], markers = ['', 'o'], 
+                     linestyles = [linestyles['MS'], ''],
+                     error_bars = [False, True], legend = False, ax = ax)
+        plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert_ferti', xaxis = 'HS',
+                     xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
+                     colors = [color, color], markers = ['', 'o'], 
+                     linestyles = [linestyles['ferti'], ''],
+                     error_bars = [False, True], legend = False, ax = ax)
 

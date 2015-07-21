@@ -98,7 +98,7 @@ class AdelLeafRecorder:
                     self.data.loc[df_date.index, 'cur_num_leaf_top'] = cur_max_leaf_top - df_date['num_leaf_top'] + 1
     
     def add_haun_stage(self):
-        HSconv = HS_fit[self.variety]
+        HSconv = HS_fit()[self.variety]
         self.data['HS'] = HSconv(self.data['degree_days'])
     
     def post_treatment(self):
@@ -179,14 +179,9 @@ def get_weather(variety = 'Tremie12'):
     
 def run_and_save(variety = 'Tremie12', nplants = 30, delay = 20., 
                 reset = False, reset_data = False):
-    adel = None
-    while adel is None:
-        try:
-            # Initialize wheat canopy
-            adel = set_adel_canopy(variety = variety, nplants = nplants, age = 0., 
-                                    reset = reset, reset_data = reset_data)
-        except:
-            pass
+    # Initialize wheat canopy
+    adel = set_adel_canopy(variety = variety, nplants = nplants, age = 0., 
+                            reset = reset, reset_data = reset_data)
     recorder = AdelLeafRecorder()
     
     # Get weather
@@ -298,7 +293,7 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
 def add_hs_and_degree_days(df, variety = 'Tremie12'):
     weather = read_weather_variety(variety = variety)
     df['degree_days'] = weather.data.degree_days[df['date']].values
-    HSconv = HS_fit[variety]
+    HSconv = HS_fit()[variety]
     df['HS'] = HSconv(df['degree_days'])
 
 def get_archi_tagged_data(variety = 'Tremie12'):
@@ -354,12 +349,12 @@ def plot_sim_obs_MS(df_sim, df_obs, variable = 'length', xaxis = 'degree_days',
                  xlabel = xaxis, ylabel = variable, xlims = xlims, ylims = ylims,
                  legend = legend, ax = ax)
     
-def compare_sim_scan(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+def compare_sim_scan(variety = 'Tremie12', nplants = 30, variable = 'length', xaxis = 'degree_days', 
                      leaves = range(7, 14), from_top = False, exclude_stat = None, 
                      xlims = None, ylims = None, legend = True, ax = None, df_sim = None, 
                      fig_size = (10, 8)):
     if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
+        df_sim = get_simu_results(variety = variety, nplants = nplants)
     df_obs = get_scan_dimensions(variety = variety)
     if exclude_stat is not None:
         df_obs = df_obs[df_obs['stat'] < exclude_stat]
@@ -367,22 +362,24 @@ def compare_sim_scan(variety = 'Tremie12', variable = 'length', xaxis = 'degree_
                       from_top = from_top, title = 'Simu vs. scans',
                       xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
 
-def compare_sim_archi_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+def compare_sim_archi_tagged(variety = 'Tremie12', nplants = 30,
+                            variable = 'length', xaxis = 'degree_days', 
                             leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
                             legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
+        df_sim = get_simu_results(variety = variety, nplants = nplants)
     df_obs = get_archi_tagged_data(variety = variety)
     plot_sim_obs_MS(df_sim, df_obs, variable = variable, xaxis = xaxis,
                     leaves = leaves, from_top = from_top,
                     title = 'Simu vs. treated archi tagged',
                     xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
                       
-def compare_sim_symptom_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
-                            leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
-                            legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
+def compare_sim_symptom_tagged(variety = 'Tremie12',  nplants = 30, 
+                               variable = 'necro', xaxis = 'degree_days', leaves = range(8, 14), 
+                               from_top = False, xlims = None, ylims = None, 
+                               legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
+        df_sim = get_simu_results(variety = variety, nplants = nplants)
     df_obs = get_symptom_tagged_data(variety = variety)
     plot_sim_obs_MS(df_sim, df_obs, variable = variable, xaxis = xaxis, 
                       leaves = leaves, from_top = from_top,
@@ -426,12 +423,12 @@ def plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
     ax.add_artist(leg1)
     ax.add_artist(leg2)
                       
-def compare_sim_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+def compare_sim_tagged(variety = 'Tremie12', nplants=30, variable = 'necro', xaxis = 'degree_days', 
                         leaves = range(8, 14), from_top = False, error_bars = True, 
                         xlims = None, ylims = None, legend = True, ax = None, 
                         df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
+        df_sim = get_simu_results(variety = variety, nplants = nplants)
     df_obs_archi = get_archi_tagged_data(variety = variety)
     df_obs_symptom = get_symptom_tagged_data(variety = variety)
     plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
@@ -440,12 +437,12 @@ def compare_sim_tagged(variety = 'Tremie12', variable = 'necro', xaxis = 'degree
                     xlims = xlims, ylims = ylims, 
                     legend = legend, ax = ax)
                       
-def compare_sim_tagged_by_fnl(variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
+def compare_sim_tagged_by_fnl(variety = 'Tremie12', nplants=30, variable = 'necro', xaxis = 'degree_days', 
                         leaves = range(8, 14), from_top = False, error_bars = True, 
                         xlims = None, ylims = None, 
                         legend = True, ax = None, df_sim = None, fig_size = (10, 17)):
     if df_sim is None:
-        df_sim = get_simu_results(variety = variety, nplants = 30)
+        df_sim = get_simu_results(variety = variety, nplants = nplants)
     df_obs_archi = get_archi_tagged_data(variety = variety)
     df_obs_symptom = get_symptom_tagged_data(variety = variety)
     fnls = set(df_sim['fnl']) & set(df_obs_symptom['fnl']) & set(df_obs_archi['fnl'])
@@ -461,10 +458,10 @@ def compare_sim_tagged_by_fnl(variety = 'Tremie12', variable = 'necro', xaxis = 
                         legend = legend, ax = axs[i], fig_size = fig_size)
         axs[i].annotate('FNL %d' % fnl, xy=(0.05, 0.4), xycoords='axes fraction', fontsize=18)
         
-def compare_sim_scan_archi_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
+def compare_sim_scan_archi_tagged(variety = 'Tremie12', nplants=30, variable = 'length', xaxis = 'degree_days', 
                             leaves = range(8, 14), exclude_stat = None,
-                            xlims = None, ylims = None, fig_size = (15, 10)):
-    df_sim = get_simu_results(variety = variety, nplants = 30)
+                            xlims = None, ylims = None, fig_size = (16, 10)):
+    df_sim = get_simu_results(variety = variety, nplants = nplants)
     fig, axs = plt.subplots(1, 2, figsize = fig_size)
     compare_sim_scan(variety = variety, variable = variable, xaxis = xaxis, 
                      leaves = leaves, exclude_stat = exclude_stat, 
@@ -477,10 +474,11 @@ def compare_sim_scan_archi_tagged(variety = 'Tremie12', variable = 'length', xax
     for ax in axs:
         ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
         
-def compare_sim_scan_symptom_tagged(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days', 
-                            leaves = range(8, 14), exclude_stat = None,
-                            xlims = None, ylims = None, fig_size = (15, 10)):
-    df_sim = get_simu_results(variety = variety, nplants = 30)
+def compare_sim_scan_symptom_tagged(variety = 'Tremie12', nplants=30,
+                                    variable = 'length', xaxis = 'degree_days', 
+                                    leaves = range(8, 14), exclude_stat = None,
+                                    xlims = None, ylims = None, fig_size = (15, 10)):
+    df_sim = get_simu_results(variety = variety, nplants = nplants)
     fig, axs = plt.subplots(1, 2, figsize = fig_size)
     compare_sim_scan(variety = variety, variable = variable, xaxis = xaxis, 
                      leaves = leaves, exclude_stat = exclude_stat, 
@@ -493,10 +491,10 @@ def compare_sim_scan_symptom_tagged(variety = 'Tremie12', variable = 'length', x
     for ax in axs:
         ax.annotate(next(letters), xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
 
-def compare_splant(variety = 'Tremie12', variable = 'length', xaxis = 'degree_days',
+def compare_splant(variety = 'Tremie12', nplants=30, variable = 'length', xaxis = 'degree_days',
                    axes = 'MS', group = 'sum', exclude_stat = None, xlims = None, ylims = None):
     """ axes = 'MS', 'tillers' or 'total'"""
-    df_sim = get_simu_results(variety = variety, nplants = 30, group = group)
+    df_sim = get_simu_results(variety = variety, nplants = nplants, group = group)
     df_obs = get_scan_dimensions(variety = variety)
     if axes == 'MS':
         (df_sim, df_obs) = map(lambda x: x[x['axis'] == 'MS'], (df_sim, df_obs))

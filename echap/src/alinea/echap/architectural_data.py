@@ -398,8 +398,8 @@ def treated_symptom_tagged_data(variety = 'Tremie12'):
     return pandas.read_csv(file_path, sep = ';')
     
 def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
-    filename = 'Tremie12_scan_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
-    file_path = shared_data(alinea.echap, filename)
+    filename = variety+'_scan_sampled_plants_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
+    file_path = filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
     return pandas.read_csv(file_path, sep = "\t")
 
 
