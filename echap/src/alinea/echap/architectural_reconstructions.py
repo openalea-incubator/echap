@@ -149,6 +149,8 @@ def reconstruction_parameters():
     #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3} # values optimised for echap report december 2014
     pars['top_leaves'] = {'Mercia':4, 'Rht3':4, 'Tremie12':4, 'Tremie13':4}
     #
+    pars['disc_level'] = pdict(7)
+    #
     #
     return pars
 
@@ -454,7 +456,7 @@ def estimate_Wb_Tremie13(dim_fit, data, sep_up_down=4):
     data = data.reset_index()
     data = data[data['label']=='Tremie13']
     hs = HS_fit()
-    fits = median_leaf_fits()
+    fits = leafshape_fits(reset_data=False,**parameters)
     W_blades = []
     estimated = []
     for ind in data.index:
@@ -623,52 +625,47 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
         d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
-def median_leaf_fits(disc_level=7, top_leaves={'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3}):
+def median_leaf_fits(xydata, sr_data, disc_level=7, top_leaves=3):
+    gL = geoLeaf(nlim=top_leaves)   
+    trajs,bins = xydata
+    sr_data['Lindex'] = sr_data['rankclass']
+    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
+    return Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
+ 
+def leafshape_fits(reset_data=False, **parameters): 
+    data = archidb.reconstruction_data(reset=reset_data)
+    median_leaf = parameters.get('median_leaf')
+    if not all(median_leaf.values()):
+        raise NotImplementedError('leaf_fits not operational anymore')
+        #use leaf_fits in that case
+    top_leaves = parameters.get('top_leaves')
+    disc_level = parameters.get('disc_level')
+    return {k: median_leaf_fits(data.xy_data[k], data.sr_data[k], disc_level=disc_level[k], top_leaves=top_leaves[k]) for k in median_leaf}
 
-    gL = {k:geoLeaf(nlim=3) for k in ['Mercia','Tremie13']}
-    gL['Mercia'] = geoLeaf(nlim=top_leaves['Mercia']) 
-    gL['Rht3'] = geoLeaf(nlim=top_leaves['Rht3']) 
-    gL['Tremie12'] = geoLeaf(nlim=top_leaves['Tremie12'])    
-    gL['Tremie13'] = geoLeaf(nlim=top_leaves['Tremie13']) 
-    
-    trajs,bins = archidb.median_leaf_trajectories()
-    
-    d={}
-    for k in ['Mercia','Rht3', 'Tremie12', 'Tremie13']:
-        _, dfsr = _addLindex(*archidb.leaf_curvature_data(k))
-        srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
-        d[k] = Leaves(trajs, srdb, geoLeaf=gL[k], dynamic_bins = bins, discretisation_level = disc_level)
-    return d
  
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuille du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
     
             
-# Standard echap reconstruction protocol for plant development and axis dynamic       
-#def echap_development(nplants, pgen, primary_proba, tdata, pdata, dTT_stop)
-    #ici include mortality
-
 
 
 class EchapReconstructions(object):
     
     def __init__(self, reset_data=False, pars = reconstruction_parameters()):
         self.pars = pars
+        if reset_data:
+            d = archidb.reconstruction_data(reset=True)
+            reset_data = False
         self.pgen_base = self.pars['pgen_base']
         self.HS_fit = HS_fit(reset=True, reset_data=reset_data)
         self.density_fits = density_fits(HS_converter=self.HS_fit, reset_data=reset_data, **self.pars)
         self.axepop_fits = axepop_fits(reset_data=reset_data, **self.pars)
         self.dimension_fits = dimension_fits(self.HS_fit, reset_data=reset_data,**self.pars)
         self.GL_fits = GL_fits(self.HS_fit, **self.pars)
-        median_leaf = self.pars['median_leaf']
-        top_leaves = self.pars['top_leaves']
-        if median_leaf:            
-            self.leaf_fits = median_leaf_fits(top_leaves=top_leaves)
-        else:
-            self.leaf_fits = leaf_fits()
+        self.leaves = leafshape_fits(reset_data=reset_data, **self.pars)
 
    
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, disc_level=7, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
                 
         run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1}
@@ -690,7 +687,7 @@ class EchapReconstructions(object):
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
                     
-        leaves = self.leaf_fits[name] 
+        leaves = self.leaves[name] 
        
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)

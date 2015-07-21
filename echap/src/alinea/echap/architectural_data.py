@@ -652,7 +652,19 @@ def mean_nff():
         return sum([int(k)*v for k,v in ms_nff_probas.iteritems()])
     return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().iteritems()}
    
-   
+def sr_data():
+        
+    def sr_reader(file) :
+        header_row_srdb = ['rankclass','s','r']
+        return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
+    
+    srdb = {'Mercia': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
+            'Rht3': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
+            'Tremie12': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
+            'Tremie13': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')}
+
+    return {k: sr_reader(srdb[k]) for k in srdb}
+
 def leaf_curvature_data(name='Mercia'):
 
     def xy_reader(file):
@@ -707,7 +719,9 @@ def leaf_curvature_data(name='Mercia'):
         dfsr = sr_reader(data_file_srdb)
     
     return dfxy, dfsr
- 
+
+# reder for nervs used for validation curvature
+    
 def xydb_reader(name = 'Mercia'):
     if name in ['Mercia', 'Rht3']:
         data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv')
@@ -722,10 +736,8 @@ def xydb_reader(name = 'Mercia'):
     return df[df['variety'] == name]
 
 # interpolated median leaf from Grignon 2010
-def median_leaf_trajectories():
-    """ interpolated xy for upper/lower leaves every 0.5 HS on Grignon 2009-2010 data
-    """
-    fn = shared_data(alinea.echap, 'median_leaf_trajectories_Grignon2010.csv') 
+
+def read_trajectories(fn):     
     dat = pandas.read_csv(fn, names=['age','x','y','lindex'], sep=',', index_col=False, skiprows=1, decimal='.')
     ages = set(dat['age'])
     numage = numpy.array(sorted(list(ages)))
@@ -735,6 +747,16 @@ def median_leaf_trajectories():
     grouped = dat.groupby(('lindex','age_class'))   
     trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
     return trajs, bins
+
+def median_leaf_trajectories():
+    """ interpolated xy for upper/lower leaves every 0.5 HS on Grignon 2009-2010 data
+    """
+    trajs = {'Mercia': 'MerciaRht',
+             'Rht3': 'MerciaRht',
+             'Tremie12':'Tremie',
+             'Tremie13':'Tremie'}
+    fn = {k:shared_data(alinea.echap, 'median_leaf_trajectories_' + trajs[k] + '_Grignon2010.csv') for k in trajs}
+    return {k:read_trajectories(fn[k]) for k in trajs}
     
 #
 # Elaborated data
@@ -1111,6 +1133,8 @@ class ReconstructionData(object):
         self.Tillering_data = Tillering_data()
         self.Pheno_data = Pheno_data()
         self.Dimension_data = Dim_data()
+        self.xy_data = median_leaf_trajectories()
+        self.sr_data = sr_data()
         
     def save(self, filename):
         with open(filename, 'w') as output:
