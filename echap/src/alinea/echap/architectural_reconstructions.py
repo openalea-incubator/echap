@@ -707,8 +707,27 @@ def echap_reconstructions(reset=False, reset_data=False):
     Echap = EchapReconstructions(reset_data=reset_data)
     Echap.save(filename)
     return Echap   
-        
 
+def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250., inter_row=0.15,
+                            nsect=3, seed=1):
+    stand = AgronomicStand(sowing_density=sowing_density,
+                            plant_density=plant_density, 
+                            inter_row=inter_row, noise=0.04, density_curve_data = None)       
+    n_emerged = nplants
+    axp = pgen_ext.AxePop() # With 11 and 12 it's fine
+    plants = axp.plant_list(n_emerged)
+    hs_fit = HS_fit()['Mercia']
+    GLfit = GL_fits(hs_fit, **parameters)['Mercia']
+    Dimfit = dimension_fits(hs_fit, **parameters)['Mercia']
+    Dimfit.scale = {k:v*1.15 for k in Dimfit.scale} # Seen on Soisson 2010 compared to Mercia 2010
+    pgen = pgen_ext.PlantGen(HSfit=hs_fit, GLfit=GLfit, Dimfit=Dimfit)
+    axeT, dimT, phenT = pgen.adelT(plants)
+    axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
+    devT = devCsv(axeT, dimT, phenT)
+    leaves = leafshape_fits(**parameters)['Mercia'] # TODO Create and Take Soisson
+    return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , 
+                    seed=seed, sample='sequence', leaves = leaves, **kwds)
+    
 # checks consistency adel/fits
 
 if run_plots:
