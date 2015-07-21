@@ -682,7 +682,7 @@ class EchapReconstructions(object):
         n_emerged = nplants#adel uses smart stand       
         axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
-        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name])
+        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name])
         axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
