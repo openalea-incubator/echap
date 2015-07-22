@@ -376,12 +376,13 @@ def plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS',
         fig, ax = plt.subplots()
     plot_mean(df_sim, variable = variable, xaxis = xaxis, error_bars = error_bars[0], 
                 color = colors[0], marker = markers[0], linestyle = linestyles[0],
-                ax = ax)
-        
-    plot_mean(df_obs, variable = variable, xaxis = xaxis, error_bars = error_bars[1], 
-                color = colors[1], marker = markers[1], linestyle = linestyles[1],
                 title = title, xlabel = xlabel, ylabel = ylabel, 
                 xlims = xlims, ylims = ylims, ax = ax)
+    if df_obs is not None:
+        plot_mean(df_obs, variable = variable, xaxis = xaxis, error_bars = error_bars[1], 
+                    color = colors[1], marker = markers[1], linestyle = linestyles[1],
+                    title = title, xlabel = xlabel, ylabel = ylabel, 
+                    xlims = xlims, ylims = ylims, ax = ax)
     
     if legend == True:   
         ax.legend(['Simulated', 'Observed'], loc='center left', bbox_to_anchor=(1, 0.5))
@@ -446,31 +447,40 @@ def test_architecture_canopy(varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie1
         proxy += [plt.Line2D((0,1),(0,0), color=color, marker='', linestyle='-')]
     axs[1][1].legend(proxy, varieties, loc='center left', bbox_to_anchor=(1, 0.5))
 
-def compare_lai_by_axis(variety = 'Tremie12', nplants = 30, nrep = 1,
-                         fig_size = (10, 10), color = 'b', title = None, 
-                         tight_layout = False, only_lai=False):
+def compare_lai_by_axis(nplants = 30, nrep = 1,
+                        fig_size = (10, 10), color = 'b', title = None, 
+                        tight_layout = False, only_lai=False):
     fig, axs = plt.subplots(2,2, figsize = fig_size)
-    linestyles = {'total':'-', 'MS':'--', 'ferti':'*-'}
+    linestyles = {'total':'-', 'MS':'--', 'ferti':'-.'}
+    varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']
     colors = {'Mercia':'r', 'Rht3':'g', 'Tremie12':'b', 'Tremie13':'m'}
-    axs_iter = iter(axs.flat())
+    axs_iter = iter(axs.flat)
+    proxys = []
+    labels = []
     for variety in varieties:
         df_sim = get_simu_results(variety = variety, nplants = nplants, nrep = nrep, only_lai=only_lai)
-        df_obs = get_all_obs(variety = variety, origin_lai_data = 'biomass')
+        df_obs = get_lai_obs(variety = variety, origin = 'biomass')
         ax = next(axs_iter)
         color = colors[variety]
+        proxys += [plt.Line2D((0,1),(0,0), color=color, marker='', linestyle='-')]
+        labels += [variety]
         plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS',
                      xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
                      colors = [color, color], markers = ['', 'o'], 
                      linestyles = [linestyles['total'], ''],
-                     error_bars = [False, True], legend = False, ax = ax)
+                     error_bars = [False, True], legend = False, ylims=[0,10], ax = ax)
         plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert_MS', xaxis = 'HS',
                      xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
                      colors = [color, color], markers = ['', 'o'], 
                      linestyles = [linestyles['MS'], ''],
-                     error_bars = [False, True], legend = False, ax = ax)
+                     error_bars = [False, True], legend = False, ylims=[0,10], ax = ax)
         plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert_ferti', xaxis = 'HS',
                      xlabel = 'Haun stage', ylabel = 'Green Leaf Area Index',
                      colors = [color, color], markers = ['', 'o'], 
                      linestyles = [linestyles['ferti'], ''],
-                     error_bars = [False, True], legend = False, ax = ax)
-
+                     error_bars = [False, True], legend = False, ylims=[0,10], ax = ax)
+    proxys += [plt.Line2D((0,1),(0,0), color='k', marker='', linestyle='-'),
+               plt.Line2D((0,1),(0,0), color='k', marker='', linestyle='--'),
+               plt.Line2D((0,1),(0,0), color='k', marker='', linestyle='-.')]
+    labels += ['Total', 'MS', 'Ferti']
+    axs[0][1].legend(proxys, labels, loc='center left', bbox_to_anchor=(1, 0.5))

@@ -100,10 +100,20 @@ class AdelLeafRecorder:
     def add_haun_stage(self):
         HSconv = HS_fit()[self.variety]
         self.data['HS'] = HSconv(self.data['degree_days'])
-    
+        
+    def add_nb_axis(self):
+        self.data['nb_axis'] = numpy.nan
+        for pl in set(self.data['num_plant']):
+            df_pl = self.data[self.data['num_plant']==pl]
+            for i, row in df_pl.iterrows():
+                df_d = df_pl[df_pl['date']==row['date']]
+                nb_ax = len(set(df_d['axis']))
+                self.data.loc[i, 'nb_axis'] = nb_ax
+
     def post_treatment(self):
         self.add_leaf_numbers()
         self.add_haun_stage()
+        self.add_nb_axis()
     
     def save_mean_and_sum_by_axis(self, filename):
         def get_mean_data(variable):
@@ -215,6 +225,16 @@ def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
     df['necro_tot'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
     return df
     
+# Temp
+def add_nb_axis(df_sim):
+    df_sim['nb_axis'] = numpy.nan
+    for pl in set(df_sim['num_plant']):
+        df_pl = df_sim[df_sim['num_plant']==pl]
+        for i, row in df_pl.iterrows():
+            df_d = df_pl[df_pl['date']==row['date']]
+            nb_ax = len(set(df_d['axis']))
+            df_sim.loc[i, 'nb_axis'] = nb_ax
+    
 def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days', 
                   leaves = range(1, 14), from_top = True, plant_axis = ['MS'],
                   error_bars = False, error_method = 'confidence_interval', 
@@ -255,7 +275,7 @@ def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days',
                     loc='center left', bbox_to_anchor=(1, 0.5))
     if return_ax == True:
         return ax
-    
+            
 def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days', 
                   leaves = range(1, 14), from_top = True,
                   error_bars = False, error_method = 'confidence_interval', 
@@ -523,3 +543,23 @@ def compare_splant(variety = 'Tremie12', nplants=30, variable = 'length', xaxis 
                    marker = 'o', linestyle = '--', color = 'b', 
                    title = 'Simu vs. scans', xlabel = xaxis, ylabel = variable,
                    xlims = xlims, ylims = ylims, ax = ax)
+                   
+def plot_nb_axis(variety = 'Tremie12', nplants=30, xaxis = 'HS', ax = None):
+    df_sim = get_simu_results(variety = variety, nplants = nplants)
+    if not 'nb_axis' in df_sim.columns:
+        add_nb_axis(df_sim)
+    df = df_sim[[xaxis, 'nb_axis']]
+    df = df.groupby(xaxis).mean()
+    if ax is None:
+        fig, ax = plt.subplots()
+    ax.plot(df.index, df['nb_axis'])
+    ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+    ax.set_ylabel('Mean number of axis', fontsize = 16)
+    ax.set_xlabel(xaxis, fontsize = 16)
+    ax.grid()
+    
+def plot_nb_axis_all_varieties(nplants=30, xaxis='HS'):
+    fig, axs = plt.subplots(2,2)
+    axs_iter = iter(axs.flat)
+    for variety in ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']:
+        plot_nb_axis(variety=variety, nplants=nplants, xaxis=xaxis, ax=next(axs_iter))

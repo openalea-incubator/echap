@@ -104,7 +104,7 @@ def mat_ray_obs(name = 'Tremie12'):
     header_row = ['DATE','H','RECORD','QR_PAR_Avg','SE_PAR_Avg_1','SE_PAR_Avg_2','SE_PAR_Avg_3','SE_PAR_Avg_4','SE_PAR_Avg_5','SE_PAR_Avg_6','SE_PAR_Avg_7','SE_PAR_Avg_8']
     #data = pandas.read_csv(data_file, parse_dates={'datetime':[0,1]}, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
     data_path = shared_data(alinea.echap, data_file)
-    df = pandas.read_csv(data_file, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
+    df = pandas.read_csv(data_path, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=1, decimal='.')
 
     #filtre seulement heure entre 9h et 19h pour chaque journee
     df = df[df['H']>9]; df = df[df['H']<19]
