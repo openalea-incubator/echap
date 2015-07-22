@@ -548,7 +548,9 @@ def plot_nb_axis(variety = 'Tremie12', nplants=30, xaxis = 'HS', ax = None):
     df_sim = get_simu_results(variety = variety, nplants = nplants)
     if not 'nb_axis' in df_sim.columns:
         add_nb_axis(df_sim)
-    df = df_sim[[xaxis, 'nb_axis']]
+    # reduce to one value per plant first (otherwise we get a weighted mean per number of leaf present)
+    df = df_sim.groupby(('num_plant','date')).mean().reset_index()
+    df = df[[xaxis, 'nb_axis']]
     df = df.groupby(xaxis).mean()
     if ax is None:
         fig, ax = plt.subplots()
