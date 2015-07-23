@@ -12,29 +12,29 @@ from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
 from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
                                                         HS_fit, density_fits)
-from alinea.adel.postprocessing import axis_statistics, plot_statistics, ground_cover
+from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
 from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.label import Label
 
 # Run and save canopy properties ###################################################################
-def aggregate_lai(df_lai, adel, nplants):
+def aggregate_lai(adel, axstat):
     colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
                  'PAI_tot', 'PAI_vert']
-    if not df_lai.empty:
-        df_axstat, _ = axis_statistics(df_lai, adel.domain_area, adel.convUnit)
-        df_axstat = plot_statistics(df_axstat, nplants, adel.domain_area)
-        return df_axstat.loc[:, colnames]
-    else: 
+    pstat = adel.plot_statistics(axstat)             
+    if pstat is None:
         return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
+    else:
+        return pstat.loc[:, colnames]
 
-def get_lai_properties(g, adel, nplants):
-    df_lai = adel.get_exposed_areas(g, convert=True)
-    df_lai_tot = aggregate_lai(df_lai, adel, nplants)
-    df_lai_MS = aggregate_lai(df_lai[df_lai['axe_id']=='MS'], adel, nplants)
+
+def get_lai_properties(g, adel):
+    df_axstat = adel.axis_statistics(g)
+    df_lai_tot = aggregate_lai(adel, df_axstat)
+    df_lai_MS = aggregate_lai(adel, df_axstat[df_axstat['axe_id']=='MS'])
     df_lai_MS.rename(columns = {col:col+'_MS' for col in ['LAI_tot', 'LAI_vert', 
                                                          'PAI_tot', 'PAI_vert']}, inplace=True)
-    df_lai_ferti = aggregate_lai(df_lai[df_lai['HS_final']>=df_lai['nff']], adel, nplants)
+    df_lai_ferti = aggregate_lai(adel, df_axstat[df_axstat['has_ear']])
     df_lai_ferti.rename(columns = {col:col+'_ferti' for col in ['LAI_tot', 'LAI_vert', 
                                                             'PAI_tot', 'PAI_vert']}, inplace=True)
     df_lai = pandas.merge(df_lai_tot, df_lai_MS)
@@ -99,7 +99,7 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
         # Get canopy properties
         g = adel.setup_canopy(age=age)
         if age in ages_1:
-            df_lai = get_lai_properties(g, adel, nplants)
+            df_lai = get_lai_properties(g, adel)
         if age in ages_2:
             if only_lai==False:
                 df_cover = get_cover_fraction_properties(g, adel, nplants, scale_povray)
@@ -192,8 +192,8 @@ def run_and_save_multi_simu_all_varieties(nplants = 30,  variability_type = None
                                         reset_data = False, only_lai=False):
     varieties = ['Mercia', 'Rht3', 'Tremie12', 'Tremie13']
     for variety in varieties:
-        run_and_save_one_simu(variety=variety, nplants=nplants, variability_type=variability_type,
-                              age_range=age_range, time_step=stime_steps, nrep=nrep,
+        run_and_save_multi_simu(variety=variety, nplants=nplants, variability_type=variability_type,
+                              age_range=age_range, time_steps=time_steps, nrep=nrep,
                               scale_povray=scale_povray, reset=reset,
                               reset_data=reset_data, only_lai=only_lai)
     
