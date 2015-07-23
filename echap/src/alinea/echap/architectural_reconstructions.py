@@ -716,17 +716,17 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250., 
     n_emerged = nplants
     axp = pgen_ext.AxePop() # With 11 and 12 it's fine
     plants = axp.plant_list(n_emerged)
-    hs_fit = HS_fit()['Mercia']
+    hs_fit = HS_fit()
     GLfit = GL_fits(hs_fit, **parameters)['Mercia']
     Dimfit = dimension_fits(hs_fit, **parameters)['Mercia']
-    Dimfit.scale = {k:v*1.15 for k in Dimfit.scale} # Seen on Soisson 2010 compared to Mercia 2010
-    pgen = pgen_ext.PlantGen(HSfit=hs_fit, GLfit=GLfit, Dimfit=Dimfit)
+    Dimfit.scale = {k:v*1.15 for k,v in Dimfit.scale.iteritems()} # Seen on Soisson 2010 compared to Mercia 2010
+    pgen = pgen_ext.PlantGen(HSfit=hs_fit['Mercia'], GLfit=GLfit, Dimfit=Dimfit)
     axeT, dimT, phenT = pgen.adelT(plants)
     axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
     devT = devCsv(axeT, dimT, phenT)
     leaves = leafshape_fits(**parameters)['Mercia'] # TODO Create and Take Soisson
     return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , 
-                    seed=seed, sample='sequence', leaves = leaves, **kwds)
+                    seed=seed, sample='sequence', leaves = leaves)
     
 # checks consistency adel/fits
 

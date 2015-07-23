@@ -550,11 +550,10 @@ def plot_nb_axis(variety = 'Tremie12', nplants=30, xaxis = 'HS', ax = None):
         add_nb_axis(df_sim)
     # reduce to one value per plant first (otherwise we get a weighted mean per number of leaf present)
     df = df_sim.groupby(('num_plant','date')).mean().reset_index()
-    df = df[[xaxis, 'nb_axis']]
-    df = df.groupby(xaxis).mean()
+    df = df.groupby('date').mean()
     if ax is None:
         fig, ax = plt.subplots()
-    ax.plot(df.index, df['nb_axis'])
+    ax.plot(df[xaxis], df['nb_axis'])
     ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
     ax.set_ylabel('Mean number of axis', fontsize = 16)
     ax.set_xlabel(xaxis, fontsize = 16)
