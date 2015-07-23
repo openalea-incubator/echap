@@ -19,7 +19,6 @@ except:
 from alinea.adel.astk_interface import AdelWheat
 from alinea.adel.geometric_elements import Leaves
 from alinea.adel.Stand import AgronomicStand
-from alinea.adel.WheatTillering import WheatTillering
 from alinea.adel.AdelR import devCsv
 
 import alinea.echap
