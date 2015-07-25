@@ -85,6 +85,12 @@ def reconstruction_parameters():
     pars['pgen_base'] = {'TT_hs_break':0.0,
                          # delay  hs->collar apprearance (pyllochronic units)
                         'inner_params': {'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}}
+
+    # Nff composition of the canopy
+    # if None, it uses the nff composition of the tillering data
+    # pars['nff_probabilities']['Tremie12'] = {'11': 0.3, '12': 0.7}
+    pars['nff_probabilities'] = pdict(None)
+    # TO do : take into account
     #
     # Haun Stage = f(TT), convergence between axis
     #---------------------------------------------
@@ -667,7 +673,7 @@ class EchapReconstructions(object):
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
                 
-        run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1}
+        run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'drop_empty':True}
         if name == 'Rht3':
             incT=75
             dep=10
