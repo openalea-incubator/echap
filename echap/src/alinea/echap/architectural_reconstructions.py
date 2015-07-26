@@ -82,9 +82,7 @@ def reconstruction_parameters():
     #
     # PlantGen parameters
     #--------------------
-    pars['pgen_base'] = {'TT_hs_break':0.0,
-                         # delay  hs->collar apprearance (pyllochronic units)
-                        'inner_params': {'DELAIS_PHYLL_HS_COL_NTH' : 0.6 - 0.5 / 1.6}}
+    pars['pgen_base'] = {'TT_hs_break':None}
 
     # Nff composition of the canopy
     # if None, it uses the nff composition of the tillering data
@@ -687,7 +685,7 @@ class EchapReconstructions(object):
         n_emerged = nplants#adel uses smart stand       
         axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
-        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name])
+        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name],base_config=self.pgen_base)
         axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
