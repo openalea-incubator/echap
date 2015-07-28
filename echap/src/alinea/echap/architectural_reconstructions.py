@@ -717,7 +717,8 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250., 
                             plant_density=plant_density, 
                             inter_row=inter_row, noise=0.04, density_curve_data = None)       
     n_emerged = nplants
-    axp = pgen_ext.AxePop() # With 11 and 12 it's fine
+    m = pgen_ext.TillerEmission(primary_tiller_probabilities={'T0':1, 'T1':0.5, 'T2':0.5, 'T3':0.5, 'T4':0.3}) # From Bertheloot Soissons N+
+    axp = pgen_ext.AxePop(Emission=m) # With 11 and 12 it's fine
     plants = axp.plant_list(n_emerged)
     hs_fit = HS_fit()
     GLfit = GL_fits(hs_fit, **parameters)['Mercia']
