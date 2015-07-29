@@ -35,7 +35,7 @@ from alinea.alep.alep_weather import (wetness_rapilly, add_septoria_infection_ri
 from alinea.alep.alep_time_control import add_notation_dates
 
 # Imports for wheat reconstruction
-from alinea.echap.architectural_reconstructions import EchapReconstructions
+from alinea.echap.architectural_reconstructions import EchapReconstructions, HS_fit
 
 # Reading of weather files #########################################################################
 def format_date(start_date, end_date):
@@ -130,15 +130,13 @@ def group_by_fnl(data, from_top = True):
             group = data[data['num_plant'].isin(grps[fnl])]
             groups[fnl] = group
         return groups
-        
-def get_fnls(adel):
-    """ Get final leaf numbers over all plants in wheat canopy simulated with adel """
-    return set(adel.phenT().set_index('num_plant').groupby(level=0).count()['n'] - 1)
     
 def data_reader_2011(data_file='mercia_2011.csv'):       
     """ Read data of septoria measurements from Grignon 2011 (Mercia or Rht3 wheat) """
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
-    df = pd.read_csv(file_path, parse_dates={'date':[1]}, sep=';', index_col=[0])
+    df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
+    df.index.names = ['date']
+    df = df.rename(columns={'plant':'num_plant'})
     df['num_plant'] += 30*(df['bloc']-1)
     df['septo_necro'] = np.nan*df.septo_green
     df['num_leaf_bottom'] = 13 - df['num_leaf_top']
@@ -155,11 +153,12 @@ def data_reader_tremis(data_file='tremis_2012_tnt.csv', green_on_green = True):
     
     def septo_green_on_green(septo_green, necro):
         septo_green_on_green = map(lambda (x,y): 100*x / (100 - y) if y<100 else 0., zip(septo_green, necro))
-        #septo_green_on_green[septo_green_on_green == np.inf] = 0.
         return septo_green_on_green
     
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
-    df = pd.read_csv(file_path, parse_dates={'date':[1]}, sep=';', index_col=[0])
+    df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
+    df.index.names = ['date']
+    df = df.rename(columns={'plant':'num_plant'})
     
     df['septo_green_tot'] = df['septo_green'].copy()
     if green_on_green == True:
@@ -170,16 +169,13 @@ def data_reader_tremis(data_file='tremis_2012_tnt.csv', green_on_green = True):
          #       & (df['ratio_septo_necro']!='?') & (df['ratio_septo_necro']!='_')]
         indx = (df['ratio_septo_necro']!='<') & (df['ratio_septo_necro']!='>') & (df['ratio_septo_necro']!='=') & (df['ratio_septo_necro']!='?') & (df['ratio_septo_necro']!='_')
         if green_on_green == True:
-            df['ratio_septo_necro'][~indx] = df['septo_green'][~indx]
+            df['ratio_septo_necro'].loc[~indx] = df['septo_green'][~indx]
         else:
-            df['ratio_septo_necro'][~indx] = np.nan
+            df['ratio_septo_necro'].loc[~indx] = np.nan
         df.ratio_septo_necro = df.ratio_septo_necro.map(str2int)
     df['severity'] = severity(df.septo_green_tot, df.necro, df.ratio_septo_necro)
     df['septo_necro'] = septo_necro(df.necro, df.ratio_septo_necro)
-    
-    # Correct leaf number from bottom in tremie 2012
-    # if int(re.search(r'\d+', data_file).group()) == 2012 and 'tnt' in data_file:
-        # df['num_leaf_bottom'] -= 1
+    df['variety'] = 'tremie'+str(df.index[-1].year)[-2:]
     return df
     
 def zeros_green_to_nan(data):
@@ -217,90 +213,6 @@ def zeros_green_to_nan(data):
             df = df.append(df_)
     return df
 
-def get_leaf_dates(adel, event='tip', nff = None):
-    """ Get dates of leaf developmental stage in wheat canopy simulated with adel """
-    df_phenT = adel.phenT()
-    nffs = df_phenT.set_index('num_plant').groupby(level=0).count()['n'] - 1
-    df_phenT['nff'] =  [nffs[v] for v in df_phenT['num_plant']]
-    df_phenT['n_from_top'] = df_phenT['nff'] - df_phenT['n']
-    if nff != None:
-        df_phenT = df_phenT[df_phenT['nff']==nff]
-    if len(df_phenT)>0:
-        dates = [np.mean(df_phenT[df_phenT['n_from_top']==lf][event]) for lf in range(1, int(max(df_phenT['n'])+1))]
-        df_dates = pd.DataFrame(dates, index = range(1, len(dates)+1), columns = ['date'])
-        df_dates.index.name = 'leaf_number'
-        if event == 'ssi':
-            df_dates.ix[1:4, 'date'] = df_dates.ix[5, 'date']
-            df_dates.ix[5:len(df_dates)-1, 'date'] = df_dates.ix[6:, 'date'].values
-        return df_dates
-    else:
-        raise ValueError("No plant with given NFF in simulation")
-
-def get_leaf_emergence_dates(adel, nff = None):
-    """ Get dates of leaf emergence in wheat canopy simulated with adel """
-    return get_leaf_dates(adel, event='tip', nff = nff)
-
-def get_leaf_ligulation_dates(adel, nff = None):
-    """ Get dates of leaf ligulation in wheat canopy simulated with adel """
-    return get_leaf_dates(adel, event='col', nff = nff)
-        
-def get_leaf_senescence_dates(adel, nff = None):
-    """ Get dates of leaf senescence in wheat canopy simulated with adel """
-    return get_leaf_dates(adel, event='ssi', nff = nff)
-
-def get_leaf_dates_from_file(filename = 'TTleaf_Tremie13.csv', event = 'emergence', fnl = 12):
-    """ Get dates of leaf developmental stage in filename in argument """
-    if event == 'emergence':
-        event = 'TTem'
-    elif event == 'ligulation':
-        event = 'TTlig'
-    file_path = shared_data(alinea.echap, 'disease_measurements/'+filename)
-    dates = pd.read_csv(file_path, sep = ';')
-    dates.set_index('ranktop', inplace = True)
-    dates.index.names = ['leaf_number']
-    if fnl is not None:
-        dates = dates[dates['nff'] == fnl][event].to_frame()
-    else:
-        df = pd.DataFrame(index = set(dates.index))
-        for fnl in set(dates['nff']):
-            df[fnl] = dates[dates['nff'] == fnl][event]
-        dates = df.mean(axis = 1).to_frame()
-        dates.index.names = ['leaf_number']
-    dates.columns = ['date']
-    return dates
-
-def get_fnls_from_file(filename = 'TTleaf_Tremie13.csv'):
-    """ Get nffs from file of architecture notations """
-    file_path = shared_data(alinea.echap, 'disease_measurements/'+filename)
-    dates = pd.read_csv(file_path, sep = ';')
-    return set(dates['nff'])
-
-def find_dates_filename(weather):
-    """ Find filenames for files with dates of leaf stage for Tremie in 2012 or 2013 """
-    if weather.data.index[-1].year == 2012:
-        return 'TTleaf_Tremie12.csv'
-    elif weather.data.index[-1].year == 2013:
-        return 'TTleaf_Tremie13.csv'
-    else:
-        return None
-
-def get_date_name_event(xaxis):
-    if xaxis == 'age_leaf':
-        return 'date_emergence_leaf'
-    elif xaxis == 'age_leaf_lig':
-        return 'date_ligulation_leaf'
-    elif xaxis == 'age_leaf_vs_flag_lig':
-        return 'date_ligulation_flag_leaf'
-    elif xaxis == 'age_leaf_vs_flag_emg':
-        return 'date_emergence_flag_leaf'
-        
-def get_df_dates_xaxis(data, xaxis):
-    """ Get dates of leaf stage in argument xaxis from data """
-    date_name = get_date_name_event(xaxis)
-    df_dates = pd.DataFrame(index = set(data['num_leaf_top']))
-    df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data['num_leaf_top']==x]), df_dates.index)
-    return df_dates
-    
 def get_count_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
                           num_leaf = 1, from_top = True):
     """ Get number of notations of argument variable on given leaf over all plants in canopy """
@@ -359,71 +271,54 @@ def age_leaf_notations(data, weather, adel, nff=None):
             df_notations.loc[i, ind_na] = '-'
     return df_notations
 
-def add_leaf_dates_to_data(df, adel = None, filename = 'TTleaf_Tremie12.csv',):
-    
-    def complete_df_with_nearest_fnl(df, fnl, nearest_fnl):
-        df['date'] = map(lambda x: x[1] + 10*(x[0]-1)*(fnl - nearest_fnl), 
-                                        zip(df.index, df['date']))
+def get_date_name_event(xaxis):
+    if xaxis == 'age_leaf':
+        return 'date_emergence_leaf'
+    elif xaxis == 'age_leaf_lig':
+        return 'date_ligulation_leaf'
+    elif xaxis == 'age_leaf_vs_flag_lig':
+        return 'date_ligulation_flag_leaf'
+    elif xaxis == 'age_leaf_vs_flag_emg':
+        return 'date_emergence_flag_leaf'
+        
+def get_df_dates_xaxis(data, xaxis):
+    """ Get dates of leaf stage in argument xaxis from data """
+    date_name = get_date_name_event(xaxis)
+    df_dates = pd.DataFrame(index = set(data['num_leaf_top']))
+    df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data['num_leaf_top']==x]), df_dates.index)
+    return df_dates
+       
+def add_leaf_dates_to_data(df, correct_leaf_number=True):
+
+    def get_date_em(num_leaf_bottom=1, fnl=None):
+        return hs_fit.TTemleaf(num_leaf_bottom, nff=fnl)
+    def get_date_lig(num_leaf_bottom=1, fnl=None):
+        return hs_fit.TTligleaf(num_leaf_bottom, nff=fnl)
+    def get_date_lig_flag(fnl=None):
+        return hs_fit.TTligleaf(fnl, nff=fnl)
+    def add_dates(df):
+        fun_em = np.frompyfunc(get_date_em, 2, 1)
+        fun_lig = np.frompyfunc(get_date_lig, 2, 1)
+        df['date_emergence_leaf'] = fun_em(df['num_leaf_bottom'], df['fnl'])
+        df['date_ligulation_leaf'] = fun_lig(df['num_leaf_bottom'], df['fnl'])
+        df['date_emergence_flag_leaf'] = map(lambda fnl: hs_fit.TTemleaf(fnl, nff=fnl), df['fnl'])
+        df['date_ligulation_flag_leaf'] = map(lambda fnl: hs_fit.TTligleaf(fnl, nff=fnl), df['fnl'])
         return df
     
-    grp_fnls = get_fnl_by_plant(df)
-
-    df['FNL'] = map(lambda x: {vv:k for k,v in grp_fnls.iteritems() for vv in v }[x], df['num_plant'])
-
-    dict_emerg = {}
-    dict_lig = {}
-    dict_flag_lig = {}
-    dict_flag_emg = {}
-    #TODO use plantgen extensions HS_fit : TTem_leaf, TTlig_leaf
-    for fnl in grp_fnls.iterkeys():
-        if filename is None:
-            assert adel is not None, ("Provide either an adel canopy mock up or file with emergence and ligulation dates")
-            fnls = get_fnls(adel)
-            if fnl in fnls:
-                dict_emerg[fnl] = get_leaf_emergence_dates(adel, fnl)
-                dict_lig[fnl] = get_leaf_ligulation_dates(adel, fnl)
-            else:
-                nearest_fnl = [i for i in fnls][np.argmin([abs(i-fnl) for i in fnls])]
-                df_emg = get_leaf_emergence_dates(adel, nearest_fnl)
-                df_lig = get_leaf_ligulation_dates(adel, nearest_fnl)
-                dict_emerg[fnl]  = complete_df_with_nearest_fnl(df_emg, fnl, nearest_fnl)
-                dict_lig[fnl] = complete_df_with_nearest_fnl(df_lig, fnl, nearest_fnl)
-        else:
-            fnls = get_fnls_from_file(filename)
-            if fnl in fnls:
-                dict_emerg[fnl] = get_leaf_dates_from_file(filename = filename, 
-                                                            event = 'emergence', fnl = fnl)
-                dict_lig[fnl] = get_leaf_dates_from_file(filename = filename, 
-                                                            event = 'ligulation', fnl = fnl)
-            else:
-                fnls = get_fnls_from_file(filename)
-                nearest_fnl = [i for i in fnls][np.argmin([abs(i-fnl) for i in fnls])]
-                df_emg = get_leaf_dates_from_file(filename = filename, 
-                                                    event = 'emergence', fnl = nearest_fnl)
-                df_lig = get_leaf_dates_from_file(filename = filename, 
-                                                    event = 'ligulation', fnl = nearest_fnl)
-                dict_emerg[fnl] = complete_df_with_nearest_fnl(df_emg, fnl, nearest_fnl)
-                dict_lig[fnl] = complete_df_with_nearest_fnl(df_lig, fnl, nearest_fnl)
-
-        dict_flag_lig[fnl] = dict_lig[fnl].loc[1, 'date']
-        dict_flag_emg[fnl] = dict_emerg[fnl].loc[1, 'date']
-
-    df['date_emergence_leaf'] = map(lambda x : dict_emerg[x[0]].loc[x[1], 'date'],
-                                        zip(df['FNL'], df['num_leaf_top']))
+    fnls = get_fnl_by_plant(df)
+    df['fnl'] = map(lambda x: {vv:k for k,v in fnls.iteritems() for vv in v}[x], df['num_plant'])
+    if correct_leaf_number == True:
+        df['num_leaf_bottom'][df['fnl']==14] -= 1
+        df['fnl'][df['fnl']==14] -= 1
+    hs_fit = HS_fit()[df['variety'][0].title()]
+    df = add_dates(df)
     df['age_leaf'] = df['degree_days'] - df['date_emergence_leaf']
-
-    df['date_ligulation_leaf'] = map(lambda x : dict_lig[x[0]].loc[x[1], 'date'],
-                                        zip(df['FNL'], df['num_leaf_top']))
     df['age_leaf_lig'] = df['degree_days'] - df['date_ligulation_leaf']
-
-    df['date_ligulation_flag_leaf'] = map(lambda x: dict_flag_lig[x], df['FNL'])
     df['age_leaf_vs_flag_lig'] = df['degree_days'] - df['date_ligulation_flag_leaf']
-    
-    df['date_emergence_flag_leaf'] = map(lambda x: dict_flag_emg[x], df['FNL'])
     df['age_leaf_vs_flag_emg'] = df['degree_days'] - df['date_emergence_flag_leaf']
     return df
     
-def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_number = False):
+def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_number = True):
     """ Complete data after reading """
     df = data.copy()
     
@@ -431,16 +326,8 @@ def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_n
     df['degree_days'] = [int(weather.data['degree_days'][t]) for t in df.index]
     
     # Add age of leaves
-    if adel is None:
-        filename = find_dates_filename(weather)
-    else:
-        filename = None
-    df = add_leaf_dates_to_data(df, adel=adel, filename = filename)
-    
-    if correct_leaf_number == True:
-        df['num_leaf_bottom'][df['FNL']==14] -= 1
-        df['FNL'][df['FNL']==14] -= 1
-    
+    df = add_leaf_dates_to_data(df, correct_leaf_number=correct_leaf_number)
+   
     # If variable is septoria on green : transform zeros to NaN at the end of season
     if weather.data.index[-1].year in [2012, 2013]:
         df = zeros_green_to_nan(df)
@@ -465,7 +352,7 @@ def get_only_numeric_data(df):
     
 def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_on_green = True, 
                 wetness_duration_min = 10., temp_min = 0., temp_max = 25., hide_old_data = False,
-                with_adel = False, correct_lf_nb_2012_ctrl = True):
+                correct_lf_nb_2012_ctrl = True):
     """ Specific reader for the analysis of septoria measurements in Grignon 2011, 2012, 2013 """
     correct_leaf_number = False
     if year == 2011:
@@ -531,23 +418,12 @@ def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_
     start, end = format_date(start_date, end_date)
     weather = read_weather(start, end, wetness_duration_min = wetness_duration_min, 
                         temp_min = temp_min, temp_max = temp_max)
-
-    # Generate wheat stand for the year
-    if with_adel == True:
-        reconst = EchapReconstructions()
-        adel = reconst.get_reconstruction(name=variety, nplants = 100, nsect = 7, 
-                                            disc_level = 5, aspect = 'line')
-    else:
-        adel = None
         
     # Adapt septoria data
-    data = adapt_data(data, weather, adel, hide_old_data = hide_old_data, 
+    data = adapt_data(data, weather, hide_old_data = hide_old_data, 
                         correct_leaf_number = correct_leaf_number)
     
-    if with_adel == True:
-        return data, weather, adel
-    else:
-        return data, weather
+    return data, weather
     
 def compare_contingency_by_fnl(data, weather, variable = 'septo_green'):
     """ Generate comparative dataframe with number of notations for given fnl """

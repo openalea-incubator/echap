@@ -29,7 +29,6 @@ def aggregate_lai(adel, axstat):
     else:
         return pstat.loc[:, colnames]
 
-
 def get_lai_properties(g, adel):
     df_axstat = adel.axis_statistics(g)
     df_lai_tot = aggregate_lai(adel, df_axstat)

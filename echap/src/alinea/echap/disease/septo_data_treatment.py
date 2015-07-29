@@ -27,7 +27,7 @@ def get_basic_stat(df, column='severity', by_leaf=True):
         (mean, std deviation, distribution) """
     if by_leaf==True:
         df_ = df.copy()
-        change_index(df_, new_index = ['datetime', 'num_leaf_top'])
+        change_index(df_, new_index = ['date', 'num_leaf_top'])
         df_ = df_.groupby(level=[0,1]).describe()
         return df_[column].unstack('num_leaf_top')
     else:
@@ -46,7 +46,7 @@ def get_mean_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df = df[df['num_leaf_top'] == num_leaf]
     else:
         df = df[df['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         return df.groupby(xaxis).mean()[variable]
     elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
         df_mean = df.groupby('degree_days').mean()[variable]
@@ -54,7 +54,7 @@ def get_mean_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
         df_mean.index -= df_dates.loc[num_leaf, xaxis].astype(int)
         return df_mean
         
-def get_mean(df, column='severity', xaxis = 'datetime', by_leaf=True, from_top = True):
+def get_mean(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
     """ Get average of argument variable on all leaves over all plants measured """
     if by_leaf==True:
         df_ = df.copy()
@@ -62,7 +62,7 @@ def get_mean(df, column='severity', xaxis = 'datetime', by_leaf=True, from_top =
             num_leaf = 'num_leaf_top'
         else:
             num_leaf = 'num_leaf_bottom'
-        if xaxis in ['datetime', 'degree_days']:
+        if xaxis in ['date', 'degree_days']:
             change_index(df_, new_index = [xaxis, num_leaf])
             df_ = df_.groupby(level=[0,1]).mean()
             return df_[column].unstack()
@@ -87,7 +87,7 @@ def get_standard_deviation(df, column='severity', by_leaf=True):
     df_high[df_high>100]=100
     return df_low, df_high
     
-def get_error_margin_one_leaf(df, column='severity', xaxis = 'datetime', 
+def get_error_margin_one_leaf(df, column='severity', xaxis = 'date', 
                                 num_leaf = 1, by_leaf=True, from_top = True):
     """ Get 95% confidence interval of argument variable 
             on argument leaf over all plants in canopy """
@@ -96,7 +96,7 @@ def get_error_margin_one_leaf(df, column='severity', xaxis = 'datetime',
         df_ = df_[df_['num_leaf_top'] == num_leaf]
     else:
         df_ = df_[df_['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         return df_.groupby(level=0).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
@@ -108,7 +108,7 @@ def get_error_margin_one_leaf(df, column='severity', xaxis = 'datetime',
         df_.index -= df_dates.loc[num_leaf, xaxis].astype(int)
         return df_
     
-def get_error_margin(df, column='severity', xaxis = 'datetime', by_leaf=True, from_top = True):
+def get_error_margin(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
     """ Get 95% confidence interval of argument variable on all leaves over all plants """
     df_ = df.copy()
     if from_top == True:
@@ -116,7 +116,7 @@ def get_error_margin(df, column='severity', xaxis = 'datetime', by_leaf=True, fr
     else:
         num_leaf = 'num_leaf_bottom'
     if by_leaf==True:
-        if xaxis in ['datetime', 'degree_days']:
+        if xaxis in ['date', 'degree_days']:
             change_index(df_, new_index = [xaxis, num_leaf])
             df_ = df_[column]
             df_ = df_.groupby(level=[0,1]).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
@@ -148,7 +148,7 @@ def bootstr(x):
             else:
                 return np.array([np.nan, np.nan])
 
-def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'datetime', 
+def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'date', 
                                             num_leaf = 1, by_leaf=True, from_top = True):
     """ Get bootstraped 95% confidence interval of argument variable 
             on argument leaf over all plants in canopy """
@@ -157,7 +157,7 @@ def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'datetime
         df_ = df_[df_['num_leaf_top'] == num_leaf]
     else:
         df_ = df_[df_['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['datetime', 'degree_days']:
+    if xaxis in ['date', 'degree_days']:
         change_index(df_, new_index = ['degree_days'])
         df_ = df_[column]
         return df_.groupby(level=0).apply(lambda x: bootstr(x[~np.isnan(x)]))
@@ -169,7 +169,7 @@ def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'datetime
         df_.index -= df_dates.loc[num_leaf, xaxis].astype(int)
         return df_
 
-def get_bootstrap_error_margin(df, column='severity', xaxis = 'datetime', by_leaf=True, from_top = True):
+def get_bootstrap_error_margin(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
     """ Get 95% confidence interval of argument variable on all leaves over all plants """
     df_ = df.copy()
     if from_top == True:
@@ -177,7 +177,7 @@ def get_bootstrap_error_margin(df, column='severity', xaxis = 'datetime', by_lea
     else:
         num_leaf = 'num_leaf_bottom'
     if by_leaf==True:
-        if xaxis in ['datetime', 'degree_days']:
+        if xaxis in ['date', 'degree_days']:
             change_index(df_, new_index = [xaxis, num_leaf])
             df_ = df_[column]
             df_ = df_.groupby(level=[0,1]).apply(lambda x: bootstr(x[~np.isnan(x)]))
@@ -195,7 +195,7 @@ def get_bootstrap_error_margin(df, column='severity', xaxis = 'datetime', by_lea
         return df_
         
 def get_confidence_interval(df, weather, column='severity', by_leaf=True, 
-                                xaxis = 'datetime', add_ddays = True):
+                                xaxis = 'date', add_ddays = True):
     """ Calculate lower and upper bounds of 95% confidence interval
         around mean of column in data versus given xaxis """
     
@@ -207,7 +207,7 @@ def get_confidence_interval(df, weather, column='severity', by_leaf=True,
     if any(x<20 for x in df_count.values.flat if x!='-' and not np.isnan(x)):
         df_low_high = get_bootstrap_error_margin(df, column=column, xaxis = xaxis, by_leaf = by_leaf)
         if not by_leaf:
-            df_low_high = pd.DataFrame(df_low_high, xaxis = 'datetime')
+            df_low_high = pd.DataFrame(df_low_high, xaxis = 'date')
         return df_low_high.applymap(lambda x: separate_low_high(x, 0)), df_low_high.applymap(lambda x: separate_low_high(x, 1))
     else:
         df_err = get_error_margin(df, column=column, by_leaf=by_leaf, xaxis = xaxis)
@@ -314,8 +314,8 @@ def change_zero_sample(data, df, variable = 'severity', xaxis = 'degree_days'):
                 y_data_dd = df.iloc[indx[:2]]['degree_days'].values
                 s_xaxis = InterpolatedUnivariateSpline(x_data, y_data_dd, k=1)
                 df_insert['degree_days'] = s_xaxis(0.)
-            #df_insert['datetime'] = np.argmin(np.abs(data['degree_days'] - s_xaxis(0.)))
-            return pd.concat([df, df_insert]).sort('datetime')
+            #df_insert['date'] = np.argmin(np.abs(data['degree_days'] - s_xaxis(0.)))
+            return pd.concat([df, df_insert]).sort('date')
         else:
             return df
         
@@ -427,7 +427,7 @@ def plot_grouped_leaves(data, weather, variable='severity', degree_days=True,
                         linestyle = '-', filling_contour = True, display_box = True):
     """ Plot mean of given variable over leaves in argument on all plants """
     # Format DataFrame to get mean and standard error
-    df_mean = get_mean(data, column=variable, by_leaf=False, xaxis = 'datetime')
+    df_mean = get_mean(data, column=variable, by_leaf=False, xaxis = 'date')
     df_low, df_high = get_confidence_interval(data, weather, column=variable, by_leaf=False)
     
     if return_descriptor == True:
@@ -486,8 +486,8 @@ def plot_grouped_leaves(data, weather, variable='severity', degree_days=True,
     sev['subindex'] = sev.groupby(level=0).cumcount()
     # sev.set_index('subindex', append=True, inplace=True)
     # sev.index = sev.index.droplevel(1)
-    change_index(sev, ['datetime', 'subindex'])
-    sev = sev.unstack('datetime')[variable]
+    change_index(sev, ['date', 'subindex'])
+    sev = sev.unstack('date')[variable]
     sev = sev.ix[:,count.index.get_level_values('Date')]
     if degree_days==True:
         sev.rename(columns={sev.columns[col]:df_mean.index[col] for col in range(len(sev.columns))}, inplace=True)    
@@ -859,11 +859,11 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
     
     # All severity data and mean, by date and by leaf
     data_ = data.copy()
-    change_index(data_, ['datetime', 'num_leaf_top'])
+    change_index(data_, ['date', 'num_leaf_top'])
     df_sev = pd.DataFrame(data_[variable])
-    df_mean = get_mean(data_, column=variable, by_leaf=True, xaxis = 'datetime')
+    df_mean = get_mean(data_, column=variable, by_leaf=True, xaxis = 'date')
     df_low, df_high = get_confidence_interval(data_, weather, column=variable, by_leaf=True)
-    if xaxis != 'datetime':
+    if xaxis != 'date':
         degree_days = True
         (df_mean, df_high, df_low) = map(lambda x: add_index_ddays(x, weather).reset_index(level=0, drop = True),
                                          (df_mean, df_high, df_low))
@@ -899,7 +899,7 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
         # Reshape dataframe to draw boxplots from severity data
         sev['subindex'] = sev.groupby(level=0).cumcount()
         sev.set_index('subindex', append=True, inplace=True)
-        sev = sev.unstack('datetime')[variable]
+        sev = sev.unstack('date')[variable]
         if degree_days==True:
             sev.rename(columns={sev.columns[col]:mn.iloc[notnans].index[col] for col in range(len(sev.columns))}, inplace=True)
             
@@ -919,7 +919,7 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
         # Draw figure
         ax.annotate('Leaf %d' % leaf, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
         if len(notnans>0):
-            if xaxis != 'datetime':
+            if xaxis != 'date':
                 # Get data for x axis
                 x_data = np.array([ind for ind in df_low.iloc[notnans,df_low.columns==leaf].index])
                 if xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
@@ -1297,7 +1297,7 @@ def plot_mean_thr_date_by_leaf(df_dates, ax = None, legend = None,
                                marker = 'd', linestyle = '', color = 'b',
                                fig_size=(8,6), invert_xaxis = True, error_bars = True, 
                                error_method = error_margin_threshold, 
-                               leaf_dates = None, ylims = None):
+                               ylims = None):
     """ Plot date at which variable overpass given threshold """
     df = df_dates.mean()
     if ax == None:
@@ -1309,11 +1309,6 @@ def plot_mean_thr_date_by_leaf(df_dates, ax = None, legend = None,
     else:
         ax.plot(df.index, df.values, color = color, marker = marker, 
                 linestyle = linestyle, markersize = 8)
-    
-    # Display leaf dates if given
-    if leaf_dates is not None:
-        leaf_dates = leaf_dates.loc[df.index]
-        ax.plot(leaf_dates.index, leaf_dates.values, marker = "^", color = 'g', linestyle = '')
     
     # Customize
     if ylims != None:
@@ -1971,8 +1966,8 @@ def get_comparison_table_2011(data_mercia, data_rht3, num_leaves = range(1,5), b
     """ Create a comparison table by testing significative differences between vaireties """
     mercia_2011 = data_mercia.copy()
     rht3_2011 = data_rht3.copy()
-    change_index(mercia_2011, new_index = ['datetime', 'num_leaf_top'])
-    change_index(rht3_2011, new_index = ['datetime', 'num_leaf_top'])
+    change_index(mercia_2011, new_index = ['date', 'num_leaf_top'])
+    change_index(rht3_2011, new_index = ['date', 'num_leaf_top'])
     
     def one_step_comparison(leaves = range(1,5)):
         m_2011 = mercia_2011[[leaf in leaves for date, leaf in mercia_2011.index]]
@@ -2006,7 +2001,7 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
     
     def get_dfs(data, num_leaves):
         data_ = data.copy()
-        change_index(data_, ['datetime', 'num_leaf_top'])
+        change_index(data_, ['date', 'num_leaf_top'])
         df_sev = pd.DataFrame(data_['septo_green'])
         df_mean = get_mean(data_, column='septo_green', by_leaf=True)
         df_low, df_high = get_confidence_interval(data_, weather, column='septo_green', by_leaf=True)

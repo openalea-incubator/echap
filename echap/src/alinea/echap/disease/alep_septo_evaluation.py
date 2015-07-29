@@ -6,45 +6,50 @@
 import pandas as pd
 import numpy as np
 from alinea.alep.disease_outputs import *
+from alinea.alep.simulation_tools.septo_decomposed import annual_loop
 from alinea.echap.disease.septo_data_reader import *
 from alinea.echap.disease.septo_data_treatment import *
+from alinea.echap.disease.septo_data_treatment import *
     
-# Get data as DataFrames ###########################################################################
-def recorder_to_dataframe(recorder, weather = None, adel = None, skipna = True):
-    """ Translate recorder object in DataFrame with the same format as disease notations """
-    data_sim = recorder.data
-    data_sim = data_sim.rename(columns = {'num_plant':'num_plant'})
+# Run simulations ###########################################################################
+def get_filename(variety = 'Tremie12', nplants = 15, sporulating_fraction=5e-3):
+    inoc = str(sporulating_fraction)
+    inoc = inoc.replace('.', '_')
+    filename= str(nplants)+'pl_inoc'+inoc+'.csv'
+    return str(shared_data(alinea.echap)/'disease_simulations'/'variety'/filename)
+
+# TODO strategy for multiprocessing if focus on one variety
+def run_simu(variety = 'Tremie12', nplants = 15, sporulating_fraction=5e-3, nreps=5, **kwds):
+    if variety in ['Mercia', 'Rht3']:
+        year = 2011
+        sowing_date = '10-15'
+    elif variety=='Tremie12':
+        year = 2012
+        sowing_date = '10-21'
+    elif variety=='Tremie13':
+        year = 2013
+    df = pd.DataFrame()
+    for rep in nreps:
+        g, recorder = annual_loop_septo(year = 2012, variety = 'Tremie13', sowing_date = '10-15',
+                                          nplants = 30, nsect = 7,
+                                          sporulating_fraction = 1e-4, layer_thickness = 0.01, 
+                                          distri_chlorosis = None,
+                                          degree_days_to_chlorosis = 180, **kwds)
+        df_ = recorder.data
+        df_['rep'] = rep
+        pd.concat([df, df_])
+    output_file = get_filename(variety=variety, nplants=nplants,
+                                sporulating_fraction=sporulating_fraction)
+    df.to_csv(output_file)
+        
+def get_data_sim(variety = 'Tremie12', nplants = 15, sporulating_fraction=5e-3):
+    for rep in range(nreps):
+        filename = get_recorder(variety=variety, nplants=nplants, 
+                                sporulating_fraction=sporulating_fraction)
+    return pd.read_csv(filename)
     
-    # Convert ratios in percentage
-    list_of_ratios = [var for var in data_sim.columns if 
-                        var.startswith('ratio')]+['severity', 'necrosis_percentage', 
-                        'pycnidia_coverage', 'pycnidia_coverage_on_green']
-    data_sim[list_of_ratios] = data_sim[list_of_ratios].apply(lambda x: x*100.)
-    
-    # Add leaf dates
-    if weather is not None:
-        filename = find_dates_filename(weather)
-        data_sim = add_leaf_dates_to_data(data_sim, adel, filename = filename)
-    
-    # Ignore data from dates with dead leaves in each layer
-    if skipna == True:
-        df_count = table_count_notations(data_sim, weather, variable = 'severity', add_ddays = True)
-        for lf in df_count.columns:
-            df_lf = df_count[lf][map(lambda x: isinstance(x, (numpy.int64, int, float)), 
-                                    df_count[lf])]
-            nan_dates = df_lf[df_lf<df_lf.max()].reset_index().loc[:,'Date']
-            if len(nan_dates)>0:
-                for variable in data_sim.columns:
-                    if variable not in ['date', 'degree_days', 'date_death',
-                                        'variety', 'num_plant', 'num_leaf_top', 'num_leaf_bottom']:
-                        data_sim[variable][(data_sim['num_leaf_top']==lf) & 
-                                (data_sim.index.isin([d for d in nan_dates]))] = np.nan
-    return data_sim
-    
-def get_data_sim(filename = '../alep/example/tremie/recorder_2012_30pl_7sect.pckl',
-                 weather = None, adel =None, skipna = True):
-    recorder = get_recorder(filename)
-    return recorder_to_dataframe(recorder, weather = weather, adel = adel, skipna = skipna)
+def get_mean_data_sim():
+    pass
 
 # Data manipulation on results of simulation #######################################################
 def get_mean_one_leaf_sim(df, variable = 'severity', xaxis = 'degree_days',
