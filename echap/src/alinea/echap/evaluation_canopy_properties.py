@@ -11,7 +11,9 @@ from openalea.deploy.shared_data import shared_data
 from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
 from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
-                                                        HS_fit, density_fits)
+                                                        EchapReconstructions,
+                                                        HS_fit, density_fits,
+                                                        pdict, reconstruction_parameters)
 from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.caribu_star import diffuse_source, run_caribu
 from alinea.adel.postprocessing import ground_cover
@@ -90,7 +92,15 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
                         age_range = [400., 2600.], time_steps = [20, 100],
                         scale_povray = 1., z_levels = [0, 5, 20, 25], 
                         reset = False, reset_data = False, only_lai = False):
-    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+    # Temp
+    if variety in ['Tremie12', 'Tremie13']:
+        pars = reconstruction_parameters()
+        pars['density_tuning'] = pdict(None)
+        pars['density_tuning']['Tremie12'] = 0.73
+        pars['density_tuning']['Tremie13'] = 0.85
+        reconst = EchapReconstructions(reset_data=reset_data, pars=pars)
+    else:
+        reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
     HSconv = reconst.HS_fit[variety]
     adel = reconst.get_reconstruction(name=variety, nplants = nplants)
     ages_1 = numpy.arange(age_range[0], age_range[1], time_steps[0])
