@@ -717,7 +717,7 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250., 
                             plant_density=plant_density, 
                             inter_row=inter_row, noise=0.04, density_curve_data = None)       
     n_emerged = nplants
-    m = pgen_ext.TillerEmission(primary_tiller_probabilities={'T1':0.1, 'T2':0.5, 'T3':0.5, 'T4':0.5}) # From Bertheloot Soissons N+
+    m = pgen_ext.TillerEmission(primary_tiller_probabilities={'T1':1., 'T2':0.5, 'T3':0.5, 'T4':0.3}) # From Bertheloot Soissons N+
     axp = pgen_ext.AxePop(Emission=m) # With 11 and 12 it's fine
     plants = axp.plant_list(n_emerged)
     hs_fit = HS_fit()
