@@ -95,7 +95,7 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
     if variety in ['Tremie12', 'Tremie13']:
         pars = reconstruction_parameters()
         pars['density_tuning'] = pdict(None)
-        pars['density_tuning']['Tremie12'] = 0.73
+        pars['density_tuning']['Tremie12'] = 0.85
         pars['density_tuning']['Tremie13'] = 0.85
         reconst = EchapReconstructions(reset_data=reset_data, pars=pars)
     else:
