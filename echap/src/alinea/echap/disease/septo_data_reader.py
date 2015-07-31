@@ -101,7 +101,8 @@ def get_fnl_by_plant(data):
         - dict([(fnl, [plant_ids])])
     """
     # Get data for last date and top leaves
-    df = data.xs(max(set(data.index)))
+    df = data.copy()
+    df = df.xs(max(set(df.index)))
     df = df[df['num_leaf_top']==1]
     # Group plant ids by final number of leaves (FNL)
     grps = {fnl:[plant for plant in df[df['num_leaf_bottom']==fnl]['num_plant']] for fnl in set(df['num_leaf_bottom'])}
