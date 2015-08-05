@@ -38,7 +38,7 @@ def run_simu(variety = 'Tremie12', nplants = 15,
     if nb_can >= nreps:
         rep_wheats = iter(rd.sample(range(nb_can), nreps))
     else:
-        rep_wheats = iter([None for rep in reps])
+        rep_wheats = iter([None for rep in range(reps)])
     for rep in range(nreps):
         g, recorder = annual_loop_septo(year=year, variety=variety,
                                         sowing_date=sowing_date,
