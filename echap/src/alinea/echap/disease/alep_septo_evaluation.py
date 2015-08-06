@@ -38,7 +38,7 @@ def run_simu(variety = 'Tremie12', nplants = 15,
     if nb_can >= nreps:
         rep_wheats = iter(rd.sample(range(nb_can), nreps))
     else:
-        rep_wheats = iter([None for rep in range(reps)])
+        rep_wheats = iter([None for rep in range(nreps)])
     for rep in range(nreps):
         g, recorder = annual_loop_septo(year=year, variety=variety,
                                         sowing_date=sowing_date,
@@ -200,10 +200,9 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
         df_mean_sim = get_df_mean_sim(data_sim, variable = variable, xaxis = xaxis, leaves = leaves)
         for i, ax in enumerate(axs.flat):
             leaf = i+1
-            x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
-#            import pdb
-#            pdb.set_trace()
-            ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], 'r')
-            if display_rmse == True:
-                ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
-                            xycoords='axes fraction', fontsize=14)
+            if leaf in leaves:
+                x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
+                ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], 'r')
+                if display_rmse == True:
+                    ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
+                                xycoords='axes fraction', fontsize=14)
