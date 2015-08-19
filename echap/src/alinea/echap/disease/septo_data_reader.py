@@ -33,6 +33,7 @@ from alinea.astk.Weather import Weather
 from alinea.alep.alep_weather import (wetness_rapilly, add_septoria_infection_risk, 
                                     add_septoria_risk_with_event, linear_degree_days)
 from alinea.alep.alep_time_control import add_notation_dates
+from alinea.alep.simulation_tools.simulation_tools import get_fnl_by_plant, add_leaf_dates_to_data
 
 # Imports for wheat reconstruction
 from alinea.echap.architectural_reconstructions import EchapReconstructions, HS_fit
@@ -93,27 +94,6 @@ def get_missing(numbers, start, end):
     all_numbers = set(range(start, end))
     missing = all_numbers - set(numbers)
     return np.array(list(missing))
-    
-def get_fnl_by_plant(data):
-    """ Group plants from data by final leaf number (fnl) 
-    
-        :Returns:
-        - dict([(fnl, [plant_ids])])
-    """
-    # Get data for last date and top leaves
-    df = data.copy()
-    df = df.xs(max(set(df.index)))
-    df = df[df['num_leaf_top']==1]
-    # Group plant ids by final number of leaves (FNL)
-    grps = {fnl:[plant for plant in df[df['num_leaf_bottom']==fnl]['num_plant']] for fnl in set(df['num_leaf_bottom'])}
-    # Find fnl if missing value for a leaf on last notation
-    if len(sum(grps.itervalues(),[]))<max(data['num_plant']):
-        miss = get_missing(np.sort(sum(grps.itervalues(),[])), start=1, end=max(data['num_plant']))
-        for m in miss:
-            if len(data[data['num_plant']==m])>0:
-                fnl = max(data['num_leaf_bottom'][data['num_plant']==m]) + min(data['num_leaf_top'][data['num_plant']==m]) - 1
-                grps[fnl].append(m)
-    return grps               
 
 def group_by_fnl(data, from_top = True):
     """ Split dataframe by final leaf number (fnl) of plants
@@ -288,37 +268,7 @@ def get_df_dates_xaxis(data, xaxis):
     df_dates = pd.DataFrame(index = set(data['num_leaf_top']))
     df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data['num_leaf_top']==x]), df_dates.index)
     return df_dates
-       
-def add_leaf_dates_to_data(df, correct_leaf_number=True):
 
-    def get_date_em(num_leaf_bottom=1, fnl=None):
-        return hs_fit.TTemleaf(num_leaf_bottom, nff=fnl)
-    def get_date_lig(num_leaf_bottom=1, fnl=None):
-        return hs_fit.TTligleaf(num_leaf_bottom, nff=fnl)
-    def get_date_lig_flag(fnl=None):
-        return hs_fit.TTligleaf(fnl, nff=fnl)
-    def add_dates(df):
-        fun_em = np.frompyfunc(get_date_em, 2, 1)
-        fun_lig = np.frompyfunc(get_date_lig, 2, 1)
-        df['date_emergence_leaf'] = fun_em(df['num_leaf_bottom'], df['fnl'])
-        df['date_ligulation_leaf'] = fun_lig(df['num_leaf_bottom'], df['fnl'])
-        df['date_emergence_flag_leaf'] = map(lambda fnl: hs_fit.TTemleaf(fnl, nff=fnl), df['fnl'])
-        df['date_ligulation_flag_leaf'] = map(lambda fnl: hs_fit.TTligleaf(fnl, nff=fnl), df['fnl'])
-        return df
-    
-    fnls = get_fnl_by_plant(df)
-    df['fnl'] = map(lambda x: {vv:k for k,v in fnls.iteritems() for vv in v}[x], df['num_plant'])
-    if correct_leaf_number == True:
-        df['num_leaf_bottom'][df['fnl']==14] -= 1
-        df['fnl'][df['fnl']==14] -= 1
-    hs_fit = HS_fit()[df['variety'][0].title()]
-    df = add_dates(df)
-    df['age_leaf'] = df['degree_days'] - df['date_emergence_leaf']
-    df['age_leaf_lig'] = df['degree_days'] - df['date_ligulation_leaf']
-    df['age_leaf_vs_flag_lig'] = df['degree_days'] - df['date_ligulation_flag_leaf']
-    df['age_leaf_vs_flag_emg'] = df['degree_days'] - df['date_emergence_flag_leaf']
-    return df
-    
 def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_number = True):
     """ Complete data after reading """
     df = data.copy()
