@@ -584,7 +584,7 @@ def get_data_of_interest(data, weather, variable = 'severity', xaxis = 'degree_d
         
     def apply_mask(df, mask):
         df, mask = merge_axes(df, mask)
-        mask = mask.applymap(lambda x: np.isnan(x))
+        mask = mask.fillna(True)
         return df[~mask]
         
     df_mean = get_mean(data, column=variable, xaxis = xaxis)
