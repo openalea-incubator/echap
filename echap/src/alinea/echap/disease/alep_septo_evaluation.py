@@ -7,23 +7,17 @@ import pandas as pd
 import numpy as np
 import random as rd
 from alinea.alep.disease_outputs import *
-from alinea.alep.simulation_tools.simulation_tools import count_available_canopies
-from alinea.alep.simulation_tools.septo_decomposed import annual_loop_septo
+from alinea.alep.simulation_tools.simulation_tools import get_data_sim
+from alinea.alep.simulation_tools.simulation_tools import plot_by_leaf as plot_by_leaf_sim
+from alinea.alep.simulation_tools.septo_decomposed import run_reps_septo
 from alinea.echap.disease.septo_data_reader import *
 from alinea.echap.disease.septo_data_treatment import *
 from alinea.echap.disease.septo_data_treatment import *
     
 # Run simulations ###########################################################################
-def get_filename(variety = 'Tremie12', nplants = 15, sporulating_fraction=5e-3):
-    inoc = str(sporulating_fraction)
-    inoc = inoc.replace('.', '_')
-    filename= str(nplants)+'pl_inoc'+inoc+'.csv'
-    return str(shared_data(alinea.echap)/'disease_simulations'/variety/filename)
-
 # TODO strategy for multiprocessing if focus on one variety
-def run_simu(variety = 'Tremie12', nplants = 15, 
-             sporulating_fraction=5e-3, nreps=5, 
-             nsect = 7, layer_thickness = 0.01, **kwds):
+
+def get_year_sowing_date(variety='Tremie12'):
     if variety in ['Mercia', 'Rht3']:
         year = 2011
         sowing_date = '10-15'
@@ -33,33 +27,18 @@ def run_simu(variety = 'Tremie12', nplants = 15,
     elif variety=='Tremie13':
         year = 2013
         sowing_date = '10-29'
-    df = pd.DataFrame()
-    nb_can = count_available_canopies(year, variety, nplants, nsect)
-    if nb_can >= nreps:
-        rep_wheats = iter(rd.sample(range(nb_can), nreps))
-    else:
-        rep_wheats = iter([None for rep in range(nreps)])
-    for rep in range(nreps):
-        g, recorder = annual_loop_septo(year=year, variety=variety,
-                                        sowing_date=sowing_date,
-                                        nplants=nplants, nsect=nsect,
-                                        sporulating_fraction=sporulating_fraction,
-                                        layer_thickness=layer_thickness, 
-                                        rep_wheat=next(rep_wheats), **kwds)
-        df_ = recorder.data
-        df_['rep'] = rep
-        df = pd.concat([df, df_])
-    output_file = get_filename(variety=variety, nplants=nplants,
-                                sporulating_fraction=sporulating_fraction)
-    df.to_csv(output_file)
-        
-def get_data_sim(variety = 'Tremie12', nplants = 15, sporulating_fraction=5e-3):
-    filename = get_filename(variety=variety, nplants=nplants, 
-                            sporulating_fraction=sporulating_fraction)
-    df = pd.read_csv(filename, parse_dates={'datetime':[1]}, index_col=[0])
-    df.index.names = ['date']
-    df = df.drop('Unnamed: 0', axis=1)
-    return df
+    return year, sowing_date
+    
+def run_simu(variety = 'Tremie12', nplants = 15, 
+             sporulating_fraction=5e-3, nreps=5, 
+             nsect = 7, layer_thickness = 0.01, **kwds):
+    year, sowing_date = get_year_sowing_date(variety=variety)
+    g, recorder = run_reps_septo(year=year, variety=variety,
+                                sowing_date=sowing_date,
+                                nplants=nplants, nsect=nsect,
+                                sporulating_fraction=sporulating_fraction,
+                                layer_thickness=layer_thickness, 
+                                nreps=nreps, **kwds)
     
 def organize_fnl(df_sim):
     """ Trick to give same plant number to plants with same fnl """
@@ -99,11 +78,15 @@ def get_mean_data_sim(df_sim):
     return df
 
 def get_aggregated_data_sim(variety = 'Tremie12', nplants = 15, 
-                            sporulating_fraction=5e-3):
-    data_sim = get_data_sim(variety=variety, nplants=nplants,
-                            sporulating_fraction=sporulating_fraction)
-    data_sim = get_mean_data_sim(data_sim)
-    data_sim = add_leaf_dates_to_data(data_sim, correct_leaf_number=False)
+                            sporulating_fraction=5e-3, 
+                            num_leaf = 'num_leaf_top'):
+    year, sowing_date = get_year_sowing_date(variety=variety)
+    data_sim = get_data_sim(fungus='septoria', year=year,
+                            variety=variety, nplants=nplants,
+                            inoc=sporulating_fraction)
+    data_sim = get_data_without_death(data_sim, num_leaf=num_leaf)
+    data_sim['severity'] *= 100
+    data_sim['severity_on_green'] *= 100
     return data_sim
 
 # Data manipulation on results of simulation #######################################################
@@ -184,25 +167,18 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
                                                     xaxis = 'degree_days', 
                                                     leaves = range(1,7), 
                                                     xlims = [1000, 2500], 
-                                                    display_confidence = False, 
                                                     display_rmse = False):
     df_mean_obs, df_low, df_high, fig, axs = plot_confidence_and_boxplot(data_obs, weather, leaves = leaves,
                                                                          variable = variable, xaxis = xaxis,
                                                                          xlims = xlims, return_fig = True)
-
-    if display_confidence == True:
-        df_mean_sim, df_low, df_high, fig, axs = plot_confidence_and_boxplot(data_sim, weather, leaves = leaves,
-                                                                             variable = variable, xaxis = xaxis,
-                                                                             xlims = xlims, marker ='', fixed_color = 'r',
-                                                                             fig = fig, axs = axs,
-                                                                             display_box = False, return_fig = True)
-    else:
-        df_mean_sim = get_df_mean_sim(data_sim, variable = variable, xaxis = xaxis, leaves = leaves)
-        for i, ax in enumerate(axs.flat):
-            leaf = i+1
-            if leaf in leaves:
-                x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
-                ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], 'r')
-                if display_rmse == True:
-                    ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
-                                xycoords='axes fraction', fontsize=14)
+    if variable == 'septo_green':
+        variable = 'severity_on_green'
+    df_mean_sim = get_mean(data_sim, column = variable, xaxis = xaxis)
+    for i, ax in enumerate(axs.flat):
+        leaf = i+1
+        if leaf in leaves:
+            x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
+            ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], 'r')
+            if display_rmse == True:
+                ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
+                            xycoords='axes fraction', fontsize=14)

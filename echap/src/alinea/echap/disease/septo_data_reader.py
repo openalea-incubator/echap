@@ -89,12 +89,6 @@ def change_index(df, new_index = 'date'):
     df.reset_index(inplace=True)
     df.set_index(new_index, inplace = True)
 
-def get_missing(numbers, start, end):
-    """ Find missing numbers in list compared to range(start,end) """
-    all_numbers = set(range(start, end))
-    missing = all_numbers - set(numbers)
-    return np.array(list(missing))
-
 def group_by_fnl(data, from_top = True):
     """ Split dataframe by final leaf number (fnl) of plants
     
@@ -197,17 +191,16 @@ def zeros_green_to_nan(data):
 def get_count_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
                           num_leaf = 1, from_top = True):
     """ Get number of notations of argument variable on given leaf over all plants in canopy """
+    df = df.reset_index()
     if from_top == True:
         df = df[df['num_leaf_top'] == num_leaf]
     else:
         df = df[df['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['date', 'degree_days']:
-        return df.groupby(xaxis).count()[variable]
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-        df_count = df.groupby('degree_days').count()[variable]
-        df_dates = get_df_dates_xaxis(df, xaxis)
-        df_count.index -= df_dates.loc[num_leaf, xaxis].astype(int)
-        return df_count
+    df_count = df.groupby('date').count()[variable]
+    df_mean = df.groupby('date').mean()
+    if xaxis != 'date':
+        df_count.index = df_mean[xaxis].astype(int) # Avoid duplicates of float
+    return df_count
         
 def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'date',
                             add_ddays=True, from_top = True):
@@ -217,25 +210,29 @@ def table_count_notations(data, weather, variable = 'septo_green', xaxis = 'date
         num_leaf = 'num_leaf_top'
     else:
         num_leaf = 'num_leaf_bottom'
-    if xaxis in ['date', 'degree_days']:
-        change_index(df, new_index = [xaxis, num_leaf])
-        df.index.rename(['Date', 'Leaf number'], inplace=True)
-        df = df.groupby(level=[0,1]).count()
-        df = df[variable].unstack()
-        df[(np.isnan(df)) | (df==0)]='-'
-        if xaxis=='date' and add_ddays == True:
-            df = add_index_ddays(df, weather)
-        return df
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-        dfs = []
-        for lf in set(df[num_leaf]):
-            df_count_lf = get_count_one_leaf(df, variable = variable, xaxis = xaxis, 
-                                                num_leaf = lf, from_top = from_top)
-            df_count_lf = df_count_lf.to_frame()
-            df_count_lf.columns = [lf]
-            df_count_lf[(np.isnan(df_count_lf)) | (df_count_lf==0)]='-'
-            dfs.append(df_count_lf)
-        return pd.concat(dfs, axis = 1)
+
+    if xaxis == 'date':
+        df = df.reset_index()
+    else:
+        df[xaxis] = df[xaxis].astype(float) # Avoid object type
+    is_passed = False
+    for lf in set(df[num_leaf]):
+        df_count_lf = get_count_one_leaf(df, variable = variable, xaxis = xaxis, 
+                                            num_leaf = lf, from_top = from_top)
+        df_count_lf = df_count_lf.reset_index()
+        df_count_lf = df_count_lf.rename(columns={variable:lf})
+        df_count_lf = df_count_lf.drop_duplicates()
+        if is_passed==True:
+            df_count = df_count.merge(df_count_lf, on=xaxis, how='outer')
+        else:
+            df_count = df_count_lf
+            is_passed = True
+    df_count = df_count.sort(xaxis)
+    df_count = df_count.groupby(xaxis).agg(np.nansum) # Hack to avoid duplicated indexes
+    df_count[(np.isnan(df_count)) | (df_count==0)]='-'
+    if xaxis=='date' and add_ddays == True:
+        df_count = add_index_ddays(df_count, weather)
+    return df_count
         
 def age_leaf_notations(data, weather, adel, nff=None):
     """ Get age of leaves at the moment of notations """

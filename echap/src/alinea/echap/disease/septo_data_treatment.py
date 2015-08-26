@@ -11,6 +11,7 @@ import scipy.stats as st
 import scikits.bootstrap as bootstrap
 from math import ceil
 from scipy.stats.mstats import normaltest
+from alinea.alep.disease_outputs import get_mean_leaf
 
 # Imports for plotting
 from datetime import datetime, timedelta, date
@@ -19,7 +20,7 @@ from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 from matplotlib._png import read_png
 from matplotlib.offsetbox import TextArea, AnnotationBbox, OffsetImage
-from scipy.interpolate import InterpolatedUnivariateSpline 
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 # Description of data ##############################################################################
 def get_basic_stat(df, column='severity', by_leaf=True):
@@ -38,45 +39,34 @@ def get_std(df, column = 'severity'):
     """ Calculate standard deviation on given column in data """
     stats = get_basic_stat(data, column='severity', by_leaf=True)
     return stats.iloc[stats.index.get_level_values(level = 1) == 'std']
-    
-def get_mean_one_leaf(df, variable = 'severity', xaxis = 'degree_days',
-                          num_leaf = 1, from_top = True):
-    """ Get average of argument variable on argument leaf over all plants in canopy """
-    if from_top == True:
-        df = df[df['num_leaf_top'] == num_leaf]
-    else:
-        df = df[df['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['date', 'degree_days']:
-        return df.groupby(xaxis).mean()[variable]
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-        df_mean = df.groupby('degree_days').mean()[variable]
-        df_dates = get_df_dates_xaxis(df, xaxis)
-        df_mean.index -= df_dates.loc[num_leaf, xaxis].astype(int)
-        return df_mean
-        
-def get_mean(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
+ 
+def get_mean(df, column='severity', xaxis = 'date', by_leaf = True, from_top = True):
     """ Get average of argument variable on all leaves over all plants measured """
-    if by_leaf==True:
+    if by_leaf==True:    
         df_ = df.copy()
         if from_top == True:
             num_leaf = 'num_leaf_top'
         else:
             num_leaf = 'num_leaf_bottom'
-        if xaxis in ['date', 'degree_days']:
-            change_index(df_, new_index = [xaxis, num_leaf])
-            df_ = df_.groupby(level=[0,1]).mean()
-            return df_[column].unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-            dfs = []
-            for lf in set(df_[num_leaf]):
-                df_mean_lf = get_mean_one_leaf(df_, variable = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
-                df_mean_lf = df_mean_lf.to_frame()
-                df_mean_lf.columns = [lf]
-                dfs.append(df_mean_lf)
-            return pd.concat(dfs, axis = 1)
+        is_passed = False
+        for lf in np.unique(df_[num_leaf]):
+            df_lf = df_[df_[num_leaf]==lf]
+            df_mean_lf = get_mean_leaf(df_lf, variable=column, xaxis=xaxis)[[xaxis, column]]
+            df_mean_lf = df_mean_lf.rename(columns={column:lf})
+            df_mean_lf = df_mean_lf.drop_duplicates()
+            if xaxis != 'date':
+                df_mean_lf[xaxis] = df_mean_lf[xaxis].astype(int)
+            if is_passed==True:                
+                df_mean = df_mean.merge(df_mean_lf,  how='outer')
+            else:
+                df_mean = df_mean_lf
+                is_passed = True
+        df_mean = df_mean.sort(xaxis)
+        df_mean = df_mean.groupby(xaxis).mean() # Hack to avoid duplicated indexes
+        return df_mean
     else:
-        df = df.groupby(level=0).mean()
-        return pd.DataFrame(df[column], columns=[column])
+        df_mean = df.groupby(level=0).mean()
+        return pd.DataFrame(df_mean[column], columns=[column])
     
 def get_standard_deviation(df, column='severity', by_leaf=True):
     """ Calculate lower and upper bounds of standard deviation around mean of column in data """
@@ -584,7 +574,20 @@ def get_data_of_interest(data, weather, variable = 'severity', xaxis = 'degree_d
                           leaves = range(1,7), minimum_sample_size = 5, error_bars = False):
     """ Get average of given variable for separate leaves in argument versus xaxis in argument.
         If error_bars = True then also get 95% confidence interval """
-    df_mean = get_mean(data, column=variable, by_leaf=True, xaxis = xaxis)
+    def merge_axes(df1, df2):
+        # Hack to share same indexes...
+        nb_cols = len(df1.columns)
+        df = pd.concat([df1, df2], axis=1)
+        df1 = df.iloc[:,:nb_cols]
+        df2 = df.iloc[:,nb_cols:]
+        return df1, df2
+        
+    def apply_mask(df, mask):
+        df, mask = merge_axes(df, mask)
+        mask = mask.applymap(lambda x: np.isnan(x))
+        return df[~mask]
+        
+    df_mean = get_mean(data, column=variable, xaxis = xaxis)
     if error_bars == True:
         df_low, df_high = get_confidence_interval(data, weather, column=variable,
                                                     xaxis = xaxis, by_leaf=True)
@@ -602,10 +605,10 @@ def get_data_of_interest(data, weather, variable = 'severity', xaxis = 'degree_d
                 (df_low, df_high) = map(lambda x: x.drop(col, 1), (df_low, df_high))
             
     # Take out data points with not enough individuals in sample
-    mask = df_count.applymap(lambda x: np.isnan(x))
-    df_mean = df_mean[~mask]
+    mask = df_count.applymap(lambda x: np.isnan(float(x)))
+    df_mean = apply_mask(df_mean, mask)
     if error_bars == True:
-        (df_low, df_high) = map(lambda x: x[~mask], (df_low, df_high))
+        (df_low, df_high) = map(lambda df: apply_mask(df, mask), (df_low, df_high))
         return df_mean, df_low, df_high
     else:
         return df_mean
@@ -745,7 +748,10 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
         ax.set_ylim(ylims)
     ax.grid(alpha=0.5)
     if title is None:
-        title = data['variety'][0]+'_'+str(data.index[-1].year)+title_suffix
+        if 'date' in data.columns:
+            title = data['variety'][0]+'_'+str(data.loc[data.index[-1], 'date'].year)+title_suffix
+        elif data.index.name.startswith('date'):
+            title = data['variety'][0]+'_'+str(data.index[-1].year)+title_suffix
     else:
         title += title_suffix
     ax.set_title(title, fontsize=18)
@@ -859,10 +865,10 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
     
     # All severity data and mean, by date and by leaf
     data_ = data.copy()
-    change_index(data_, ['date', 'num_leaf_top'])
-    df_sev = pd.DataFrame(data_[variable])
     df_mean = get_mean(data_, column=variable, by_leaf=True, xaxis = 'date')
     df_low, df_high = get_confidence_interval(data_, weather, column=variable, by_leaf=True)
+    change_index(data_, ['date', 'num_leaf_top'])
+    df_sev = pd.DataFrame(data_[variable])
     if xaxis != 'date':
         degree_days = True
         (df_mean, df_high, df_low) = map(lambda x: add_index_ddays(x, weather).reset_index(level=0, drop = True),
