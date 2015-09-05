@@ -33,12 +33,12 @@ def run_simu(variety = 'Tremie12', nplants = 15,
              sporulating_fraction=5e-3, nreps=5, 
              nsect = 7, layer_thickness = 0.01, **kwds):
     year, sowing_date = get_year_sowing_date(variety=variety)
-    g, recorder = run_reps_septo(year=year, variety=variety,
-                                sowing_date=sowing_date,
-                                nplants=nplants, nsect=nsect,
-                                sporulating_fraction=sporulating_fraction,
-                                layer_thickness=layer_thickness, 
-                                nreps=nreps, **kwds)
+    run_reps_septo(year=year, variety=variety,
+                   sowing_date=sowing_date,
+                   nplants=nplants, nsect=nsect,
+                   sporulating_fraction=sporulating_fraction,
+                   layer_thickness=layer_thickness, 
+                   nreps=nreps, **kwds)
     
 def organize_fnl(df_sim):
     """ Trick to give same plant number to plants with same fnl """
@@ -79,11 +79,11 @@ def get_mean_data_sim(df_sim):
 
 def get_aggregated_data_sim(variety = 'Tremie12', nplants = 15, 
                             sporulating_fraction=5e-3, 
-                            num_leaf = 'num_leaf_top'):
+                            num_leaf = 'num_leaf_top', suffix=None):
     year, sowing_date = get_year_sowing_date(variety=variety)
     data_sim = get_data_sim(fungus='septoria', year=year,
                             variety=variety, nplants=nplants,
-                            inoc=sporulating_fraction)
+                            inoc=sporulating_fraction, suffix=suffix)
     data_sim = get_data_without_death(data_sim, num_leaf=num_leaf)
     data_sim['severity'] *= 100
     data_sim['severity_on_green'] *= 100
@@ -166,7 +166,7 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
                                                     weather, variable='severity', 
                                                     xaxis = 'degree_days', 
                                                     leaves = range(1,7), 
-                                                    xlims = [1000, 2500], 
+                                                    xlims = [1100, 2500], 
                                                     display_rmse = False):
     df_mean_obs, df_low, df_high, fig, axs = plot_confidence_and_boxplot(data_obs, weather, leaves = leaves,
                                                                          variable = variable, xaxis = xaxis,
@@ -182,3 +182,11 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
             if display_rmse == True:
                 ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
                             xycoords='axes fraction', fontsize=14)
+                            
+def plot_one_sim(data_sim, variable, xaxis, axs, leaves, color):
+    df_mean_sim = get_mean(data_sim, column = variable, xaxis = xaxis)
+    for i, ax in enumerate(axs.flat):
+        leaf = i+1
+        if leaf in leaves:
+            x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
+            ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], color=color)
