@@ -183,10 +183,12 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
                 ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
                             xycoords='axes fraction', fontsize=14)
                             
-def plot_one_sim(data_sim, variable, xaxis, axs, leaves, color):
+def plot_one_sim(data_sim, variable, xaxis, axs, leaves, color, xlims=None):
     df_mean_sim = get_mean(data_sim, column = variable, xaxis = xaxis)
     for i, ax in enumerate(axs.flat):
-        leaf = i+1
-        if leaf in leaves:
+        if i < len(leaves):
+            leaf = leaves[i]
             x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
             ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], color=color)
+            if xlims is not None:
+                ax.set_xlim(xlims)

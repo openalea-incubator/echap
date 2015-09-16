@@ -82,7 +82,7 @@ def reconstruction_parameters():
     #
     # PlantGen parameters
     #--------------------
-    pars['pgen_base'] = {'TT_hs_break':None}
+    pars['pgen_base'] = {'TT_hs_break':None} # Add {'inner_params':{'DELAIS_PHYLL_SEN_DISP':20}} # 3 par default param de get_reconstruction
 
     # Nff composition of the canopy
     # if None, it uses the nff composition of the tillering data

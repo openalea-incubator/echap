@@ -890,9 +890,13 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
     # Prepare figure
     nb_leaves = min(df_mean.shape[1], len(leaves))
     if axs == None:
-        fig, axs = plt.subplots(int(ceil(nb_leaves/2.)), 2, figsize=fig_size)
-        if len(axs.flat)>nb_leaves:
-            fig.delaxes(axs.flat[-1])
+        if nb_leaves > 1:
+            fig, axs = plt.subplots(int(ceil(nb_leaves/2.)), 2, figsize=fig_size)
+            if len(axs.flat)>nb_leaves:
+                fig.delaxes(axs.flat[-1])
+        else:
+            fig, axs = plt.subplots()
+            axs = np.array([axs])
     
     for ax, leaf in zip([ax for i,ax in enumerate(axs.flat) if i<len(leaves)], leaves):
         # Get severity data and mean for chosen leaf
