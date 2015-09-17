@@ -90,6 +90,10 @@ def reconstruction_parameters():
     pars['nff_probabilities'] = pdict(None)
     # TO do : take into account
     #
+    # Adel parameters
+    #----------------
+    pars['adel_pars'] = {'senescence_leaf_shrink' : 0.5,'leafDuration' : 2, 'fracLeaf' : 0.2, 'stemDuration' : 2. / 1.2, 'dHS_col' : 0.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30, 'drop_empty':True}
+    #
     # Haun Stage = f(TT), convergence between axis
     #---------------------------------------------
     # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts (60 is for Maxwell that has quite large desynchronisation, 30 may be more realistic)
@@ -671,7 +675,6 @@ class EchapReconstructions(object):
     def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, aborting_tiller_reduction=1, aspect = 'square', stand_density_factor = {'Mercia':1, 'Rht3':1, 'Tremie12':1, 'Tremie13':1}, dimension=1, ssipars={'r1':0.07,'ndelsen':3},**kwds):
         '''stand_density_factor = {'Mercia':0.9, 'Rht3':1, 'Tremie12':0.8, 'Tremie13':0.8}, **kwds)'''
                 
-        run_adel_pars = {'rate_inclination_tiller': 15, 'senescence_leaf_shrink' : 0.5,'startLeaf' : -0.4, 'endLeaf' : 1.6, 'endLeaf1': 1.6, 'stemLeaf' : 1.2,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'drop_empty':True}
         if name == 'Rht3':
             incT=75
             dep=10
@@ -685,13 +688,14 @@ class EchapReconstructions(object):
         n_emerged = nplants#adel uses smart stand       
         axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
-        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name],base_config=self.pgen_base)
+        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name],base_config=self.pgen_base, adel_pars=self.pars['adel_pars'])
         axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
                     
         leaves = self.leaves[name] 
        
+        run_adel_pars = self.pars['adel_pars']
         
         return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
     
