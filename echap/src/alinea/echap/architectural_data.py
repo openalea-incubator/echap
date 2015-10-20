@@ -972,7 +972,41 @@ def haun_stage_aggregated():
     (df_HS_tagged, df_HS_global) = map(lambda x: x.reset_index(), (df_HS_tagged, df_HS_global))
     return df_HS_tagged, df_HS_global
 
+def ssi_aggregated():
+    """ Get mean, standard error and confidence interval for ssi calibration data """
+    def aggregate(data, group = ['TT', 'label', 'nff'],
+                  func = numpy.mean, column_name = 'SSI_mean'):
+        df = data.groupby(group).agg(func).loc[:, 'SSI'].to_frame()
+        df = df.rename(columns={'SSI':column_name})
+        return df
     
+    # Get and select data
+    data = Pheno_data()
+    tagged = data['archi_tagged']
+    tagged = tagged.loc[tagged['SSI'] < tagged['nff'],('label', 'nff', 'TT', 'SSI')].dropna()
+    sampled = data['archi_sampled']
+    sampled = sampled.loc[(sampled['SSI'] < sampled['nff']) | (numpy.isnan(sampled['nff'])),('label','TT','SSI')].dropna()
+    
+    # Get mean, standard error and confidence interval for tagged plants by nff
+    df_SSI_tagged = pandas.concat([aggregate(tagged, ['TT', 'label', 'nff'], numpy.mean, 'SSI_mean'),
+                                  aggregate(tagged, ['TT', 'label', 'nff'], numpy.nanstd, 'SSI_std'),
+                                  aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'SSI_conf')], axis=1)
+    
+    # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
+    (df_SSI_tagged_global, df_SSI_sampled_global) = map(lambda x: pandas.concat(
+                                                  [aggregate(x, ['TT', 'label'], numpy.mean, 'SSI_mean'),
+                                                   aggregate(x, ['TT', 'label'], numpy.nanstd, 'SSI_std'),
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'SSI_conf')], axis=1),
+                                                   (tagged, sampled))
+    df_SSI_tagged_global['source'] = 'tagged'
+    df_SSI_sampled_global['source'] = 'sampled'
+    df_SSI_global = pandas.concat([df_SSI_tagged_global, df_SSI_sampled_global])
+    
+    (df_SSI_tagged, df_SSI_global) = map(lambda x: x.reset_index(), (df_SSI_tagged, df_SSI_global))
+    return df_SSI_tagged, df_SSI_global
+    
+
+  
 def aggregateGL(data, group = ['TT', 'label', 'nff'],
               func = numpy.mean, column_name = 'GL_mean'):
     df = data.groupby(group).agg(func).loc[:, 'GL'].to_frame()
@@ -1099,14 +1133,14 @@ def add_HS_green_leaves(data, HS_fit):
     return data
 
     
-def dimensions_aggregated(df_dim = Dim_data()):
-    def _aggregate(data, group = ['label', 'Source', 'rank'], func = numpy.mean, column_name = 'mean'):
+def dimensions_aggregated(df_dim = Dim_data(), along = 'rank'):
+    def _aggregate(data, group = ['label', 'Source', along], func = numpy.mean, column_name = 'mean'):
         df = data.groupby(group).agg(func).loc[:, ['L_blade', 'W_blade', 'A_blade',
                                                     'L_sheath', 'W_sheath', 'L_internode', 'H_col']]
         df = df.rename(columns={col:col+'_'+column_name for col in df.columns})
         return df.reset_index()
 
-    def get_aggregate(data, group = ['label', 'Source', 'rank']):
+    def get_aggregate(data, group = ['label', 'Source', along]):
         funcs = {'mean':numpy.mean, 'std':numpy.std, 'conf':conf_int}
         df_ag = None
         for name, func in funcs.iteritems():
@@ -1118,10 +1152,10 @@ def dimensions_aggregated(df_dim = Dim_data()):
                                        on=group)
         return df_ag
 
-    df_ag = get_aggregate(df_dim, group = ['label', 'Source', 'rank'])
+    df_ag = get_aggregate(df_dim, group = ['label', 'Source', along])
     df_dim = df_dim[~numpy.isnan(df_dim['nff'])]
     if len(df_dim)>0:
-        df_ag_nff = get_aggregate(df_dim, group = ['label', 'Source', 'nff', 'rank'])
+        df_ag_nff = get_aggregate(df_dim, group = ['label', 'Source', 'nff', along])
     else:
         df_ag_nff = None
     return df_ag, df_ag_nff
@@ -1159,6 +1193,7 @@ class ValidationData(object):
         self.tillers_per_plant = tillers_per_plant()
         self.emission_probabilities = emission_probabilities_table()    
         self.haun_stage = haun_stage_aggregated()
+        self.ssi = ssi_aggregated()
         self.dimensions = dimensions_aggregated()
         self.green_leaves = green_leaves_aggregated()
         
