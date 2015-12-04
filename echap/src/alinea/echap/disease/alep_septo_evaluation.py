@@ -9,7 +9,7 @@ import random as rd
 from alinea.alep.disease_outputs import *
 from alinea.alep.simulation_tools.simulation_tools import get_data_sim
 from alinea.alep.simulation_tools.simulation_tools import plot_by_leaf as plot_by_leaf_sim
-from alinea.alep.simulation_tools.septo_decomposed import run_reps_septo
+#from alinea.alep.simulation_tools.septo_decomposed import run_reps_septo
 from alinea.echap.disease.septo_data_reader import *
 from alinea.echap.disease.septo_data_treatment import *
 from alinea.echap.disease.septo_data_treatment import *
@@ -79,8 +79,12 @@ def get_mean_data_sim(df_sim):
 
 def get_aggregated_data_sim(variety = 'Tremie12', nplants = 15, 
                             sporulating_fraction=5e-3, 
-                            num_leaf = 'num_leaf_top', suffix=None):
-    year, sowing_date = get_year_sowing_date(variety=variety)
+                            num_leaf = 'num_leaf_top', suffix=None, 
+                            forced_year=None):
+    if forced_year is None:
+        year, sowing_date = get_year_sowing_date(variety=variety)
+    else:
+        year = forced_year
     data_sim = get_data_sim(fungus='septoria', year=year,
                             variety=variety, nplants=nplants,
                             inoc=sporulating_fraction, suffix=suffix)
@@ -183,12 +187,14 @@ def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
                 ax.annotate('RMSE : %.2f' %get_mean_rmse(df_mean_obs, df_mean_sim, num_leaf = leaf), xy=(0.05, 0.75),
                             xycoords='axes fraction', fontsize=14)
                             
-def plot_one_sim(data_sim, variable, xaxis, axs, leaves, color, xlims=None):
+def plot_one_sim(data_sim, variable, xaxis, axs, leaves, color, xlims=None,
+                 linestyle='-', linewidth=1):
     df_mean_sim = get_mean(data_sim, column = variable, xaxis = xaxis)
     for i, ax in enumerate(axs.flat):
         if i < len(leaves):
             leaf = leaves[i]
             x_data = df_mean_sim.index[~np.isnan(df_mean_sim.ix[:,leaf])]
-            ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], color=color)
+            ax.plot(x_data, df_mean_sim.loc[:, leaf][~np.isnan(df_mean_sim.ix[:,leaf])], 
+                    color=color, linestyle=linestyle, linewidth=linewidth)
             if xlims is not None:
                 ax.set_xlim(xlims)

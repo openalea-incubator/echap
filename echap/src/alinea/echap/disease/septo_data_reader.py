@@ -105,11 +105,34 @@ def group_by_fnl(data, from_top = True):
             group = data[data['num_plant'].isin(grps[fnl])]
             groups[fnl] = group
         return groups
-    
+
+def get_ratio_fnl(data, weather, variable='septo_green'):
+    data_grouped = group_by_fnl(data)
+    len_dfs=list([len(set(v['num_plant'])) for v in data_grouped.values()])
+    fnls=list(data_grouped.keys())
+    fnl_main = fnls[len_dfs.index(max(len_dfs))]
+    fnl_non_main = fnls[len_dfs.index(min(len_dfs))]
+    dict_df_count = {}
+    for fnl, df in data_grouped.iteritems():
+        df_count = table_count_notations(df, weather, variable = variable)
+        df_count = df_count[df_count.applymap(np.isreal)]
+        df_count = df_count.astype(float)
+        if fnl == fnl_main:
+            indx = pd.isnull(df_count)
+            df_count[indx] = 1.
+        else:
+            df_count[pd.isnull(df_count)]=0.
+        dict_df_count[fnl] = df_count
+    df_ratio = dict_df_count[fnl_non_main]/(dict_df_count[fnl_non_main]+dict_df_count[fnl_main])
+    df_ratio[pd.isnull(df_ratio)] = 0.
+    df_ratio[indx] = np.nan
+    return df_ratio
+
 def data_reader_2011(data_file='mercia_2011.csv'):       
     """ Read data of septoria measurements from Grignon 2011 (Mercia or Rht3 wheat) """
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
     df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
+    df.index += pd.to_timedelta(15, unit='h')
     df.index.names = ['date']
     df = df.rename(columns={'plant':'num_plant'})
     df['num_plant'] += 30*(df['bloc']-1)
@@ -132,6 +155,7 @@ def data_reader_tremis(data_file='tremis_2012_tnt.csv', green_on_green = True):
     
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
     df = pd.read_csv(file_path, parse_dates={'datetime':[1]}, sep=';', index_col=[0])
+    df.index += pd.to_timedelta(15, unit='h')
     df.index.names = ['date']
     df = df.rename(columns={'plant':'num_plant'})
     
@@ -266,7 +290,8 @@ def get_df_dates_xaxis(data, xaxis):
     df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data['num_leaf_top']==x]), df_dates.index)
     return df_dates
 
-def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_number = True):
+def adapt_data(data, weather, adel = None, hide_old_data = False, 
+               correct_leaf_number = True, force_mean_fnl=False):
     """ Complete data after reading """
     df = data.copy()
     
@@ -274,7 +299,8 @@ def adapt_data(data, weather, adel = None, hide_old_data = False, correct_leaf_n
     df['degree_days'] = [int(weather.data['degree_days'][t]) for t in df.index]
     
     # Add age of leaves
-    df = add_leaf_dates_to_data(df, correct_leaf_number=correct_leaf_number)
+    df = add_leaf_dates_to_data(df, correct_leaf_number=correct_leaf_number,
+                                force_mean_fnl=force_mean_fnl)
    
     # If variable is septoria on green : transform zeros to NaN at the end of season
     if weather.data.index[-1].year in [2012, 2013]:
@@ -306,6 +332,7 @@ def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_
     if year == 2011:
         start_date = "2010-10-15"
         end_date = "2011-06-20"
+        file_suffix = ''
         
         # Read septoria data
         if variety == 'Mercia':
@@ -315,6 +342,7 @@ def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_
         else:
             raise ValueError('Variety unknown for this year: try Mercia or Rht3')
         data = data_reader_2011(data_file = data_file)
+        data['axis']='MS'
         
     elif year == 2012:
         start_date = "2011-10-21"
@@ -368,8 +396,13 @@ def data_reader(year = 2012, variety = 'Tremie12', from_file = 'control', green_
                         temp_min = temp_min, temp_max = temp_max)
         
     # Adapt septoria data
+    if file_suffix=='global':
+        force_mean_fnl = True
+    else:
+        force_mean_fnl = False
     data = adapt_data(data, weather, hide_old_data = hide_old_data, 
-                        correct_leaf_number = correct_leaf_number)
+                        correct_leaf_number = correct_leaf_number,
+                        force_mean_fnl=force_mean_fnl)
     
     return data, weather
     

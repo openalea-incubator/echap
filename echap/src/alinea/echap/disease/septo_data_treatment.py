@@ -11,7 +11,7 @@ import scipy.stats as st
 import scikits.bootstrap as bootstrap
 from math import ceil
 from scipy.stats.mstats import normaltest
-from alinea.alep.disease_outputs import get_mean_leaf
+from alinea.alep.disease_outputs import get_mean_leaf, conf_int
 
 # Imports for plotting
 from datetime import datetime, timedelta, date
@@ -51,6 +51,8 @@ def get_mean(df, column='severity', xaxis = 'date', by_leaf = True, from_top = T
         is_passed = False
         for lf in np.unique(df_[num_leaf]):
             df_lf = df_[df_[num_leaf]==lf]
+            if xaxis!='date':
+                df_lf[xaxis] = df_lf[xaxis].astype(float)
             df_mean_lf = get_mean_leaf(df_lf, variable=column, xaxis=xaxis)[[xaxis, column]]
             df_mean_lf = df_mean_lf.rename(columns={column:lf})
             df_mean_lf = df_mean_lf.drop_duplicates()
@@ -76,90 +78,60 @@ def get_standard_deviation(df, column='severity', by_leaf=True):
     df_high = stats['mean']+stats['std']
     df_high[df_high>100]=100
     return df_low, df_high
-    
-def get_error_margin_one_leaf(df, column='severity', xaxis = 'date', 
-                                num_leaf = 1, by_leaf=True, from_top = True):
-    """ Get 95% confidence interval of argument variable 
-            on argument leaf over all plants in canopy """
-    df_ = df.copy()
-    if from_top == True:
-        df_ = df_[df_['num_leaf_top'] == num_leaf]
-    else:
-        df_ = df_[df_['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['date', 'degree_days']:
-        change_index(df_, new_index = ['degree_days'])
-        df_ = df_[column]
-        return df_.groupby(level=0).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-        change_index(df_, new_index = ['degree_days'])
-        df_ = df_[column]
-        df_ = df_.groupby(level=0).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
-        df_dates = get_df_dates_xaxis(df, xaxis)
-        df_.index -= df_dates.loc[num_leaf, xaxis].astype(int)
-        return df_
-    
-def get_error_margin(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
-    """ Get 95% confidence interval of argument variable on all leaves over all plants """
-    df_ = df.copy()
-    if from_top == True:
-        num_leaf = 'num_leaf_top'
-    else:
-        num_leaf = 'num_leaf_bottom'
-    if by_leaf==True:
-        if xaxis in ['date', 'degree_days']:
-            change_index(df_, new_index = [xaxis, num_leaf])
-            df_ = df_[column]
-            df_ = df_.groupby(level=[0,1]).apply(lambda x: 2*st.sem(x[~np.isnan(x)]))
-            return df_.unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-            dfs = []
-            for lf in set(df_[num_leaf]):
-                df_lf = get_error_margin_one_leaf(df_, column = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
-                df_lf = df_lf.to_frame()
-                df_lf.columns = [lf]
-                dfs.append(df_lf)
-            return pd.concat(dfs, axis = 1)
-    else:
-        df_ = df_.groupby(level=[0]).apply(lambda x: bootstr(x[~np.isnan(x)]))
-        return df_
         
 def bootstr(x):
     """ Calculate bootstrap sample """
     if len(x) == 0:
-        return np.array([np.nan, np.nan])
+        return [np.nan, np.nan]
     elif all(x.values[0] == item for item in x):
-        return np.array([x.values[0], x.values[0]])
+        return [x.values[0], x.values[0]]
     else:
         try:
-            return bootstrap.ci(data=x, statfunction=scipy.mean)
+            return list(bootstrap.ci(data=x, statfunction=scipy.mean))
         except:
             if np.mean(x) == np.max(x):
-                return(np.array([np.mean(x), np.mean(x)]))
+                return [np.mean(x), np.mean(x)]
             else:
-                return np.array([np.nan, np.nan])
+                return [np.nan, np.nan]
 
-def get_bootstrap_error_margin_one_leaf(df, column='severity', xaxis = 'date', 
-                                            num_leaf = 1, by_leaf=True, from_top = True):
-    """ Get bootstraped 95% confidence interval of argument variable 
+def get_error_margin_leaf(data_lf, column='severity', xaxis = 'date', bootstrap=True):
+    """ Get 95% confidence interval of argument variable 
             on argument leaf over all plants in canopy """
-    df_ = df.copy()
-    if from_top == True:
-        df_ = df_[df_['num_leaf_top'] == num_leaf]
+    if 'rep' in data_lf.columns:
+        reps = np.unique(data_lf['rep'])
     else:
-        df_ = df_[df_['num_leaf_bottom'] == num_leaf]
-    if xaxis in ['date', 'degree_days']:
-        change_index(df_, new_index = ['degree_days'])
-        df_ = df_[column]
-        return df_.groupby(level=0).apply(lambda x: bootstr(x[~np.isnan(x)]))
-    elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-        change_index(df_, new_index = ['degree_days'])
-        df_ = df_[column]
-        df_ = df_.groupby(level=0).apply(lambda x: bootstr(x[~np.isnan(x)]))
-        df_dates = get_df_dates_xaxis(df, xaxis)
-        df_.index -= df_dates.loc[num_leaf, xaxis].astype(int)
-        return df_
+        reps = []
+    if xaxis != 'date':
+        data_lf[xaxis] = data_lf[xaxis].astype(float)
+    if xaxis == 'date':
+        cols = ['date', column]
+    else:
+        cols = ['date', xaxis, column]
+    if len(reps)>0:
+        df = pandas.DataFrame()
+        for rep in reps:
+            df_rep = data_lf[data_lf['rep']==rep].reset_index()
+            df_rep = df_rep[pandas.notnull(df_rep.loc[:,column])].loc[:, cols]
+            df_rep = df_rep.convert_objects(convert_numeric=True)
+            if bootstrap==True:
+                df_err_rep = df_rep.groupby('date').agg(lambda x: bootstr(x[~np.isnan(x)]))
+            else:
+                df_err_rep = df_rep.groupby('date').agg(lambda x: conf_int(x[~np.isnan(x)]))
+            df_err_rep = df_err_rep.reset_index()
+            df = pandas.concat([df, df_err_rep])
+        df_err = df.groupby('date').mean()
+    else:
+        df = data_lf.reset_index()
+        if bootstrap==True:
+            df_err = df.groupby('date').aggregate(lambda x: bootstr(x[~np.isnan(x)]))
+        else:
+            df_err = df.groupby('date').agg(lambda x: conf_int(x[~np.isnan(x)]))
+    df_err = df_err.reset_index()
+    return df_err    
 
-def get_bootstrap_error_margin(df, column='severity', xaxis = 'date', by_leaf=True, from_top = True):
+    
+def get_error_margin(df, column='severity', xaxis = 'date', 
+                     by_leaf=True, from_top = True, bootstrap = True):
     """ Get 95% confidence interval of argument variable on all leaves over all plants """
     df_ = df.copy()
     if from_top == True:
@@ -167,22 +139,35 @@ def get_bootstrap_error_margin(df, column='severity', xaxis = 'date', by_leaf=Tr
     else:
         num_leaf = 'num_leaf_bottom'
     if by_leaf==True:
-        if xaxis in ['date', 'degree_days']:
-            change_index(df_, new_index = [xaxis, num_leaf])
-            df_ = df_[column]
-            df_ = df_.groupby(level=[0,1]).apply(lambda x: bootstr(x[~np.isnan(x)]))
-            return df_.unstack()
-        elif xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-            dfs = []
-            for lf in set(df_[num_leaf]):
-                df_lf = get_bootstrap_error_margin_one_leaf(df_, column = column, xaxis = xaxis, num_leaf = lf, from_top = from_top)
-                df_lf = df_lf.to_frame()
-                df_lf.columns = [lf]
-                dfs.append(df_lf)
-            return pd.concat(dfs, axis = 1)
+        is_passed = False
+        for lf in np.unique(df_[num_leaf]):
+            df_lf = df_[df_[num_leaf]==lf]
+            df_err_lf = get_error_margin_leaf(df_lf, column=column, xaxis=xaxis, bootstrap=bootstrap)[[xaxis, column]]
+            df_mean_lf = get_mean_leaf(df_lf, variable=column, xaxis=xaxis)[[xaxis, column]]
+            df_err_lf[xaxis] = df_mean_lf[xaxis]
+            df_err_lf = df_err_lf.rename(columns={column:lf})
+            if bootstrap==False:
+                df_err_lf = df_err_lf.drop_duplicates()
+            if xaxis != 'date':
+                df_err_lf[xaxis] = df_err_lf[xaxis].astype(int)
+            if is_passed==True:                
+                df_err = df_err.merge(df_err_lf,  how='outer')
+            else:
+                df_err = df_err_lf
+                is_passed = True
+        df_err = df_err.sort(xaxis)
+        if bootstrap==False:
+            df_err = df_err.groupby(xaxis).mean() # Hack to avoid duplicated indexes
+        else:
+            df_err = df_err.set_index(xaxis)
+        return df_err
     else:
-        df_ = df_.groupby(level=[0]).apply(lambda x: bootstr(x[~np.isnan(x)]))
+        if bootstrap==True:
+            df_ = df_.groupby(level=[0]).agg(lambda x: bootstr(x[~np.isnan(x)]))
+        else:
+            df_ = df_.groupby(level=[0]).agg(lambda x: 2*st.sem(x[~np.isnan(x)]))
         return df_
+
         
 def get_confidence_interval(df, weather, column='severity', by_leaf=True, 
                                 xaxis = 'date', add_ddays = True):
@@ -195,12 +180,12 @@ def get_confidence_interval(df, weather, column='severity', by_leaf=True,
     df_mean = get_mean(df, column=column, by_leaf=by_leaf, xaxis = xaxis)
     df_count = table_count_notations(df, weather, variable = column, xaxis = xaxis, add_ddays = add_ddays)
     if any(x<20 for x in df_count.values.flat if x!='-' and not np.isnan(x)):
-        df_low_high = get_bootstrap_error_margin(df, column=column, xaxis = xaxis, by_leaf = by_leaf)
+        df_low_high = get_error_margin(df, column=column, by_leaf=by_leaf, xaxis = xaxis, bootstrap=True)
         if not by_leaf:
             df_low_high = pd.DataFrame(df_low_high, xaxis = 'date')
         return df_low_high.applymap(lambda x: separate_low_high(x, 0)), df_low_high.applymap(lambda x: separate_low_high(x, 1))
     else:
-        df_err = get_error_margin(df, column=column, by_leaf=by_leaf, xaxis = xaxis)
+        df_err = get_error_margin(df, column=column, by_leaf=by_leaf, xaxis = xaxis, bootstrap=False)
         df_low = df_mean-df_err
         df_low[df_low<0] = 0.
         df_high = df_mean+df_err
@@ -615,8 +600,8 @@ def get_data_of_interest(data, weather, variable = 'severity', xaxis = 'degree_d
         
 def set_color_cycle(ax, df_mean, with_brewer = True):
     try:
-        if with_brewer == True:
-            import brewer2mpl
+        import brewer2mpl
+        if with_brewer == True:            
             #ax.set_color_cycle(brewer2mpl.get_map('Paired', 'qualitative', max(3, len(df_mean.columns)+1)).mpl_colors)
             ax.set_color_cycle(brewer2mpl.get_map('Dark2', 'qualitative', max(3, len(df_mean.columns)+1)).mpl_colors)
         else:
@@ -695,11 +680,36 @@ def plot_df_mean(ax, df_mean, color = None, marker='d', markersize=8,
                                       color = color, **options)
     return points, ax
     
+def clean_2011(data, df_mean, df_high, df_low, xaxis, leaves=[1,2,3]):
+    if not 'necro' in data.columns:
+        data['necro'] = 0.
+        data['necro'][data['leaf_area']>0] = 1-data['leaf_green_area'][data['leaf_area']>0]/data['leaf_area'][data['leaf_area']>0]
+        data['necro']*=100.
+    df_mean_nec = get_mean(data, xaxis='degree_days', column='necro', by_leaf=True)
+    df_mean_nec = df_mean_nec.loc[:, leaves]
+    df_mean_nec = df_mean_nec[~np.isnan(df_mean_nec.sum(axis = 1))]
+    df_mean[df_mean_nec>50] = np.nan
+    if df_low is not None:
+        df_low[df_mean_nec>50] = np.nan
+    if df_high is not None:
+        df_high[df_mean_nec>50] = np.nan
+    return df_mean, df_high, df_low
+    
+def force_clean_2011(df_mean, df_high, df_low):
+    df_mean = df_mean.loc[:, [1,2,3]]
+    df_high = df_high.loc[:, [1,2,3]]
+    df_low = df_low.loc[:, [1,2,3]]
+    df_mean.loc[df_mean.index[-1], [3]] = np.nan
+    df_high.loc[df_high.index[-1], [3]] = np.nan
+    df_low.loc[df_low.index[-1], [3]] = np.nan
+    return df_mean, df_high, df_low    
+
 def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leaves = range(1,7), 
                  fig_size=(8,6), pointer=True, title_suffix='', minimum_sample_size = 5, 
                  linestyle = '-', marker = 'd', ax = None, fig = None, jump_colors = 0,
                  return_df_mean = False, xlims = None, ylims = None, title = None, 
-                 error_bars = False, with_brewer = True, xlabel = True):
+                 error_bars = False, with_brewer = True, xlabel = True, 
+                 legend=True, filled_marker=True):
     """ Plot average of given variable for separate leaves in argument versus xaxis in argument """
     # Extract data
     if error_bars == True:
@@ -717,6 +727,11 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
         df_low = None
         df_high = None
     
+    # Cleaning for 2011
+    if weather.data.index[-1].year==2011:
+        df_mean, df_high, df_low = clean_2011(data, df_mean, df_high, 
+                                              df_low, xaxis, leaves)
+
     # Set plot
     if ax == None:
         fig, ax = plt.subplots(figsize=(8,6))
@@ -729,10 +744,18 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
     points, ax = plot_df_mean(ax, df_mean, marker = marker, 
                               markersize = 8, linestyle = linestyle, 
                               linewidth = 2, df_low = df_low, df_high = df_high)
-    
+    if filled_marker==False:
+        for point in points:
+            if isinstance(point, tuple):
+                if len(point)==2:
+                    point[1].set_markerfacecolor('None')
+            else:
+                point.set_markerfacecolor('None')
+                
     # Customize plot
-    leg = ax.legend(df_mean.columns, title='Leaf number', loc='best', fontsize=12)
-    plt.setp(leg.get_title(), fontsize=14)
+    if legend==True:
+        leg = ax.legend(df_mean.columns, title='Leaf number', loc='best', fontsize=12)
+        plt.setp(leg.get_title(), fontsize=14)
     ax = custom_ylabel(ax = ax, variable = variable)
     if xlabel == True:
         ax = custom_xlabel(ax, degree_days = True)
@@ -760,7 +783,56 @@ def plot_by_leaf(data, weather, variable='severity', xaxis = 'degree_days', leav
         
     if return_df_mean == True:
         return df_mean
-        
+
+def plot_by_leaf_both_years(data_obs_2012, weather_2012, data_global_2012,
+                            data_obs_2013, weather_2013, data_global_2013,
+                            variable = 'severity',  xaxis = 'degree_days', 
+                            xlims=[800,2200], ylims=None, error_bars=True):
+    fig, axs = plt.subplots(1,2, figsize=(8,6))
+    df_mean_2012 = plot_by_leaf(data_obs_2012, weather_2012, leaves = range(1,7), 
+                           variable=variable, pointer=False,  
+                           title = '2012', title_suffix='',
+                           xaxis=xaxis, ax=axs[0], fig=fig, linestyle='-', 
+                           marker='d', return_df_mean=True,
+                           xlims=xlims, ylims=ylims, with_brewer=False,
+                           xlabel=True, minimum_sample_size=15,
+                           error_bars=error_bars, legend=False)
+    plot_by_leaf(data_global_2012, weather_2012, leaves = range(1,7), 
+                           variable=variable, pointer=False,  
+                           title = '2012', title_suffix='',
+                           xaxis=xaxis, ax=axs[0], fig=fig, linestyle='', 
+                           marker='o', return_df_mean=False,
+                           xlims=xlims, ylims=ylims, with_brewer=False,
+                           xlabel=True, minimum_sample_size=15,
+                           error_bars=error_bars, legend=False, 
+                           jump_colors=1, filled_marker=False)
+    plot_by_leaf(data_obs_2013, weather_2013, leaves = range(1,7), 
+                           variable=variable, pointer=False,  
+                           title = '2013', title_suffix='',
+                           xaxis=xaxis, ax=axs[1], fig=fig, linestyle='-', 
+                           marker='d', return_df_mean=False,
+                           xlims=xlims, ylims=ylims, with_brewer=False,
+                           xlabel=True, minimum_sample_size=15,
+                           error_bars=error_bars, legend=False)
+    plot_by_leaf(data_global_2013, weather_2013, leaves = range(1,7), 
+                       variable=variable, pointer=False,  
+                       title = '2013', title_suffix='',
+                       xaxis=xaxis, ax=axs[1], fig=fig, linestyle='', 
+                       marker='o', return_df_mean=False,
+                       xlims=xlims, ylims=ylims, with_brewer=False,
+                       xlabel=True, minimum_sample_size=15,
+                       error_bars=error_bars, legend=False,
+                       jump_colors=2, filled_marker=False)
+
+    leg = axs[0].legend(df_mean_2012.columns, title='Leaf number', loc='upper left', fontsize=12)
+    plt.setp(leg.get_title(), fontsize=14)
+    if xaxis=='degree_days':
+        for ax in axs:
+            ax.set_xlabel('Degree-days since sowing', fontsize=14)
+    elif xaxis=='age_leaf_vs_flag_emg':
+        for ax in axs:
+            ax.set_xlabel('Degree-days since flag emergence', fontsize=14)
+
 def plot_by_leaf_by_fnl(data, weather, variable='severity', xaxis = 'degree_days',
                         leaves = range(1,7), fig_size=(8,6), xlims = None, ylims = None,
                         title_suffix='_control', minimum_sample_size = 5, 
@@ -852,7 +924,8 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
                                 axs = None, marker = 'o', fixed_color = None, alpha=0.3, 
                                 linestyle = '-', filling_contour = True, tight_layout = True, 
                                 title = True, xlabel = True, display_error_margin = True,
-                                display_box = True, forced_date_leaves = None):
+                                display_box = True, display_legend = True, 
+                                forced_date_leaves = None, delaxes=True):
     """ Plot mean of given variable, with distribution and confidence interval
         for separate leaves in argument versus xaxis in argument """
     from matplotlib.dates import MonthLocator, DateFormatter
@@ -862,11 +935,22 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
         mpld3.disable_notebook()
     except:
         pass
+    notnans = []
+    def set_ylabel(ax):
+        if variable=='septo_green':
+            ylab = 'Septoria on green (in %)'
+        elif variable=='severity':
+            ylab = 'Severity (in %)'
+        else:
+            ylab = variable+' (in %)'
+        ax.set_ylabel(ylab, fontsize=14)
     
     # All severity data and mean, by date and by leaf
     data_ = data.copy()
     df_mean = get_mean(data_, column=variable, by_leaf=True, xaxis = 'date')
     df_low, df_high = get_confidence_interval(data_, weather, column=variable, by_leaf=True)
+    if weather.data.index[-1].year==2011:
+        df_mean, df_high, df_low = force_clean_2011(df_mean, df_high, df_low)
     change_index(data_, ['date', 'num_leaf_top'])
     df_sev = pd.DataFrame(data_[variable])
     if xaxis != 'date':
@@ -892,146 +976,147 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
     if axs == None:
         if nb_leaves > 1:
             fig, axs = plt.subplots(int(ceil(nb_leaves/2.)), 2, figsize=fig_size)
-            if len(axs.flat)>nb_leaves:
+            if len(axs.flat)>nb_leaves and delaxes==True:
                 fig.delaxes(axs.flat[-1])
         else:
             fig, axs = plt.subplots()
             axs = np.array([axs])
-    
+
     for ax, leaf in zip([ax for i,ax in enumerate(axs.flat) if i<len(leaves)], leaves):
-        # Get severity data and mean for chosen leaf
-        sev = df_sev.xs(leaf, level=1)
-        mn = df_mean[leaf]
-        ind_enough_data = np.where(count[leaf]>=minimum_sample_size)
-        sev = sev[sev.index.isin(count.index.get_level_values('Date')[ind_enough_data[0]])]
-        notnans = np.where(mn.values==mn.values) and ind_enough_data[0]  
-        
-        # Reshape dataframe to draw boxplots from severity data
-        sev['subindex'] = sev.groupby(level=0).cumcount()
-        sev.set_index('subindex', append=True, inplace=True)
-        sev = sev.unstack('date')[variable]
-        if degree_days==True:
-            sev.rename(columns={sev.columns[col]:mn.iloc[notnans].index[col] for col in range(len(sev.columns))}, inplace=True)
+        if leaf in df_mean:
+            # Get severity data and mean for chosen leaf
+            sev = df_sev.xs(leaf, level=1)
+            mn = df_mean[leaf]
+            ind_enough_data = np.where(count[leaf]>=minimum_sample_size)
+#            sev = sev[sev.index.isin(count.index.get_level_values('Date')[ind_enough_data[0]])]
+#            notnans = np.where(mn.values==mn.values) and ind_enough_data[0]  
+            notnans = np.intersect1d(np.where(mn.values==mn.values)[0], ind_enough_data[0])
+            sev = sev[sev.index.isin(count.index.get_level_values('Date')[notnans])]
             
-        # Set plot parameters
-        if fixed_color == None:
-            color = 'k'
-            filling_color = 'grey'
-        else:
-            color = fixed_color
-            filling_color = fixed_color
-
-        if marker == None:
-            marker = 'o'
-        
-        filling_linewidth = 1. if filling_contour == True else 0.
-        
-        # Draw figure
-        ax.annotate('Leaf %d' % leaf, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
-        if len(notnans>0):
-            if xaxis != 'date':
-                # Get data for x axis
-                x_data = np.array([ind for ind in df_low.iloc[notnans,df_low.columns==leaf].index])
-                if xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
-                    df_dates = pd.DataFrame(index = set(data.num_leaf_top))
-                    if forced_date_leaves is None:
-                        date_name = get_date_name_event(xaxis)
-                        df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data.num_leaf_top==x]), 
-                                              df_dates.index)
+            # Reshape dataframe to draw boxplots from severity data
+            sev['subindex'] = sev.groupby(level=0).cumcount()
+            sev.set_index('subindex', append=True, inplace=True)
+            sev = sev.unstack('date')[variable]
+            if degree_days==True:
+                sev.rename(columns={sev.columns[col]:mn.iloc[notnans].index[col] for col in range(len(sev.columns))}, inplace=True)
                 
-                    else:
-                        date_name = forced_date_leaves.columns[-1]
-                        df_dates[xaxis] = map(lambda x: np.mean(forced_date_leaves[date_name][forced_date_leaves.num_leaf_top==x]), 
-                                              df_dates.index)
-                    x_data -= int(df_dates.loc[leaf, xaxis])
-                    
-                # Draw plot
-                if display_error_margin == True:
-                    h1 = ax.fill_between(x_data, 
-                                         df_low.iloc[notnans, df_low.columns==leaf].iloc[:,0], 
-                                         df_high.iloc[notnans, df_high.columns==leaf].iloc[:,0], 
-                                         linestyle='dashed', linewidth = filling_linewidth,
-                                         color = color, facecolor = filling_color, alpha = alpha)
-                h2 = ax.plot(x_data, mn.iloc[notnans], color = color, 
-                             marker = marker, linestyle = linestyle)
-
-                # Customize and draw boxplot
-                if display_box == True:
-                    if fixed_color is not None:
-                        bp = sev.boxplot(ax = ax, positions = x_data, widths = 10)
-                        plt.setp(bp['boxes'], color=fixed_color)
-                        plt.setp(bp['medians'], color=fixed_color)
-                        plt.setp(bp['whiskers'], color=fixed_color)
-                        plt.setp(bp['fliers'], color=fixed_color)
-                        plt.setp(bp['caps'], color=fixed_color)
-                    else:
-                        sev.boxplot(ax=ax, positions=x_data, widths=10)
-                if xlabel == True:
-                    ax.set_xlabel('Degree-days', fontsize=16)
-                formatter = FuncFormatter(form_int)
-                ax.xaxis.set_major_formatter(FuncFormatter(formatter))
-                if xlims == None:
-                    xlims = [x_data[0]-20, x_data[-1]+20]
+            # Set plot parameters
+            if fixed_color == None:
+                color = 'k'
+                filling_color = 'grey'
             else:
-                # Draw plot
-                if display_error_margin == True:
-                    h1 = ax.fill_between(df_low.iloc[notnans,df_low.columns==leaf].index, 
-                                         df_low.iloc[notnans,df_low.columns==leaf].iloc[:,0], 
-                                         df_high.iloc[notnans,df_high.columns==leaf].iloc[:,0], 
-                                         linestyle='dashed', color = color, 
-                                         facecolor = filling_color, alpha = alpha)
-                h2 = ax.plot(mn.index[notnans], mn.iloc[notnans], color = color, 
-                                marker = marker, linestyle = linestyle)
-                
-                ll = [loc.toordinal() for loc in mn.index]
-                locs = [ll[ind] for ind in notnans]
-                
-                # Customize and draw boxplot
-                if display_box == True:
-                    if fixed_color is not None:
-                        bp = sev.boxplot(ax = ax, positions = locs, widths = 10)
-                        plt.setp(bp['boxes'], color=fixed_color)
-                        plt.setp(bp['medians'], color=fixed_color)
-                        plt.setp(bp['whiskers'], color=fixed_color)
-                        plt.setp(bp['fliers'], color=fixed_color)
-                        plt.setp(bp['caps'], color=fixed_color)
-                    else:
-                        sev.boxplot(ax=ax, positions=locs, widths=10)
-                month_fmt = DateFormatter('%b-%d')
-                ax.xaxis.set_major_formatter(month_fmt)
-                xlims = [df_mean.index[0]-timedelta(days=3), df_mean.index[-1]+timedelta(days=3)]
-
-            # Set legend
-            if len(axs)>1:
-                if (isinstance(axs[0], np.ndarray) and ax==axs[0][1]) or (not 
-                    isinstance(axs[0], np.ndarray) and ax==axs[1]):
-                    proxy = [plt.Line2D((0,1),(0,0), color=color, 
-                                marker=marker, linestyle=linestyle)]
-                    labels = ['Mean']
+                color = fixed_color
+                filling_color = fixed_color
+    
+            if marker == None:
+                marker = 'o'
+            
+            filling_linewidth = 1. if filling_contour == True else 0.
+            
+            # Draw figure
+            ax.annotate('Leaf %d' % leaf, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+            if len(notnans>0):
+                if xaxis != 'date':
+                    # Get data for x axis
+                    x_data = np.array([ind for ind in df_low.iloc[notnans,df_low.columns==leaf].index])
+                    if xaxis in ['age_leaf', 'age_leaf_lig', 'age_leaf_vs_flag_lig', 'age_leaf_vs_flag_emg']:
+                        df_dates = pd.DataFrame(index = set(data.num_leaf_top))
+                        if forced_date_leaves is None:
+                            date_name = get_date_name_event(xaxis)
+                            df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data.num_leaf_top==x]), 
+                                                  df_dates.index)
+                    
+                        else:
+                            date_name = forced_date_leaves.columns[-1]
+                            df_dates[xaxis] = map(lambda x: np.mean(forced_date_leaves[date_name][forced_date_leaves.num_leaf_top==x]), 
+                                                  df_dates.index)
+                        x_data -= int(df_dates.loc[leaf, xaxis])
+                        
+                    # Draw plot
                     if display_error_margin == True:
-                        proxy += [plt.Rectangle((0,0), 0,0, facecolor=h1.get_facecolor()[0])]
-                        labels += ['Confidence\n interval']
-                    if fig_size==(8,6):
-                        ax.legend(proxy, labels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-                        locbox = (1.1, 0.4)
-                        locim = (1.12, 0.4)
-                    else:
-                        ax.legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
-                        locbox = (1.04, 0.5)
-                        locim = (1.05, 0.5)
-
-                    txtbox = TextArea('        Distribution', minimumdescent=False)
-                    ab1 = AnnotationBbox(txtbox, xy=locbox, xycoords="axes fraction", 
-                                         frameon=True, fontsize=32, box_alignment=(0., 0.5))
-                    ax.add_artist(ab1)
-                    try:
-                        img = read_png('box.png')
-                        imagebox = OffsetImage(img, zoom=.25)
-                        ab2 = AnnotationBbox(imagebox, xy=locim, 
-                                             xycoords="axes fraction", frameon=False)         
-                        ax.add_artist(ab2)
-                    except:
-                        pass
+                        h1 = ax.fill_between(x_data, 
+                                             df_low.iloc[notnans, df_low.columns==leaf].iloc[:,0], 
+                                             df_high.iloc[notnans, df_high.columns==leaf].iloc[:,0], 
+                                             linestyle='dashed', linewidth = filling_linewidth,
+                                             color = color, facecolor = filling_color, alpha = alpha)
+                    h2 = ax.plot(x_data, mn.iloc[notnans], color = color, 
+                                 marker = marker, linestyle = linestyle)
+                    
+                    # Customize and draw boxplot
+                    if display_box == True:
+                        if fixed_color is not None:
+                            bp = sev.boxplot(ax = ax, positions = x_data, widths = 10)
+                            plt.setp(bp['boxes'], color=fixed_color)
+                            plt.setp(bp['medians'], color=fixed_color)
+                            plt.setp(bp['whiskers'], color=fixed_color)
+                            plt.setp(bp['fliers'], color=fixed_color)
+                            plt.setp(bp['caps'], color=fixed_color)
+                        else:
+                            sev.boxplot(ax=ax, positions=x_data, widths=10)
+                    formatter = FuncFormatter(form_int)
+                    ax.xaxis.set_major_formatter(FuncFormatter(formatter))
+                    if xlims == None:
+                        xlims = [x_data[0]-20, x_data[-1]+20]
+                else:
+                    # Draw plot
+                    if display_error_margin == True:
+                        h1 = ax.fill_between(df_low.iloc[notnans,df_low.columns==leaf].index, 
+                                             df_low.iloc[notnans,df_low.columns==leaf].iloc[:,0], 
+                                             df_high.iloc[notnans,df_high.columns==leaf].iloc[:,0], 
+                                             linestyle='dashed', color = color, 
+                                             facecolor = filling_color, alpha = alpha)
+                    h2 = ax.plot(mn.index[notnans], mn.iloc[notnans], color = color, 
+                                    marker = marker, linestyle = linestyle)
+                    
+                    ll = [loc.toordinal() for loc in mn.index]
+                    locs = [ll[ind] for ind in notnans]
+                    
+                    # Customize and draw boxplot
+                    if display_box == True:
+                        if fixed_color is not None:
+                            bp = sev.boxplot(ax = ax, positions = locs, widths = 10)
+                            plt.setp(bp['boxes'], color=fixed_color)
+                            plt.setp(bp['medians'], color=fixed_color)
+                            plt.setp(bp['whiskers'], color=fixed_color)
+                            plt.setp(bp['fliers'], color=fixed_color)
+                            plt.setp(bp['caps'], color=fixed_color)
+                        else:
+                            sev.boxplot(ax=ax, positions=locs, widths=10)
+                    month_fmt = DateFormatter('%b-%d')
+                    ax.xaxis.set_major_formatter(month_fmt)
+                    xlims = [df_mean.index[0]-timedelta(days=3), df_mean.index[-1]+timedelta(days=3)]
+    
+                # Set legend
+                if len(axs)>1 and display_legend==True:
+                    if (isinstance(axs[0], np.ndarray) and ax==axs[0][1]) or (not 
+                        isinstance(axs[0], np.ndarray) and ax==axs[1]):
+                        proxy = [plt.Line2D((0,1),(0,0), color=color, 
+                                    marker=marker, linestyle=linestyle)]
+                        labels = ['Mean']
+                        if display_error_margin == True:
+                            proxy += [plt.Rectangle((0,0), 0,0, facecolor=h1.get_facecolor()[0])]
+                            labels += ['Confidence\n interval']
+                        if fig_size==(8,6):
+                            ax.legend(proxy, labels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                            locbox = (1.1, 0.4)
+                            locim = (1.12, 0.4)
+                        else:
+                            ax.legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
+                            locbox = (1.04, 0.5)
+                            locim = (1.05, 0.5)
+    
+                        txtbox = TextArea('        Distribution', minimumdescent=False)
+                        ab1 = AnnotationBbox(txtbox, xy=locbox, xycoords="axes fraction", 
+                                             frameon=True, fontsize=32, box_alignment=(0., 0.5))
+                        ax.add_artist(ab1)
+                        try:
+                            img = read_png('box.png')
+                            imagebox = OffsetImage(img, zoom=.25)
+                            ab2 = AnnotationBbox(imagebox, xy=locim, 
+                                                 xycoords="axes fraction", frameon=False)         
+                            ax.add_artist(ab2)
+                        except:
+                            pass
         
         # Customize
         ax.set_xlim(xlims)
@@ -1039,15 +1124,22 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
             ax.set_ylim(ylims)
         else:
             ax.set_ylim([0, 100])
-        if ax in axs.flat[::2]:
-            if variable=='septo_green':
-                ylab = 'Septoria on green (in %)'
-            elif variable=='severity':
-                ylab = 'Severity (in %)'
-            else:
-                ylab = variable+' (in %)'
-            yl = ax.set_ylabel(ylab, fontsize=14)
-        if len(notnans)<1:
+        if len(axs)==1:
+            if ax == axs.flat[0]:
+                set_ylabel(ax)
+            if xlabel == True and ax == axs.flat[len(axs.flat)/2]:
+                ax.set_xlabel('Degree-days', fontsize=16)
+        elif len(axs)==ceil(nb_leaves/2.):
+            if ax in axs.flat[::2]:
+                set_ylabel(ax)
+            if xlabel == True:
+                ax.set_xlabel('Degree-days', fontsize=16)
+        elif len(axs)==nb_leaves:
+            if ax == axs.flat[len(axs.flat)/2]:
+                set_ylabel(ax)
+            if xlabel == True and ax==axs.flat[-1]:
+                ax.set_xlabel('Degree-days', fontsize=16)
+        if len(notnans)<1 and delaxes==True:
             fig.delaxes(ax)
             
         if comparison_table is not None:
@@ -1065,38 +1157,45 @@ def plot_confidence_and_boxplot(data, weather, variable='severity', xaxis = 'deg
     else:
         return df_mean, df_high, df_low
         
-def plot_confidence_and_boxplot_by_fnl(data, weather, variable='severity', xaxis = 'degree_days',
-                                       leaves=range(1,7), fig_size=(15, 10), title_suffix='', 
-                                       minimum_sample_size = 5, xlims = None, ylims = None):
+def plot_confidence_and_boxplot_by_fnl(data, weather, variable='severity',
+                                       xaxis = 'degree_days', leaves=range(1,7), 
+                                       fig_size=(15, 10), title_suffix='',
+                                       minimum_sample_size = 5, xlims = None,
+                                       ylims = None, return_ax = False, 
+                                       fig = None, axs = None, colors=None,
+                                       display_legend = True,  linestyles=None,
+                                       tight_layout = True, alpha=0.2):
     """ Plot mean of given variable, with distribution and confidence interval
         for separate leaves in argument versus xaxis in argument, plants grouped by FNL """
     # Group data by fnl
     data_grouped = group_by_fnl(data)
     
     # Plot
-    colors = iter(['b', 'r', 'g'])
+    if colors is None:
+        colors = iter(['b', 'r', 'g'])
     markers = iter(['o', 'd', '*'])
-    linestyles = iter(['-', '--', ':'])
+    if linestyles is None:
+        linestyles = iter(['-', '--', ':'])
     labels = []
     proxy = []
-    count = 0
-    alpha = 0.2
     for fnl, df in data_grouped.iteritems():
         (color, marker, linestyle) = map(lambda x: next(x), (colors, markers, linestyles))
-        if count == 0:
-            (fig, axs) = map(lambda x: None, range(2))
-            count += 1
         df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(df, weather, leaves = leaves, variable = variable,
                                                                         xaxis = xaxis, title_suffix='_control', fig_size = fig_size,
                                                                         xlims = xlims, ylims = ylims, return_fig = True, fig = fig,
                                                                         axs = axs, marker = marker, fixed_color = color, alpha = alpha,
                                                                         linestyle = linestyle, filling_contour = False,
-                                                                        minimum_sample_size = minimum_sample_size)
+                                                                        minimum_sample_size = minimum_sample_size, 
+                                                                        display_legend=display_legend, tight_layout=tight_layout)
         labels += ['FNL '+str(fnl)]
         proxy += [plt.Rectangle((0,0), 0,0, facecolor=color, alpha = alpha)]
     
     # Set legend
-    axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
+    if display_legend==True:
+        axs[1][1].legend(proxy, labels, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
+    
+    if return_ax==True:
+        return axs
     
 def compare_confidence_and_boxplot_green_sev(data, weather, xaxis = 'degree_days', 
                                              leaves=range(1,7), fig_size=(15, 10), 
@@ -1600,7 +1699,8 @@ def plot_septo_infection_risk(weather, start_date="2010-10-15 12:00:00",
     
 def plot_rain_and_temp(weather, xaxis = 'degree_days', leaf_dates=None, 
                        ax = None, xlims=None, ylims_rain = None, ylims_temp = None,
-                       title = None, xlabel = True, arrowstyle = '->', arrow_color = 'g'):
+                       title = None, xlabel = True, ylabel1=True, ylabel2=True,
+                       arrowstyle = '->', arrow_color = 'g'):
     """ Plot rain intensity (mm/h) and temperature (°Cd) """
     if ax == None:
         fig, ax = plt.subplots(figsize=(8,1.8))
@@ -1638,14 +1738,16 @@ def plot_rain_and_temp(weather, xaxis = 'degree_days', leaf_dates=None,
         ax.set_ylim(ylims_rain)
     if ylims_temp != None:
         ax2.set_ylim(ylims_temp)
-        
-    ax.set_ylabel('Rain (mm/h)')
-    ax2.set_ylabel('Temperature (C)')
+    
+    if ylabel1==True:
+        ax.set_ylabel('Rain (mm/h)')
+    if ylabel2==True:
+        ax2.set_ylabel('Temperature (C)')
     return ax
     
 def plot_relative_humidity(weather, xaxis = 'degree_days', 
                               ax = None, xlims=None, ylims = None, linestyle = '-', color = 'b',
-                              title = None, xlabel = True):
+                              title = None, xlabel = True, ylabel = True, vertical_line=None):
     """ Plot relative humidity (%) """
     if ax == None:
         fig, ax = plt.subplots(figsize=(8,1.8))
@@ -1656,6 +1758,9 @@ def plot_relative_humidity(weather, xaxis = 'degree_days',
         index = weather.data.index  
     
     ax.plot(index, weather.data.relative_humidity, color = color, linestyle = linestyle)
+    if vertical_line is not None:
+        for v in vertical_line:
+            ax.plot([v, v], [0, 100], 'k--', linewidth=2)
     
     if title == None:
         ax.set_title(str(weather.data.index[0].year)+'-'+str(weather.data.index[-1].year))
@@ -1670,8 +1775,8 @@ def plot_relative_humidity(weather, xaxis = 'degree_days',
         ax.set_xlim(xlims)
     if ylims != None:
         ax.set_ylim(ylims)
-        
-    ax.set_ylabel('Relative humidity (%)')
+    if ylabel==True:
+        ax.set_ylabel('Relative humidity (%)')
     return ax
     
 def plot_daily_relative_humidity(weather, xaxis = 'degree_days', 
@@ -2009,12 +2114,11 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
         df.columns = pd.MultiIndex.from_product([[column_name], df.columns])
         return df
     
-    def get_dfs(data, num_leaves):
+    def get_dfs(data, num_leaves, column='septo_green'):
         data_ = data.copy()
-        change_index(data_, ['date', 'num_leaf_top'])
-        df_sev = pd.DataFrame(data_['septo_green'])
-        df_mean = get_mean(data_, column='septo_green', by_leaf=True)
-        df_low, df_high = get_confidence_interval(data_, weather, column='septo_green', by_leaf=True)
+#        change_index(data_, ['date', 'num_leaf_top'])
+        df_mean = get_mean(data_, column=column, by_leaf=True)
+        df_low, df_high = get_confidence_interval(data_, weather, column=column, by_leaf=True)
         df_mean, df_high, df_low = map(lambda x: x.loc[:,num_leaves], (df_mean, df_high, df_low))
         return map(lambda x: x[~np.isnan(x.sum(axis = 1))], (df_mean, df_high, df_low))
     
@@ -2022,6 +2126,10 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
     rht3_2011 = data_rht3.copy()
     df_mean_m, df_high_m, df_low_m = get_dfs(mercia_2011, num_leaves)
     df_mean_r, df_high_r, df_low_r = get_dfs(rht3_2011, num_leaves)
+    df_mean_m_nec, _, _ = get_dfs(mercia_2011, num_leaves, column='necro')
+    df_mean_r_nec, _, _ = get_dfs(rht3_2011, num_leaves, column='necro')
+    df_mean_m[df_mean_m_nec>50] = np.nan
+    df_mean_r[df_mean_r_nec>50] = np.nan
     stat_comp = get_comparison_table_2011(mercia_2011, rht3_2011, 
                                             num_leaves = num_leaves, by_leaf = True)
     (stat_comp, df_mean_m, df_high_m, df_low_m, df_mean_r, df_high_r, df_low_r) = map(lambda x: add_index_ddays(x, weather), 
@@ -2040,7 +2148,7 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
     nb_index = len(stat_comp.index.names)
 
     with open('figures/comparison_2011/comparison_table.tex', "w") as f:
-        txt = ('\documentclass[a4paper,reqno,11pt]{amsart}' + '\n' + '\n' +
+        txt = ('\documentclass[preview=true]{standalone}' + '\n' + '\n' +
                 '\usepackage[landscape]{geometry}' + '\n' +
                 '\usepackage[french]{babel}' + '\n' +
                 '\usepackage{booktabs}' + '\n' +
@@ -2058,10 +2166,16 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
         for i, row in data.iterrows():
             txt += str(i[0])[:10] + ' & ' + str(i[1])
             for j, x in enumerate(row.values[:nb_leaves]):
-                txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '%.2f' % x + '$\pm$' + '%.2f' % df_conf.ix[i,j] if x!='-' else x
+                if x!='-' and not np.isnan(x):
+                    txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '%.2f' % x + '$\pm$' + '%.2f' % df_conf.ix[i,j]
+                else:
+                    txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '-'
             txt += ' & '
             for j, x in enumerate(row.values[nb_leaves:]):
-                txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '%.2f' % x + '$\pm$' + '%.2f' % df_conf.ix[i,nb_leaves+j] if x!='-' else x
+                if x!='-' and not np.isnan(x):
+                    txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '%.2f' % x + '$\pm$' + '%.2f' % df_conf.ix[i,nb_leaves+j]
+                else:
+                    txt += ' &' + ''.join(' $\\ast$'*stat_comp.ix[i,j+1]) + '-'
             txt += '\\\\' + '\n'
 
         txt+='\\bottomrule' + '\n' + '\end{tabular}' + '\n' + '\n' +  '\end{document}'
@@ -2071,9 +2185,9 @@ def save_comparison_table_2011(data_mercia, data_rht3, weather, num_leaves = ran
                             columns=pd.MultiIndex.from_product([['/'], ['/']]))
     return pd.concat([df_mean_m, df_empty, df_mean_r], axis = 1)
     
-def compare_confidence_and_boxplot_mercia_rht3(data_mercia, data_rht3, weather, xaxis = 'degree_days', leaves=range(1,5),
+def compare_confidence_and_boxplot_mercia_rht3(data_mercia, data_rht3, weather, variable = 'septo_green', xaxis = 'degree_days', leaves=range(1,5),
                                                fig_size=(15, 10), minimum_sample_size = 5., xlims = None):
-    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data_mercia, weather, leaves = leaves, variable = 'septo_green',
+    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data_mercia, weather, leaves = leaves, variable = variable,
                                                                         xaxis = xaxis, title = False, fig_size = fig_size,
                                                                         xlims = xlims, return_fig = True, 
                                                                         marker = 'o', fixed_color = 'g', alpha = 0.2,
@@ -2082,7 +2196,7 @@ def compare_confidence_and_boxplot_mercia_rht3(data_mercia, data_rht3, weather, 
     labels = ['Mercia']
     proxy = [plt.Rectangle((0,0), 0,0, facecolor='g', alpha = 0.2)]
         
-    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data_rht3, weather, leaves = leaves, variable = 'septo_green',
+    df_mean, df_high, df_low, fig, axs = plot_confidence_and_boxplot(data_rht3, weather, leaves = leaves, variable = variable,
                                                                         xaxis = xaxis, title = False, fig_size = fig_size,
                                                                         xlims = xlims, return_fig = True, fig = fig, axs = axs,
                                                                         marker = 'o', fixed_color = 'r', alpha = 0.2,
