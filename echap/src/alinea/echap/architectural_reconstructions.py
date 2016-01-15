@@ -84,6 +84,8 @@ def reconstruction_parameters():
     #--------------------
     pars['pgen_base'] = {'TT_hs_break':None} # Add {'inner_params':{'DELAIS_PHYLL_SEN_DISP':20}} # 3 par default param de get_reconstruction
 
+    #TO CHECK : check that tiller reduction factor (new plantgen par should or not be set to its default value (now 0.3, but probably 1 at the time of our fitting)
+    
     # Nff composition of the canopy
     # if None, it uses the nff composition of the tillering data
     # pars['nff_probabilities']['Tremie12'] = {'11': 0.3, '12': 0.7}
@@ -103,9 +105,10 @@ def reconstruction_parameters():
     #
     # in the original pgen, dHS_bolting is estimated as the decimal number of elongated internodes
     pars['GLpars'] = pdict({'GL_start_senescence':4.4, 'GL_bolting':2.2, 'GL_flag': 4.4, 'dHS_bolting': 3.7, 'curvature' : -0.002})
-    pars['GLpars']['Tremie12'].update({'GL_bolting':1.7, 'GL_flag': 5, 'dHS_bolting': 4, 'curvature' : -0.007})
+    pars['GLpars']['Tremie12'].update({'GL_start_senescence':4.8, 'GL_bolting':2.1, 'GL_flag': 5, 'dHS_bolting': 4, 'curvature' : -0.005})
     pars['GLpars']['Tremie13'].update({'GL_bolting':2.1})
-    pars['GLpars']['Rht3'].update({'GL_bolting':2.3})
+    pars['GLpars']['Rht3'].update({'GL_bolting':2.3, 'GL_start_senescence':3.4})
+    pars['GLpars']['Mercia'].update({'GL_start_senescence':3.6})
     #
     # Plant Density
     #--------------
