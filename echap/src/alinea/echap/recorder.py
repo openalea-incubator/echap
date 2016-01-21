@@ -28,7 +28,7 @@ class LeafElementRecorder:
                 
             organ = node.complex()
             properties = organ.properties()
-            items = ['exposition','lifetime']
+            items = ['exposition','lifetime', 'age']
             for item in items:
                 if item in properties:
                     data[item] = properties[item]            

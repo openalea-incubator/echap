@@ -4,7 +4,7 @@
 class EchapInterfacesError(Exception): pass
 
 
-def pesticide_interception(g, interception_model, application_data, label='LeafElement'):
+def pesticide_interception(g, interception_model, application_data, label='LeafElement', **kwds):
     """ 
     Interface between g and the interception model
 
@@ -37,7 +37,7 @@ def pesticide_interception(g, interception_model, application_data, label='LeafE
     dose = application_data[['dose']].values[0][0]
     if dose > 0:
         product_name = application_data[['product_name']].values[0][0]
-        surf_dose = interception_model.intercept(g, product_name, dose)
+        surf_dose = interception_model.intercept(g, product_name, dose, **kwds)
         if not 'penetrated_doses' in g.properties():
             g.add_property('penetrated_doses')
         if not 'surfacic_doses' in g.properties():
