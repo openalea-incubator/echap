@@ -2,11 +2,38 @@
 '''
 
 import pandas
+import numpy
+import scipy.stats
+
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
 from alinea.echap.architectural_reconstructions import fit_HS
-from alinea.echap.architectural_data import TT_lin
+from alinea.echap.architectural_data import TT_lin, Pheno_data
 
+def variance(lst):
+    """
+    Uses standard variance formula (sum of each (data point - mean) squared)
+    all divided by number of data points
+    """
+    mu = numpy.mean(lst)
+    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst]) if len(lst)>1 else 0.
+        
+def conf_int(lst, perc_conf=95):
+    """
+    Confidence interval - given a list of values compute the square root of
+    the variance of the list (v) divided by the number of entries (n)
+    multiplied by a constant factor of (c). This means that I can
+    be confident of a result +/- this amount from the mean.
+    The constant factor can be looked up from a table, for 95pcent confidence
+    on a reasonable size sample (>=500) 1.96 is used.
+    """
+    
+    n, v = len(lst), variance(lst)
+    c = scipy.stats.t.interval(perc_conf * 1.0 / 100, n-1)[1]
+    
+    return numpy.sqrt(v/n) * c
+
+    
 def dye_interception(todec = []):
     """ Dye interception data
     
@@ -59,18 +86,44 @@ def tag_dates():
                        'T2': '2011-05-11'},
             'Rht3': {'T1':'2011-04-19',
                      'T2':'2011-05-11'},
-            'Tremie12': {'scan_1' : '2012-03-09',#date scan (aka date1)
-                         'scan_2' : '2012-04-02',
-                         'scan_T1' : '2012-04-11',
+            'Tremie12': {'scan1' : '2012-03-09',#date scan (aka date1)
+                         'scan2' : '2012-04-02',
                          'T1' : '2012-04-11',
-                         'scan_T2': '2012-05-09',
-                         'T2' : '2012-05-09'},
-            'Tremie13': {'scan_T1' : '2013-04-22',
-                         'T1' : '2013-04-25',
-                         'scan_T2' : '2013-05-03',
-                         'T2' : '2013-05-17'}
+                         'hs_T1' : '2012-04-11',
+                         'scan_T1' : '2012-04-11',
+                         'T2' : '2012-05-09',
+                         'hs_T2': '2012-05-09',
+                         'scan_T2': '2012-05-09'},
+            'Tremie13': {'T1' : '2013-04-25',
+                         'scan_T1' : '2013-04-22',
+                         'hs_T1' : '2013-04-22',
+                         'hs_scan2' : '2013-05-03',
+                         'scan2' : '2013-05-03',
+                         'T2' : '2013-05-17',
+                         'hs_T2' : '2013-05-22'}
             }
-    return tags                 
+    return tags
+
+def haun_stages():
+    def aggregate(data, column = 'HS', group = ['TT', 'label', 'nff'],
+              func = numpy.mean, column_name = 'HS_mean'):
+        df = data.groupby(group).agg(func).loc[:, column].to_frame()
+        df = df.rename(columns={column : column_name})
+        return df
+    
+    # Get and select data
+    data = Pheno_data()
+    tagged = data['archi_tagged']
+    tagged = tagged.loc[:,('Date', 'label', 'TT', 'HS')].dropna()
+    sampled = data['archi_sampled']
+    sampled = sampled.loc[:,('Date', 'label','TT','HS')].dropna()
+    data = pandas.concat([tagged, sampled])
+      # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
+    df_HS = pandas.concat([aggregate(data, 'HS', ['Date', 'TT', 'label'], numpy.mean, 'HS_mean'),
+                           aggregate(data, 'HS', ['Date', 'TT', 'label'], numpy.nanstd, 'HS_std'),
+                           aggregate(data, 'HS', ['Date', 'TT', 'label'], conf_int, 'HS_conf')], axis=1)
+    df_HS = df_HS.reset_index()
+    return df_HS
     
 def dye_applications():
     """
