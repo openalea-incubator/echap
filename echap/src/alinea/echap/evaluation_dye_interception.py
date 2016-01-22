@@ -52,15 +52,15 @@ def get_reconstruction(variety='Tremie13', nplants=30, density=1, dimension=1, r
     # nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3
     #Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
     reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
-    hsfit = reconst.HS_fit[name]
-    adel = reconst.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
+    hsfit = reconst.HS_fit[variety]
+    adel = reconst.get_reconstruction(name=variety, nplants=nplants, stand_density_factor = {variety:density} , dimension=dimension)
     return adel, hsfit
     
 def canopy_age(variety='Tremie13', date='T1'):
     TT = idata.TT_index()
     return round(TT.ix[(variety,date),0], 2)
     
-def repartition_at_application(adel, date='T1', dose=1e4, num_sim=1):
+def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_sim=1):
     """ 10000 l ha-1 is for 1 l/m2 """
     tags = idata.tag_dates()
     if date in tags[variety]:
@@ -75,14 +75,14 @@ def repartition_at_application(adel, date='T1', dose=1e4, num_sim=1):
     g = adel.setup_canopy(age)   
     ########################### ATTENTION : si pas de domain, on est pas en couvert infini!!!!!!!!!!!!!!!!!!!!!!!!
     g,_ = pesticide_interception(g, interceptor, application_data, domain=adel.domain)
-    do_record(g, application_data, recorder, header={'TT':age, 'HS':hs})
+    do_record(g, application_data, recorder, header={'TT':age, 'HS':float(hsfit(age))})
     df =  recorder.get_records()
     
     #add columns
     df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
-    df['var'] = name
-    df['treatment'] = appdate
-    df['nb_plantes_sim'] = nplants
+    df['var'] = variety
+    df['treatment'] = date
+    df['nb_plantes_sim'] = adel.nplants
     df['numero_sim'] = num_sim
         
     # compute ntop_cur :*****************BUG ADEL: some leaves have age < 0: filter them before ntop cur estimation ?
@@ -163,7 +163,7 @@ def interception_statistics(df_leaf, axis='MS'):
     return dfmoy, dfsd
             
 
- def simulation_tags():
+def simulation_tags():
     tags = {'reference': {'treatments' : {'T1':1e4, 'T2':1e4},
                           'density' : 1,
                           'dimension' : 1}
@@ -173,10 +173,10 @@ def interception_statistics(df_leaf, axis='MS'):
 def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, 
                          simulation = 'reference'):
     path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
-    repetitions = range(nrep) + 1   
+    repetitions = range(1, nrep + 1)
     if os.path.exists(path):
         df_interception = pandas.read_csv(path)
-        done_reps = list(set(df['numero_sim']))
+        done_reps = list(set(df_interception['numero_sim']))
         repetitions = [rep for rep in repetitions if not rep in done_reps]
         dfint = [df_interception]
     else:
@@ -187,7 +187,7 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1,
         for i in repetitions:
             adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
             for date, dose in sim['treatments'].iteritems():
-                g, df = repartition_at_application(adel, date=date, 
+                g, df = repartition_at_application(adel, hsfit, variety, date=date, 
                                                          dose=dose, num_sim=i)
                 df_i = aggregate_by_leaf(df)
                 dfint.append(df_i)          
