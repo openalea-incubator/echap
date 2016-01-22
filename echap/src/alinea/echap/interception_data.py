@@ -39,6 +39,10 @@ def dye_interception(todec = []):
         missing['sd'] = 0
         missing['IC'] = 0
         df = df.append(missing)
+    
+    df.rename(columns={'name':'var'}, inplace=True) 
+    df.rename(columns={'N feuille':'ntop_cur'}, inplace=True)  
+    df = df.drop('HS', 1) #HS not measured
     return df
 
 

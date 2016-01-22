@@ -7,17 +7,18 @@ from itertools import cycle, islice
 import alinea.echap.architectural_reconstructions as reconstructions
 import alinea.echap.architectural_data as archidb
 import alinea.echap.interception_data as idata
-from alinea.echap.evaluation_dye_interception import repartition_at_application
+import alinea.echap.evaluation_dye_interception as ifun
 
 import matplotlib.pyplot as plt
 plt.ion()
 
 # populate with reconstructions and data
-HSconv = reconstructions.HS_converter
-Reconstructions = reconstructions.EchapReconstructions()
-obs = idata.dye_interception()
-HS_applications = idata.dye_applications()
+#HSconv = reconstructions.HS_converter
+#Reconstructions = reconstructions.EchapReconstructions()
+#obs = idata.dye_interception()
+#HS_applications = idata.dye_applications()
 
+run_plot=False
 
 '''
 # Pour visualiser couvert
@@ -26,105 +27,6 @@ adel, g, df = repartition_at_application('Tremie13', 'T2')
 adel.plot(g,'ntop')
 '''
 
-def aggregate_by_leaf(df):
-    """
-    Aggregate interceptioin data by leaf and add colmun 'deposits' (= area * surfacic doses)
-    """
-    def first_val(x):
-        return x[x.first_valid_index()]
-        
-    df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
-    df = df.convert_objects()
-    gr = df.groupby(['HS', 'plant','axe','metamer'], as_index=False)
-    return gr.agg({'TT': first_val, 
-                   'area': numpy.sum,
-                   'date': first_val,
-                   'green_area': numpy.sum,
-                   'senesced_area': numpy.sum,
-                   'id':lambda(x): '_'.join(map(str,x)),
-                   'length':numpy.sum,
-                   'ntop':first_val,
-                   'organ':first_val,
-                   'penetrated_doses_Tartrazine': numpy.mean,
-                   'surfacic_doses_Tartrazine':numpy.mean,
-                   'deposit_Tartrazine': numpy.sum,
-                   'lifetime': first_val,
-                   'exposition': first_val,
-                   })
-
-
-# Intervalle de confiance
-def mean(lst):
-    return sum(lst) / float(len(lst))
-
-def variance(lst):
-    """
-    Uses standard variance formula (sum of each (data point - mean) squared)
-    all divided by number of data points
-    """
-    mu = mean(lst)
-    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst])
-
-def conf_int(lst, perc_conf=95):
-    """
-    Confidence interval - given a list of values compute the square root of
-    the variance of the list (v) divided by the number of entries (n)
-    multiplied by a constant factor of (c). This means that I can
-    be confident of a result +/- this amount from the mean.
-    The constant factor can be looked up from a table, for 95pcent confidence
-    on a reasonable size sample (>=500) 1.96 is used.
-    """
-    from scipy.stats import t
-    
-    n, v = len(lst), variance(lst)
-    c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
-    
-    return math.sqrt(v/n) * c
-    
-   
-def treatment(name='Tremie13', sim='T1', nplants=200, axis='MS', to_csv=False, density=1, dimension=1, nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3): 
-
-    adel, g, df = repartition_at_application(name, sim, nplants=nplants, density=density, dimension=dimension, nlim_Mercia=nlim_Mercia, nlim_Rht3=nlim_Rht3, nlim_Tremie12=nlim_Tremie12, nlim_Tremie13=nlim_Tremie13)
-    
-    #Calcul age depuis emergence de la feuille    
-    df_phenT = adel.phenT()
-    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
-    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
-    df_phenT['ntop_cur'] = df_phenT['nff'] - df_phenT['n']
-    dates = [numpy.mean(df_phenT[df_phenT['ntop_cur']==lf]['tip']) for lf in range(1, int(max(df_phenT['n'])+2))]
-    df_dates = pandas.DataFrame(dates, index = range(1, len(dates)+1), columns = ['leaf_emergence'])
-    df_dates.index.name = 'ntop_cur'
-    df_dates = df_dates.reset_index()
-    
-    if axis == 'MS':
-        df = df[(df['axe'] == 'MS') & (df['hasEar'] == 1)] # do not consider aborting axes
-    else:
-        df = df[(df['hasEar'] == 1)]
-    
-    data = aggregate_by_leaf(df)
-        
-    # compute ntop_cur
-    gr = data.groupby(['HS','plant','axe'], group_keys=False)
-    def _fun(sub):
-        sub['n_max'] = sub['metamer'].max()
-        return sub
-    data = gr.apply(_fun)
-    data['ntop_cur'] = data['n_max'] - data['metamer'] + 1
-
-    # aggregation by ntop cur
-    sub = data.ix[:,('HS','TT','axe','metamer','ntop','ntop_cur','length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
-    dfmoy = sub.groupby(['HS','axe','ntop_cur']).mean().reset_index()
-    dfsd = sub.groupby(['HS','axe','ntop_cur']).std().reset_index()
-    
-    #ajout colonne leaf_emergence dans dfmoy
-    dfmoy = dfmoy.merge(df_dates, how='inner')
-
-    if to_csv:
-        data.to_csv(''.join(('data_',name,'_',sim,'_',axis,'.csv')))
-        dfmoy.to_csv(''.join(('moy_',name,'_',sim,'_',axis,'.csv')))
-        dfsd.to_csv(''.join(('std_',name,'_',sim,'_',axis,'.csv')))
-             
-    return adel.nplants, dfmoy, dfsd
     
 #sensibilite aux nombres de plantes et de simulation
 #ici : choix de faire 5 simulations a 30, 60, 100 et 200 plantes
@@ -163,35 +65,72 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
     df_all.to_csv('analyse_'+axis+'.csv', index=False)
     return df_all
  
+ 
+#df_sim = concat(dfmoy) par rep
 #plot publication data+boite de petri 
-def simulation_diff(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis='MS', csv=True): #axis = MS or all 
-    df_sim = pandas.DataFrame()
-    for var in var_lst:        
-        for stade in ['T1','T2']:
-            if var=='Tremie12':
-                nplants_lst = [30] # !!!bug nplants
-            else :
-                nplants_lst = [200]
-            for n in nplants_lst : 
-                x=1
-                while x<=5: 
-                    npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
-                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(npl)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
-                    dfmoy['var'] = var
-                    dfmoy['treatment'] = stade
-                    dfmoy['nb_plantes_sim'] = npl
-                    dfmoy['numero_sim'] = str(x)
-                    df_sim = df_sim.append(dfmoy)
-                    x+=1
-    return df_sim
+
+def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS'):
+
+    if not isinstance(variety, list):
+        variety = [variety]
+    #obs
+    df_obs = idata.dye_interception()
+    df_obs = df_obs[df_obs['var'].isin(variety)]
+    #sim
+    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference')
+    df_sim, df_sim_sd = ifun.interception_statistics(interception, sim_axis)
+    #merge
+    df_all = df_obs.merge(df_sim)
+    df_all_sd = df_obs.merge(df_sim_sd)
+    #column tartrazine/area
+    df_all['mean/area'] = df_all['mean']/df_all['area']
+    df_all = df_all.set_index(['treatment','feuille'])
+    df_all_sd = df_all_sd.set_index(['treatment','feuille'])
+    
+    bar_width = 0.2; opacity = 0.4    
+    leaves = ['F1', 'F2', 'F3', 'F4']
+    colors = {leaf:col for leaf,col in zip(leaves, ('c', 'm','g','r'))}
+    
+    fig, axes = plt.subplots(nrows=1, ncols=2) 
+    for ifig, treatment in enumerate(('T1', 'T2')):
+        xbar = 0.
+        xleaf = []
+        sim_bars = {}
+        for var in variety:
+            for leaf in leaves:
+                obs, obs_err, sim= df_all.ix[(treatment, leaf), ('mean', 'IC', 'deposit_Tartrazine')]
+                sim_err = df_all_sd.ix[(treatment, leaf), 'deposit_Tartrazine']
+                
+                obs_bar = axes[ifig].bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
+                xbar += bar_width
+                xleaf.append(xbar)
+                sim_bars[leaf] = axes[ifig].bar(xbar, sim, bar_width, alpha=opacity, color=colors[leaf], yerr=sim_err, ecolor=colors[leaf])
+                xbar += bar_width * 1.5
+            xbar += bar_width * 2   
         
-def plot_data(plot1=True, plot2=True):
+        # Mise en forme
+        axes[ifig].set_ylim(0, 6.5)
+        axes[ifig].set_xlim(-bar_width, xbar)                 
+        axes[ifig].set_xticks(xleaf)
+        axes[ifig].set_xticklabels(leaves * len(variety), rotation=90, fontsize='small' )
+        axes[ifig].text(0.2, 6.1, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        
+        if ifig == 10:
+            axes[ifig].legend([obs_bar] + [sim_bars[leaf] for leaf in leaves], ['obs'] + leaves, bbox_to_anchor=[1.10, 1.12], prop={'size':14})
+        if ifig == 0:
+            axes[ifig].set_ylabel('Deposit (g per g.cm-2)')
+    fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)   
+    fig.text(0.5, 0.05, variety[0], size='large', ha='center')
+    return fig
+    
+if run_plot:
+    fig = deposit_observe_simule('Tremie12', nplants=30)
+    fig.savefig('obs_sim_Tremie12.png')
+
+def plot_data(variety = 'Tremie12', nplants = 30, nrep = 1, plot1=True, plot2=True):
     '''Plot1 = obs
     Plot2 = obs/area'''
-    #obs + preparation de obs
-    df_obs = idata.dye_interception() 
-    df_obs.rename(columns={'name':'var'}, inplace=True) 
-    df_obs.rename(columns={'N feuille':'ntop_cur'}, inplace=True)
+
     #sim
     df_sim = simulation_diff()
     df_sim = df_sim.groupby(['var', 'treatment', 'ntop_cur']).mean()

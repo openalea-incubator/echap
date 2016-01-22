@@ -64,7 +64,10 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     """ 10000 l ha-1 is for 1 l/m2 """
     tags = idata.tag_dates()
     if date in tags[variety]:
+        tag = date
         date = tags[variety][date]
+    else:
+        tag=''
         
     recorder = LeafElementRecorder()
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Tartrazine'%(date, dose)
@@ -81,7 +84,7 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     #add columns
     df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
     df['var'] = variety
-    df['treatment'] = date
+    df['treatment'] = tag
     df['nb_plantes_sim'] = adel.nplants
     df['numero_sim'] = num_sim
         
@@ -172,26 +175,38 @@ def simulation_tags():
             
 def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, 
                          simulation = 'reference'):
-    path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
-    repetitions = range(1, nrep + 1)
-    if os.path.exists(path):
-        df_interception = pandas.read_csv(path)
-        done_reps = list(set(df_interception['numero_sim']))
-        repetitions = [rep for rep in repetitions if not rep in done_reps]
-        dfint = [df_interception]
-    else:
-        dfint = [] 
+                         
+    if not isinstance(variety, list):
+        variety = [variety]
         
-    if len(repetitions) > 0:
-        sim = simulation_tags()[simulation]
-        for i in repetitions:
-            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
-            for date, dose in sim['treatments'].iteritems():
-                g, df = repartition_at_application(adel, hsfit, variety, date=date, 
-                                                         dose=dose, num_sim=i)
-                df_i = aggregate_by_leaf(df)
-                dfint.append(df_i)          
-        df_interception = pandas.concat(dfint).reset_index(drop = True)    
-        df_interception.to_csv(path, index = False)
+    df_var = []
     
-    return df_interception
+    for var in variety:   
+        path = df_interception_path(variety = var, nplants = nplants, simulation = simulation)                      
+        repetitions = range(1, nrep + 1)
+        if os.path.exists(path):
+            df_interception = pandas.read_csv(path)
+            done_reps = list(set(df_interception['numero_sim']))
+            missing = [rep for rep in repetitions if not rep in done_reps]
+            dfint = [df_interception]
+            if len(missing) == 0:
+                df_interception = df_interception[df_interception['numero_sim'].isin(repetitions)]
+        else:
+            missing = repetitions
+            dfint = [] 
+            
+        if len(missing) > 0:
+            sim = simulation_tags()[simulation]
+            for i in repetitions:
+                adel, hsfit = get_reconstruction(variety=var, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+                for date, dose in sim['treatments'].iteritems():
+                    g, df = repartition_at_application(adel, hsfit, var, date=date, 
+                                                             dose=dose, num_sim=i)
+                    df_i = aggregate_by_leaf(df)
+                    dfint.append(df_i)          
+            df_interception = pandas.concat(dfint).reset_index(drop = True)    
+            df_interception.to_csv(path, index = False)
+        df_var.append(df_interception)
+    df_var = pandas.concat(df_var).reset_index(drop = True) 
+    
+    return df_var
