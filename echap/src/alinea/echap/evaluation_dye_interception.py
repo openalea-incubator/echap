@@ -3,6 +3,7 @@
 
 import pandas
 import numpy
+import os
 
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
@@ -42,40 +43,36 @@ def conf_int(lst, perc_conf=95):
     
     return math.sqrt(v/n) * c
 
-def df_interception_path(variety = 'Tremie12', nplants = 30):
-    filename = 'interception_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
+def df_interception_path(variety = 'Tremie12', nplants = 30, simulation = 'reference'):
+    filename = 'interception_'+ simulation + '_' + variety.lower() + '_' + str(nplants) + 'pl.csv'
     return str(shared_data(alinea.echap)/'interception_simulations'/filename)
 
-def df_dates_emergence_path(variety='Tremie12', nplants=30):
-    filename = 'dates_emergence_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
-    return str(shared_data(alinea.echap)/'interception_simulations'/filename)
-    
-def repartition_at_application(name='Tremie12', appdate='T1', dose=1e4, nplants=30, density=1, dimension=1,
-                                reset=False, reset_data=False, numero_sim=1):
-    """ 10000 l ha-1 is for 1 l/m2 """
-    HS_applications = idata.dye_applications()
+def get_reconstruction(variety='Tremie13', nplants=30, density=1, dimension=1, reset=False, reset_data=False):
     # If adjustment needed : import echap parameters, modify parameters and create new reconstruction method
     # nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3
     #Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
     reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
-    conv = reconst.HS_fit[name]
+    hsfit = reconst.HS_fit[name]
     adel = reconst.get_reconstruction(name=name, nplants=nplants, stand_density_factor = {name:density} , dimension=dimension)
+    return adel, hsfit
     
-    appdate_ref = ['T1-0.4', 'T1-0.2', 'T1', 'T1+0.2', 'T1+0.4',
-            'T2-2.5', 'T2-2', 'T2-1.5', 'T2-1', 'T2-0.5', 'T2-0.4', 'T2-0.2', 'T2', 'T2+0.2', 'T2+0.4', 'T2+0.5', 'T2+1', 'T2+1.5', 'T2+2', 'T2+2.5']
-    if appdate in appdate_ref:
-        date, hs = HS_applications[name][appdate]
-    else :
-        hs = float(appdate); date = ''
-    age = float(conv.TT(hs))
-    g = adel.setup_canopy(age)
+def canopy_age(variety='Tremie13', date='T1'):
+    TT = idata.TT_index()
+    return round(TT.ix[(variety,date),0], 2)
     
+def repartition_at_application(adel, date='T1', dose=1e4, num_sim=1):
+    """ 10000 l ha-1 is for 1 l/m2 """
+    tags = idata.tag_dates()
+    if date in tags[variety]:
+        date = tags[variety][date]
+        
     recorder = LeafElementRecorder()
     applications= 'date,dose, product_name\n%s 10:00:00, %f, Tartrazine'%(date, dose)
     application_data = pesticide_applications(applications)
     interceptor = InterceptModel({'Tartrazine':{'Tartrazine': 1}}) # consider a 1g.l-1 tartrazine solution
     
-    
+    age = canopy_age(variety, date)
+    g = adel.setup_canopy(age)   
     ########################### ATTENTION : si pas de domain, on est pas en couvert infini!!!!!!!!!!!!!!!!!!!!!!!!
     g,_ = pesticide_interception(g, interceptor, application_data, domain=adel.domain)
     do_record(g, application_data, recorder, header={'TT':age, 'HS':hs})
@@ -86,9 +83,9 @@ def repartition_at_application(name='Tremie12', appdate='T1', dose=1e4, nplants=
     df['var'] = name
     df['treatment'] = appdate
     df['nb_plantes_sim'] = nplants
-    df['numero_sim'] = numero_sim
+    df['numero_sim'] = num_sim
         
-    # compute ntop_cur :************************************BUG ADEL: some leaves have age < 0: filter them before ntop cur estimation ?
+    # compute ntop_cur :*****************BUG ADEL: some leaves have age < 0: filter them before ntop cur estimation ?
     gr = df.groupby(['HS','plant','axe'], group_keys=False)
     def _fun(sub):
         sub['n_max'] = sub['metamer'].max()
@@ -99,7 +96,7 @@ def repartition_at_application(name='Tremie12', appdate='T1', dose=1e4, nplants=
     # compute leaf emergence
     df['leaf_emergence'] = df['TT'] - df['age'] 
     
-    return adel, g, df
+    return g, df
  
 def dates_emergence(adel):
     df_phenT = adel.phenT()
@@ -166,24 +163,35 @@ def interception_statistics(df_leaf, axis='MS'):
     return dfmoy, dfsd
             
 
- 
-def run_dye_interception(variety = 'Tremie12', nplants = 30,
-                                         treatments = {'T1':1e4, 'T2':1e4},
-                                         nrep=1,
-                                         density=1, dimension=1):
-    
-    dfint = []  
-    for i in range(nrep):
-        for date, dose in treatments.iteritems():
-            adel, g, df = repartition_at_application(name=variety, appdate=date, 
-                                                     dose=dose, nplants=nplants, 
-                                                     density=density, dimension=dimension, numero_sim=i + 1)
-            df_i = aggregate_by_leaf(df)
-            dfint.append(df_i)
-
+ def simulation_tags():
+    tags = {'reference': {'treatments' : {'T1':1e4, 'T2':1e4},
+                          'density' : 1,
+                          'dimension' : 1}
+           }
+    return tags
             
-    df_interception = pandas.concat(dfint).reset_index(drop = True)
-    df_interception.to_csv(df_interception_path(variety = variety, nplants = nplants), index = False)
+def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, 
+                         simulation = 'reference'):
+    path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
+    repetitions = range(nrep) + 1   
+    if os.path.exists(path):
+        df_interception = pandas.read_csv(path)
+        done_reps = list(set(df['numero_sim']))
+        repetitions = [rep for rep in repetitions if not rep in done_reps]
+        dfint = [df_interception]
+    else:
+        dfint = [] 
+        
+    if len(repetitions) > 0:
+        sim = simulation_tags()[simulation]
+        for i in repetitions:
+            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+            for date, dose in sim['treatments'].iteritems():
+                g, df = repartition_at_application(adel, date=date, 
+                                                         dose=dose, num_sim=i)
+                df_i = aggregate_by_leaf(df)
+                dfint.append(df_i)          
+        df_interception = pandas.concat(dfint).reset_index(drop = True)    
+        df_interception.to_csv(path, index = False)
     
-    df_meanMS, df_sdMS = interception_statistics(df_interception)
-    return df_meanMS, df_sdMS
+    return df_interception

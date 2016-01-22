@@ -5,6 +5,7 @@ import pandas
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
 from alinea.echap.architectural_reconstructions import fit_HS
+from alinea.echap.architectural_data import TT_lin
 
 def dye_interception(todec = []):
     """ Dye interception data
@@ -39,12 +40,40 @@ def dye_interception(todec = []):
         missing['IC'] = 0
         df = df.append(missing)
     return df
+
+
+#### To chek : retrieve true mesurement + date application + model hs on same graph
+
+def TT_index():
+    TT = TT_lin()
+    return  TT.set_index(['label','Date'])
+    
+    
+    
+def tag_dates():
+    tags = {'Mercia': {'T1': '2011-04-19', # date dye application
+                       'T2': '2011-05-11'},
+            'Rht3': {'T1':'2011-04-19',
+                     'T2':'2011-05-11'},
+            'Tremie12': {'scan_1' : '2012-03-09',#date scan (aka date1)
+                         'scan_2' : '2012-04-02',
+                         'scan_T1' : '2012-04-11',
+                         'T1' : '2012-04-11',
+                         'scan_T2': '2012-05-09',
+                         'T2' : '2012-05-09'},
+            'Tremie13': {'scan_T1' : '2013-04-22',
+                         'T1' : '2013-04-25',
+                         'scan_T2' : '2013-05-03',
+                         'T2' : '2013-05-17'}
+            }
+    return tags                 
     
 def dye_applications():
     """
     Date and measured Haunstage at date of application
     """
-    apps = {'Mercia': {'T1-0.4': ('2011-04-19', 9.34),
+    apps = {
+            'Mercia': {'T1-0.4': ('2011-04-19', 9.34),
                       'T1-0.2': ('2011-04-19', 9.54),
                       'T1': ('2011-04-19', 9.74),#HS mesure le 18/04, a corriger avec delta HS ?
                       'T1+0.2': ('2011-04-19', 9.94),
