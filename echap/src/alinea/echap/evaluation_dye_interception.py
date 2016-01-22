@@ -91,7 +91,7 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     # compute ntop_cur :*****************BUG ADEL: some leaves have age < 0: filter them before ntop cur estimation ?
     gr = df.groupby(['HS','plant','axe'], group_keys=False)
     def _fun(sub):
-        sub['n_max'] = sub['metamer'].max()
+        sub['n_max'] = sub['metamer'][sub['age'] > 0].max()
         return sub
     df = gr.apply(_fun)
     df['ntop_cur'] = df['n_max'] - df['metamer'] + 1

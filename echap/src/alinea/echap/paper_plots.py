@@ -112,9 +112,9 @@ def pheno_plot():
         ax.plot(max(ranks) - ranks + 1, hsfit.TTem(hsfit.TT(ranks)), color=color)
         ax.fill_between(top_ranks_nff[0], TThs_nff[0], TThs_nff[1], color=color, alpha=0.2)
         
-        ax.errorbar(max(ranks) - dfobsM['HS_mean'] + 1, hsfit.TTem(dfobsM['TT']), xerr=dfobsM['HS_std'], color = color, 
-                    linestyle='', markerfacecolor='None', markeredgecolor=color,
-                    marker='o', markersize=markersize)
+        #ax.errorbar(max(ranks) - dfobsM['HS_mean'] + 1, hsfit.TTem(dfobsM['TT']), xerr=dfobsM['HS_std'], color = color, 
+        #            linestyle='', markerfacecolor='None', markeredgecolor=color,
+        #            marker='o', markersize=markersize)
         for i in range(2):
             nff = nffs[i]
             df_nff = dfobs_nff[dfobs_nff['nff']==nff].reset_index()
@@ -156,9 +156,9 @@ def pheno_plot():
         ax.plot(max(ranks) - ranks + 1, TTsen - TTem, color = color)    
         ax.fill_between(top_ranks_nff[0],TTsen_nff[0] - TTem_nff[0], TTsen_nff[1] - TTem_nff[1], color=color, alpha=0.2)
         
-        ax.errorbar(max(ranks) - dfobsM['SSI_mean'] + 1, dfobsM['TT'] - hsfit.TTemleaf(dfobsM['SSI_mean']), xerr=dfobsM['SSI_std'], color = color, 
-                    linestyle='', markerfacecolor='None', markeredgecolor=color,
-                    marker='o', markersize=markersize)
+        #ax.errorbar(max(ranks) - dfobsM['SSI_mean'] + 1, dfobsM['TT'] - hsfit.TTemleaf(dfobsM['SSI_mean']), xerr=dfobsM['SSI_std'], color = color, 
+        #            linestyle='', markerfacecolor='None', markeredgecolor=color,
+        #            marker='o', markersize=markersize)
         for i in range(2):
             nff = nffs[i]
             df_nff = dfobs_nff[dfobs_nff['nff']==nff].reset_index()
