@@ -160,8 +160,8 @@ def interception_statistics(df_leaf, axis='MS'):
         data = data[data['axe'] == 'MS']
         
     sub = data.ix[:,('var','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
-    dfmoy = sub.groupby(['var','treatment','HS','axe','ntop_cur']).mean().reset_index()
-    dfsd = sub.groupby(['var','treatment','HS','axe','ntop_cur']).std().reset_index()   
+    dfmoy = sub.groupby(['var','treatment','ntop_cur']).mean().reset_index()
+    dfsd = sub.groupby(['var','treatment','ntop_cur']).std().reset_index()   
 
     return dfmoy, dfsd
             
@@ -197,7 +197,7 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1,
             
         if len(missing) > 0:
             sim = simulation_tags()[simulation]
-            for i in repetitions:
+            for i in missing:
                 adel, hsfit = get_reconstruction(variety=var, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
                 for date, dose in sim['treatments'].iteritems():
                     g, df = repartition_at_application(adel, hsfit, var, date=date, 
