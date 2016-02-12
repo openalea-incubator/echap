@@ -4,6 +4,7 @@
 import pandas
 import numpy
 import os
+from copy import deepcopy
 
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
@@ -130,6 +131,7 @@ def aggregate_by_leaf(df):
                     'age':first_val,
                     'leaf_emergence': first_val,
                     'TT': first_val, 
+                    'nff':first_val,
                    'area': numpy.sum,
                    'date': first_val,
                    'green_area': numpy.sum,
@@ -139,6 +141,7 @@ def aggregate_by_leaf(df):
                    'ntop':first_val,
                    'ntop_cur':first_val,
                    'organ':first_val,
+                   'mature_length': first_val,
                    'penetrated_doses_Tartrazine': numpy.mean,
                    'surfacic_doses_Tartrazine':numpy.mean,
                    'deposit_Tartrazine': numpy.sum,
@@ -152,23 +155,85 @@ def aggregate_by_leaf(df):
     #df['num_leaf_bottom'] = df['fnl'] - df['num_leaf_top'] + 1                   
     return df_agg
 
+def aggregate_by_axe(df):
+    """
+    Aggregate interceptioin data axe
+    """
+    def first_val(x):
+        return x[x.first_valid_index()]
+    df = df.convert_objects()
+    df = aggregate_by_leaf(df)
+    res=[]
+    for name,gr in df.groupby(['HS', 'plant','axe'], as_index=False):
+        df_agg = gr.groupby(['HS', 'plant','axe'], as_index=False).agg(
+                   {'var': first_val,
+                   'treatment': first_val,
+                    'nb_plantes_sim':first_val,
+                    'numero_sim':first_val,
+                    'TT': first_val, 
+                    'nff':first_val,
+                   'area': numpy.sum,
+                   'date': first_val,
+                   'green_area': numpy.sum,
+                   'senesced_area': numpy.sum,
+                   'organ':first_val,
+                   'surfacic_doses_Tartrazine':numpy.mean,
+                   'deposit_Tartrazine': numpy.sum,
+                   })
+                   
+        gr = gr.sort('metamer')
+        frac = gr['length'] / gr['mature_length']
+        ilig  = numpy.max(numpy.where(frac >= 1))
+        df_agg['haun_stage'] = gr['metamer'].values[ilig] + frac[(ilig+1):].sum()
+        df_agg['leaves'] = '_'.join(map(str, gr['metamer'].drop_duplicates()))
+        res.append(df_agg)
+    return pandas.concat(res)
+ 
+def axis_statistics(df_axe, axis='MS'):
+    data = df_axe
+    
+    if axis == 'MS':
+        data = data[data['axe'] == 'MS']
+        
+    sub = data.ix[:,('var','treatment','date','HS','TT','axe', 'nff', 'length','area','green_area','deposit_Tartrazine','haun_stage')]
+    dfmoy = sub.groupby(['var','treatment', 'date']).mean().reset_index()
+    dfsd = sub.groupby(['var','treatment', 'date']).std().reset_index()   
+
+    return dfmoy, dfsd 
+    
 def interception_statistics(df_leaf, axis='MS'):
     data = df_leaf
     
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
         
-    sub = data.ix[:,('var','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
+    sub = data.ix[:,('var','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_mength', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
     dfmoy = sub.groupby(['var','treatment','ntop_cur']).mean().reset_index()
     dfsd = sub.groupby(['var','treatment','ntop_cur']).std().reset_index()   
 
     return dfmoy, dfsd
-            
+
+def pdict(value):
+    """ create a parameter dict for all echap cultivar with value
+    """
+    return {k:deepcopy(value) for k in ('Tremie12', 'Tremie13')}    
 
 def simulation_tags():
-    tags = {'reference': {'treatments' : {'T1':1e4, 'T2':1e4},
+    tags = {'reference': pdict({'treatments' : {'T1':1e4, 'T2':1e4},
                           'density' : 1,
-                          'dimension' : 1}
+                          'dimension' : 1,
+                          'aggregation':'leaf'}),
+            'check_hs': {'Tremie12': 
+                            {'treatments' : {'hs_T1':1e4, 'hs_T2':1e4},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'axe'},
+                          'Tremie13':
+                            {'treatments' : 
+                                {'hs_T1':1e4,'hs_scan2':1e4, 'hs_T2':1e4},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'axe'}}
            }
     return tags
             
@@ -195,13 +260,16 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1,
             dfint = [] 
             
         if len(missing) > 0:
-            sim = simulation_tags()[simulation]
+            sim = simulation_tags()[simulation][var]
             for i in missing:
                 adel, hsfit = get_reconstruction(variety=var, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
                 for date, dose in sim['treatments'].iteritems():
                     g, df = repartition_at_application(adel, hsfit, var, date=date, 
                                                              dose=dose, num_sim=i)
-                    df_i = aggregate_by_leaf(df)
+                    if sim['aggregation'] == 'leaf':
+                        df_i = aggregate_by_leaf(df)
+                    else:
+                        df_i = aggregate_by_axe(df)
                     dfint.append(df_i)          
             df_interception = pandas.concat(dfint).reset_index(drop = True)    
             df_interception.to_csv(path, index = False)

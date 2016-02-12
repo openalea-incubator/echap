@@ -307,6 +307,7 @@ def record(g, weather_data, recorder, header={}, label = 'blade'):
                           'metamer' : int(''.join(list(n.complex().complex().label)[7:])),
                           'organ' : n.complex().label,
                           'ntop' : n.complex().ntop,
+                          'mature_length' : n.complex().shape_mature_length,
                           'id' : n._vid
                              })
                 recorder.record(n, header)
