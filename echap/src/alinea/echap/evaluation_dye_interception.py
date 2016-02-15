@@ -5,6 +5,7 @@ import pandas
 import numpy
 import os
 from copy import deepcopy
+from scipy.stats import t
 
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
@@ -17,16 +18,7 @@ from alinea.echap.recorder import LeafElementRecorder
 from alinea.echap.interfaces import record as do_record
 
 # Intervalle de confiance
-def mean(lst):
-    return sum(lst) / float(len(lst))
 
-def variance(lst):
-    """
-    Uses standard variance formula (sum of each (data point - mean) squared)
-    all divided by number of data points
-    """
-    mu = mean(lst)
-    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst])
 
 def conf_int(lst, perc_conf=95):
     """
@@ -36,13 +28,11 @@ def conf_int(lst, perc_conf=95):
     be confident of a result +/- this amount from the mean.
     The constant factor can be looked up from a table, for 95pcent confidence
     on a reasonable size sample (>=500) 1.96 is used.
-    """
-    from scipy.stats import t
-    
-    n, v = len(lst), variance(lst)
+    """  
+    n, v = len(lst), numpy.var(lst, ddof = 1)
     c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
     
-    return math.sqrt(v/n) * c
+    return numpy.sqrt(v/n) * c
 
 def df_interception_path(variety = 'Tremie12', nplants = 30, simulation = 'reference'):
     filename = 'interception_'+ simulation + '_' + variety.lower() + '_' + str(nplants) + 'pl.csv'
@@ -84,7 +74,7 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     
     #add columns
     df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
-    df['var'] = variety
+    df['variety'] = variety
     df['treatment'] = tag
     df['nb_plantes_sim'] = adel.nplants
     df['numero_sim'] = num_sim
@@ -124,7 +114,7 @@ def aggregate_by_leaf(df):
     
     df = df.convert_objects()
     gr = df.groupby(['HS', 'plant','axe','metamer'], as_index=False)
-    df_agg = gr.agg({'var': first_val,
+    df_agg = gr.agg({'variety': first_val,
                    'treatment': first_val,
                     'nb_plantes_sim':first_val,
                     'numero_sim':first_val,
@@ -166,7 +156,7 @@ def aggregate_by_axe(df):
     res=[]
     for name,gr in df.groupby(['HS', 'plant','axe'], as_index=False):
         df_agg = gr.groupby(['HS', 'plant','axe'], as_index=False).agg(
-                   {'var': first_val,
+                   {'variety': first_val,
                    'treatment': first_val,
                     'nb_plantes_sim':first_val,
                     'numero_sim':first_val,
@@ -195,11 +185,12 @@ def axis_statistics(df_axe, axis='MS'):
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
         
-    sub = data.ix[:,('var','treatment','date','HS','TT','axe', 'nff', 'length','area','green_area','deposit_Tartrazine','haun_stage')]
-    dfmoy = sub.groupby(['var','treatment', 'date']).mean().reset_index()
-    dfsd = sub.groupby(['var','treatment', 'date']).std().reset_index()   
+    sub = data.ix[:,('variety','treatment','date','HS','TT','axe', 'nff', 'length','area','green_area','deposit_Tartrazine','haun_stage')]
+    dfmoy = sub.groupby(['variety','treatment', 'date']).mean().reset_index()
+    dfsd = sub.groupby(['variety','treatment', 'date']).std().reset_index()
+    dfci = sub.groupby(['variety','treatment', 'date']).agg(conf_int).reset_index()
 
-    return dfmoy, dfsd 
+    return dfmoy, dfsd, dfci
     
 def interception_statistics(df_leaf, axis='MS'):
     data = df_leaf
@@ -207,11 +198,11 @@ def interception_statistics(df_leaf, axis='MS'):
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
         
-    sub = data.ix[:,('var','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_mength', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
-    dfmoy = sub.groupby(['var','treatment','ntop_cur']).mean().reset_index()
-    dfsd = sub.groupby(['var','treatment','ntop_cur']).std().reset_index()   
-
-    return dfmoy, dfsd
+    sub = data.ix[:,('variety','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_mength', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
+    dfmoy = sub.groupby(['variety','treatment','ntop_cur']).mean().reset_index()
+    dfsd = sub.groupby(['variety','treatment','ntop_cur']).std().reset_index()   
+    dfci = sub.groupby(['variety','treatment', 'ntop_cur']).agg(conf_int).reset_index()
+    return dfmoy, dfsd, dfci
 
 def pdict(value):
     """ create a parameter dict for all echap cultivar with value

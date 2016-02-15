@@ -37,40 +37,47 @@ def conf_int(lst, perc_conf=95):
 def dye_interception(todec = []):
     """ Dye interception data
     
-    data are  mean/sd deposit per leaf compiled from all sprayed volume experiment.
-    To get comparable value, deposits are expressed relative to quantity sprayed
     
-    units :  g per g.cm-2 applied
+    units:
+        volume : applied volumetric rate (l.ha-1)
+        concentration: applied concentration (g.l-1)
+        dilution: water volume used to dilute intercepted dye (cl)
+        absorbance :optical read
+        coef : slope of the absobance = f(concentration) relationships (absorbance = coef * concentration (mg.l-1), ie conc = abs/coeff)
+        thus:
+        quantity intercepted (mg) = abs / coef * dilution / 100
+ 
+        deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
+        
+        Rem: coef is consistent for 2011/2012, but depart for 2013: is this expected ? better to use one for all seasons ?
+        
         
     Raw data are in ECHAP_ARVALIS/Interception/Donnees brutes 3 annee
     original units : microg per g.ha-1 (converted in g per g.cm-2 by multiplying original data by 100)
     
     Note:
-        - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
-        - sd seems to be in original unit
+        - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, 
+         as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
     """
-    data_file = shared_data(alinea.echap, 'dye_interception.csv')
-    df = pandas.read_csv(data_file, decimal=',', sep=';')
-    # shift leaf numbers at date 1
-    decfeu = {'Mercia':'19/04/2011', 'Rht3':'19/04/2011', 'Tremie12':'11/04/2012', 'Tremie13':'25/04/2013'}
-    decfeu = {k:decfeu[k] for k in todec}
-    for name,d in decfeu.iteritems():
-        sel = (df['name'] == name) & (df['date'] == d) & (map(lambda x: x.startswith('F'),df['feuille']))
-        df['feuille'][sel] = ('F2','F3','F4','F5')
-        df['N feuille'][sel] = (2,3,4,5)
-        # complete with missing leaf to allow barplot
-        missing = df[sel].iloc[0]
-        missing['feuille'] = 'F1'
-        missing['N feuille'] = 1
-        missing['mean'] = 0
-        missing['sd'] = 0
-        missing['IC'] = 0
-        df = df.append(missing)
-    
-    df.rename(columns={'name':'var'}, inplace=True) 
-    df.rename(columns={'N feuille':'ntop_cur'}, inplace=True)  
-    df = df.drop('HS', 1) #HS not measured
-    return df
+    data_file = shared_data(alinea.echap, 'dye_interception.txt')
+    df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
+    df['deposit'] = df['absorbance'] / df['coef'] * df['dilution'] / df['volume'] / df['concentration'] * 1000
+    #idem with unique coeff
+    df['deposit_u'] = df['absorbance'] / df['coef'].mean() * df['dilution'] / df['volume'] / df['concentration'] * 1000
+    df['deposit_sd'] = df['deposit']
+    df['deposit_ci'] = df['deposit']
+    df['deposit_u_sd'] = df['deposit_u']
+    df['deposit_u_ci'] = df['deposit_u']    
+    #aggregation
+    df_dye = df.groupby(['treatment', 'variety', 'year','leaf']).agg({'deposit': numpy.mean,
+                                                                      'deposit_u': numpy.mean,
+                                                                      'deposit_sd': numpy.nanstd,
+                                                                      'deposit_u_sd': numpy.nanstd,
+                                                                      'deposit_ci': conf_int,
+                                                                      'deposit_u_ci': conf_int}).reset_index()                                                                  
+
+    df_dye['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df_dye['leaf'])                                                                  
+    return df_dye
 
 
 #### To chek : retrieve true mesurement + date application + model hs on same graph

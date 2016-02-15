@@ -75,17 +75,18 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axi
         variety = [variety]
     #obs
     df_obs = idata.dye_interception()
-    df_obs = df_obs[df_obs['var'].isin(variety)]
+    df_obs = df_obs[df_obs['variety'].isin(variety)]
+    df_obs['feuille'] = df_obs['leaf']
     #sim
     interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference')
-    df_sim, df_sim_sd = ifun.interception_statistics(interception, sim_axis)
+    df_sim, df_sim_sd, df_sim_ci = ifun.interception_statistics(interception, sim_axis)
     #merge
     df_all = df_obs.merge(df_sim)
-    df_all_sd = df_obs.merge(df_sim_sd)
+    df_all_ci = df_obs.merge(df_sim_ci)
     #column tartrazine/area
-    df_all['mean/area'] = df_all['mean']/df_all['area']
+    df_all['mean/area'] = df_all['deposit_u']/df_all['area']
     df_all = df_all.set_index(['treatment','feuille'])
-    df_all_sd = df_all_sd.set_index(['treatment','feuille'])
+    df_all_ci = df_all_ci.set_index(['treatment','feuille'])
     
     bar_width = 0.2; opacity = 0.4    
     leaves = ['F1', 'F2', 'F3', 'F4']
@@ -98,8 +99,8 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axi
         sim_bars = {}
         for var in variety:
             for leaf in leaves:
-                obs, obs_err, sim= df_all.ix[(treatment, leaf), ('mean', 'IC', 'deposit_Tartrazine')]
-                sim_err = df_all_sd.ix[(treatment, leaf), 'deposit_Tartrazine']
+                obs, obs_err, sim= df_all.ix[(treatment, leaf), ('deposit_u', 'deposit_u_ci', 'deposit_Tartrazine')]
+                sim_err = df_all_ci.ix[(treatment, leaf), 'deposit_Tartrazine']
                 
                 obs_bar = axes[ifig].bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
                 xbar += bar_width
@@ -128,7 +129,7 @@ if run_plot:
     fig.savefig('obs_sim_Tremie12.png')
 
     
-def hs_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS'):
+def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1, sim_axis='MS'):
 
     if not isinstance(variety, list):
         variety = [variety]
@@ -136,16 +137,16 @@ def hs_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS
     df_obs = idata.haun_stages()
     df_obs = df_obs[df_obs['label'].isin(variety)]
     df_obs['TTlab'] = map(str, df_obs['TT'])
-    df_obs['var'] = df_obs['label']
+    df_obs['variety'] = df_obs['label']
     #sim
     interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'check_hs')
-    df_sim, df_sim_sd = ifun.axis_statistics(interception, sim_axis)
+    df_sim, df_sim_sd, df_sim_ci = ifun.axis_statistics(interception, sim_axis)
     df_sim['TTlab'] = map(str, df_sim['TT'])
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
-    df_sim_sd = df_sim_sd.merge(df_sim.ix[:,['var','treatment', 'TTlab']])
+    df_sim_ci = df_sim_ci.merge(df_sim.ix[:,['variety','treatment', 'TTlab']])
     #merge
-    df_all = df_obs.merge(df_sim, on=['var','TTlab'])
-    df_all_sd = df_obs.merge(df_sim_sd, on=['var','TTlab'])
+    df_all = df_obs.merge(df_sim, on=['variety','TTlab'])
+    df_all_ci = df_obs.merge(df_sim_ci, on=['variety','TTlab'])
     
     bar_width = 0.2; opacity = 0.4    
     colors = {'Tremie12':'c', 'Tremie13':'m'}
@@ -159,7 +160,7 @@ def hs_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS
         t = df_all.ix[var,'treatment']
         for treatment in df_all.ix[var,'treatment']:
             df_all = df_all.reset_index().set_index(['label', 'treatment'])
-            df_all_sd = df_all_sd.reset_index().set_index(['label', 'treatment'])
+            df_all_sd = df_all_ci.reset_index().set_index(['label', 'treatment'])
             obs, obs_err, sim, target= df_all.ix[(var,treatment), ['HS_mean', 'HS_conf', 'haun_stage', 'HStarget']]
             sim_err = df_all_sd.ix[(var,treatment), 'haun_stage']
             target_bar = axes[ifig].bar(xbar, target, bar_width, alpha=opacity, color='orange')
