@@ -287,7 +287,7 @@ def rain_interception(g, rain_interception_model, weather_data, label='LeafEleme
     return g
 
 
-def record(g, weather_data, recorder, header={}, label = 'blade'):
+def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     """
     tentative protocol for recording data during a simulation
     ng tentative debug date 12/12/12
@@ -296,21 +296,23 @@ def record(g, weather_data, recorder, header={}, label = 'blade'):
     print date
     for vid in g:
         n = g.node(vid)
-        if n.complex() is not None and n.complex().label is not None:
-            if n.complex().label.startswith(label) and n.complex().visible_length > 0:
-                axe = n.complex().complex().complex()
-                header.update({'date' : date,
-                          'plant' : n.complex().complex().complex().complex().label,
-                          'axe' : axe.label,
-                          'nff' : axe.nff,
-                          'hasEar': axe.hasEar,
-                          'metamer' : int(''.join(list(n.complex().complex().label)[7:])),
-                          'organ' : n.complex().label,
-                          'ntop' : n.complex().ntop,
-                          'mature_length' : n.complex().shape_mature_length,
-                          'id' : n._vid
-                             })
-                recorder.record(n, header)
+        if n.label is not None:
+            if n.label.startswith(label):
+                blade = n.complex()
+                if blade.visible_length > 0:
+                    axe = n.complex().complex().complex()
+                    header.update({'date' : date,
+                              'plant' : n.complex().complex().complex().complex().label,
+                              'axe' : axe.label,
+                              'nff' : axe.nff,
+                              'hasEar': axe.hasEar,
+                              'metamer' : int(''.join(list(n.complex().complex().label)[7:])),
+                              'organ' : n.complex().label,
+                              'ntop' : n.complex().ntop,
+                              'mature_length' : n.complex().shape_mature_length,
+                              'id' : n._vid
+                                 })
+                    recorder.record(n, header)
             
     return g
 
