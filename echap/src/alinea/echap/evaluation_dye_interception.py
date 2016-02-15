@@ -192,16 +192,16 @@ def axis_statistics(df_axe, axis='MS'):
 
     return dfmoy, dfsd, dfci
     
-def interception_statistics(df_leaf, axis='MS'):
+def interception_statistics(df_leaf, axis='MS', by='ntop_cur'):
     data = df_leaf
     
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
         
     sub = data.ix[:,('variety','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_mength', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
-    dfmoy = sub.groupby(['variety','treatment','ntop_cur']).mean().reset_index()
-    dfsd = sub.groupby(['variety','treatment','ntop_cur']).std().reset_index()   
-    dfci = sub.groupby(['variety','treatment', 'ntop_cur']).agg(conf_int).reset_index()
+    dfmoy = sub.groupby(['variety','treatment',by]).mean().reset_index()
+    dfsd = sub.groupby(['variety','treatment',by]).std().reset_index()   
+    dfci = sub.groupby(['variety','treatment', by]).agg(conf_int).reset_index()
     return dfmoy, dfsd, dfci
 
 def pdict(value):
@@ -224,7 +224,18 @@ def simulation_tags():
                                 {'hs_T1':1e4,'hs_scan2':1e4, 'hs_T2':1e4},
                              'density' : 1,
                              'dimension' : 1,
-                             'aggregation':'axe'}}
+                             'aggregation':'axe'}},
+            'scan': {'Tremie12': 
+                            {'treatments' : {k:1e4 for k in ('scan1','scan2','scan_T1','scan_T2')},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'leaf'},
+                     'Tremie13':
+                            {'treatments' : 
+                                {'scan_T1':1e4,'scan2':1e4},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'leaf'}},
            }
     return tags
             

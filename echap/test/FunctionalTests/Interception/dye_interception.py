@@ -177,6 +177,55 @@ def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1
         axes[ifig].text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
     fig.text(0.5, 0.05, 'HS', size='large', ha='center')
     return fig, axes
+
+def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS', what='green_area'):
+    df_obs = idata.scan_data()
+    df_obs = df_obs[df_obs['variety'].isin([variety])]
+    df_obs['metamer'] = df_obs['rank']
+    #sim
+    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'scan')
+    df_sim, df_sim_sd, df_sim_ci = ifun.interception_statistics(interception, sim_axis, by='metamer')
+    #merge
+    df_all = df_obs.merge(df_sim)
+    df_all_ci = df_obs.merge(df_sim_ci)
+    #plot
+    bar_width = 0.2; opacity = 0.4    
+    colors = {'Tremie12':'c', 'Tremie13':'m'}
+    treatments = df_all['treatment'].drop_duplicates()
+    nt = len(treatments)
+    lg = max(1, nt / 2)
+    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg)) 
+    for ifig, treatment in enumerate(treatments):
+        xbar = 0.
+        xleaf = []
+        sim_bars = {}
+        data = df_all[df_all['treatment'] == treatment]
+        data_ic = df_all_ci[df_all_ci['treatment'] == treatment]
+        leaves = data['metamer'].drop_duplicates()
+        data.index = data['metamer']
+        data_ic.index = data_ic['metamer']
+        ax = fig.get_axes()[ifig]
+        for leaf in leaves:
+            if what.startswith('green'):
+                obs, obs_err, sim= data.ix[[leaf], ('A_bl_green', 'A_bl_green_ci', 'green_area')].values[0]
+                sim_err = data_ic.ix[leaf, 'green_area']
+            else:
+                obs, obs_err, sim= data.ix[[leaf], ('A_bl', 'A_bl_ci', 'area')].values[0]
+                sim_err = data_ic.ix[leaf, 'area']
+            obs_bar = ax.bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
+            xbar += bar_width
+            xleaf.append(xbar)
+            sim_bars[leaf] = ax.bar(xbar, sim, bar_width, alpha=opacity, color=colors[variety], yerr=sim_err, ecolor=colors[variety])
+            xbar += bar_width * 2           
+        # Mise en forme
+        ax.set_ylim(0, 30)
+        ax.set_xlim(-bar_width, xbar)                 
+        ax.set_xticks(xleaf)
+        ax.set_xticklabels(leaves, rotation=90, fontsize='small' )
+        ax.text(0.5, 25, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+    fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)   
+    fig.text(0.5, 0.05, variety + ' ' + what, size='large', ha='center')
+    return fig
     
 def plot_data(variety = 'Tremie12', nplants = 30, nrep = 1, plot1=True, plot2=True):
     '''Plot1 = obs

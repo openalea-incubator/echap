@@ -10,13 +10,6 @@ from openalea.deploy.shared_data import shared_data
 from alinea.echap.architectural_reconstructions import fit_HS
 from alinea.echap.architectural_data import TT_lin, Pheno_data
 
-def variance(lst):
-    """
-    Uses standard variance formula (sum of each (data point - mean) squared)
-    all divided by number of data points
-    """
-    mu = numpy.mean(lst)
-    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst]) if len(lst)>1 else 0.
         
 def conf_int(lst, perc_conf=95):
     """
@@ -28,7 +21,7 @@ def conf_int(lst, perc_conf=95):
     on a reasonable size sample (>=500) 1.96 is used.
     """
     
-    n, v = len(lst), variance(lst)
+    n, v = len(lst), numpy.var(lst, ddof=1)
     c = scipy.stats.t.interval(perc_conf * 1.0 / 100, n-1)[1]
     
     return numpy.sqrt(v/n) * c
@@ -79,7 +72,18 @@ def dye_interception(todec = []):
     df_dye['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df_dye['leaf'])                                                                  
     return df_dye
 
-
+def scan_data():
+    data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
+    df = pandas.read_csv(data_file, decimal='.', sep=',')
+    tags = {'Tremie12':{'09/03/2012':'scan1', '02/04/2012':'scan2', '11/04/2012':'scan_T1','09/05/2012':'scan_T2'},
+            'Tremie13':{'22/04/2013':'scan_T1', '03/05/2013':'scan2'}}
+    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['prelevement']))
+    data = df[df['id_Axe'] == "MB"].drop('N',axis=1)
+    data_M = data.groupby(['variety', 'treatment', 'rank', 'prelevement']).agg(numpy.mean).reset_index()
+    data_ci = data.groupby(['variety', 'treatment', 'rank', 'prelevement']).agg(conf_int).reset_index()
+    data_ci = data_ci.rename(columns={k:k+'_ci' for k in ('stat','lmax', 'wmax','A_bl','A_bl_green')})
+    return data_M.merge(data_ci)
+    
 #### To chek : retrieve true mesurement + date application + model hs on same graph
 
 def TT_index():

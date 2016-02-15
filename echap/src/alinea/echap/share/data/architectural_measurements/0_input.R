@@ -35,6 +35,20 @@ scanned <- list(Tremie12 = paste('sampled_plants', c('090312','020412','110412',
 #
 scandb <- sapply(names(scanned), function(g) readScanned(prefix[g], scanned[[g]]),simplify=FALSE)
 #
+# scan compilation
+#
+comp <- do.call('rbind',mapply(function(x,name) {
+  cols <- c('prelevement', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
+  x <- x[,cols[cols%in%colnames(x)]]
+  if (!'lmax'%in% colnames(x))
+    x['lmax'] <- NA
+  if (!'wmax'%in% colnames(x))
+    x['wmax'] <- NA
+  x['variety'] = name
+  x
+  }, scandb, names(scandb),SIMPLIFY=FALSE))
+#
+write.csv(comp, 'Compil_scan.csv', row.names=FALSE)
 # silhouettes
 #
 curvature <- list(Tremie12 = paste('sampled_plants', c('090312','110412', '090512', '120612'),sep='_'),
