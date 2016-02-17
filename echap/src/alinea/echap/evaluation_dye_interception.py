@@ -71,7 +71,8 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     g,_ = pesticide_interception(g, interceptor, application_data, domain=adel.domain)
     do_record(g, application_data, recorder, header={'TT':age, 'HS':float(hsfit(age))})
     df =  recorder.get_records()
-    
+    #add midribs data
+    midribs = adel.midrib_statistics(g)
     #add columns
     df['deposit_Tartrazine'] = df['surfacic_doses_Tartrazine'] * df['area']
     df['variety'] = variety
@@ -89,7 +90,7 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     # compute leaf emergence
     df['leaf_emergence'] = df['TT'] - df['age'] 
     
-    return g, df
+    return g, df, midribs
  
 def dates_emergence(adel):
     df_phenT = adel.phenT()
@@ -198,7 +199,7 @@ def interception_statistics(df_leaf, axis='MS', by='ntop_cur'):
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
         
-    sub = data.ix[:,('variety','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_mength', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime')]
+    sub = data.ix[:,('variety','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_length', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime', 'projection')]
     dfmoy = sub.groupby(['variety','treatment',by]).mean().reset_index()
     dfsd = sub.groupby(['variety','treatment',by]).std().reset_index()   
     dfci = sub.groupby(['variety','treatment', by]).agg(conf_int).reset_index()
@@ -236,6 +237,17 @@ def simulation_tags():
                              'density' : 1,
                              'dimension' : 1,
                              'aggregation':'leaf'}},
+            'sil': {'Tremie12': 
+                            {'treatments' : {k:1e4 for k in ('sil1','sil3','sil_T1','sil_T2')},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'leaf'},
+                     'Tremie13':
+                            {'treatments' : 
+                                {'sil_T1':1e4},
+                             'density' : 1,
+                             'dimension' : 1,
+                             'aggregation':'leaf'}}
            }
     return tags
             
@@ -266,10 +278,13 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1,
             for i in missing:
                 adel, hsfit = get_reconstruction(variety=var, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
                 for date, dose in sim['treatments'].iteritems():
-                    g, df = repartition_at_application(adel, hsfit, var, date=date, 
+                    g, df, midribs = repartition_at_application(adel, hsfit, var, date=date, 
                                                              dose=dose, num_sim=i)
                     if sim['aggregation'] == 'leaf':
                         df_i = aggregate_by_leaf(df)
+                        midribs = midribs.rename(columns={'leaf':'metamer'})
+                        midribs['plant'] = ['plant'+str(p) for p in midribs['plant']]
+                        df_i = df_i.merge(midribs)
                     else:
                         df_i = aggregate_by_axe(df)
                     dfint.append(df_i)          

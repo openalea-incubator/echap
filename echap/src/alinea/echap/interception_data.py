@@ -83,8 +83,28 @@ def scan_data():
     data_ci = data.groupby(['variety', 'treatment', 'rank', 'prelevement']).agg(conf_int).reset_index()
     data_ci = data_ci.rename(columns={k:k+'_ci' for k in ('stat','lmax', 'wmax','A_bl','A_bl_green')})
     return data_M.merge(data_ci)
+ 
+
+def silhouettes():
+    data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
+    df = pandas.read_csv(data_file_xydb)
+    # Wrong data for plants 19, 20, 21 on harvest 2
+    df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
+    tags = {'Tremie12':{'1':'sil1', '2': 'sil_T1', '3': 'sil_T2', '4':'sil3'},
+            'Tremie13': {'1': 'sil_T1'}}
+    df['treatment'] = map(lambda (var, h): tags[var][str(h)], zip(df['variety'], df['harvest']))
+    # reduce to projection factor / hins
+    def _compress(x):
+        return pandas.Series({'HS':x['HS'].values[0], 'hins':x['hins'].values[0], 
+                              'proj': (x['x'].max() - x['x'].min()) / numpy.sum(numpy.sqrt(numpy.diff(x['x'])**2 + numpy.diff(x['y'])**2))})
+                              
+    data = df.groupby(['variety','treatment','plant','relative_ranktop']).apply(_compress).reset_index()
+    moy = data.groupby(['variety','treatment','relative_ranktop']).agg(numpy.mean).reset_index()
+    ci = data.groupby(['variety','treatment','relative_ranktop']).agg(conf_int)
+    ci = ci.rename(columns={k:k+'_ci' for k in ('hins','proj')})
+    return moy.merge(ci.ix[:,['hins_ci', 'proj_ci']].reset_index())
     
-#### To chek : retrieve true mesurement + date application + model hs on same graph
+    #### To chek : retrieve true mesurement + date application + model hs on same graph
 
 def TT_index():
     TT = TT_lin()
@@ -98,16 +118,21 @@ def tag_dates():
             'Rht3': {'T1':'2011-04-19',
                      'T2':'2011-05-11'},
             'Tremie12': {'scan1' : '2012-03-09',#date scan (aka date1)
+                         'sil1': '2012-03-09',
                          'scan2' : '2012-04-02',
                          'T1' : '2012-04-11',
                          'hs_T1' : '2012-04-11',
                          'scan_T1' : '2012-04-11',
+                         'sil_T1' : '2012-04-11',
                          'T2' : '2012-05-09',
                          'hs_T2': '2012-05-09',
-                         'scan_T2': '2012-05-09'},
+                         'scan_T2': '2012-05-09',
+                         'sil_T2': '2012-05-09',
+                         'sil3':'2012-06-12'},
             'Tremie13': {'T1' : '2013-04-25',
                          'scan_T1' : '2013-04-22',
                          'hs_T1' : '2013-04-22',
+                         'sil_T1': '2013-04-29',
                          'hs_scan2' : '2013-05-03',
                          'scan2' : '2013-05-03',
                          'T2' : '2013-05-17',
