@@ -61,16 +61,13 @@ def dye_interception(todec = []):
     df['deposit_ci'] = df['deposit']
     df['deposit_u_sd'] = df['deposit_u']
     df['deposit_u_ci'] = df['deposit_u']    
-    #aggregation
-    df_dye = df.groupby(['treatment', 'variety', 'year','leaf']).agg({'deposit': numpy.mean,
-                                                                      'deposit_u': numpy.mean,
-                                                                      'deposit_sd': numpy.nanstd,
-                                                                      'deposit_u_sd': numpy.nanstd,
-                                                                      'deposit_ci': conf_int,
-                                                                      'deposit_u_ci': conf_int}).reset_index()                                                                  
-
-    df_dye['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df_dye['leaf'])                                                                  
-    return df_dye
+    #add aggregators
+    df['axe'] = 'MS'
+    df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
+    #index variety                                                           
+    df=df.set_index('variety')
+                                                                      
+    return df
 
 def scan_data():
     data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
@@ -103,6 +100,8 @@ def silhouettes():
     ci = data.groupby(['variety','treatment','relative_ranktop']).agg(conf_int)
     ci = ci.rename(columns={k:k+'_ci' for k in ('hins','proj')})
     return moy.merge(ci.ix[:,['hins_ci', 'proj_ci']].reset_index())
+
+
     
     #### To chek : retrieve true mesurement + date application + model hs on same graph
 
@@ -117,29 +116,33 @@ def tag_dates():
                        'T2': '2011-05-11'},
             'Rht3': {'T1':'2011-04-19',
                      'T2':'2011-05-11'},
-            'Tremie12': {'scan1' : '2012-03-09',#date scan (aka date1)
-                         'sil1': '2012-03-09',
-                         'scan2' : '2012-04-02',
+            'Tremie12': {'T1-33' : '2012-03-09',#date scan (aka date1)
+                         'T1-9' : '2012-04-02',
                          'T1' : '2012-04-11',
-                         'hs_T1' : '2012-04-11',
-                         'scan_T1' : '2012-04-11',
-                         'sil_T1' : '2012-04-11',
                          'T2' : '2012-05-09',
-                         'hs_T2': '2012-05-09',
-                         'scan_T2': '2012-05-09',
-                         'sil_T2': '2012-05-09',
-                         'sil3':'2012-06-12'},
-            'Tremie13': {'T1' : '2013-04-25',
-                         'scan_T1' : '2013-04-22',
-                         'hs_T1' : '2013-04-22',
-                         'sil_T1': '2013-04-29',
-                         'hs_scan2' : '2013-05-03',
-                         'scan2' : '2013-05-03',
+                         'T2+34':'2012-06-12'},
+            'Tremie13': {'T1-3' : '2013-04-22',
+                         'T1' : '2013-04-25',
+                         'T1+4': '2013-04-29',
+                         'T2-14' : '2013-05-03',
                          'T2' : '2013-05-17',
-                         'hs_T2' : '2013-05-22'}
+                         'T2+5' : '2013-05-22'}
             }
     return tags
 
+def tag_treatments():
+    tags= {'Mercia': {'application': ['T1','T2']},
+           'Rht3': {'application': ['T1','T2']},
+           'Tremie12': {'application': ['T1','T2'],
+                        'hs': ['T1','T2'],
+                        'scan': ['T1-33','T1-9','T1','T2'],
+                        'silhouette': ['T1-33', 'T1', 'T2', 'T2+34']},
+            'Tremie13': {'application': ['T1','T2'],
+                        'hs': ['T1-3','T2-14','T2+5'],
+                        'scan': ['T1-3','T2-14'],
+                        'silhouette': ['T1+4']}}
+    return tags
+    
 def haun_stages():
     def aggregate(data, column = 'HS', group = ['TT', 'label', 'nff'],
               func = numpy.mean, column_name = 'HS_mean'):

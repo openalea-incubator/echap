@@ -94,33 +94,23 @@ def barplot_leaf(ax, obs, sim=None, xleaf=range(1,5), top=True, o_color='y', s_c
     ax.set_xlim(min(xleaf) - bar_width, max(xleaf) + 3 * bar_width)            
     ax.set_xticks(numpy.array(xleaf) + bar_width)
     ax.set_xticklabels(leaves, rotation=90, fontsize='small' )
-    return obs_bar, sim_bar
+    return obs_bar, sim_bar 
 
-
-def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS', xleaf=range(1,5), ylim=(0,6.5)):
+def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,6.5)):
     #obs
     df_obs = idata.dye_interception()
-    df_obs = df_obs.set_index(['variety', 'treatment'])
+    obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='deposit_u', by=by, axis=axis)
     #sim
-    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference')
-    df_sim, df_sim_sd, df_sim_ci = ifun.interception_statistics(interception, sim_axis)
-    df_sim['deposit_ci'] = df_sim_ci['deposit_Tartrazine']
-    df_sim = df_sim.set_index(['variety', 'treatment'])
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatment='application')
+    sim = ifun.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by, axis=axis)
     #plot
     colors = colors_variety()
     fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
     axlist = fig.get_axes()
     for ifig, treatment in enumerate(('T1', 'T2')):
         ax = axlist[ifig]
-        obs = df_obs.loc[(variety, treatment),:].copy()
-        obs['ybar'] = obs['deposit_u']
-        obs['yerr'] = obs['deposit_u_ci']
-        obs['xbar'] = obs['leaf']
-        sim = df_sim.loc[(variety, treatment),:].copy()
-        sim['ybar'] = sim['deposit_Tartrazine']
-        sim['yerr'] = sim['deposit_ci']
-        sim['xbar'] = ['F' + str(i) for i in sim['ntop_cur']]
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, s_color=colors[variety],xleaf=xleaf, ylim=ylim)
+        obs_bar, sim_bar = barplot_leaf(ax, obs.loc[treatment,:], sim.loc[treatment,:],
+                                        s_color=colors[variety],xleaf=xleaf, ylim=ylim)
         ax.text(1.2, 5.8, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
         if ifig == 0:
             ax.set_ylabel('Deposit (g per g.cm-2)') 
@@ -131,7 +121,7 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axi
     
 if run_plot:
     fig = deposit_observe_simule('Tremie12', nplants=30)
-    fig.savefig('obs_sim_Tremie12.png')
+    fig.savefig('deposit_Tremie12.png')
 
     
 def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1, sim_axis='MS'):
@@ -144,7 +134,12 @@ def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1
     df_obs['TTlab'] = map(str, df_obs['TT'])
     df_obs['variety'] = df_obs['label']
     #sim
-    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'check_hs')
+    dfv=[]
+    for v in variety:
+        df = ifun.dye_interception(v, nplants=nplants, nrep=nrep,simulation= 'reference', treatment='hs')
+        agg = ifun.aggregate_by_axe(df)
+        dfv.append(agg)
+    interception = pandas.concat(dfv).reset_index()
     df_sim, df_sim_sd, df_sim_ci = ifun.axis_statistics(interception, sim_axis)
     df_sim['TTlab'] = map(str, df_sim['TT'])
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])

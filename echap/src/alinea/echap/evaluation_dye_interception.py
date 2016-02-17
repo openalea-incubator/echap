@@ -91,7 +91,8 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     df['leaf_emergence'] = df['TT'] - df['age'] 
     
     return g, df, midribs
- 
+    
+#deprecated
 def dates_emergence(adel):
     df_phenT = adel.phenT()
     nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
@@ -152,8 +153,6 @@ def aggregate_by_axe(df):
     """
     def first_val(x):
         return x[x.first_valid_index()]
-    df = df.convert_objects()
-    df = aggregate_by_leaf(df)
     res=[]
     for name,gr in df.groupby(['HS', 'plant','axe'], as_index=False):
         df_agg = gr.groupby(['HS', 'plant','axe'], as_index=False).agg(
@@ -193,104 +192,84 @@ def axis_statistics(df_axe, axis='MS'):
 
     return dfmoy, dfsd, dfci
     
-def interception_statistics(df_leaf, axis='MS', by='ntop_cur'):
-    data = df_leaf
-    
+def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, by='ntop_cur', axis='MS'):
+
+    data = df_sim
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
-        
-    sub = data.ix[:,('variety','treatment','HS','TT','axe','metamer','ntop','ntop_cur','age','mature_length', 'length','area','green_area','deposit_Tartrazine','exposition','lifetime', 'projection')]
-    dfmoy = sub.groupby(['variety','treatment',by]).mean().reset_index()
-    dfsd = sub.groupby(['variety','treatment',by]).std().reset_index()   
-    dfci = sub.groupby(['variety','treatment', by]).agg(conf_int).reset_index()
-    return dfmoy, dfsd, dfci
+    if not isinstance(what, list):
+        what = [what]
+    sub = data.ix[:,['treatment', by] + what]
+    agg = sub.groupby(['treatment',by]).mean().reset_index()
+    agg['ybar'] = agg[what[0]]
+    agg['yerr'] = err(sub[what[0]])
+    if by == 'ntop_cur' or by == 'ntop':    
+        agg['xbar'] = ['F' + str(i) for i in agg[by]]
+    else:
+        agg['xbar'] = ['L' + str(int(leaf)) for leaf in df_sim['metamer']]
+    agg=agg.set_index('treatment')
+    return agg
 
 def pdict(value):
     """ create a parameter dict for all echap cultivar with value
     """
-    return {k:deepcopy(value) for k in ('Tremie12', 'Tremie13')}    
+    return {k:deepcopy(value) for k in ('Mercia', 'Rht3','Tremie12', 'Tremie13')}    
 
 def simulation_tags():
-    tags = {'reference': pdict({'treatments' : {'T1':1e4, 'T2':1e4},
+    tags = {'reference': pdict({'dose' : 1e4,
                           'density' : 1,
-                          'dimension' : 1,
-                          'aggregation':'leaf'}),
-            'check_hs': {'Tremie12': 
-                            {'treatments' : {'hs_T1':1e4, 'hs_T2':1e4},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'axe'},
-                          'Tremie13':
-                            {'treatments' : 
-                                {'hs_T1':1e4,'hs_scan2':1e4, 'hs_T2':1e4},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'axe'}},
-            'scan': {'Tremie12': 
-                            {'treatments' : {k:1e4 for k in ('scan1','scan2','scan_T1','scan_T2')},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'leaf'},
-                     'Tremie13':
-                            {'treatments' : 
-                                {'scan_T1':1e4,'scan2':1e4},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'leaf'}},
-            'sil': {'Tremie12': 
-                            {'treatments' : {k:1e4 for k in ('sil1','sil3','sil_T1','sil_T2')},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'leaf'},
-                     'Tremie13':
-                            {'treatments' : 
-                                {'sil_T1':1e4},
-                             'density' : 1,
-                             'dimension' : 1,
-                             'aggregation':'leaf'}}
+                          'dimension' : 1})
            }
     return tags
-            
-def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, 
-                         simulation = 'reference'):
+
+def run_sim(adel, hsfit, var, date, dose, num_sim):
+    g, df, midribs = repartition_at_application(adel, hsfit, var, date=date, dose=dose, num_sim=num_sim)
+    df_i = aggregate_by_leaf(df)
+    midribs = midribs.rename(columns={'leaf':'metamer'})
+    midribs['plant'] = ['plant'+str(p) for p in midribs['plant']]
+    return df_i.merge(midribs)
+
+    
+def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 'reference', treatment='application'):
                          
-    if not isinstance(variety, list):
-        variety = [variety]
-        
-    df_var = []
+    path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
+    repetitions = range(1, nrep + 1)
+    treatments = idata.tag_treatments()[variety][treatment]
+    sim = simulation_tags()[simulation][variety]
+    new_sim = False
+    dfint = []
     
-    for var in variety:   
-        path = df_interception_path(variety = var, nplants = nplants, simulation = simulation)                      
-        repetitions = range(1, nrep + 1)
-        if os.path.exists(path):
-            df_interception = pandas.read_csv(path)
-            done_reps = list(set(df_interception['numero_sim']))
-            missing = [rep for rep in repetitions if not rep in done_reps]
-            dfint = [df_interception]
-            if len(missing) == 0:
-                df_interception = df_interception[df_interception['numero_sim'].isin(repetitions)]
-        else:
-            missing = repetitions
-            dfint = [] 
-            
-        if len(missing) > 0:
-            sim = simulation_tags()[simulation][var]
-            for i in missing:
-                adel, hsfit = get_reconstruction(variety=var, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
-                for date, dose in sim['treatments'].iteritems():
-                    g, df, midribs = repartition_at_application(adel, hsfit, var, date=date, 
-                                                             dose=dose, num_sim=i)
-                    if sim['aggregation'] == 'leaf':
-                        df_i = aggregate_by_leaf(df)
-                        midribs = midribs.rename(columns={'leaf':'metamer'})
-                        midribs['plant'] = ['plant'+str(p) for p in midribs['plant']]
-                        df_i = df_i.merge(midribs)
-                    else:
-                        df_i = aggregate_by_axe(df)
-                    dfint.append(df_i)          
-            df_interception = pandas.concat(dfint).reset_index(drop = True)    
-            df_interception.to_csv(path, index = False)
-        df_var.append(df_interception)
-    df_var = pandas.concat(df_var).reset_index(drop = True) 
+    if os.path.exists(path):
+        df_old = pandas.read_csv(path)
+        done_reps = list(set(df_old['numero_sim']))
+        missing = [rep for rep in repetitions if not rep in done_reps]
+        #check all treatments are there
+        tocheck = df_old.groupby('numero_sim')
+        for i_sim, df in tocheck:
+            done = df['treatment'].drop_duplicates().values
+            dfint.append(df.reset_index())
+            to_do = [t for t in treatments if not t in done]
+            if len(to_do) > 0:
+                new_sim = True
+                adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+                for t in to_do:
+                     df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'], num_sim=i_sim)
+                     dfint.append(df_t)
+    else:
+        missing = repetitions
+
+    if len(missing) > 0:
+        new_sim = True
+        for i in missing:
+            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+            for t in treatments:
+                df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'], num_sim=i)
+                dfint.append(df_t)       
+                
+    df_interception = pandas.concat(dfint).reset_index(drop = True)
+    if new_sim:
+        df_interception.to_csv(path, index = False)
     
-    return df_var
+    df_interception = df_interception[df_interception['numero_sim'].isin(repetitions)]
+    df_interception = df_interception[df_interception['treatment'].isin(treatments)]
+    return df_interception
