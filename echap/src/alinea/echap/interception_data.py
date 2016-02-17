@@ -72,14 +72,22 @@ def dye_interception(todec = []):
 def scan_data():
     data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
     df = pandas.read_csv(data_file, decimal='.', sep=',')
-    tags = {'Tremie12':{'09/03/2012':'scan1', '02/04/2012':'scan2', '11/04/2012':'scan_T1','09/05/2012':'scan_T2'},
-            'Tremie13':{'22/04/2013':'scan_T1', '03/05/2013':'scan2'}}
+    tags = {'Tremie12':{'09/03/2012':'T1-33', '02/04/2012':'T1-9', '11/04/2012':'T1','09/05/2012':'T2'},
+            'Tremie13':{'22/04/2013':'T1-3', '03/05/2013':'T2-14'}}
     df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['prelevement']))
-    data = df[df['id_Axe'] == "MB"].drop('N',axis=1)
-    data_M = data.groupby(['variety', 'treatment', 'rank', 'prelevement']).agg(numpy.mean).reset_index()
-    data_ci = data.groupby(['variety', 'treatment', 'rank', 'prelevement']).agg(conf_int).reset_index()
-    data_ci = data_ci.rename(columns={k:k+'_ci' for k in ('stat','lmax', 'wmax','A_bl','A_bl_green')})
-    return data_M.merge(data_ci)
+    df = df[df['id_Axe'] == "MB"]
+    #add aggregator
+    df['axe'] = 'MS'
+    df['metamer'] = df['rank']
+    #rem : for some date, nmax is not highest leaf, hence ntop_cur may be wrong
+    def _ntopcur(x):
+        nmax = x['metamer'].max()
+        x['ntop_cur'] = nmax - x['metamer'] + 1
+        return x
+    df = df.groupby(['variety','treatment', 'N']).apply(_ntopcur).reset_index()
+    #index variety                                                           
+    df = df.set_index('variety')
+    return df
  
 
 def silhouettes():

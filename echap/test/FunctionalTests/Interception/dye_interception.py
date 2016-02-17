@@ -72,8 +72,8 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
 def colors_variety():
     return {'Tremie12':'c', 'Tremie13':'m'}
 
-def barplot_leaf(ax, obs, sim=None, xleaf=range(1,5), top=True, o_color='y', s_color='b', opacity=0.4, bar_width=0.4, ylim=None):
-    if top:
+def barplot_leaf(ax, obs, sim=None, xleaf=range(1,5), o_color='y', s_color='b', opacity=0.4, bar_width=0.4, ylim=None):
+    if obs['xbar'].values[0].startswith('F'):
         leaves = ['F' + str(x) for x in xleaf]
     else:
         leaves = ['L' + str(x) for x in xleaf]
@@ -178,43 +178,30 @@ def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1
     fig.text(0.5, 0.05, 'HS', size='large', ha='center')
     return fig, axes
 
-def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS', xleaf=range(7,14), top=False, ylim=(0,30), add_green=True):
+def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='metamer',xleaf=range(7,14), ylim=(0,30), add_green=True):
     df_obs = idata.scan_data()
-    df_obs['leaf_base'] = ['L' + str(int(leaf)) for leaf in df_obs['rank']]
-    df_obs = df_obs.set_index(['variety', 'treatment'])
     #sim
-    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'scan')
-    df_sim, df_sim_sd, df_sim_ci = ifun.interception_statistics(interception, sim_axis, by='metamer')
-    df_sim['area_ci'] = df_sim_ci['area']
-    df_sim['green_area_ci'] = df_sim_ci['green_area']
-    df_sim['leaf_base'] = ['L' + str(int(leaf)) for leaf in df_sim['metamer']]
-    df_sim = df_sim.set_index(['variety', 'treatment'])
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatment='scan')
     #plot
-    colors = {'Tremie12':'c', 'Tremie13':'m'}
-    treatments = {'Tremie12': ['scan1', 'scan2', 'scan_T1', 'scan_T2'], 'Tremie13': ['scan_T1', 'scan2']}
-    nt = len(treatments[variety])
+    colors = colors_variety()
+    treatments = idata.tag_treatments()[variety]['scan']
+    nt = len(treatments)
     lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg))
+    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
     axlist = fig.get_axes()
-    for ifig, treatment in enumerate(treatments[variety]):
+    for ifig, treatment in enumerate(treatments):
         ax = axlist[ifig]
-        obs = df_obs.loc[(variety, treatment),:].copy()
-        sim = df_sim.loc[(variety, treatment),:].copy()
-        obs['xbar'] = obs['leaf_base']
-        sim['xbar'] = sim['leaf_base']
-        obs['ybar'] = obs['A_bl']
-        obs['yerr'] = obs['A_bl_ci']
-        sim['ybar'] = sim['area']
-        sim['yerr'] = sim['area_ci']
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, s_color=colors[variety],xleaf=xleaf, top=top, ylim=ylim)
+        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl', by=by, axis=axis)
+        sim = ifun.leaf_statistics(df_sim, what='area', by=by, axis=axis)
+        obs_bar, sim_bar = barplot_leaf(ax, obs.loc[treatment,:], sim.loc[treatment,:], 
+                                    s_color=colors[variety],xleaf=xleaf, ylim=ylim)
         if add_green:
-            obs['ybar'] = obs['A_bl_green']
-            obs['yerr'] = obs['A_bl_green_ci']
-            sim['ybar'] = sim['green_area']
-            sim['yerr'] = sim['green_area_ci']
-            obs_bar, sim_bar = barplot_leaf(ax, obs, sim, s_color=colors[variety],xleaf=xleaf, top=top, ylim=ylim)
+            obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl_green', by=by, axis=axis)
+            sim = ifun.leaf_statistics(df_sim, what='green_area', by=by, axis=axis)
+            obs_bar, sim_bar = barplot_leaf(ax, obs.loc[treatment,:], sim.loc[treatment,:], 
+                                    s_color=colors[variety],xleaf=xleaf, ylim=ylim)
         ax.text(min(xleaf) + 0.5, 25, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-        if ifig == 0:
+        if ifig % 2 == 0:
             ax.set_ylabel('Leaf Area (cm2)') 
     fig.tight_layout() 
     fig.subplots_adjust(bottom=0.15)

@@ -201,12 +201,13 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, by='ntop_cu
         what = [what]
     sub = data.ix[:,['treatment', by] + what]
     agg = sub.groupby(['treatment',by]).mean().reset_index()
+    errag = sub.groupby(['treatment',by]).agg(err).reset_index()
     agg['ybar'] = agg[what[0]]
-    agg['yerr'] = err(sub[what[0]])
+    agg['yerr'] = errag[what[0]]
     if by == 'ntop_cur' or by == 'ntop':    
-        agg['xbar'] = ['F' + str(i) for i in agg[by]]
+        agg['xbar'] = ['F' + str(int(i)) for i in agg[by]]
     else:
-        agg['xbar'] = ['L' + str(int(leaf)) for leaf in df_sim['metamer']]
+        agg['xbar'] = ['L' + str(int(leaf)) for leaf in agg['metamer']]
     agg=agg.set_index('treatment')
     return agg
 
