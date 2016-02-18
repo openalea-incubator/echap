@@ -208,34 +208,23 @@ def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS',
     fig.text(0.5, 0.05, variety, size='large', ha='center')
     return fig
     
-def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='MS', xleaf=range(1,5), top=True, ylim=(0,1), what='proj'):
+def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,1), what='h_projection'):
     df_obs = idata.silhouettes()
-    df_obs['leaf'] = ['F' + str(int(leaf)) for leaf in df_obs['relative_ranktop']]
-    df_obs = df_obs.set_index(['variety', 'treatment'])
     #sim
-    interception = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'sil')
-    df_sim, df_sim_sd, df_sim_ci = ifun.interception_statistics(interception, sim_axis, by='ntop_cur')
-    df_sim['projection_ci'] = df_sim_ci['projection']
-    df_sim['leaf'] = ['F' + str(int(leaf)) for leaf in df_sim['ntop_cur']]
-    df_sim = df_sim.set_index(['variety', 'treatment'])
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatment='silhouette')
     #plot
-    colors = {'Tremie12':'c', 'Tremie13':'m'}
-    treatments = {'Tremie12': ['sil1', 'sil_T1', 'sil_T2', 'sil3'], 'Tremie13': ['sil_T1']}
-    nt = len(treatments[variety])
+    colors = colors_variety()
+    treatments = idata.tag_treatments()[variety]['silhouette']
+    nt = len(treatments)
     lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg))
+    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
     axlist = fig.get_axes()
-    for ifig, treatment in enumerate(treatments[variety]):
+    for ifig, treatment in enumerate(treatments):
         ax = axlist[ifig]
-        obs = df_obs.loc[(variety, treatment),:].copy()
-        obs['xbar'] = obs['leaf']
-        obs['ybar'] = obs[what]
-        obs['yerr'] = obs[what + '_ci']
-        sim = df_sim.loc[(variety, treatment),:].copy()
-        sim['xbar'] = sim['leaf']
-        sim['ybar'] = sim['projection']
-        sim['yerr'] = sim['projection_ci']
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, s_color=colors[variety],xleaf=xleaf, top=top, ylim=ylim)
+        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what=what, by=by, axis=axis)
+        sim = ifun.leaf_statistics(df_sim, what=what, by=by, axis=axis)
+        obs_bar, sim_bar = barplot_leaf(ax, obs.loc[treatment,:], sim.loc[treatment,:], 
+                                       s_color=colors[variety],xleaf=xleaf, ylim=ylim)
         ax.text(min(xleaf) + 0.5, 0.8*max(ylim), ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
         if ifig == 0:
             ax.set_ylabel('projection factor') 
@@ -244,104 +233,7 @@ def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, sim_axis='M
     fig.text(0.5, 0.05, variety, size='large', ha='center')
     return fig   
     
-def plot_data(variety = 'Tremie12', nplants = 30, nrep = 1, plot1=True, plot2=True):
-    '''Plot1 = obs
-    Plot2 = obs/area'''
-
-    #sim
-    df_sim = simulation_diff()
-    df_sim = df_sim.groupby(['var', 'treatment', 'ntop_cur']).mean()
-    df_sim = df_sim.reset_index()
-    #merge
-    df_all = df_obs.merge(df_sim)
-    #column tartrazine/area
-    df_all['mean/area'] = df_all['mean']/df_all['area']
-    
-    if plot1==True:
-        bar_width = 0.2; opacity = 0.4
-        val=[[0, 'T1'], [1, 'T2']]
-        fig, axes = plt.subplots(nrows=1, ncols=2) 
-    
-        for x, date in val:        
-            df_fin = df_all[df_all['treatment']==date] 
-            
-            df_obs1= df_all[df_all['feuille']=='F1'] 
-            df_fin1 = df_obs1[df_obs1['treatment']==date] 
-            
-            df_obs2 = df_all[df_all['feuille']=='F2'] 
-            df_fin2 = df_obs2[df_obs2['treatment']==date] 
-            
-            df_obs3 = df_all[df_all['feuille']=='F3'] 
-            df_fin3 = df_obs3[df_obs3['treatment']==date] 
-            
-            df_obs4 = df_all[df_all['feuille']=='F4'] 
-            df_fin4 = df_obs4[df_obs4['treatment']==date] 
-            
-            n_groups = len(df_fin1)
-            index = numpy.arange(n_groups) 
-
-            rects1 = axes[x].bar(index, df_fin1['mean'], bar_width, alpha=opacity, color='c', yerr=df_fin1['IC'], error_kw=dict(ecolor='c'))
-            rects2 = axes[x].bar(index + bar_width, df_fin2['mean'], bar_width, alpha=opacity, color='m', yerr=df_fin2['IC'], error_kw=dict(ecolor='m'))
-            rects3 = axes[x].bar(index + 2*bar_width, df_fin3['mean'], bar_width, alpha=opacity, color='g', yerr=df_fin3['IC'], error_kw=dict(ecolor='g'))
-            rects4 = axes[x].bar(index + 3*bar_width, df_fin4['mean'], bar_width, alpha=opacity, color='r', yerr=df_fin4['IC'], error_kw=dict(ecolor='r'))   
-            
-            # Mise en forme
-            axes[x].set_ylim(0, 6.5)
-            axes[x].set_xlim(0, len(df_fin1))                 
-            axes[x].set_xticks(index+bar_width)
-            label = df_fin['var'].unique()
-            axes[x].set_xticklabels( label.tolist(), rotation=90, fontsize='small' )
-            if x == 0:
-                axes[x].set_xlabel('varieties')
-                axes[x].set_ylabel('g per g.cm-2')
-            axes[x].text(0.2, 6.1, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-            
-            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-        axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
-    
-    if plot2==True:
-        bar_width = 0.2; opacity = 0.4
-        val=[[0, 'T1'], [1, 'T2']]
-        fig, axes = plt.subplots(nrows=1, ncols=2) 
-    
-        for x, date in val:
-
-            df_fin = df_all[df_all['treatment']==date] 
-            
-            df_obs1= df_all[df_all['feuille']=='F1'] 
-            df_fin1 = df_obs1[df_obs1['treatment']==date] 
-            
-            df_obs2 = df_all[df_all['feuille']=='F2'] 
-            df_fin2 = df_obs2[df_obs2['treatment']==date] 
-            
-            df_obs3 = df_all[df_all['feuille']=='F3'] 
-            df_fin3 = df_obs3[df_obs3['treatment']==date] 
-            
-            df_obs4 = df_all[df_all['feuille']=='F4'] 
-            df_fin4 = df_obs4[df_obs4['treatment']==date] 
-            
-            n_groups = len(df_fin1)
-            index = numpy.arange(n_groups) 
-
-            rects1 = axes[x].bar(index, df_fin1['mean/area'], bar_width, alpha=opacity, color='c')
-            rects2 = axes[x].bar(index + bar_width, df_fin2['mean/area'], bar_width, alpha=opacity, color='m')
-            rects3 = axes[x].bar(index + 2*bar_width, df_fin3['mean/area'], bar_width, alpha=opacity, color='g')
-            rects4 = axes[x].bar(index + 3*bar_width, df_fin4['mean/area'], bar_width, alpha=opacity, color='r')   
-            
-            # Mise en forme
-            axes[x].set_ylim(0, 1.2)
-            axes[x].set_xlim(0, len(df_fin1))                 
-            axes[x].set_xticks(index+bar_width)
-            label = df_fin['var'].unique()
-            axes[x].set_xticklabels( label.tolist(), rotation=90, fontsize='small' )
-            if x == 0:
-                axes[x].set_xlabel('varieties')
-                axes[x].set_ylabel('g per g.cm-2 / area')
-            axes[x].text(0.2, 1.1, ''+str(date), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-            
-            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
-        axes[x].legend((rects1[0], rects2[0], rects3[0], rects4[0]), ('F1', 'F2', 'F3', 'F4'), bbox_to_anchor=[1.10, 1.12], prop={'size':14})
-  
+ 
 def plot_petri():
     #boite de petri, seulement Tremie12 et Tremie13
     petriT1_Tremie12, petriT2_Tremie12 = idata.Petri_data('Tremie12') 

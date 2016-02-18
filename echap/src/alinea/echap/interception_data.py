@@ -26,93 +26,6 @@ def conf_int(lst, perc_conf=95):
     
     return numpy.sqrt(v/n) * c
 
-    
-def dye_interception(todec = []):
-    """ Dye interception data
-    
-    
-    units:
-        volume : applied volumetric rate (l.ha-1)
-        concentration: applied concentration (g.l-1)
-        dilution: water volume used to dilute intercepted dye (cl)
-        absorbance :optical read
-        coef : slope of the absobance = f(concentration) relationships (absorbance = coef * concentration (mg.l-1), ie conc = abs/coeff)
-        thus:
-        quantity intercepted (mg) = abs / coef * dilution / 100
- 
-        deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
-        
-        Rem: coef is consistent for 2011/2012, but depart for 2013: is this expected ? better to use one for all seasons ?
-        
-        
-    Raw data are in ECHAP_ARVALIS/Interception/Donnees brutes 3 annee
-    original units : microg per g.ha-1 (converted in g per g.cm-2 by multiplying original data by 100)
-    
-    Note:
-        - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, 
-         as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
-    """
-    data_file = shared_data(alinea.echap, 'dye_interception.txt')
-    df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
-    df['deposit'] = df['absorbance'] / df['coef'] * df['dilution'] / df['volume'] / df['concentration'] * 1000
-    #idem with unique coeff
-    df['deposit_u'] = df['absorbance'] / df['coef'].mean() * df['dilution'] / df['volume'] / df['concentration'] * 1000
-    df['deposit_sd'] = df['deposit']
-    df['deposit_ci'] = df['deposit']
-    df['deposit_u_sd'] = df['deposit_u']
-    df['deposit_u_ci'] = df['deposit_u']    
-    #add aggregators
-    df['axe'] = 'MS'
-    df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
-    #index variety                                                           
-    df=df.set_index('variety')
-                                                                      
-    return df
-
-def scan_data():
-    data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
-    df = pandas.read_csv(data_file, decimal='.', sep=',')
-    tags = {'Tremie12':{'09/03/2012':'T1-33', '02/04/2012':'T1-9', '11/04/2012':'T1','09/05/2012':'T2'},
-            'Tremie13':{'22/04/2013':'T1-3', '03/05/2013':'T2-14'}}
-    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['prelevement']))
-    df = df[df['id_Axe'] == "MB"]
-    #add aggregator
-    df['axe'] = 'MS'
-    df['metamer'] = df['rank']
-    #rem : for some date, nmax is not highest leaf, hence ntop_cur may be wrong
-    def _ntopcur(x):
-        nmax = x['metamer'].max()
-        x['ntop_cur'] = nmax - x['metamer'] + 1
-        return x
-    df = df.groupby(['variety','treatment', 'N']).apply(_ntopcur).reset_index()
-    #index variety                                                           
-    df = df.set_index('variety')
-    return df
- 
-
-def silhouettes():
-    data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
-    df = pandas.read_csv(data_file_xydb)
-    # Wrong data for plants 19, 20, 21 on harvest 2
-    df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
-    tags = {'Tremie12':{'1':'sil1', '2': 'sil_T1', '3': 'sil_T2', '4':'sil3'},
-            'Tremie13': {'1': 'sil_T1'}}
-    df['treatment'] = map(lambda (var, h): tags[var][str(h)], zip(df['variety'], df['harvest']))
-    # reduce to projection factor / hins
-    def _compress(x):
-        return pandas.Series({'HS':x['HS'].values[0], 'hins':x['hins'].values[0], 
-                              'proj': (x['x'].max() - x['x'].min()) / numpy.sum(numpy.sqrt(numpy.diff(x['x'])**2 + numpy.diff(x['y'])**2))})
-                              
-    data = df.groupby(['variety','treatment','plant','relative_ranktop']).apply(_compress).reset_index()
-    moy = data.groupby(['variety','treatment','relative_ranktop']).agg(numpy.mean).reset_index()
-    ci = data.groupby(['variety','treatment','relative_ranktop']).agg(conf_int)
-    ci = ci.rename(columns={k:k+'_ci' for k in ('hins','proj')})
-    return moy.merge(ci.ix[:,['hins_ci', 'proj_ci']].reset_index())
-
-
-    
-    #### To chek : retrieve true mesurement + date application + model hs on same graph
-
 def TT_index():
     TT = TT_lin()
     return  TT.set_index(['label','Date'])
@@ -149,7 +62,87 @@ def tag_treatments():
                         'hs': ['T1-3','T2-14','T2+5'],
                         'scan': ['T1-3','T2-14'],
                         'silhouette': ['T1+4']}}
-    return tags
+    return tags    
+    
+def dye_interception(todec = []):
+    """ Dye interception data
+    
+    
+    units:
+        volume : applied volumetric rate (l.ha-1)
+        concentration: applied concentration (g.l-1)
+        dilution: water volume used to dilute intercepted dye (cl)
+        absorbance :optical read
+        coef : slope of the absobance = f(concentration) relationships (absorbance = coef * concentration (mg.l-1), ie conc = abs/coeff)
+        thus:
+        quantity intercepted (mg) = abs / coef * dilution / 100
+ 
+        deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
+        
+        Rem: coef is consistent for 2011/2012, but depart for 2013: is this expected ? better to use one for all seasons ?
+        
+        
+    Raw data are in ECHAP_ARVALIS/Interception/Donnees brutes 3 annee
+    original units : microg per g.ha-1 (converted in g per g.cm-2 by multiplying original data by 100)
+    
+    Note:
+        - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, 
+         as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
+    """
+    data_file = shared_data(alinea.echap, 'dye_interception.txt')
+    df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
+    df['deposit'] = df['absorbance'] / df['coef'] * df['dilution'] / df['volume'] / df['concentration'] * 1000
+    #idem with unique coeff
+    df['deposit_u'] = df['absorbance'] / df['coef'].mean() * df['dilution'] / df['volume'] / df['concentration'] * 1000 
+    #add aggregators
+    df['axe'] = 'MS'
+    df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
+    #index variety                                                           
+    df=df.set_index('variety')
+                                                                      
+    return df
+
+def scan_data():
+    data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
+    df = pandas.read_csv(data_file, decimal='.', sep=',')
+    tags = {'Tremie12':{'09/03/2012':'T1-33', '02/04/2012':'T1-9', '11/04/2012':'T1','09/05/2012':'T2'},
+            'Tremie13':{'22/04/2013':'T1-3', '03/05/2013':'T2-14'}}
+    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['prelevement']))
+    df = df[df['id_Axe'] == "MB"]
+    #add aggregator
+    df['axe'] = 'MS'
+    df['metamer'] = df['rank']
+    #rem : for some date, nmax is not highest leaf, hence ntop_cur may be wrong
+    def _ntopcur(x):
+        nmax = x['metamer'].max()
+        x['ntop_cur'] = nmax - x['metamer'] + 1
+        return x
+    df = df.groupby(['variety','treatment', 'N']).apply(_ntopcur).reset_index()
+    #index variety                                                           
+    df = df.set_index('variety')
+    return df
+ 
+
+def silhouettes():
+    data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
+    df = pandas.read_csv(data_file_xydb)
+    # Wrong data for plants 19, 20, 21 on harvest 2
+    df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
+    tags = {'Tremie12':{'1':'T1-33', '2': 'T1', '3': 'T2', '4':'T2+34'},
+            'Tremie13': {'1': 'T1+4'}}
+    df['treatment'] = map(lambda (var, h): tags[var][str(h)], zip(df['variety'], df['harvest']))
+    # reduce to projection factor / hins
+    def _compress(x):
+        return pandas.Series({'HS':x['HS'].values[0], 'insertion_height':x['hins'].values[0], 
+                              'h_projection': (x['x'].max() - x['x'].min()) / numpy.sum(numpy.sqrt(numpy.diff(x['x'])**2 + numpy.diff(x['y'])**2))})
+                              
+    data = df.groupby(['variety','treatment','plant','rank','ranktop','relative_ranktop']).apply(_compress).reset_index()
+    #add aggregator
+    data['axe'] = 'MS'
+    data = data.rename(columns={'rank':'metamer', 'ranktop': 'ntop', 'relative_ranktop': 'ntop_cur'})
+    #index variety                                                           
+    data = data.set_index('variety')
+    return data
     
 def haun_stages():
     def aggregate(data, column = 'HS', group = ['TT', 'label', 'nff'],

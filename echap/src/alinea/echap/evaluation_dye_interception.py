@@ -248,7 +248,7 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 
         tocheck = df_old.groupby('numero_sim')
         for i_sim, df in tocheck:
             done = df['treatment'].drop_duplicates().values
-            dfint.append(df.reset_index())
+            dfint.append(df)
             to_do = [t for t in treatments if not t in done]
             if len(to_do) > 0:
                 new_sim = True
