@@ -49,7 +49,13 @@ comp <- do.call('rbind',mapply(function(x,name) {
   }, scandb, names(scandb),SIMPLIFY=FALSE))
 #
 write.csv(comp, 'Compil_scan.csv', row.names=FALSE)
+#
 # silhouettes
+#
+# For Tremie 13 on 29/04/2013, ranks were extimated a posteriori.
+# Original data are given for relative rank top only.
+# Estimation was done manually knowing that after HSfit, plants of tremie 13 were at stage 9.4 for nff=11, and stage 9.8 for nff=12, ie, las ligulated leaf was always 9.
+#Leaf 9 was guessed after manual inspection of images (Christian, February 2016)
 #
 curvature <- list(Tremie12 = paste('sampled_plants', c('090312','110412', '090512', '120612'),sep='_'),
                   Tremie13 = paste('sampled_plants', c('290413'),sep='_'))

@@ -129,7 +129,7 @@ def silhouettes():
     # Wrong data for plants 19, 20, 21 on harvest 2
     df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
     tags = {'Tremie12':{'1':'T1-33', '2': 'T1', '3': 'T2', '4':'T2+34'},
-            'Tremie13': {'1': 'T1+4'}}
+            'Tremie13': {'5': 'T1+4'}}
     df['treatment'] = map(lambda (var, h): tags[var][str(h)], zip(df['variety'], df['harvest']))
     # reduce to projection factor / hins
     def _compress(x):
@@ -140,6 +140,8 @@ def silhouettes():
     #add aggregator
     data['axe'] = 'MS'
     data = data.rename(columns={'rank':'metamer', 'ranktop': 'ntop', 'relative_ranktop': 'ntop_cur'})
+    data['ntop'] = data['ntop'].round()
+    data['ntop_cur'] = data['ntop_cur'].round()
     #index variety                                                           
     data = data.set_index('variety')
     return data
