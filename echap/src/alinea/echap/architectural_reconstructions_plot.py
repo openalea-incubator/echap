@@ -57,12 +57,12 @@ def haun_stage_plot(obs_HS, fit_HS):
         
         df_var_g = df_HS_global[df_HS_global['label']==variety]
         df_ = df_var_g[df_var_g['source']=='tagged'].reset_index()
-        ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
+        ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'].values, color = 'k', 
                     linestyle='', markerfacecolor='None', markeredgecolor='k',
                     marker='o', markersize=markersize)
         df_ = df_var_g[df_var_g['source']=='sampled'].reset_index()
         if len(df_) > 0:
-            ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'], color = 'k', 
+            ax.errorbar(df_['TT'], df_['HS_mean'], yerr=df_['HS_std'].values, color = 'k', 
                     linestyle='', markerfacecolor='None', markeredgecolor='k', 
                     marker='s', markersize=markersize)
         
@@ -71,7 +71,7 @@ def haun_stage_plot(obs_HS, fit_HS):
             curv_nff = fit_HS[variety].curve(nff=nff)
             color = colors[nff]
             ax.plot(x, curv_nff(x), color=color)
-            ax.errorbar(df_nff['TT'], df_nff['HS_mean'], yerr=df_nff['HS_std'], color = colors[nff], 
+            ax.errorbar(df_nff['TT'], df_nff['HS_mean'], yerr=df_nff['HS_std'].values, color = colors[nff], 
                         linestyle='', markerfacecolor=colors[nff], markeredgecolor=colors[nff],
                         marker=markers[nff], markersize=markersize)
             ax.errorbar([fit_HS[variety].TT_hs_0, fit_HS[variety].TTflag(nff)],
@@ -250,9 +250,9 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade', estimates_
                 ax.plot(fit_dim['rank'], fit_dim.loc[:, dimension], color = 'k')
             except:
                 pass
-            ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], yerr=df_src[dimension+'_std'],
+            ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], yerr=df_src[dimension+'_std'].values,
                         linestyle='', color = 'k', markerfacecolor='k', markeredgecolor='k',
-                        marker=markers[src], markersize=7)
+                        marker=markers[src], markersize=7.)
             
             df_src_nff = df_nff[df_nff['Source']==src]
             # if variety == 'Tremie12' and src == 'tagged':
@@ -263,9 +263,9 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade', estimates_
                 df_ = df_src_nff[df_src_nff['nff']==nff].reset_index()
                 fit_nff = fit[variety].dimT(nff = nff)
                 ax.plot(fit_nff['rank'], fit_nff.loc[:, dimension], color = color)
-                ax.errorbar(df_['rank'], df_[dimension+'_mean'], yerr=df_[dimension+'_std'],
+                ax.errorbar(df_['rank'], df_[dimension+'_mean'], yerr=df_[dimension+'_std'].values,
                             linestyle='', color = color, markerfacecolor=color,
-                            markeredgecolor=color, marker=markers[src], markersize=7)
+                            markeredgecolor=color, marker=markers[src], markersize=7.)
 
         ax.annotate(variety, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
         ax.set_ylabel(dimension, fontsize = 18)
@@ -296,7 +296,7 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade', ax = 
         for src in np.unique(df_dim_var['Source']):
             df_src = df_dim_var[df_dim_var['Source']==src]
             ax.errorbar(df_src['rank'], df_src[dimension+'_mean'], 
-                        yerr=df_src[dimension+'_std'], linestyle='', color = color,
+                        yerr=df_src[dimension+'_std'].values, linestyle='', color = color,
                         markerfacecolor=color, markeredgecolor=color,
                         marker=markers[src], markersize=7)
                         
@@ -403,8 +403,8 @@ def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
             scaned = scan_var.groupby('moyenne id_Feuille')
             res = scaned['Area A_bl'].agg([np.mean, np.std])
             res = res.reset_index()
-            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color, label='scan + sd '+name)
-            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'], fmt='o'+color)
+            ax2.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'].values, fmt='o'+color, label='scan + sd '+name)
+            ax5.errorbar(res['moyenne id_Feuille'], res['mean'], yerr=res['std'].values, fmt='o'+color)
             
         #scan_old (scan Mercia / Rht3 de 2009) -> pas ici car confusion (on ne cherche pas a passer dans ces points)
         '''if name=='Mercia' or name=='Rht3':
@@ -494,7 +494,7 @@ def density_plot(density_data, density_fits, HS_converter):
     for name in names:
         dens = grouped.get_group(name)
         dens['HS'] = HS_converter[name](dens['TT'])
-        ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'], fmt='o' + col[name], label=name + ' density')
+        ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'].values, fmt='o' + col[name], label=name + ' density')
         #
         df = density_fits[name]['density_table']
         ax.plot(df['HS'], df['density'], '-' + col[name], label=name + ' density fits')
