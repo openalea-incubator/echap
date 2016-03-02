@@ -1,6 +1,7 @@
 #
 #                      Reading input files
 #
+source('preprocessing_tools.R')
 #
 genos <- c('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
 #
@@ -35,21 +36,6 @@ scanned <- list(Tremie12 = paste('sampled_plants', c('090312','020412','110412',
 #
 scandb <- sapply(names(scanned), function(g) readScanned(prefix[g], scanned[[g]]),simplify=FALSE)
 #
-# scan compilation
-#
-comp <- do.call('rbind',mapply(function(x,name) {
-  cols <- c('prelevement', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
-  x <- x[,cols[cols%in%colnames(x)]]
-  if (!'lmax'%in% colnames(x))
-    x['lmax'] <- NA
-  if (!'wmax'%in% colnames(x))
-    x['wmax'] <- NA
-  x['variety'] = name
-  x
-  }, scandb, names(scandb),SIMPLIFY=FALSE))
-#
-write.csv(comp, 'Compil_scan.csv', row.names=FALSE)
-#
 # silhouettes
 #
 # For Tremie 13 on 29/04/2013, ranks were extimated a posteriori.
@@ -75,3 +61,35 @@ notdb <- sapply(names(notations), function(g) readNotations(prefix[g], notations
 # special reader for notations ssi Tremie13 02/04/2013
 dat <- readTagged('Tremie13_notations_sampled_plants_020413.txt', TTlin$Tremie13, 'Tremie')
 notdb$Tremie13$sampled_plants_020413 <- dat[,-grep('^Lg', colnames(dat))]
+#
+# Plant notations (subset of notations)
+#
+plantdb <- lapply(notdb, function(x) plant_notations(x))
+#
+# leaf counts notation (subset of plant notation, completed for sampling with no notation using inspection of images)
+#
+leafcdb <- lapply(plantdb, function(x) x[,c('Source','N', 'nff', 'Nflig','Nfvis')])
+# for scan data Tremie 12 of sampled plant april 2, nflig = last measured leaf, hypothethise one growing leaf
+data <- scandb$Tremie12[scandb$Tremie12$Source=='sampled_plants_020412',]
+nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=max(x$rank), Nfvis=1)))
+leafcdb$Tremie12 <- rbind(leafcdb$Tremie12, nfl)
+# for curvature Tremie 13 on 29 april, nflig=9 by convention (see input.R), hypothethise one growing leaf
+data <- curvdb$Tremie13[curvdb$Tremie13$Source=='sampled_plants_290413',]
+nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=9, Nfvis=1)))
+leafcdb$Tremie13 <- rbind(leafcdb$Tremie13, nfl)
+#
+# Extract 'other than leaf width profile' data from scan, homogenise and mix with leaf counts
+#
+scanleafdb <- do.call('rbind',mapply(function(x,name) {
+  cols <- c('Source','prelevement', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
+  x <- x[,cols[cols%in%colnames(x)]]
+  if (!'lmax'%in% colnames(x))
+    x['lmax'] <- NA
+  if (!'wmax'%in% colnames(x))
+    x['wmax'] <- NA
+  x['variety'] = name
+  nfl <- leafcdb[[name]]
+  nfl$id_Axe='MB'
+  x <- merge(x,nfl, all.x=TRUE)
+  x
+  }, scandb, names(scandb),SIMPLIFY=FALSE))

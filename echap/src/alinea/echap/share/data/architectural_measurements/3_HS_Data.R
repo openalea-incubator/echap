@@ -40,25 +40,17 @@ write.csv(do.call('rbind', sapply(genos, function(g) {phen <- phendbf[[g]]; phen
 #
 phend <- NULL
 #scan samples Tremie 12
-dat <- scandb$Tremie12[scandb$Tremie12$id_Axe=='MB',1:10]
-not <- notdb$Tremie12[names(notdb$Tremie12) %in% unique(dat$Source)]
-nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, N=x$N,id_Axe=x$axe,nff=x$nff,Nflig=x$Nflig, Nfvis=x$Nfvis)))
-nfl <- nfl[nfl$id_Axe=='MB',]
-dat <- merge(dat,nfl)
+dat <- scanleafdb[scanleafdb$variety=='Tremie12' & as.character(scanleafdb$id_Axe)=='MB',]
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$N), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie12)))
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- phen
 #scan samples Tremie13
-dat <- scandb$Tremie13[scandb$Tremie13$id_Axe=='MB',]
-#proxy for HS dim scale
-dat$lmax <- sqrt(dat$A_bl)
-not <- notdb$Tremie13[names(notdb$Tremie13) %in% unique(dat$Source)]
-nfl <- do.call('rbind',lapply(not, function(x) data.frame(prelevement=x$Date, N=x$N,nff=x$nff,Nflig=x$Nflig, Nfvis=x$Nfvis)))
-dat <- merge(dat,nfl)
+dat <- scanleafdb[scanleafdb$variety=='Tremie13' & as.character(scanleafdb$id_Axe)=='MB',]
+dat$lmax <- sqrt(dat$A_bl)#proxy for pheno_scan input
 phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$N), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
 phen <- merge(phen, TTlin$Tremie13)
 phend$Tremie13 <- phen
-# silhouette data Tremie12 12/06/12
+# SSI, GL from silhouette data Tremie12 12/06/12
 dat <- notdb$Tremie12$sampled_plants_120612[,1:9]
 dat <- dat[dat$axe=='MB',]
 phen <- data.frame(Source='sampled_plants_120613',Date=dat$Date, N=dat$N, nff=dat$Nflig, Nflig=dat$Nflig, Nfvis=0, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
@@ -70,6 +62,18 @@ dat$Source='sampled_plants_020413'
 dat$Nflig <- NA
 dat$Nfvis <- NA
 phen <- pheno_ssi(dat)[,c('Source','Date', 'N','nff','Nflig', 'Nfvis', 'HS','SSI','GL','TT')]
+phend$Tremie13 <- rbind(phend$Tremie13, phen)
+# HS from silhouette data Tremie13 29/04
+dat <- curvdb$Tremie13[curvdb$Tremie13$Source=='sampled_plants_290413',]
+dat <- HcLbCurv(dat)
+dat <- merge(dat,leafcdb$Tremie13[leafcdb$Tremie13$Source=='sampled_plants_290413',])
+dat$lmax <- dat$Lb
+dat$stat=1
+dat$prelevement <- sapply(as.character(dat$Source), function(s) format(as.Date(strsplit(s,split='_')[[1]][3], '%d%m%y'),'%d/%m/%Y'))
+dat$A_bl_green <- NA
+dat$A_bl <- NA
+phen <- do.call('rbind',lapply(split(dat,list(dat$prelevement,dat$N), drop=TRUE), function(x) pheno_scan(x, LbMM$Tremie13)))
+phen <- merge(phen, TTlin$Tremie13)
 phend$Tremie13 <- rbind(phend$Tremie13, phen)
 #
 #check

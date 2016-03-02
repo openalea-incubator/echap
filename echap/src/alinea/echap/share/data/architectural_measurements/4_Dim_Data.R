@@ -14,8 +14,6 @@ Hcol <- lapply(notdb, function(x) dim_notations(x,'Hcol_'))
 #Hins are internode + sheath lengths from notation of internode+sheath dimensions
 Hins <- lapply(notdb, function(x) dim_notations(x,'Hins_'))
 Lbnot <- lapply(notdb, function(x) dim_notations(x,'blade_length'))
-# extraction plant level notations main stem
-msdb <- lapply(notdb, function(x) plant_notations(x))
 #
 # Visual check notations
 view_dim(Wblade,ylim=c(0,3))
@@ -187,7 +185,7 @@ dimsdb <- add_dims(dimsdb, Linternode, 'Li')
 dimsdb <- add_dims(dimsdb, Hcdb, 'Hc')
 # add plant notations (nff, Nflig) and estimate HS
 for (g in names(dimsdb)) {
-  dimsdb[[g]] <- merge(dimsdb[[g]],msdb[[g]][,c('Source', 'N', 'nff', 'Nflig')], all.x=TRUE)
+  dimsdb[[g]] <- merge(dimsdb[[g]],plantdb[[g]][,c('Source', 'N', 'nff', 'Nflig')], all.x=TRUE)
   dates <- sapply(dimsdb[[g]]$Source, function(s) format(as.Date(strsplit(s,split='_')[[1]][3], '%d%m%y'),'%d/%m/%Y'))
   TT <- TTlin[[g]]$TT[match(dates,TTlin[[g]]$Date)]
   dimsdb[[g]]$HS <- slopeM[[g]] * (TT - TToM[[g]])
