@@ -17,7 +17,9 @@ scand <- scanleafdb[scanleafdb$id_Axe=='MB',]
 scand <- split(scand,scand$variety)
 #
 for (g in names(xydb)) {
-  xydb[[g]] <- merge(xydb[[g]],phend[[g]][,c('Source', 'N', 'nff','Nflig','HS','SSI')], all.x=TRUE)
+  p <- phend[[g]][,c('Source', 'N', 'nff','Nflig','HS','SSI')]
+  p$Source <- as.character(p$Source)
+  xydb[[g]] <- merge(xydb[[g]],p, all.x=TRUE)
   xydb[[g]] <- merge(xydb[[g]],scand[[g]][,c('Source','N','rank','stat','lmax','wmax','A_bl','A_bl_green')], all.x=TRUE)
   if (!'relative_ranktop'%in%colnames(xydb[[g]]))
     xydb[[g]][['relative_ranktop']] <- as.numeric(NA)
@@ -41,17 +43,26 @@ for (g in names(xydb)) {
 #
 # Create xydb format
 #
-leafcols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS','nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'A_bl_green')
+leafcols <- c('label','Source', 'N', 'var', 'nff', 'TT','Nflig', 'HS','SSI','nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'A_bl_green')
 ptcols <- c(leafcols, 'XY', paste('Pt',1:18,sep=''))
-xydb <- do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,ptcols]}, simplify=FALSE))
+xydball <- do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,ptcols]}, simplify=FALSE))
 # add inerv and separate leaf_info from points
-plants <- split(xydb,list(xydb$Source,xydb$N),drop=TRUE)
+plants <- split(xydball,list(xydball$Source,xydball$N),drop=TRUE)
 iplants <- seq(plants)
 leaves <- do.call('rbind',mapply(function(pl,iplant) {mat=pl[pl$rank > 0 & pl$XY > 0,leafcols];mat$iplant=iplant;mat},plants,iplants,SIMPLIFY=FALSE))
 xyl <- do.call('rbind',mapply(curv2xy,plants,iplants,SIMPLIFY=FALSE))
 # add cols
 leaves$inerv <- seq(nrow(leaves))
-leaves$age <- leaves$HSest - leaves$rank + 1 # TO DO use HS/SSI instead
+leaves <- do.call('rbind',lapply(split(leaves,leaves$Source), function(x) {
+  x$dHS <- x$HS -  mean(x$HS,na.rm=TRUE)
+  x$dSSI <-  x$SSI - mean(x$SSI,na.rm=TRUE)
+  x}))
+leaves$dHS <- ifelse(is.na(leaves$dHS),0,leaves$dHS)
+leaves$dSSI <- ifelse(is.na(leaves$dSSI),0,leaves$dSSI)
+leaves$dagep <- ifelse(abs(leaves$dHS) > 0,leaves$dHS, leaves$dSSI) 
+leaves$age <- leaves$HSest +leaves$dagep - leaves$rank + 1 # TO DO use HS/SSI instead
+# use age to re-estimate HS
+leaves$HS <- leaves$age + leaves$rank + 1
 #
 leaves$variety <- leaves$label
 leaves$variety_code <- as.numeric(as.factor(leaves$variety))
@@ -86,3 +97,18 @@ write.csv(blade, 'export_blade_echap.csv',row.names=FALSE)
 mati <- leaves[,c('iplant','rank','inerv')]
 nervs <- merge(xyl,mati)[,c('inerv','phiS','s','x','y','xprot','yprot','xrot','yrot','xr','yr')]
 write.csv(nervs, 'export_nervs_echap.csv',row.names=FALSE)
+#
+# Check relation with age
+#
+matage <-  leaves[,c('iplant','rank','inerv','age')]
+nervp <- merge(xyl,matage)[,c('inerv','age','s','x','y')]
+nervp <- do.call('rbind',lapply(split(nervp,nervp$inerv),function(x) {x$proj=max(x$x) / max(x$s);x}))
+
+bins <- seq(-1,12,0.1)
+nervp$ageclass <- cut(nervp$age, bins)
+jet <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan","#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
+palette(jet(length(bins) -1))
+plot(nervp$x,nervp$y,col=as.numeric(nervp$ageclass),pch=16,cex=0.5)
+#
+plot(nervp$age,nervp$proj,col=as.numeric(nervp$ageclass),pch=16)
+lines(smooth.spline(nervp$age,nervp$proj,df=6))

@@ -354,7 +354,7 @@ pheno_scan <- function(pl, dim) {
   if (nrow(p) > 0)
     if (nrow(p) > (max(p$rank) - min(p$rank))) {
       fsen <- 1 - p$A_bl_green / p$A_bl
-      if (fsen[which.min(p$rank)] > 0.3)
+      if (fsen[which.min(p$rank)] > 0.1)
         ssi <- min(p$rank) - 1 + sum(fsen)
     }
   data.frame(Source=pl$Source[1], Date = pl$prelevement[1], N=pl$N[1], nff=pl$nff[1], Nflig=pl$Nflig[1], Nfvis=pl$Nfvis[1], HS=hs + frac, SSI=ssi, GL=hs+frac-ssi)

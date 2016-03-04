@@ -53,7 +53,7 @@ phend$Tremie13 <- phen
 # SSI, GL from silhouette data Tremie12 12/06/12
 dat <- notdb$Tremie12$sampled_plants_120612[,1:9]
 dat <- dat[dat$axe=='MB',]
-phen <- data.frame(Source='sampled_plants_120613',Date=dat$Date, N=dat$N, nff=dat$Nflig, Nflig=dat$Nflig, Nfvis=0, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
+phen <- data.frame(Source='sampled_plants_120612',Date=dat$Date, N=dat$N, nff=dat$Nflig, Nflig=dat$Nflig, Nfvis=0, HS=dat$Nflig, SSI=dat$Nflig - dat$Nfvert, GL=dat$Nfvert)
 phen <- merge(phen, TTlin$Tremie12)
 phend$Tremie12 <- rbind(phend$Tremie12, phen)
 # ssi sample Tremie13 02/04/2013
