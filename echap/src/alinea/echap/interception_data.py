@@ -124,7 +124,7 @@ def scan_data():
  
 
 def silhouettes():
-    data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
+    data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Boigneville_Tremie12_Tremie13.csv')
     df = pandas.read_csv(data_file_xydb)
     # Wrong data for plants 19, 20, 21 on harvest 2
     df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]

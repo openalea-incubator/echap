@@ -39,7 +39,50 @@ for (g in names(xydb)) {
   xydb[[g]][xydb[[g]]$Organ == 0, c('ranktop', 'relative_ranktop')] <- 0
 }
 #
-# Export for analysis wth tino/corine data
+# Create xydb format
 #
-cols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS','nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'A_bl_green', 'XY', paste('Pt',1:18,sep=''))
-write.csv(do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,cols]}, simplify=FALSE)), 'Compil_curvature.csv',row.names=FALSE)
+leafcols <- c('label','Source', 'N', 'var', 'nff', 'Nflig', 'HS','nffest', 'HSest','rank','ranktop', 'relative_ranktop', 'stat','lmax','wmax','A_bl', 'A_bl_green')
+ptcols <- c(leafcols, 'XY', paste('Pt',1:18,sep=''))
+xydb <- do.call('rbind', sapply(names(xydb), function(g) {dim <- xydb[[g]]; dim$label = g; dim[,ptcols]}, simplify=FALSE))
+# add inerv and separate leaf_info from points
+plants <- split(xydb,list(xydb$Source,xydb$N),drop=TRUE)
+iplants <- seq(plants)
+leaves <- do.call('rbind',mapply(function(pl,iplant) {mat=pl[pl$rank > 0 & pl$XY > 0,leafcols];mat$iplant=iplant;mat},plants,iplants,SIMPLIFY=FALSE))
+xyl <- do.call('rbind',mapply(curv2xy,plants,iplants,SIMPLIFY=FALSE))
+# add cols
+leaves$inerv <- seq(nrow(leaves))
+leaves$age <- leaves$HSest - leaves$rank + 1 # TO DO use HS/SSI instead
+#
+leaves$variety <- leaves$label
+leaves$variety_code <- as.numeric(as.factor(leaves$variety))
+leaves$harvest <- as.numeric(as.factor(leaves$Source))
+leaves$plant <- leaves$N
+leaves$A <- leaves$A_bl
+leaves$Agr <- leaves$A_bl_green
+leaves$nmax <- leaves$nffest
+leaves$N2 <- leaves$Nflig
+leaves$mass <- NA
+#
+xyl$phiS <- pi / 2
+xyl$xprot <- xyl$x
+xyl$yprot <- xyl$y
+xyl$xrot <- xyl$x
+xyl$yrot <- xyl$y
+xyl$xr <- xyl$x
+xyl$yr <- xyl$y
+#
+# Export xydb
+#
+xyTremie <- merge(xyl,leaves)[,c('variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y','hins','side')]
+write.csv(xyTremie,'xydb_Boigneville_Tremie12_Tremie13.csv', row.names=FALSE)
+#
+# Export data for analysis wth tino/corine data / median shape
+#
+matphi <- xyl[,c('iplant','rank','phiP')]
+matphi <- matphi[!duplicated(matphi),]
+blade <- merge(leaves,matphi)[, c('inerv','label','Source','plant','rank','ranktop','age','lmax','wmax','A','Agr','mass','stat','phiP')]
+write.csv(blade, 'export_blade_echap.csv',row.names=FALSE)
+#
+mati <- leaves[,c('iplant','rank','inerv')]
+nervs <- merge(xyl,mati)[,c('inerv','phiS','s','x','y','xprot','yprot','xrot','yrot','xr','yr')]
+write.csv(nervs, 'export_nervs_echap.csv',row.names=FALSE)

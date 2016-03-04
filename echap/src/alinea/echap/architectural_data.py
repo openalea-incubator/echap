@@ -728,7 +728,7 @@ def xydb_reader(name = 'Mercia'):
         df = pandas.read_csv(data_file_xydb)
         df.loc[:, 'side'] = 1.
     elif name in ['Tremie12', 'Tremie13']:
-        data_file_xydb = shared_data(alinea.echap, 'xydb_Boigneville_Tremie12_Tremie13.csv')
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Boigneville_Tremie12_Tremie13.csv')
         df = pandas.read_csv(data_file_xydb)
         # Wrong data for plants 19, 20, 21 on harvest 2 (Redo)
         if name == 'Tremie12':

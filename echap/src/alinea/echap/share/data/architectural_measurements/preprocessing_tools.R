@@ -57,6 +57,44 @@ HcLbCurv <- function(curv) {
   }))
 }
 #
+# Transformation pt ->xy rotated shapes
+#
+curv2xy <- function(pl,iplant) {
+  ptcols <- grep('^Pt',colnames(pl))
+  #extract stem
+  stem <- na.omit(data.frame(x=unlist(pl[pl$rank==0 & pl$XY==0,ptcols]),y=unlist(pl[pl$rank==0 & pl$XY==1,ptcols])))
+  phiP <- mean(atan2(diff(stem$y),diff(stem$x)))
+  #corrective rotation to align with vertical
+  theta <- pi / 2 - phiP
+  # corrective factor for insertion heigth taking into account curved stems
+  lstem <- sum(sqrt(diff(stem$x)^2 + diff(stem$y)^2))
+  sc <- lstem / max(stem$y)
+  # leaf per leaf processing
+  lpl <- pl[pl$rank > 0,]
+  leaves <- lapply(split(lpl,lpl$rank), function(leaf) {
+    xy <- na.omit(t(leaf[order(leaf$XY),ptcols]))
+    #passage repere base plante et rotation
+    x <- xy[,1] - stem$x[1]
+    y <- xy[,2] - stem$y[1]
+    xrot <- x * cos(theta) - sin(theta) * y
+    yrot <- sin(theta) * x + cos(theta) * y
+    # passage repere base feuille et re-sampling
+    side <- ifelse(length(xrot[xrot >= 0]) >= length(xrot) / 2, 1, -1)
+    xr <- side * (xrot - xrot[1])
+    yr <- yrot - yrot[1]
+    hins <-  as.vector(yrot[1] * sc)
+    #
+    s <- c(0,cumsum(sqrt(diff(xr)^2 + diff(yr)^2)))
+    sout <- seq(0,max(s),len=20)
+    xout <- approx(s,xr,sout)$y
+    yout <- approx(s,yr,sout)$y
+    #
+    data.frame(iplant=iplant, rank=leaf$rank[1],s=sout,x=xout, y=yout,hins=hins,side=side,phiP=phiP)
+  })
+  do.call('rbind',leaves)
+}
+
+#
 # read notations files
 #
 readNotations <- function(pref, notationfiles, name=NULL) {
