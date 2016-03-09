@@ -86,10 +86,14 @@ curv2xy <- function(pl,iplant) {
     #
     s <- c(0,cumsum(sqrt(diff(xr)^2 + diff(yr)^2)))
     sout <- seq(0,max(s),len=20)
-    xout <- approx(s,xr,sout)$y
-    yout <- approx(s,yr,sout)$y
+    xout <- approx(s,x,sout)$y
+    yout <- approx(s,y,sout)$y
+    xrotout <- approx(s,xrot,sout)$y
+    yrotout <- approx(s,yrot,sout)$y    
+    xrout <- approx(s,xr,sout)$y
+    yrout <- approx(s,yr,sout)$y
     #
-    data.frame(iplant=iplant, rank=leaf$rank[1],s=sout,x=xout, y=yout,hins=hins,side=side,phiP=phiP)
+    data.frame(iplant=iplant, rank=leaf$rank[1],s=sout,x=xout,y=yout,xprot=xrotout,yprot=yrotout,xrot=xrotout,yrot=yrotout,xr=xrout,yr=yrout,hins=hins,side=side,phiP=phiP,phiS=0)
   })
   do.call('rbind',leaves)
 }
@@ -605,4 +609,47 @@ flattaged <- function(tagged) {
     }
     res
   }))
+}
+#
+# merging of curvature data + pheno data + scan data
+#
+add_dimphen <- function(leaves, phend, scanleafdb, TTlin, TTem, TToM) {
+  scand <- scanleafdb[scanleafdb$id_Axe=='MB',]
+  scand <- split(scand,scand$variety)
+  xydb <- split(leaves,leaves$label)
+  
+  for (g in names(xydb)) {
+    p <- phend[[g]][,c('Source', 'N', 'nff','Nflig','HS','SSI')]
+    p$Source <- as.character(p$Source)
+    xydb[[g]] <- merge(xydb[[g]],p, all.x=TRUE)
+    xydb[[g]] <- merge(xydb[[g]],scand[[g]][,c('Source','N','rank','stat','lmax','wmax','A_bl','A_bl_green')], all.x=TRUE)
+
+  #
+    dates <- sapply(xydb[[g]]$Source, function(s) format(as.Date(strsplit(s,split='_')[[1]][3], '%d%m%y'),'%d/%m/%Y'))
+    TT <- TTlin[[g]]$TT[match(dates,TTlin[[g]]$Date)]
+    xydb[[g]]$TT <- TT
+    TTflag <- aggregate(TTem[[g]], list(TTem[[g]]$nff),max)
+    dTTflag <- diff(TTflag$TTlig) /  diff(TTflag$nff)
+    nffM <- mean(sapply(split(TTem[[g]],TTem[[g]]$N),function(x) x$nff[1]))
+    xydb[[g]]$HSest <- slopeM[[g]] * (TT + ifelse(is.na(xydb[[g]]$nff), 0, dTTflag * (xydb[[g]]$nff - nffM)) - TToM[[g]])
+    xydb[[g]]$nffest <- ifelse(is.na(xydb[[g]]$nff),nffM, xydb[[g]]$nff)
+  # ranktop estimation
+    xydb[[g]]$ranktop <-  xydb[[g]]$nffest -  xydb[[g]]$rank + 1
+  # relative_ranktop
+    hs <- ifelse(!is.na(xydb[[g]]$HS), xydb[[g]]$HS, pmin(xydb[[g]]$nffest, xydb[[g]]$HSest))
+    xydb[[g]]$relative_ranktop <- ifelse(!is.na(xydb[[g]]$relative_ranktop), xydb[[g]]$relative_ranktop, hs - xydb[[g]]$rank + 1)
+  }
+  res <- do.call('rbind',xydb)
+  #
+  # add aliases columns
+  res$variety <- res$label
+  res$variety_code <- as.numeric(as.factor(res$variety))
+  res$harvest <- as.numeric(as.factor(res$Source))
+  res$plant <- res$N
+  res$A <- res$A_bl
+  res$Agr <- res$A_bl_green
+  res$nmax <- res$nffest
+  res$N2 <- res$Nflig
+  res$mass <- NA
+  res
 }

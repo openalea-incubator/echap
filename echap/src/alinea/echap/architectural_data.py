@@ -676,7 +676,7 @@ def leaf_curvature_data(name='Mercia'):
         return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
         
     if name is 'Mercia':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
         dfxy = xy_reader(data_file_xydb)
@@ -687,7 +687,7 @@ def leaf_curvature_data(name='Mercia'):
         dfsr = sr_reader(data_file_srdb)
 
     if name is 'Rht3':
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
         dfxy = xy_reader(data_file_xydb)
@@ -698,7 +698,7 @@ def leaf_curvature_data(name='Mercia'):
         
     if name is 'Tremie12':
         # fichier angle non dispo encore, on prend mercia en attendant
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
         # XY
         dfxy = xy_reader(data_file_xydb)
@@ -709,7 +709,7 @@ def leaf_curvature_data(name='Mercia'):
         
     if name is 'Tremie13':
         # fichier angle non dispo encore, on prend mercia en attendant
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv') 
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
         # XY
         dfxy = xy_reader(data_file_xydb)
@@ -724,7 +724,7 @@ def leaf_curvature_data(name='Mercia'):
     
 def xydb_reader(name = 'Mercia'):
     if name in ['Mercia', 'Rht3']:
-        data_file_xydb = shared_data(alinea.echap, 'xydb_GrignonMercia2010.csv')
+        data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv')
         df = pandas.read_csv(data_file_xydb)
         df.loc[:, 'side'] = 1.
     elif name in ['Tremie12', 'Tremie13']:
@@ -755,7 +755,7 @@ def median_leaf_trajectories():
              'Rht3': 'MerciaRht_Grignon2010',
              'Tremie12':'Tremie_Boigneville2012_2013',
              'Tremie13':'Tremie_Boigneville2012_2013'}
-    fn = {k:shared_data(alinea.echap, 'median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
+    fn = {k:shared_data(alinea.echap, 'architectural_measurements/median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
     return {k:read_trajectories(fn[k]) for k in trajs}
     
 #

@@ -93,3 +93,8 @@ scanleafdb <- do.call('rbind',mapply(function(x,name) {
   x <- merge(x,nfl, all.x=TRUE)
   x
   }, scandb, names(scandb),SIMPLIFY=FALSE))
+#
+# import curvature / leaf area data from Corinne/Tino experiment 2010
+#
+leaves_2010 <-  read.csv('leafshape_metainfo_Grignon2010.csv', sep=',', dec='.')
+xyl_2010 <-  read.csv('leafshape_xydata_Grignon2010.csv', sep=',', dec='.')
