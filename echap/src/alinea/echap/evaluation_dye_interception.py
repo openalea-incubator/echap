@@ -231,11 +231,12 @@ def run_sim(adel, hsfit, var, date, dose, num_sim):
     return df_i.merge(midribs)
 
     
-def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 'reference', treatment='application'):
+def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 'reference', treatments=None):
                          
     path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
     repetitions = range(1, nrep + 1)
-    treatments = idata.tag_treatments()[variety][treatment]
+    if treatments is None:
+        treatments = idata.tag_treatments()[variety]['application']
     sim = simulation_tags()[simulation][variety]
     new_sim = False
     dfint = []
