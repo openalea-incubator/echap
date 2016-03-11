@@ -102,7 +102,8 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', 
     ax.set_xticklabels(leaves, rotation=90, fontsize='small' )
     return obs_bar, sim_bar 
 
-def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,6.5), treatments=None):
+def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,6.5), 
+                           simulation='reference', treatments=None, reset=False, reset_data=False):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['application']
     #obs
@@ -112,7 +113,7 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='M
     else:
         obs=None
     #sim
-    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatments=treatments)
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= simulation, treatments=treatments, reset=reset, reset_data=reset_data)
     sim = ifun.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by, axis=axis)
     #plot
     colors = colors_variety()
@@ -129,7 +130,7 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='M
             ax.set_ylabel('Deposit (g per g.cm-2)') 
     fig.tight_layout() 
     fig.subplots_adjust(bottom=0.15)
-    fig.text(0.5, 0.05, variety, size='large', ha='center')
+    fig.text(0.5, 0.05, variety + ' ' + simulation, size='large', ha='center')
     return fig
     
 if run_plot:

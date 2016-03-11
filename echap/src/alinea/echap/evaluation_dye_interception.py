@@ -10,7 +10,7 @@ from scipy.stats import t
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
-from alinea.echap.architectural_reconstructions import echap_reconstructions
+from alinea.echap.architectural_reconstructions import EchapReconstructions, echap_reconstructions, reconstruction_parameters
 import alinea.echap.interception_data as idata
 from alinea.echap.interception_leaf import InterceptModel, pesticide_applications
 from alinea.echap.interfaces import pesticide_interception
@@ -38,13 +38,15 @@ def df_interception_path(variety = 'Tremie12', nplants = 30, simulation = 'refer
     filename = 'interception_'+ simulation + '_' + variety.lower() + '_' + str(nplants) + 'pl.csv'
     return str(shared_data(alinea.echap)/'interception_simulations'/filename)
 
-def get_reconstruction(variety='Tremie13', nplants=30, density=1, dimension=1, reset=False, reset_data=False):
-    # If adjustment needed : import echap parameters, modify parameters and create new reconstruction method
-    # nlim_Mercia=3, nlim_Rht3=2, nlim_Tremie12=4, nlim_Tremie13=3
-    #Reconstructions_appli = reconstructions.EchapReconstructions(nlim_factor = {'Mercia':nlim_Mercia, 'Rht3':nlim_Rht3, 'Tremie12':nlim_Tremie12, 'Tremie13':nlim_Tremie13} )
-    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+def get_reconstruction(variety='Tremie13', nplants=30, reconstruction_pars=None, reset=False, reset_data=False):
+    if reconstruction_pars is None: 
+        reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
+    else:
+        pars = reconstruction_parameters()
+        pars.update(reconstruction_pars)
+        reconst = EchapReconstructions(pars = pars, reset_data=reset_data)
     hsfit = reconst.HS_fit[variety]
-    adel = reconst.get_reconstruction(name=variety, nplants=nplants, stand_density_factor = {variety:density} , dimension=dimension)
+    adel = reconst.get_reconstruction(name=variety, nplants=nplants)
     return adel, hsfit
     
 def canopy_age(variety='Tremie13', date='T1'):
@@ -217,10 +219,15 @@ def pdict(value):
     return {k:deepcopy(value) for k in ('Mercia', 'Rht3','Tremie12', 'Tremie13')}    
 
 def simulation_tags():
-    tags = {'reference': pdict({'dose' : 1e4,
-                          'density' : 1,
-                          'dimension' : 1})
+    tags = {'reference': {'dose' : pdict(1e4),
+                          'reconstruction_pars' : None},
            }
+    for shape in ('MerciaRht','Tremie','Soissons'):
+        tags['shape_' + shape + '_byleafclass'] = {'dose': pdict(1e4),
+                                  'reconstruction_pars': {'xy_data': pdict(shape + '_byleafclass'),
+                                                          'top_leaves':pdict(4)
+                                                          }
+                                 }
     return tags
 
 def run_sim(adel, hsfit, var, date, dose, num_sim):
@@ -231,13 +238,13 @@ def run_sim(adel, hsfit, var, date, dose, num_sim):
     return df_i.merge(midribs)
 
     
-def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 'reference', treatments=None):
+def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 'reference', treatments=None, reset=False, reset_data=False):
                          
     path = df_interception_path(variety = variety, nplants = nplants, simulation = simulation)                      
     repetitions = range(1, nrep + 1)
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['application']
-    sim = simulation_tags()[simulation][variety]
+    sim = simulation_tags()[simulation]
     new_sim = False
     dfint = []
     
@@ -253,9 +260,9 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 
             to_do = [t for t in treatments if not t in done]
             if len(to_do) > 0:
                 new_sim = True
-                adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+                adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, reconstruction_pars=sim['reconstruction_pars'], reset=reset, reset_data=reset_data)
                 for t in to_do:
-                     df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'], num_sim=i_sim)
+                     df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'][variety], num_sim=i_sim)
                      dfint.append(df_t)
     else:
         missing = repetitions
@@ -263,9 +270,9 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 
     if len(missing) > 0:
         new_sim = True
         for i in missing:
-            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, density=sim['density'], dimension=sim['dimension'])
+            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, reconstruction_pars=sim['reconstruction_pars'])
             for t in treatments:
-                df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'], num_sim=i)
+                df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'][variety], num_sim=i)
                 dfint.append(df_t)       
                 
     df_interception = pandas.concat(dfint).reset_index(drop = True)
