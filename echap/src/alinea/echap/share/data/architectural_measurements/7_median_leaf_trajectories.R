@@ -36,10 +36,9 @@ mapply(function(dat,fit) {plot(dat$xr,dat$yr);lines(sphi2xy(fit$ds,fit$phi),col=
 # shapes descriptors
 #
 shapedb <- get_shapes(sphidb, bldb,topleaves=4)
-groups <- c('MerciaRht','MerciaRht', 'MerciaRht', 'MerciaRht','Soissons','Tremie', 'Tremie')
+groups <- c('MerciaRht','MerciaRht', 'MerciaRht','Soissons','Tremie', 'Tremie')
 names(groups) <- c('Mercia','Rht10','Rht3','Soissons','Tremie12','Tremie13')
-shapedb$group <- groups[shapedb$label]
-
+shapedb$group <- groups[as.character(shapedb$label)]
 #
 # trajectories
 #
@@ -48,32 +47,20 @@ ages <- seq(0,12,0.5)
 # pooled data
 #
 dxymed <- mapply(sxy_interpolation,split(sxydb, shapedb$pos), split(shapedb,shapedb$pos), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
+dxymedM <- sxy_interpolation(sxydb,shapedb,at=ages)
+dxymedgM <- mapply(sxy_interpolation,split(sxydb, shapedb$group), split(shapedb,shapedb$group), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
 # fit per 'genotype'
 dxymedg <- mapply(function(sxyg, shapeg) mapply(sxy_interpolation,split(sxyg, shapeg$pos), split(shapeg, shapeg$pos), MoreArgs=list(at=ages), SIMPLIFY=FALSE),
                   split(sxydb,shapedb$group), split(shapedb, shapedb$group),SIMPLIFY=FALSE)
 #
-trajfit <- lapply(dxymedg, function(dxy) {
-  xya <- lapply(dxy,function(traj) do.call('rbind',mapply(function(xys,age) data.frame(age=age, x=xys$x,y=xys$y), traj,ages,SIMPLIFY=FALSE)))
-  xyai <- do.call('rbind',mapply(function(xy,index) {xy$lindex=index;xy},xya,as.numeric(names(xya)),SIMPLIFY=FALSE))
-})
-#
-# export
-#
-loc <- c('Grignon2010','Grignon2010','Boigneville2012_2013')
-names(loc) <- c('MerciaRht','Soissons','Tremie')
-mapply(function(fit,label) {
-  fn <- paste('median_leaf_trajectories_',label, '_',loc[label],'.csv',sep='')
-  write.csv(fit, fn, row.names=FALSE)
-  },trajfit, names(trajfit))  
 #
 # plot trajectories
 #
 jet <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan","#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 palette(jet(length(ages)))
-
+par(mfcol=c(3,4), mar=c(4,4,1,1))
 #
-palette(jet(length(ages)))
-par(mfcol=c(2,4), mar=c(4,4,1,1))
+# Pooled genotypes
 leg <- c('lower leaves','upper leaves')
 for (i in seq(dxymed)) {
   plot(c(0,1.3),c(-0.3,1),type='n',xlab=leg[i],ylab='interpolated median leaf',cex.lab=1.5)
@@ -81,7 +68,9 @@ for (i in seq(dxymed)) {
   if (i==2)
     text(1,0.8,'Pooled')
 }
-#
+plot(c(0,1.3),c(-0.3,1),type='n',xlab='All leaves',ylab='interpolated median leaf',cex.lab=1.5)
+sapply(seq(dxymedM),function(j) {lines(dxymedM[[j]],col=j)})
+# per genotype
 for (g in names(dxymedg)) {
   dxy <- dxymedg[[g]]
   for (i in seq(dxy)) {
@@ -90,32 +79,52 @@ for (g in names(dxymedg)) {
     if (i==2)
     text(1,0.8,g)
   }
+  plot(c(0,1.3),c(-0.3,1),type='n',xlab="All leaves",ylab='interpolated median leaf',cex.lab=1.5)
+  sapply(seq(dxymedgg[[g]]),function(j) {lines(dxymedgg[[g]][[j]],col=j)})
 }
+#
 #
 # Check relation with age / median trajectorie projection
 #
-shapeT <- shapedb[shapedb$group=='Tremie',c('inerv','rank','ranktop','age','pos','hproj','vproj')]
+shapeT <- shapedb[shapedb$group=='Tremie',c('inerv','label','rank','ranktop','age','pos','hproj','vproj')]
 nervT <- do.call('rbind',split(nervsdb,shapedb$group)[['Tremie']])[,c('inerv','s','xr','yr')]
 nervp <- merge(nervT,shapeT)
 bins <- c(-1,ages)
 nervp$ageclass <- cut(nervp$age, bins)
-# raw shapes
-palette(jet(length(ages)))
-plot(nervp$x,nervp$y,col=as.numeric(nervp$ageclass),pch=16,cex=0.5)
-#
-# hproj
-#
 symb <- c(1,16)
 palette(jet(length(ages)))
 plot(nervp$age,nervp$hproj,col=as.numeric(nervp$ageclass),pch=symb[nervp$pos])
+t13 <- nervp[nervp$label=='Tremie13',]
 palette('default')
+points(t13$age,t13$hproj,col=1,pch='^')
 lapply(split(nervp,nervp$pos),function(x) lines(smooth.spline(x$age,x$hproj,df=4),col=8))
 #
 medleaf <- trajfit[['Tremie']]
 medp <- do.call('rbind',lapply(split(medleaf,list(medleaf$age,medleaf$lindex),drop=TRUE),function(leaf) data.frame(age=leaf$age[1],lindex=leaf$lindex[1],proj=max(leaf$x))))
 lapply(split(medp,medp$lindex),function(x) lines(x$age,x$proj,col=2))
-
-
+#
+# export
+#
+loc <- c('Grignon2010','Grignon2010','Boigneville2012_2013')
+names(loc) <- c('MerciaRht','Soissons','Tremie')
+#by leafclass
+trajfit <- lapply(dxymedg, function(dxy) {
+  xya <- lapply(dxy,function(traj) do.call('rbind',mapply(function(xys,age) data.frame(age=age, x=xys$x,y=xys$y), traj,ages,SIMPLIFY=FALSE)))
+  xyai <- do.call('rbind',mapply(function(xy,index) {xy$lindex=index;xy},xya,as.numeric(names(xya)),SIMPLIFY=FALSE))
+})
+mapply(function(fit,label) {
+  fn <- paste('median_leaf_trajectories_',label, '_',loc[label],'_byleafclass.csv',sep='')
+  write.csv(fit, fn, row.names=FALSE)
+  },trajfit, names(trajfit))
+# by genotypic group
+trajfit <- lapply(dxymedgM, function(dxy) {
+  xya <- do.call('rbind',mapply(function(xys,age) data.frame(age=age, x=xys$x,y=xys$y), dxy,ages,SIMPLIFY=FALSE))
+  xya$lindex=1
+  xya})
+mapply(function(fit,label) {
+  fn <- paste('median_leaf_trajectories_',label, '_',loc[label],'.csv',sep='')
+  write.csv(fit, fn, row.names=FALSE)
+  },trajfit, names(trajfit))
 #
 # deprecated sphi interpolation fits
 #

@@ -751,9 +751,9 @@ def read_trajectories(fn):
 def median_leaf_trajectories():
     """ interpolated xy for upper/lower leaves every 0.5 HS on Grignon 2009-2010 data
     """
-    trajs = {'MerciaRht_byleafclass': 'MerciaRht_Grignon2010',
-             'Tremie_byleafclass': 'Tremie_Boigneville2012_2013',
-             'Soissons_byleafclass':'Soissons_Grignon2010'}
+    trajs = {'MerciaRht_byleafclass': 'MerciaRht_Grignon2010_byleafclass',
+             'Tremie_byleafclass': 'Tremie_Boigneville2012_2013_byleafclass',
+             'Soissons_byleafclass':'Soissons_Grignon2010_byleafclass'}
     fn = {k:shared_data(alinea.echap, 'architectural_measurements/median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
     return {k:read_trajectories(fn[k]) for k in trajs}
     
