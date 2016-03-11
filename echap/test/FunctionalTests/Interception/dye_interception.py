@@ -70,7 +70,7 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
 #plot publication data+boite de petri
 
 def colors_variety():
-    return {'Tremie12':'c', 'Tremie13':'m'}
+    return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'c', 'Tremie13':'m'}
 
 def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', opacity=0.4, bar_width=0.4, ylim=None):
     

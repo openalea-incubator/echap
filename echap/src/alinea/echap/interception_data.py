@@ -97,6 +97,14 @@ def dye_interception(todec = []):
     #add aggregators
     df['axe'] = 'MS'
     df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
+    # hypothetic ntop_lig: one leaf is growing and has beeen measured, except if all leaves are ligulated
+    df['ntop_lig'] = df['ntop_cur'] - 1
+    all_ligulated = {'T2':['Mercia','Rht3','Tremie12']}
+    for t in all_ligulated:
+        df.loc[(df['treatment'] == t) & (df['variety'].isin(all_ligulated[t])),'ntop_lig'] += 1
+    two_growing = {'T1':['Tremie13']}
+    for t in two_growing:
+        df.loc[(df['treatment'] == t) & (df['variety'].isin(two_growing[t])),'ntop_lig'] -= 1    
     #index variety                                                           
     df=df.set_index('variety')
                                                                       
