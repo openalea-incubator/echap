@@ -52,9 +52,9 @@ leaves$HS <- leaves$age + leaves$rank + 1
 #
 # Export xydb for echap/adel pipelines
 #
-cols <- c('variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','x','y','hins','side')
+cols <- c('variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','Nflig','HS','inerv','x','y','hins','side')
 #
-xyTremie <- merge(xyl,leaves)[,c('variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','HS','inerv','xr','yr','hins','side')]
+xyTremie <- merge(xyl,leaves)[,c('variety','variety_code','harvest','plant','rank','ranktop','relative_ranktop','Nflig','HS','inerv','xr','yr','hins','side')]
 xyTremie$x <- xyTremie$xr
 xyTremie$y <- xyTremie$yr
 write.csv(xyTremie[,cols],'xydb_Boigneville_Tremie12_Tremie13.csv', row.names=FALSE)

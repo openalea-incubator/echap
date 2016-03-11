@@ -112,6 +112,7 @@ def scan_data():
     #add aggregator
     df['axe'] = 'MS'
     df['metamer'] = df['rank']
+    df['ntop_lig'] = df['Nflig'] - df['rank'] + 1
     #rem : for some date, nmax is not highest leaf, hence ntop_cur may be wrong
     def _ntopcur(x):
         nmax = x['metamer'].max()
@@ -136,12 +137,13 @@ def silhouettes():
         return pandas.Series({'HS':x['HS'].values[0], 'insertion_height':x['hins'].values[0], 
                               'h_projection': (x['x'].max() - x['x'].min()) / numpy.sum(numpy.sqrt(numpy.diff(x['x'])**2 + numpy.diff(x['y'])**2))})
                               
-    data = df.groupby(['variety','treatment','plant','rank','ranktop','relative_ranktop']).apply(_compress).reset_index()
+    data = df.groupby(['variety','treatment','plant','Nflig','rank','ranktop','relative_ranktop']).apply(_compress).reset_index()
     #add aggregator
     data['axe'] = 'MS'
     data = data.rename(columns={'rank':'metamer', 'ranktop': 'ntop', 'relative_ranktop': 'ntop_cur'})
     data['ntop'] = data['ntop'].round()
     data['ntop_cur'] = data['ntop_cur'].round()
+    data['ntop_lig'] = data['Nflig'] - data['metamer'] + 1
     #index variety                                                           
     data = data.set_index('variety')
     return data
