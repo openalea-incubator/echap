@@ -76,7 +76,10 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', 
     
     sniff = sim['xbar'].values[0]    
     if sniff.startswith('F'):
-        leaves = ['F' + str(x) for x in xleaf]
+        if sniff.startswith('Fl'):
+            leaves = ['Fl' + str(x) for x in xleaf]
+        else:
+            leaves = ['F' + str(x) for x in xleaf]
     else:
         leaves = ['L' + str(x) for x in xleaf]
     xbar = dict(zip(leaves, xleaf))
@@ -85,12 +88,12 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', 
     if obs is not None:
         if loc in obs.index:
             obs = obs.loc[loc,:]
-            x = [xbar.get(leaf,-1) for leaf in obs['xbar']] 
+            x = [xbar.get(leaf,-10) for leaf in obs['xbar']] 
             obs_bar = ax.bar(x, 'ybar', bar_width, alpha=opacity, 
                          color=o_color, yerr='yerr', ecolor=o_color, data=obs)
 
     sim = sim.loc[loc,:]                 
-    x = [xbar.get(leaf,-1) + bar_width for leaf in sim['xbar']]
+    x = [xbar.get(leaf,-10) + bar_width for leaf in sim['xbar']]
     sim_bar = ax.bar(x, 'ybar', bar_width, alpha=opacity, 
                      color=s_color, yerr='yerr', ecolor=s_color, data=sim)
 

@@ -85,10 +85,11 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     gr = df.groupby(['HS','plant','axe'], group_keys=False)
     def _fun(sub):
         sub['n_max'] = sub['metamer'].max()
+        sub['nflig'] = sub['metamer'][sub['is_ligulated'] > 0].max()
         return sub
     df = gr.apply(_fun)
     df['ntop_cur'] = df['n_max'] - df['metamer'] + 1
-    
+    df['ntop_lig'] = df['nflig'] - df['metamer'] + 1
     # compute leaf emergence
     df['leaf_emergence'] = df['TT'] - df['age'] 
     
@@ -134,6 +135,7 @@ def aggregate_by_leaf(df):
                    'length':numpy.sum,
                    'ntop':first_val,
                    'ntop_cur':first_val,
+                   'ntop_lig':first_val,
                    'organ':first_val,
                    'mature_length': first_val,
                    'penetrated_doses_Tartrazine': numpy.mean,
@@ -206,8 +208,10 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, by='ntop_cu
     errag = sub.groupby(['treatment',by]).agg(err).reset_index()
     agg['ybar'] = agg[what[0]]
     agg['yerr'] = errag[what[0]]
-    if by == 'ntop_cur' or by == 'ntop':    
+    if by == 'ntop_cur':    
         agg['xbar'] = ['F' + str(int(i)) for i in agg[by]]
+    elif by == 'ntop_lig':
+        agg['xbar'] = ['Fl' + str(int(i)) for i in agg[by]]
     else:
         agg['xbar'] = ['L' + str(int(leaf)) for leaf in agg['metamer']]
     agg=agg.set_index('treatment')
