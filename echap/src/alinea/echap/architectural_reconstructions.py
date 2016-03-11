@@ -155,7 +155,12 @@ def reconstruction_parameters():
     #--------------
     # flag for forcing median leaf shape = f(age) model instead of random shape sampling
     pars['median_leaf'] = pdict(True)
-    # number of top leaves to be considered erectophyl
+    # median leaf shape data to be used
+    pars['xy_data'] = {'Mercia': 'MerciaRht_byleafclass',
+             'Rht3': 'MerciaRht_byleafclass',
+             'Tremie12':'Tremie_byleafclass',
+             'Tremie13':'Tremie_byleafclass'}
+    # number of leaves to be considered as leaf class 2 (top leaves)
     #pars['top_leaves'] = {'Mercia':3, 'Rht3':2, 'Tremie12':4, 'Tremie13':3} # values optimised for echap report december 2014
     pars['top_leaves'] = {'Mercia':4, 'Rht3':4, 'Tremie12':4, 'Tremie13':4}
     #
@@ -649,8 +654,9 @@ def leafshape_fits(reset_data=False, **parameters):
         raise NotImplementedError('leaf_fits not operational anymore')
         #use leaf_fits in that case
     top_leaves = parameters.get('top_leaves')
+    xydata = parameters.get('xy_data')
     disc_level = parameters.get('disc_level')
-    return {k: median_leaf_fits(data.xy_data[k], data.sr_data[k], disc_level=disc_level[k], top_leaves=top_leaves[k]) for k in median_leaf}
+    return {k: median_leaf_fits(data.xy_data[xydata[k]], data.sr_data[k], disc_level=disc_level[k], top_leaves=top_leaves[k]) for k in median_leaf}
 
  
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuille du bas) quelque soit le rang !
