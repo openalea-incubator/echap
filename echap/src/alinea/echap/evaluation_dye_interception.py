@@ -232,6 +232,11 @@ def simulation_tags():
                                                           'top_leaves':pdict(4)
                                                           }
                                  }
+        tags['shape_' + shape] = {'dose': pdict(1e4),
+                                  'reconstruction_pars': {'xy_data': pdict(shape),
+                                                          'top_leaves':pdict(0)
+                                                          }
+                                 }                                 
     return tags
 
 def run_sim(adel, hsfit, var, date, dose, num_sim):
@@ -274,7 +279,7 @@ def dye_interception(variety = 'Tremie12', nplants = 30, nrep = 1, simulation = 
     if len(missing) > 0:
         new_sim = True
         for i in missing:
-            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, reconstruction_pars=sim['reconstruction_pars'])
+            adel, hsfit = get_reconstruction(variety=variety, nplants=nplants, reconstruction_pars=sim['reconstruction_pars'], reset=reset, reset_data=reset_data)
             for t in treatments:
                 df_t = run_sim(adel, hsfit, variety, date=t, dose=sim['dose'][variety], num_sim=i)
                 dfint.append(df_t)       

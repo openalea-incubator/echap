@@ -753,7 +753,10 @@ def median_leaf_trajectories():
     """
     trajs = {'MerciaRht_byleafclass': 'MerciaRht_Grignon2010_byleafclass',
              'Tremie_byleafclass': 'Tremie_Boigneville2012_2013_byleafclass',
-             'Soissons_byleafclass':'Soissons_Grignon2010_byleafclass'}
+             'Soissons_byleafclass':'Soissons_Grignon2010_byleafclass',
+             'MerciaRht': 'MerciaRht_Grignon2010',
+             'Tremie': 'Tremie_Boigneville2012_2013',
+             'Soissons':'Soissons_Grignon2010'}
     fn = {k:shared_data(alinea.echap, 'architectural_measurements/median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
     return {k:read_trajectories(fn[k]) for k in trajs}
     
