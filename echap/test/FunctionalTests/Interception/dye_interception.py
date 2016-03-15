@@ -71,17 +71,16 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
 
 def colors_variety():
     return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'c', 'Tremie13':'m'}
-
-def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', opacity=0.4, bar_width=0.4, ylim=None):
     
-    sniff = sim['xbar'].values[0]    
-    if sniff.startswith('F'):
-        if sniff.startswith('Fl'):
-            leaves = ['Fl' + str(x) for x in xleaf]
-        else:
-            leaves = ['F' + str(x) for x in xleaf]
-    else:
-        leaves = ['L' + str(x) for x in xleaf]
+def xleaf_by():
+    return {'metamer': range(7,14), 'ntop_cur': range(0,6), 'ntop_lig': range(-1,5)}
+
+def prefix_xbar():
+    return {'metamer': 'L', 'ntop_cur': 'F', 'ntop_lig': 'Fl'}
+    
+def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), prefix ='F', o_color='y', s_color='b', opacity=0.4, bar_width=0.4):
+    
+    leaves = [prefix + str(x) for x in xleaf]
     xbar = dict(zip(leaves, xleaf))
         
     obs_bar = None
@@ -98,14 +97,36 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), o_color='y', s_color='b', 
                      color=s_color, yerr='yerr', ecolor=s_color, data=sim)
 
     # Mise en forme
-    if ylim is not None:
-        ax.set_ylim(*ylim)
     ax.set_xlim(min(xleaf) - bar_width, max(xleaf) + 3 * bar_width)            
     ax.set_xticks(numpy.array(xleaf) + bar_width)
     ax.set_xticklabels(leaves, rotation=90, fontsize='small' )
-    return obs_bar, sim_bar 
-
-def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,6.5), 
+    return obs_bar, sim_bar
+    
+def fig_observe_simule(obs, sim, treatments=['T1','T2'], 
+                        xleaf=range(1,5), prefix='F', s_color='b', ylim=None, ylab=None,title=None,add_obs=None, add_sim=None):
+    nt = len(treatments)
+    lg = max(1, nt / 2)
+    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
+    axlist = fig.get_axes()
+    for ifig, treatment in enumerate(treatments):
+        ax = axlist[ifig]
+        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, treatment,xleaf=xleaf,
+                                        prefix=prefix, s_color=s_color)
+        if add_sim is not None:
+            obs_bar, sim_bar = barplot_leaf(ax, add_obs, add_sim, treatment,xleaf=xleaf,
+                                prefix=prefix, s_color=s_color)
+        ax.text(min(xleaf) + 0.5, .8 * max(ax.get_ylim()), ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        if ifig == 0 and ylab is not None:
+            ax.set_ylabel(ylab)
+        if ylim is not None:
+            ax.set_ylim(ylim)
+    fig.tight_layout() 
+    fig.subplots_adjust(bottom=0.15)
+    if title is not None:
+        fig.text(0.5, 0.05, title, size='large', ha='center')
+    return fig
+    
+def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=None, ylim=(0,6.5), 
                            simulation='reference', treatments=None, reset=False, reset_data=False):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['application']
@@ -119,21 +140,13 @@ def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='M
     df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= simulation, treatments=treatments, reset=reset, reset_data=reset_data)
     sim = ifun.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by, axis=axis)
     #plot
-    colors = colors_variety()
-    nt = len(treatments)
-    lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
-    axlist = fig.get_axes()
-    for ifig, treatment in enumerate(treatments):
-        ax = axlist[ifig]
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, treatment,
-                                        s_color=colors[variety],xleaf=xleaf, ylim=ylim)
-        ax.text(min(xleaf) + 0.5, 5.8, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-        if ifig == 0:
-            ax.set_ylabel('Deposit (g per g.cm-2)') 
-    fig.tight_layout() 
-    fig.subplots_adjust(bottom=0.15)
-    fig.text(0.5, 0.05, variety + ' ' + simulation, size='large', ha='center')
+    color = colors_variety()[variety]
+    prefix = prefix_xbar()[by]
+    if xleaf is None:
+        xleaf = xleaf_by()[by]
+    ylab = 'Deposit (g per g.cm-2)'
+    title = variety + ' ' + simulation
+    fig = fig_observe_simule(obs, sim, treatments=treatments, xleaf=xleaf, prefix=prefix, s_color=color, ylim=ylim, ylab=ylab,title=title)
     return fig
     
 if run_plot:
@@ -171,7 +184,9 @@ def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1
     colors = {'Tremie12':'c', 'Tremie13':'m'}
     
     fig, axes = plt.subplots(nrows=1, ncols=len(variety))
+    axlist = fig.get_axes()
     for ifig, var in enumerate(variety):
+        ax = axlist[ifig]
         xbar = 0.
         xstage = []
         sim_bars = {}
@@ -182,76 +197,60 @@ def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1
             df_all_sd = df_all_ci.reset_index().set_index(['label', 'treatment'])
             obs, obs_err, sim, target= df_all.ix[(var,treatment), ['HS_mean', 'HS_conf', 'haun_stage', 'HStarget']]
             sim_err = df_all_sd.ix[(var,treatment), 'haun_stage']
-            target_bar = axes[ifig].bar(xbar, target, bar_width, alpha=opacity, color='orange')
+            target_bar = ax.bar(xbar, target, bar_width, alpha=opacity, color='orange')
             xbar += bar_width
-            obs_bar = axes[ifig].bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
+            obs_bar = ax.bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
             xbar += bar_width
             xstage.append(xbar)
-            sim_bars = axes[ifig].bar(xbar, sim, bar_width, alpha=opacity, color=colors[var], yerr=sim_err, ecolor=colors[var])
+            sim_bars = ax.bar(xbar, sim, bar_width, alpha=opacity, color=colors[var], yerr=sim_err, ecolor=colors[var])
             xbar += bar_width * 1.5
-        axes[ifig].set_ylim(0, 14)
-        axes[ifig].set_xlim(-bar_width, xbar)                 
-        axes[ifig].set_xticks(xstage)
-        axes[ifig].set_xticklabels(t, fontsize='small' )
-        axes[ifig].text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        ax.set_ylim(0, 14)
+        ax.set_xlim(-bar_width, xbar)                 
+        ax.set_xticks(xstage)
+        ax.set_xticklabels(t, fontsize='small' )
+        ax.text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
     fig.text(0.5, 0.05, 'HS', size='large', ha='center')
     return fig, axes
 
-def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='metamer',xleaf=range(7,14), ylim=(0,30), add_green=True, treatments=None):
+def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='metamer',xleaf=None, ylim=(0,30),
+                         simulation='reference', treatments=None, reset=False, reset_data=False):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['scan']
+    #obs
     df_obs = idata.scan_data()
+    obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl', by=by, axis=axis)
+    add_obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl_green', by=by, axis=axis)
     #sim
     df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatments=treatments)
+    sim = ifun.leaf_statistics(df_sim, what='area', by=by, axis=axis)
+    add_sim = ifun.leaf_statistics(df_sim, what='green_area', by=by, axis=axis)
     #plot
-    colors = colors_variety()
-    nt = len(treatments)
-    lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
-    axlist = fig.get_axes()
-    for ifig, treatment in enumerate(treatments):
-        ax = axlist[ifig]
-        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl', by=by, axis=axis)
-        sim = ifun.leaf_statistics(df_sim, what='area', by=by, axis=axis)
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, treatment, 
-                                    s_color=colors[variety],xleaf=xleaf, ylim=ylim)
-        if add_green:
-            obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='A_bl_green', by=by, axis=axis)
-            sim = ifun.leaf_statistics(df_sim, what='green_area', by=by, axis=axis)
-            obs_bar, sim_bar = barplot_leaf(ax, obs, sim, treatment, 
-                                    s_color=colors[variety],xleaf=xleaf, ylim=ylim)
-        ax.text(min(xleaf) + 0.5, 25, ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-        if ifig % 2 == 0:
-            ax.set_ylabel('Leaf Area (cm2)') 
-    fig.tight_layout() 
-    fig.subplots_adjust(bottom=0.15)
-    fig.text(0.5, 0.05, variety, size='large', ha='center')
+    color = colors_variety()[variety]
+    prefix = prefix_xbar()[by]
+    if xleaf is None:
+        xleaf = xleaf_by()[by]
+    ylab = 'Leaf Area (cm2)'
+    title = variety + ' ' + simulation
+    fig = fig_observe_simule(obs, sim, treatments=treatments, xleaf=xleaf, prefix=prefix, s_color=color, ylim=ylim, ylab=ylab,title=title,add_obs=add_obs,add_sim=add_sim)
     return fig
     
-def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=range(1,5), ylim=(0,1), what='h_projection', treatments=None):
+def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=None, ylim=(0,1), 
+                what='h_projection', simulation='reference', treatments=None, reset=False, reset_data=False):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['silhouette']
     df_obs = idata.silhouettes()
+    obs = ifun.leaf_statistics(df_obs.loc[variety,:], what=what, by=by, axis=axis)
     #sim
-    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= 'reference', treatments=treatments)
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= simulation, treatments=treatments, reset=reset, reset_data=reset_data)
+    sim = ifun.leaf_statistics(df_sim, what=what, by=by, axis=axis)
     #plot
-    colors = colors_variety()
-    nt = len(treatments)
-    lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
-    axlist = fig.get_axes()
-    for ifig, treatment in enumerate(treatments):
-        ax = axlist[ifig]
-        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what=what, by=by, axis=axis)
-        sim = ifun.leaf_statistics(df_sim, what=what, by=by, axis=axis)
-        obs_bar, sim_bar = barplot_leaf(ax, obs, sim, treatment, 
-                                       s_color=colors[variety],xleaf=xleaf, ylim=ylim)
-        ax.text(min(xleaf) + 0.5, 0.8*max(ylim), ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
-        if ifig == 0:
-            ax.set_ylabel('projection factor') 
-    fig.tight_layout() 
-    fig.subplots_adjust(bottom=0.15)
-    fig.text(0.5, 0.05, variety, size='large', ha='center')
+    color = colors_variety()[variety]
+    prefix = prefix_xbar()[by]
+    if xleaf is None:
+        xleaf = xleaf_by()[by]
+    ylab = 'Projection factor'
+    title = variety + ' ' + simulation
+    fig = fig_observe_simule(obs, sim, treatments=treatments, xleaf=xleaf, prefix=prefix, s_color=color, ylim=ylim, ylab=ylab,title=title)
     return fig   
     
  
