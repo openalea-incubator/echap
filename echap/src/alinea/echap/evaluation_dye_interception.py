@@ -226,7 +226,7 @@ def simulation_tags():
     tags = {'reference': {'dose' : pdict(1e4),
                           'reconstruction_pars' : None},
            }
-    for shape in ('MerciaRht','Tremie','Soissons'):
+    for shape in ('MerciaRht','Tremie','Soissons','Tremie12','Tremie13'):
         tags['shape_' + shape + '_byleafclass'] = {'dose': pdict(1e4),
                                   'reconstruction_pars': {'xy_data': pdict(shape + '_byleafclass'),
                                                           'top_leaves':pdict(4)
