@@ -127,17 +127,18 @@ def fig_observe_simule(obs, sim, treatments=['T1','T2'],
     return fig
     
 def deposit_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='ntop_cur', xleaf=None, ylim=(0,6.5), 
-                           simulation='reference', treatments=None, reset=False, reset_data=False):
+                           simulation='reference', treatments=None, reset=False, reset_data=False, frac=1):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['application']
     #obs
     df_obs = idata.dye_interception()
     if by in df_obs.columns:
-        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='deposit_u', by=by, axis=axis)
+        obs = ifun.leaf_statistics(df_obs.loc[variety,:], what='deposit', by=by, axis=axis)
     else:
         obs=None
     #sim
     df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation= simulation, treatments=treatments, reset=reset, reset_data=reset_data)
+    df_sim['deposit_Tartrazine'] *= frac
     sim = ifun.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by, axis=axis)
     #plot
     color = colors_variety()[variety]

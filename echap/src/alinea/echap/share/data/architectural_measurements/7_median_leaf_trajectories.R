@@ -44,12 +44,13 @@ shapedb$group <- groups[as.character(shapedb$label)]
 #
 ages <- seq(0,12,0.5)
 #
-# pooled data
+# All ranks
 #
-dxymed <- mapply(sxy_interpolation,split(sxydb, shapedb$pos), split(shapedb,shapedb$pos), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
 dxymedM <- sxy_interpolation(sxydb,shapedb,at=ages)
 dxymedgM <- mapply(sxy_interpolation,split(sxydb, shapedb$group), split(shapedb,shapedb$group), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
-# fit per 'genotype'
+dxymedlabM <- mapply(sxy_interpolation,split(sxydb, shapedb$label), split(shapedb,shapedb$label), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
+# per leaf pos
+dxymed <- mapply(sxy_interpolation,split(sxydb, shapedb$pos), split(shapedb,shapedb$pos), MoreArgs=list(at=ages),SIMPLIFY=FALSE)
 dxymedg <- mapply(function(sxyg, shapeg) mapply(sxy_interpolation,split(sxyg, shapeg$pos), split(shapeg, shapeg$pos), MoreArgs=list(at=ages), SIMPLIFY=FALSE),
                   split(sxydb,shapedb$group), split(shapedb, shapedb$group),SIMPLIFY=FALSE)
 #
@@ -60,7 +61,7 @@ jet <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan","#7FFF7F", "yello
 palette(jet(length(ages)))
 par(mfcol=c(3,4), mar=c(4,4,1,1))
 #
-# Pooled genotypes
+# Pooled per pos
 leg <- c('lower leaves','upper leaves')
 for (i in seq(dxymed)) {
   plot(c(0,1.3),c(-0.3,1),type='n',xlab=leg[i],ylab='interpolated median leaf',cex.lab=1.5)
@@ -68,9 +69,10 @@ for (i in seq(dxymed)) {
   if (i==2)
     text(1,0.8,'Pooled')
 }
+# poooled all ranks
 plot(c(0,1.3),c(-0.3,1),type='n',xlab='All leaves',ylab='interpolated median leaf',cex.lab=1.5)
 sapply(seq(dxymedM),function(j) {lines(dxymedM[[j]],col=j)})
-# per genotype
+# per genotype group per pos
 for (g in names(dxymedg)) {
   dxy <- dxymedg[[g]]
   for (i in seq(dxy)) {
@@ -79,8 +81,21 @@ for (g in names(dxymedg)) {
     if (i==2)
     text(1,0.8,g)
   }
+  # all ranks per grenotype group
   plot(c(0,1.3),c(-0.3,1),type='n',xlab="All leaves",ylab='interpolated median leaf',cex.lab=1.5)
-  sapply(seq(dxymedgg[[g]]),function(j) {lines(dxymedgg[[g]][[j]],col=j)})
+  sapply(seq(dxymedgM[[g]]),function(j) {lines(dxymedgM[[g]][[j]],col=j)})
+}
+#
+# fits per label
+#
+jet <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan","#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
+palette(jet(length(ages)))
+par(mfrow=c(3,3), mar=c(4,4,1,1))
+for (g in names(dxymedlabM)) {
+  dxy <- dxymedlabM[[g]]
+  plot(c(0,1.3),c(-0.3,1),type='n',xlab=leg[i],ylab='interpolated median leaf',cex.lab=1.5)
+  sapply(seq(dxy),function(j) {lines(dxy[[j]],col=j)})
+  text(1,0.8,g)
 }
 #
 #
@@ -116,7 +131,7 @@ mapply(function(fit,label) {
   fn <- paste('median_leaf_trajectories_',label, '_',loc[label],'_byleafclass.csv',sep='')
   write.csv(fit, fn, row.names=FALSE)
   },trajfit, names(trajfit))
-# by genotypic group
+# by genotypic group only
 trajfit <- lapply(dxymedgM, function(dxy) {
   xya <- do.call('rbind',mapply(function(xys,age) data.frame(age=age, x=xys$x,y=xys$y), dxy,ages,SIMPLIFY=FALSE))
   xya$lindex=1
@@ -125,6 +140,22 @@ mapply(function(fit,label) {
   fn <- paste('median_leaf_trajectories_',label, '_',loc[label],'.csv',sep='')
   write.csv(fit, fn, row.names=FALSE)
   },trajfit, names(trajfit))
+# by label
+trajfit <- lapply(dxymedlabM, function(dxy) {
+  xya <- do.call('rbind',mapply(function(xys,age) data.frame(age=age, x=xys$x,y=xys$y), dxy,ages,SIMPLIFY=FALSE))
+  xya$lindex=1
+  xya})
+#
+mapply(function(fit,label) {
+  fn <- paste('median_leaf_trajectories_',label,'.csv',sep='')
+  write.csv(fit, fn, row.names=FALSE)
+  },trajfit, names(trajfit))
+# 
+#
+#
+#
+#
+#
 #
 # deprecated sphi interpolation fits
 #

@@ -64,23 +64,25 @@ def tag_treatments():
                         'silhouette': ['T1+4']}}
     return tags    
     
-def dye_interception(todec = []):
+def dye_interception(coef=0.045):
     """ Dye interception data
     
+    coef : slope of the absobance = f(concentration) [mg.l-1] relationships 
+           (absorbance = coef * concentration, ie conc = abs/coeff)
+           In original files, in 2011 and 2012 a coef of 0.0448 was used whereas a coeff of 0.0453 was used in 2013
+           here we use a mean value of 0.045
     
     units:
         volume : applied volumetric rate (l.ha-1)
         concentration: applied concentration (g.l-1)
         dilution: water volume used to dilute intercepted dye (cl)
         absorbance :optical read
-        coef : slope of the absobance = f(concentration) relationships (absorbance = coef * concentration (mg.l-1), ie conc = abs/coeff)
+        
         thus:
         quantity intercepted (mg) = abs / coef * dilution / 100
  
         deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
-        
-        Rem: coef is consistent for 2011/2012, but depart for 2013: is this expected ? better to use one for all seasons ?
-        
+       
         
     Raw data are in ECHAP_ARVALIS/Interception/Donnees brutes 3 annee
     original units : microg per g.ha-1 (converted in g per g.cm-2 by multiplying original data by 100)
@@ -91,9 +93,7 @@ def dye_interception(todec = []):
     """
     data_file = shared_data(alinea.echap, 'dye_interception.txt')
     df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
-    df['deposit'] = df['absorbance'] / df['coef'] * df['dilution'] / df['volume'] / df['concentration'] * 1000
-    #idem with unique coeff
-    df['deposit_u'] = df['absorbance'] / df['coef'].mean() * df['dilution'] / df['volume'] / df['concentration'] * 1000 
+    df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000 
     #add aggregators
     df['axe'] = 'MS'
     df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
@@ -116,7 +116,32 @@ def dye_interception(todec = []):
     df=df.set_index('variety')
                                                                       
     return df
-
+    
+def petri_dye_interception(coef=0.045, diameter=8.5):
+    """ Dye interception data in petri dishes placed above and below the canopy
+    
+    coef : slope of the absobance = f(concentration) [mg.l-1] relationships 
+           (absorbance = coef * concentration, ie conc = abs/coeff)
+           In original files, in 2011 and 2012 a coef of 0.0448 was used whereas a coeff of 0.0453 was used in 2013
+           here we use a mean value of 0.045
+    diameter: diameter of the petri dish (cm)
+    
+    units in the data columns:
+        volume : applied volumetric rate of dye (l.ha-1)
+        concentration: applied concentration (g.l-1)
+        dilution: water volume used to dilute intercepted dye (cl)
+        absorbance :optical read
+        
+    deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
+    """
+    
+    data_file = shared_data(alinea.echap, 'dye_interception_petri.csv')
+    df = pandas.read_csv(data_file, decimal=',', sep=';')
+    df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000
+    df['fraction_intercepted'] = df['deposit'] / (numpy.pi * diameter**2 / 4)
+    return df
+    
+    
 def scan_data():
     data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
     df = pandas.read_csv(data_file, decimal='.', sep=',')
