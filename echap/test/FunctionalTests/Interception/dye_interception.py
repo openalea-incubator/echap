@@ -115,11 +115,12 @@ def fig_observe_simule(obs, sim, treatments=['T1','T2'],
         if add_sim is not None:
             obs_bar, sim_bar = barplot_leaf(ax, add_obs, add_sim, treatment,xleaf=xleaf,
                                 prefix=prefix, s_color=s_color)
-        ax.text(min(xleaf) + 0.5, .8 * max(ax.get_ylim()), ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+        
         if ifig == 0 and ylab is not None:
             ax.set_ylabel(ylab)
         if ylim is not None:
             ax.set_ylim(ylim)
+        ax.text(min(xleaf) + 0.5, .8 * max(ax.get_ylim()), ''+str(treatment), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
     fig.tight_layout() 
     fig.subplots_adjust(bottom=0.15)
     if title is not None:
@@ -155,63 +156,43 @@ if run_plot:
     fig.savefig('deposit_Tremie12.png')
 
     
-def hs_observe_simule(variety = ['Tremie12', 'Tremie13'], nplants = 30, nrep = 1, sim_axis='MS'):
-
-    if not isinstance(variety, list):
-        variety = [variety]
-
+def hs_observe_simule(variety ='Tremie12', nplants = 30, nrep = 1, axis='MS',
+                        simulation='reference', treatments=None, reset=False, reset_data=False):
+    
+    if treatments is None:
+        treatments = idata.tag_treatments()[variety]['hs']
     #obs
     df_obs = idata.haun_stages()
-    df_obs = df_obs[df_obs['label'].isin(variety)]
-    df_obs['TTlab'] = map(str, df_obs['TT'])
-    df_obs['variety'] = df_obs['label']
+    df_obs = df_obs.loc[variety,:]
+    obs = df_obs.set_index('treatment')
     #sim
-    dfv=[]
-    for v in variety:
-        treatments = idata.tag_treatments()[v]['hs']
-        df = ifun.dye_interception(v, nplants=nplants, nrep=nrep,simulation= 'reference', treatments=treatments)
-        agg = ifun.aggregate_by_axe(df)
-        dfv.append(agg)
-    interception = pandas.concat(dfv).reset_index()
-    df_sim, df_sim_sd, df_sim_ci = ifun.axis_statistics(interception, sim_axis)
-    df_sim['TTlab'] = map(str, df_sim['TT'])
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation=simulation, treatments=treatments, reset=reset, reset_data=reset_data)
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
-    df_sim_ci = df_sim_ci.merge(df_sim.ix[:,['variety','treatment', 'TTlab']])
-    #merge
-    df_all = df_obs.merge(df_sim, on=['variety','TTlab'])
-    df_all_ci = df_obs.merge(df_sim_ci, on=['variety','TTlab'])
+    sim = ifun.axis_statistics(df_sim, what='haun_stage', axis=axis)
     
     bar_width = 0.2; opacity = 0.4    
     colors = {'Tremie12':'c', 'Tremie13':'m'}
-    
-    fig, axes = plt.subplots(nrows=1, ncols=len(variety))
-    axlist = fig.get_axes()
-    for ifig, var in enumerate(variety):
-        ax = axlist[ifig]
-        xbar = 0.
-        xstage = []
-        sim_bars = {}
-        df_all = df_all.reset_index().set_index('label')
-        t = df_all.ix[var,'treatment']
-        for treatment in df_all.ix[var,'treatment']:
-            df_all = df_all.reset_index().set_index(['label', 'treatment'])
-            df_all_sd = df_all_ci.reset_index().set_index(['label', 'treatment'])
-            obs, obs_err, sim, target= df_all.ix[(var,treatment), ['HS_mean', 'HS_conf', 'haun_stage', 'HStarget']]
-            sim_err = df_all_sd.ix[(var,treatment), 'haun_stage']
-            target_bar = ax.bar(xbar, target, bar_width, alpha=opacity, color='orange')
-            xbar += bar_width
-            obs_bar = ax.bar(xbar, obs, bar_width, alpha=opacity, color='y', yerr=obs_err, ecolor='y')
-            xbar += bar_width
-            xstage.append(xbar)
-            sim_bars = ax.bar(xbar, sim, bar_width, alpha=opacity, color=colors[var], yerr=sim_err, ecolor=colors[var])
-            xbar += bar_width * 1.5
-        ax.set_ylim(0, 14)
-        ax.set_xlim(-bar_width, xbar)                 
-        ax.set_xticks(xstage)
-        ax.set_xticklabels(t, fontsize='small' )
-        ax.text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    xbar = 0.
+    xstage = []
+    sim_bars = {}
+    var=variety
+    for t in treatments:
+        #target_bar = ax.bar(xbar, target, bar_width, alpha=opacity, color='orange')
+        #xbar += bar_width
+        if t in obs.index:
+            obs_bar = ax.bar(xbar, obs.ix[t,'HS_mean'], bar_width, alpha=opacity, color='y', yerr=obs.ix[t,'HS_conf'], ecolor='y')
+        xbar += bar_width
+        xstage.append(xbar)
+        sim_bars = ax.bar(xbar, sim.ix[t,'ybar'], bar_width, alpha=opacity, color=colors[var], yerr=sim.ix[t,'yerr'], ecolor=colors[var])
+        xbar += bar_width * 1.5
+    ax.set_ylim(0, 14)
+    ax.set_xlim(-bar_width, xbar)                 
+    ax.set_xticks(xstage)
+    ax.set_xticklabels(treatments, fontsize='small' )
+    ax.text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
     fig.text(0.5, 0.05, 'HS', size='large', ha='center')
-    return fig, axes
+    return fig, ax
 
 def scan_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', by='metamer',xleaf=None, ylim=(0,30),
                          simulation='reference', treatments=None, reset=False, reset_data=False):
@@ -254,7 +235,45 @@ def sil_observe_simule(variety = 'Tremie12', nplants = 30, nrep = 1, axis='MS', 
     fig = fig_observe_simule(obs, sim, treatments=treatments, xleaf=xleaf, prefix=prefix, s_color=color, ylim=ylim, ylab=ylab,title=title)
     return fig   
     
- 
+def petri_observe_simule(variety ='Tremie12', nplants = 30, nrep = 1, axis='MS',
+                        simulation='reference', treatments=None, reset=False, reset_data=False):
+    
+    if treatments is None:
+        treatments = idata.tag_treatments()[variety]['application']
+    #obs
+    df_obs = idata.petri_dye_interception()
+    df_obs = df_obs.loc[variety,:]
+    obs = df_obs.set_index('treatment')
+    #sim
+    df_sim = ifun.dye_interception(variety, nplants=nplants, nrep=nrep,simulation=simulation, treatments=treatments, reset=reset, reset_data=reset_data)
+    df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
+    sim = ifun.axis_statistics(df_sim, what='haun_stage', axis=axis)
+    
+    bar_width = 0.2; opacity = 0.4    
+    colors = {'Tremie12':'c', 'Tremie13':'m'}
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    xbar = 0.
+    xstage = []
+    sim_bars = {}
+    var=variety
+    for t in treatments:
+        #target_bar = ax.bar(xbar, target, bar_width, alpha=opacity, color='orange')
+        #xbar += bar_width
+        if t in obs.index:
+            obs_bar = ax.bar(xbar, obs.ix[t,'HS_mean'], bar_width, alpha=opacity, color='y', yerr=obs.ix[t,'HS_conf'], ecolor='y')
+        xbar += bar_width
+        xstage.append(xbar)
+        sim_bars = ax.bar(xbar, sim.ix[t,'ybar'], bar_width, alpha=opacity, color=colors[var], yerr=sim.ix[t,'yerr'], ecolor=colors[var])
+        xbar += bar_width * 1.5
+    ax.set_ylim(0, 14)
+    ax.set_xlim(-bar_width, xbar)                 
+    ax.set_xticks(xstage)
+    ax.set_xticklabels(treatments, fontsize='small' )
+    ax.text(0.1, 13.1, ''+str(var), bbox={'facecolor':'#FCF8F8', 'alpha':0.6, 'pad':10}, fontsize=12)
+    fig.text(0.5, 0.05, 'HS', size='large', ha='center')
+    return fig, ax
+
+    
 def plot_petri():
     #boite de petri, seulement Tremie12 et Tremie13
     petriT1_Tremie12, petriT2_Tremie12 = idata.Petri_data('Tremie12') 

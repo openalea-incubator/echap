@@ -33,10 +33,16 @@ def TT_index():
     
     
 def tag_dates():
-    tags = {'Mercia': {'T1': '2011-04-19', # date dye application
-                       'T2': '2011-05-11'},
-            'Rht3': {'T1':'2011-04-19',
-                     'T2':'2011-05-11'},
+    tags = {'Mercia': {'T1-1': '2001-04-18',
+                       'T1': '2011-04-19',
+                       'T2-14':'2011-04-27',
+                       'T2': '2011-05-11',
+                       'T2+15':'2011-05-26'},
+            'Rht3': {'T1-1': '2001-04-18',
+                     'T1': '2011-04-19',
+                     'T2-14':'2011-04-27',
+                     'T2': '2011-05-11',
+                     'T2+15':'2011-05-26'},
             'Tremie12': {'T1-33' : '2012-03-09',#date scan (aka date1)
                          'T1-9' : '2012-04-02',
                          'T1' : '2012-04-11',
@@ -52,8 +58,10 @@ def tag_dates():
     return tags
 
 def tag_treatments():
-    tags= {'Mercia': {'application': ['T1','T2']},
-           'Rht3': {'application': ['T1','T2']},
+    tags= {'Mercia': {'application': ['T1','T2'],
+                      'hs': ['T1-1','T2-14', 'T2+15']},
+           'Rht3': {'application': ['T1','T2'],
+                    'hs': ['T1-1','T2-14', 'T2+15']},
            'Tremie12': {'application': ['T1','T2'],
                         'hs': ['T1','T2'],
                         'scan': ['T1-33','T1-9','T1','T2'],
@@ -189,6 +197,11 @@ def silhouettes():
     return data
     
 def haun_stages():
+    tags = {'Mercia': {'2011-04-18':'T1-1', '2011-04-27':'T2-14','2011-05-26':'T2+15'},
+            'Rht3': {'2011-04-18':'T1-1', '2011-04-27':'T2-14','2011-05-26':'T2+15'},
+            'Tremie12':{'2012-03-09':'T1-33', '2012-04-02':'T1-9', '2012-04-11':'T1','2012-05-09':'T2','2012-06-12':'T2+34'},
+            'Tremie13':{'2013-04-19':'T1-6','2013-04-22':'T1-3', '2013-04-29':'T1+4','2013-05-02':'T2-15', '2013-05-03':'T2-14','2013-05-22':'T2+5'}}
+    
     def aggregate(data, column = 'HS', group = ['TT', 'label', 'nff'],
               func = numpy.mean, column_name = 'HS_mean'):
         df = data.groupby(group).agg(func).loc[:, column].to_frame()
@@ -206,7 +219,12 @@ def haun_stages():
     df_HS = pandas.concat([aggregate(data, 'HS', ['Date', 'TT', 'label'], numpy.mean, 'HS_mean'),
                            aggregate(data, 'HS', ['Date', 'TT', 'label'], numpy.nanstd, 'HS_std'),
                            aggregate(data, 'HS', ['Date', 'TT', 'label'], conf_int, 'HS_conf')], axis=1)
+                           
     df_HS = df_HS.reset_index()
+    df_HS = df_HS[df_HS['Date'].isin(reduce(lambda x,y: x+y, [tags[v].keys() for v in tags],[]))]
+    df_HS['treatment'] = map(lambda (var,d): tags[var][d.strftime('%Y-%m-%d')], zip(df_HS['label'], df_HS['Date']))
+    df_HS = df_HS.reset_index().set_index('label')
+    
     return df_HS
     
 def dye_applications():

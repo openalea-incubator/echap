@@ -80,6 +80,7 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     df['variety'] = variety
     df['treatment'] = tag
     df['nb_plantes_sim'] = adel.nplants
+    df['domain_area'] = adel.domain_area * 10000 #m2 -> cm2
     df['numero_sim'] = num_sim
     # compute n_max, ntop_cur
     gr = df.groupby(['HS','plant','axe'], group_keys=False)
@@ -94,34 +95,18 @@ def repartition_at_application(adel, hsfit, variety, date='T1', dose=1e4, num_si
     df['leaf_emergence'] = df['TT'] - df['age'] 
     
     return g, df, midribs
-    
-#deprecated
-def dates_emergence(adel):
-    df_phenT = adel.phenT()
-    nffs = df_phenT.set_index('plant').groupby(level=0).count()['n']
-    df_phenT['nff'] = [nffs[v] for v in df_phenT['plant']]
-    df_phenT['ntop_cur'] = df_phenT['nff'] - df_phenT['n']
-    dates = [numpy.mean(df_phenT[df_phenT['ntop_cur']==lf]['tip']) for lf in range(1, int(max(df_phenT['n'])+2))]
-    df_dates = pandas.DataFrame(dates, index = range(1, len(dates)+1), columns = ['leaf_emergence'])
-    df_dates.index.name = 'ntop_cur'
-    df_dates = df_dates.reset_index()
-    return df_dates
  
-def aggregate_by_leaf(df):
-    """
-    Aggregate interceptioin data by leaf and add colmun 'deposits' (= area * surfacic doses)
+
+def aggregation_types(what=None):
+    """ aggregating functions for one simulation
     """
     def first_val(x):
         return x[x.first_valid_index()]
         
-
-    df = df[(df['hasEar'] == 1)]# do not consider aborting axes
-    
-    df = df.convert_objects()
-    gr = df.groupby(['HS', 'plant','axe','metamer'], as_index=False)
-    df_agg = gr.agg({'variety': first_val,
+    types = {'variety': first_val,
                    'treatment': first_val,
                     'nb_plantes_sim':first_val,
+                    'domain_area':first_val,
                     'numero_sim':first_val,
                     'age':first_val,
                     'leaf_emergence': first_val,
@@ -142,39 +127,43 @@ def aggregate_by_leaf(df):
                    'surfacic_doses_Tartrazine':numpy.mean,
                    'deposit_Tartrazine': numpy.sum,
                    'lifetime': first_val,
-                   'exposition': first_val,
-                   })
+                   'exposition': first_val
+                   }
+    if what is None:
+        return types
+    else:
+        return {w:types[w] for w in what}
+    
+ 
+def aggregate_by_leaf(df):
+    """
+    Aggregate interceptioin data by leaf and add colmun 'deposits' (= area * surfacic doses)
+    """
+
+    df = df[(df['hasEar'] == 1)]# do not consider aborting axes
+    
+    df = df.convert_objects()
+    gr = df.groupby(['HS', 'plant','axe','metamer'], as_index=False)
+    df_leaf = gr.agg(aggregation_types())
     # strange transforms ?
     #df = df.rename(columns = {'TT':'degree_days', 'plant':'num_plant', 
     #                              'nff':'fnl', 'axe':'axis', 'ntop':'num_leaf_top'})
     #df['date'] = df['date'].apply(lambda x: pandas.to_datetime(x, dayfirst=True))
     #df['num_leaf_bottom'] = df['fnl'] - df['num_leaf_top'] + 1                   
-    return df_agg
+    return df_leaf
 
-def aggregate_by_axe(df):
+def aggregate_by_axe(df_leaf):
     """
-    Aggregate interceptioin data axe
+    Aggregate  leaf-aggregated interceptioin data by axe
     """
-    def first_val(x):
-        return x[x.first_valid_index()]
+
     res=[]
-    for name,gr in df.groupby(['HS', 'plant','axe'], as_index=False):
-        df_agg = gr.groupby(['HS', 'plant','axe'], as_index=False).agg(
-                   {'variety': first_val,
-                   'treatment': first_val,
-                    'nb_plantes_sim':first_val,
-                    'numero_sim':first_val,
-                    'TT': first_val, 
-                    'nff':first_val,
-                   'area': numpy.sum,
-                   'date': first_val,
-                   'green_area': numpy.sum,
-                   'senesced_area': numpy.sum,
-                   'organ':first_val,
-                   'surfacic_doses_Tartrazine':numpy.mean,
-                   'deposit_Tartrazine': numpy.sum,
-                   })
+    what = ['variety','treatment', 'nb_plantes_sim','TT','nff',
+                   'area', 'date', 'green_area','senesced_area', 'organ',
+                   'surfacic_doses_Tartrazine','deposit_Tartrazine']
                    
+    for name,gr in df_leaf.groupby(['HS', 'plant','axe','numero_sim'], as_index=False):
+        df_agg = gr.groupby(['HS', 'plant','axe','numero_sim'], as_index=False).agg(aggregation_types(what))
         gr = gr.sort('metamer')
         frac = gr['length'] / gr['mature_length']
         ilig  = numpy.max(numpy.where(frac >= 1))
@@ -182,19 +171,46 @@ def aggregate_by_axe(df):
         df_agg['leaves'] = '_'.join(map(str, gr['metamer'].drop_duplicates()))
         res.append(df_agg)
     return pandas.concat(res)
- 
-def axis_statistics(df_axe, axis='MS'):
-    data = df_axe
+
+def aggregate_by_plant(df_leaf):
+    """
+    Aggregate  leaf-aggregated interceptioin data by axe
+    """
+
+    what = ['variety','treatment', 'nb_plantes_sim','TT','nff',
+                   'area', 'date', 'green_area','senesced_area', 'organ', 'domain_area',
+                   'surfacic_doses_Tartrazine','deposit_Tartrazine']
+    agg = df_leaf.groupby(['HS', 'plant','numero_sim'], as_index=False).agg(aggregation_types(what))
+    plant_domain = agg['domain_area'] / agg['nb_plantes_sim']
+    agg['fraction_intercepted'] = agg['deposit_Tartrazine'] / plant_domain
+    agg['lai'] = agg['area'] / plant_domain
+    agg['glai'] = agg['green_area'] / plant_domain
+    return agg
+    
+def axis_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, axis='MS'):
+    data = aggregate_by_axe(df_sim)
     
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
-        
-    sub = data.ix[:,('variety','treatment','date','HS','TT','axe', 'nff', 'length','area','green_area','deposit_Tartrazine','haun_stage')]
-    dfmoy = sub.groupby(['variety','treatment', 'date']).mean().reset_index()
-    dfsd = sub.groupby(['variety','treatment', 'date']).std().reset_index()
-    dfci = sub.groupby(['variety','treatment', 'date']).agg(conf_int).reset_index()
+     
+    sub = data.ix[:,['treatment',what]]     
+    agg = sub.groupby('treatment').mean().reset_index()
+    errag = sub.groupby('treatment').agg(err).reset_index()
+    agg['ybar'] = agg[what]
+    agg['yerr'] = errag[what]
+    agg=agg.set_index('treatment')
+    return agg
 
-    return dfmoy, dfsd, dfci
+def plant_statistics(df_sim, what='deposit_Tartrazine', err=conf_int):
+    data = aggregate_by_plant(df_sim)
+         
+    sub = data.ix[:,['treatment',what]]     
+    agg = sub.groupby('treatment').mean().reset_index()
+    errag = sub.groupby('treatment').agg(err).reset_index()
+    agg['ybar'] = agg[what]
+    agg['yerr'] = errag[what]
+    agg=agg.set_index('treatment')
+    return agg
     
 def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, by='ntop_cur', axis='MS'):
 
@@ -216,6 +232,7 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, by='ntop_cu
         agg['xbar'] = ['L' + str(int(leaf)) for leaf in agg['metamer']]
     agg=agg.set_index('treatment')
     return agg
+    
 
 def pdict(value):
     """ create a parameter dict for all echap cultivar with value
@@ -244,6 +261,7 @@ def run_sim(adel, hsfit, var, date, dose, num_sim):
     df_i = aggregate_by_leaf(df)
     midribs = midribs.rename(columns={'leaf':'metamer'})
     midribs['plant'] = ['plant'+str(p) for p in midribs['plant']]
+    # add domain area
     return df_i.merge(midribs)
 
     
