@@ -33,11 +33,13 @@ def TT_index():
     
     
 def tag_dates():
-    tags = {'Mercia': {'T1-1': '2001-04-18',
+    tags = {'Mercia': {'T1-90':'2011-01-19',
+                       'T1-1': '2011-04-18',
                        'T1': '2011-04-19',
                        'T2-14':'2011-04-27',
                        'T2': '2011-05-11',
-                       'T2+15':'2011-05-26'},
+                       'T2+15':'2011-05-26',
+                       'T2+21':'2011-06-13'},
             'Rht3': {'T1-1': '2001-04-18',
                      'T1': '2011-04-19',
                      'T2-14':'2011-04-27',
@@ -48,12 +50,18 @@ def tag_dates():
                          'T1' : '2012-04-11',
                          'T2' : '2012-05-09',
                          'T2+34':'2012-06-12'},
-            'Tremie13': {'T1-3' : '2013-04-22',
+            'Tremie13': {'T1-8':'2013-04-17',
+                         'T1-6':'2013-04-19',
+                         'T1-3' : '2013-04-22',
                          'T1' : '2013-04-25',
+                         'T1+1' : '2013-04-26',
                          'T1+4': '2013-04-29',
+                         'T2-15':'2013-05-02'
                          'T2-14' : '2013-05-03',
                          'T2' : '2013-05-17',
-                         'T2+5' : '2013-05-22'}
+                         'T2+5' : '2013-05-22',
+                         'T2+12' : '2013-05-29',
+                         'T2+27' : '2013-06-13'}
             }
     return tags
 
@@ -149,6 +157,20 @@ def petri_dye_interception(coef=0.045, diameter=8.5):
     df['fraction_intercepted'] = df['deposit'] / (numpy.pi * diameter**2 / 4)
     return df
     
+def gap_fraction():
+    """ Gap fraction (non green fraction) estimated from vertical images
+    """
+    data = [pandas.read_csv(shared_data(alinea.echap,var + '_vertical_images.csv'),decimal=',', sep=';')
+            for var in ['MerciaRht3','Tremie12','Tremie13']]
+    df = pandas.concat(data)
+    df['gap_fraction'] = (100 - df['pcent_veg']) / 100.
+    tags = {'Mercia':{'19/01/2011':'T1-90','18/04/2011':'T1-1','27/04/2011':'T2-14','01/06/2011':'T2+21'},
+            'Rht3':{'19/01/2011':'T1-90','18/04/2011':'T1-1','27/04/2011':'T2-14','01/06/2011':'T2+21'},
+            'Tremie12':{'09/03/2012':'T1-33', '11/04/2012':'T1','09/05/2012':'T2'},
+            'Tremie13':{'17/04/2013':'T1-8','26/04/2013':'T1+1', '29/05/2013':'T2+12','13/06/2013':'T2+27'}}
+    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['date']))
+    
+    return df.groupby(['variety','treatment']).agg('mean').reset_index()
     
 def scan_data():
     data_file = shared_data(alinea.echap, 'architectural_measurements/Compil_scan.csv')
