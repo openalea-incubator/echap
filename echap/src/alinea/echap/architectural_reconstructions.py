@@ -120,6 +120,8 @@ def reconstruction_parameters():
                              'Tremie12': None, 'Tremie13': None}
     # density tuning factor(multiplicative effect on density curve)
     pars['density_tuning'] = None
+    # variability of plant emergence
+    pars['std_emergence'] = pdict(None)
     # Tillering
     #----------
     # max order of tillering or None
@@ -437,8 +439,12 @@ def axepop_fits(reset_data=False, **parameters):
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
 
     # variability of emergence
-    hs = HS_fit()
-    std_em = {k:hs[k].std_TT_hs_0 for k in hs}
+    std_em = parameters.get('std_emergence')
+    for k in std_em:
+        if std_em[k] == None:
+            hs = HS_fit()
+            std_em[k] = hs[k].std_TT_hs_0
+            
                     
     fits={k: _axepop_fit(tdb[k], delta_stop_del=delta_stop_del[k],dHS_reg=dHS_reg[k], max_order=max_order, tiller_damages=tiller_damages[k], std_em = std_em[k]) for k in tdb}
     
