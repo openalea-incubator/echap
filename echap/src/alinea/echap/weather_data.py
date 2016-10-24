@@ -17,7 +17,10 @@ def arvalis_reader(data_file):
     To Check  if time is UTC ?
     """
     
-    data = pandas.read_csv(data_file, parse_dates={'datetime':[0,1]}, dayfirst=True, names=['date','h','temperature_air','relative_humidity','rain','wind_speed','global_radiation'], sep=';', index_col=0,skiprows=2, decimal=',')
+    data = pandas.read_csv(data_file, names=['date','h','temperature_air','relative_humidity','rain','wind_speed','global_radiation'], sep=';',skiprows=2, decimal=',')
+    # create datetime index
+    data.index = pandas.to_datetime(data['date'].map(str) + ' ' + data['h'] )
+    data['date'] = data.index
     #convert Rg J/cm2 -> J.m-2.s-1
     data['global_radiation'] *= (10000. / 3600)
     #convert wind km/h -> m.s-1
@@ -61,7 +64,7 @@ def read_weather(start, end):
         weather.check(['temperature_air', 'PPFD', 'relative_humidity',
                        'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
     weather.check(varnames=['degree_days'], models={'degree_days':linear_degree_days},
-                    start_date = start)
+                    args={'start_date' :start})
     return weather
 
 def get_year_for_variety(variety = 'Mercia'):

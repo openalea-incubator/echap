@@ -15,8 +15,8 @@ from alinea.echap.architectural_reconstructions import (echap_reconstructions,
                                                         HS_fit, density_fits,
                                                         pdict, reconstruction_parameters)
 from alinea.adel.postprocessing import ground_cover
-from alinea.caribu.caribu_star import diffuse_source, run_caribu
-from alinea.adel.postprocessing import ground_cover
+from alinea.caribu.caribu_star import run_caribu
+from alinea.caribu.light import diffuse_source
 from alinea.caribu.label import Label
 
 # Run and save canopy properties ###################################################################
@@ -356,14 +356,14 @@ def get_TC_obs(variety = 'Tremie12'):
     return df_obs
     
 def get_radiation_obs(variety = 'Tremie12'):
+    weather = read_weather_variety(variety)
     dfa, tab0, tab20 = mat_ray_obs(variety)
     tab0 = tab0.rename(columns = {'%':'LightPenetration_0'})
     tab20 = tab20.rename(columns = {'%':'LightPenetration_20'})
     df_obs = pandas.merge(tab0, tab20)
-    weather = read_weather_variety(variety)
-    df_obs = df_obs.rename(columns = {'datetime':'date'})
-    df_obs['date'] = df_obs['date'].apply(lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
-    df_obs['ThermalTime'] = weather.data.degree_days[df_obs['date']].values
+    d = pandas.to_datetime((df_obs['datetime'].map(str) + ' ' + '12:00:00').values, dayfirst=True, utc=True)
+    df_obs['date'] = df_obs['datetime'].apply(lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
+    df_obs['ThermalTime'] = weather.data.degree_days[d].values
     HSconv = HS_fit()[variety]
     df_obs['HS'] = HSconv(df_obs['ThermalTime'])
     df_obs['LightInterception_0'] = 1 - df_obs['LightPenetration_0']
