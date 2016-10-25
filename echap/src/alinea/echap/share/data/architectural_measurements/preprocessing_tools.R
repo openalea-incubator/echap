@@ -12,7 +12,7 @@ readScanned <- function(prefix, scanfiles, name=NULL) {
     if ('pcent_green'%in%colnames(df))
       df$A_bl_green <- df$A_bl * df$pcent_green / 100
     df},simplify=FALSE)
-  cols <- c('Source', 'prelevement','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
+  cols <- c('Source', 'prelevement','rep','N','id_Axe','rank','lmax','wmax','A_bl','A_bl_green','stat', grep('^w[0-9]',colnames(scans[[1]]),value=TRUE))
   do.call('rbind',lapply(scans,function(x) x[,cols[cols%in%colnames(x)]]))
 }
 #
@@ -27,6 +27,19 @@ readCurv <- function(prefix, scanfiles, name=NULL) {
       df$rank <- df$ID_Metamer
     if ('ID_Metamer_top' %in% colnames(df))
       df$relative_ranktop <- df$ID_Metamer_top
+    df},simplify=FALSE)
+  do.call('rbind',curvs)
+}
+#
+readCurv_ij<- function(prefix, scanfiles, name=NULL) {
+  curvs <- sapply(scanfiles, function(x) {
+    df <- read.table(paste(prefix,'_curvature_',x,'.csv',sep=''),sep=';', dec=',',header=TRUE)
+    df$Source <- x
+    df$N <- as.numeric(as.factor(df$image))
+    if (!'ntop_lig' %in% colnames(df))
+      df$ntop_lig <- ifelse(df$serie > 0, df$serie, -999) # if not noted, all leaves are ligulated
+    if (!'green_leaves' %in% colnames(df))
+      df$green_leaves <- NA
     df},simplify=FALSE)
   do.call('rbind',curvs)
 }
@@ -94,6 +107,55 @@ curv2xy <- function(pl,iplant) {
     yrout <- approx(s,yr,sout)$y
     #
     data.frame(iplant=iplant, rank=leaf$rank[1],s=sout,x=xout,y=yout,xprot=xrotout,yprot=yrotout,xrot=xrotout,yrot=yrotout,xr=xrout,yr=yrout,hins=hins,side=side,phiP=phiP,phiS=0)
+  })
+  do.call('rbind',leaves)
+}
+#
+ijcurv2xy <- function(pl,iplant) {
+  #extract stem
+  stem <- pl[pl$serie==0,]
+  ds_stem <- sqrt(diff(stem$x)^2 + diff(stem$y)^2)
+  # stem mean angle
+  phiP <- weighted.mean(atan2(diff(stem$y),diff(stem$x)), ds_stem)
+  # stem length and stem median point
+  s_stem <- c(0,cumsum(ds_stem))
+  lstem <- max(s_stem)
+  imed <- which.min(abs(s_stem - lstem /2))
+  #corrective rotation to align with vertical
+  theta <- pi / 2 - phiP
+  # set median stem point as rotation center
+  xmed <- stem$x[imed]
+  ymed <- stem$y[imed]
+  #turned stem
+  xs <- (stem$x - xmed) * cos(theta) - sin(theta) * (stem$y - ymed)
+  ys <- sin(theta) * (stem$x - xmed) + cos(theta) * (stem$y - ymed)
+  #
+  # corrective factor for insertion heigth taking into account curved stems 
+  sc <- lstem / (max(ys) - min(ys))
+  # leaf per leaf processing
+  lpl <- pl[pl$serie > 0,]
+  leaves <- lapply(split(lpl,lpl$serie), function(leaf) {
+    x <- leaf$x - stem$x[1]
+    y <- leaf$y - stem$y[1]
+    #passage repere base plante et rotation
+    xrot <- (leaf$x - xmed) * cos(theta) - sin(theta) * (leaf$y - ymed) - xs[1]
+    yrot <- sin(theta) * (leaf$x - xmed) + cos(theta) * (leaf$y - ymed) - ys[1]
+    # passage repere base feuille et re-sampling
+    side <- ifelse(length(xrot[xrot >= 0]) >= length(xrot) / 2, 1, -1)
+    xr <- side * (xrot - xrot[1])
+    yr <- yrot - yrot[1]
+    hins <-  as.vector(yrot[1] * sc)
+    #
+    s <- c(0,cumsum(sqrt(diff(xr)^2 + diff(yr)^2)))
+    sout <- seq(0,max(s),len=20)
+    xout <- approx(s,x,sout)$y
+    yout <- approx(s,y,sout)$y
+    xrotout <- approx(s,xrot,sout)$y
+    yrotout <- approx(s,yrot,sout)$y    
+    xrout <- approx(s,xr,sout)$y
+    yrout <- approx(s,yr,sout)$y
+    #
+    data.frame(iplant=iplant, serie=leaf$serie[1],s=sout,x=xout,y=yout,xprot=xrotout,yprot=yrotout,xrot=xrotout,yrot=yrotout,xr=xrout,yr=yrout,hins=hins,side=side,phiP=phiP,phiS=0)
   })
   do.call('rbind',leaves)
 }
@@ -650,6 +712,37 @@ add_dimphen <- function(leaves, phend, scanleafdb, TTlin, TTem, TToM) {
   res$Agr <- res$A_bl_green
   res$nmax <- res$nffest
   res$N2 <- res$Nflig
+  res$mass <- NA
+  res
+}
+#
+ijphen <- function(ijleaves, TTlin, TTem, TToM) {
+  xydb <- split(ijleaves,ijleaves$variety)  
+  for (g in names(xydb)) {
+  #
+    xydb[[g]]$nff <- NA
+    dates <- sapply(xydb[[g]]$Source, function(s) format(as.Date(strsplit(s,split='_')[[1]][3], '%d%m%y'),'%d/%m/%Y'))
+    TT <- TTlin[[g]]$TT[match(dates,TTlin[[g]]$Date)]
+    xydb[[g]]$TT <- TT
+    TTflag <- aggregate(TTem[[g]], list(TTem[[g]]$nff),max)
+    dTTflag <- diff(TTflag$TTlig) /  diff(TTflag$nff)
+    nffM <- mean(sapply(split(TTem[[g]],TTem[[g]]$N),function(x) x$nff[1]))
+    xydb[[g]]$HSest <- slopeM[[g]] * (TT + ifelse(is.na(xydb[[g]]$nff), 0, dTTflag * (xydb[[g]]$nff - nffM)) - TToM[[g]])
+    xydb[[g]]$nffest <- ifelse(is.na(xydb[[g]]$nff),nffM, xydb[[g]]$nff)
+  }
+  res <- do.call('rbind',xydb)
+  #
+  # add aliases columns
+  res$label <- res$variety
+  res$variety_code <- as.numeric(as.factor(res$variety))
+  res$harvest <- as.numeric(as.factor(res$Source))
+  res$plant <- res$N
+  res$A <- NA
+  res$Agr <- NA
+  res$lmax <- NA
+  res$wmax <- NA
+  res$stat <- NA
+  res$nmax <- res$nffest
   res$mass <- NA
   res
 }
