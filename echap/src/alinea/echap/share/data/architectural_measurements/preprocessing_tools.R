@@ -199,7 +199,13 @@ readNotations <- function(pref, notationfiles, name=NULL) {
         for (i in numphy[numphy <= 7])
           res[[paste('Hins_F',i,sep='')]] <- res[[paste('sheath_length_F',i,sep='')]]
       }
-    }      
+    }
+    # if Hcol present and Daxe_mm present, compute stem half area
+    if ('Hcol' %in% colnames(res) & 'Daxe_mm' %in% colnames(res))
+      res['stem_half_area'] = pi * res$Daxe_mm / 20 * res$Hcol
+    # if Hlastcol present and Daxe_mm present, compute stem half area
+    if ('Hlastcol' %in% colnames(res) & 'Daxe_mm' %in% colnames(res))
+      res['stem_half_area'] = pi * res$Daxe_mm / 20 * res$Hlastcol
     # if Nflig and Hcol present split into Hcol_Fx, and keep Hcol only for Nflig unknonwn
     if (length(na.omit(res$Nflig)) > 0 & 'Hcol' %in% colnames(res)) {
       for (i in sort(unique(na.omit(res$Nflig))))
@@ -479,7 +485,7 @@ dim_notations <- function(not, what='sheath_length')  {
 }
 #
 plant_notations <- function(not)  {
-  what <- c('nff','Nflig','Nfvis','Daxe_mm','Hcol','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','first_elongated_internode')
+  what <- c('nff','Nflig','Nfvis','Daxe_mm','Hcol','stem_half_area','dh_ped','nb_elongated_internode','lped','Wped_mm','H_node','first_elongated_internode')
   columns <- c('Source','N',what)
   sources <- names(not)
   sources <- sources[sapply(sources, function(x) any(what%in%colnames(not[[x]])))]

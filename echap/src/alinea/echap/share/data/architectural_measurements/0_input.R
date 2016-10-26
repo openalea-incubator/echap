@@ -48,6 +48,11 @@ curvature <- list(Tremie12 = paste('sampled_plants', c('090312','110412', '09051
 #
 curvdb <- sapply(names(curvature), function(g) readCurv(prefix[g], curvature[[g]]), simplify=FALSE)
 #
+# Mercia Rht3 data acquired with ImageJ
+#
+ij_curvature <- list(Mercia = paste('sampled_plants', c('270411','010611'),sep='_'),
+                  Rht3 = paste('sampled_plants', c('270411','010611'),sep='_'))
+ij_curvdb <- do.call('rbind',sapply(names(ij_curvature), function(g) readCurv_ij(g, ij_curvature[[g]]), simplify=FALSE))
 # notations (sheath, internode, diameter, stage)
 #
 notations <- list(Mercia = c('tagged_plants_010611','tagged_plants_090611'),
@@ -81,7 +86,7 @@ leafcdb$Tremie13 <- rbind(leafcdb$Tremie13, nfl)
 # Extract 'other than leaf width profile' data from scan, homogenise and mix with leaf counts
 #
 scanleafdb <- do.call('rbind',mapply(function(x,name) {
-  cols <- c('Source','prelevement', 'N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
+  cols <- c('Source','prelevement', 'rep','N','id_Axe', 'rank','stat','lmax','wmax','A_bl', 'A_bl_green')
   x <- x[,cols[cols%in%colnames(x)]]
   if (!'lmax'%in% colnames(x))
     x['lmax'] <- NA
