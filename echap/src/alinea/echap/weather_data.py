@@ -1,13 +1,18 @@
 # -*- coding: latin1 -*- 
 import pandas
 import numpy
-import datetime
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+from alinea.astk.Weather import Weather, linear_degree_days
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
-from alinea.astk.Weather import Weather, linear_degree_days
-from alinea.astk.TimeControl import DegreeDayModel
-from openalea.deploy.shared_data import shared_data
+
+boigneville={'city': 'Boigneville', 'latitude': 48.3,
+                               'longitude': 2.3,
+             'altitude':100}
 
 def arvalis_reader(data_file):
     """ reads meteorological data from arvalis database 
@@ -19,81 +24,117 @@ def arvalis_reader(data_file):
     
     data = pandas.read_csv(data_file, names=['date','h','temperature_air','relative_humidity','rain','wind_speed','global_radiation'], sep=';',skiprows=2, decimal=',')
     # create datetime index
-    data.index = pandas.to_datetime(data['date'].map(str) + ' ' + data['h'] )
+    data.index = pandas.to_datetime(data['date'].map(str) + ' ' + data['h'], dayfirst=True)
     data['date'] = data.index
     #convert Rg J/cm2 -> J.m-2.s-1
     data['global_radiation'] *= (10000. / 3600)
     #convert wind km/h -> m.s-1
     data['wind_speed'] *= (1000. / 3600)
     return data
-  
-#to do : one function with year as argument
-  
-def Boigneville_2010_2011():
-    meteo_path = shared_data(alinea.echap, 'Boigneville_01092010_31082011_h.csv')
-    weather = Weather(meteo_path, reader = arvalis_reader)
-    weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
-    return weather
-    
-def Boigneville_2011_2012():
-    meteo_path = shared_data(alinea.echap, 'Boigneville_01092011_31082012_h.csv')
-    weather = Weather(meteo_path, reader = arvalis_reader)
-    weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
-    return weather
-    
-def Boigneville_2012_2013():
-    meteo_path = shared_data(alinea.echap, 'Boigneville_01092012_31082013_h.csv')
-    weather = Weather(meteo_path, reader = arvalis_reader)
-    weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
-    return weather
-    
-def format_date(start_date, end_date):
-    """ Turn string start and end dates in datetime format to read weather """
-    start_date+=" 12:00:00"
-    end_date+=" 01:00:00"
-    start = datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
-    end = datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
-    return start, end
 
-def read_weather(start, end):
-    """ Read weather and add variables relevant for epidemiological analysis """
-    if start.year >= 2010:
-        filename = 'Boigneville_0109'+str(start.year)+'_3108'+str(end.year)+'_h.csv'
-        meteo_path = shared_data(alinea.echap, filename)
-        weather = Weather(meteo_path, reader = arvalis_reader)
-        weather.check(['temperature_air', 'PPFD', 'relative_humidity',
-                       'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
-    weather.check(varnames=['degree_days'], models={'degree_days':linear_degree_days},
-                    args={'start_date' :start})
-    return weather
 
-def get_year_for_variety(variety = 'Mercia'):
+def get_weather(variety='Mercia'):
     if variety in ['Mercia', 'Rht3']:
-        return 2011
-    elif variety is 'Tremie12': 
-        return 2012
+        year = 2010
+    elif variety is 'Tremie12':
+        year =  2011
     elif variety is 'Tremie13':
-        return 2013
+        year = 2012
 
-def get_start_end_dates(year = 2011):
-    if year == 2011:
-        start_date = "2010-10-15"
-        end_date = "2011-06-20"
-    elif year == 2012:
-        start_date = "2011-10-21"
-        end_date = "2012-07-18"
-    elif year == 2013:
-        start_date = "2012-10-29"
-        end_date = "2013-08-01"
-    return format_date(start_date, end_date)
-   
-def read_weather_year(year = 2011):
-    start, end = get_start_end_dates(year = year)
-    return read_weather(start, end)
+    filename = 'Boigneville_' + str(year) +  '_' + str(year + 1) + '_h.csv'
+    meteo_path = shared_data(alinea.echap) / 'weather_data' / filename
+    weather = Weather(meteo_path, reader=arvalis_reader, localisation=boigneville)
+    weather.check(
+        ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain',
+         'global_radiation', 'vapor_pressure'])
 
-def read_weather_variety(variety = 'Mercia'):
-    year = get_year_for_variety(variety = variety)
-    return read_weather_year(year)
+    return weather
+
+
+def tt_lin(variety='Mercia'):
+    """Build or read  in the cache the daydate/TT time scales"""
+
+    sowing = {'Mercia': '2010-10-05', 'Rht3': '2010-10-05', 'Tremie12': '2011-10-21',
+              'Tremie13': '2012-10-29'}
+    harvest = {'Mercia': '2011-06-20', 'Rht3': '2011-06-20', 'Tremie12': '2012-06-19',
+              'Tremie13': '2013-06-09'}
+    filename = {'Mercia': 'MerciaRht3_TTlin_sowing_harvest.csv',
+               'Rht3': 'MerciaRht3_TTlin_sowing_harvest.csv',
+               'Tremie12': 'Tremie12_TTlin_sowing_harvest.csv',
+               'Tremie13': 'Tremie13_TTlin_sowing_harvest.csv'}
+
+    df = None
+    path = shared_data(alinea.echap) / 'cache' / filename[variety]
+    try:
+        df = pandas.read_csv(path)
+    except IOError:
+        w = get_weather(variety)
+        tt = linear_degree_days(w.data, start_date=sowing[variety])
+        seq = pandas.date_range(sowing[variety], harvest[variety], tz='UTC')
+        df = pandas.DataFrame({'daydate': seq.strftime('%Y-%m-%d'),
+                               'TT': tt.reindex(seq).values})
+        df.to_csv(path, index=False)
+
+    return df
+
+
+def application_tag(variety, daydate, which='T1'):
+    """ generate tag relative to pesticide application date
+
+    :param variety: variety name
+    :param daydate: a list of daydate strings
+    :return: tags
+    """
+
+    sowing = {'Mercia': '2010-10-05', 'Rht3': '2010-10-05', 'Tremie12': '2011-10-21',
+              'Tremie13': '2012-10-29'}
+    t1 = {'Mercia': '2011-04-19','Rht3':'2011-04-19', 'Tremie12': '2012-04-11',
+          'Tremie13': '2013-04-25'}
+    t2 = {'Mercia': '2011-05-11', 'Rht3': '2011-05-11',
+          'Tremie12': '2012-05-09', 'Tremie13': '2013-05-17'}
+
+
+    if which == 'T1':
+        origin = t1[variety]
+    elif which == 'T2':
+        origin = t2[variety]
+    else:
+        origin = sowing[variety]
+
+    delta = (pandas.to_datetime(daydate) - pandas.to_datetime(origin)).days
+    tags = numpy.where(delta == 0, which,
+                       numpy.where(delta > 0, map(lambda x: which + '+' + str(x), delta),
+                                   map(lambda x: which + '-' + str(abs(x)), delta)))
+    return tags
+
+
+def tt_hs_tag(variety='Mercia'):
+    """A multiple time index"""
+    filename = str(shared_data(alinea.echap)/'cache'/'HS_fit.pckl')
+    hsfit = None
+    try:
+        with open(filename) as input:
+             hsfit = pickle.load(input)
+    except IOError:
+        print('HaunStage needs to be fitted before calling this function')
+
+    df = None
+    path = shared_data(alinea.echap) / 'cache' / variety + '_TT_HS_tag.csv'
+    try:
+        df = pandas.read_csv(path)
+    except IOError:
+        df = tt_lin(variety)
+        df['HS'] = hsfit[variety](df['TT'])
+        for t in ('T1', 'T2'):
+            df['tag' + t] = application_tag(variety, df['daydate'].values, t)
+        df.to_csv(path, index=False)
+
+    return df
+
+
+
+
+
 
 def mat_ray_obs(name = 'Tremie12'):
     import re
