@@ -1,0 +1,210 @@
+{
+    "GLpars": {
+        "Mercia": {
+            "GL_bolting": 2.2,
+            "GL_flag": 4.4,
+            "GL_start_senescence": 3.6,
+            "curvature": -0.002,
+            "dHS_bolting": 3.7
+        },
+        "Rht3": {
+            "GL_bolting": 2.3,
+            "GL_flag": 4.4,
+            "GL_start_senescence": 3.4,
+            "curvature": -0.002,
+            "dHS_bolting": 3.7
+        },
+        "Tremie12": {
+            "GL_bolting": 2.1,
+            "GL_flag": 5,
+            "GL_start_senescence": 4.8,
+            "curvature": -0.005,
+            "dHS_bolting": 4
+        },
+        "Tremie13": {
+            "GL_bolting": 2.1,
+            "GL_flag": 4.4,
+            "GL_start_senescence": 4.4,
+            "curvature": -0.002,
+            "dHS_bolting": 3.7
+        }
+    },
+    "adel_pars": {
+        "HSstart_inclination_tiller": 1,
+        "dHS_col": 0.2,
+        "dHS_en": 0,
+        "drop_empty": true,
+        "epsillon": 1e-06,
+        "fracLeaf": 0.2,
+        "leafDuration": 2,
+        "rate_inclination_tiller": 30,
+        "senescence_leaf_shrink": 0.5,
+        "stemDuration": 1.6666666666666667
+    },
+    "card_scale": {
+        "Mercia": {
+            "L_blade": [
+                1,
+                1.3,
+                1
+            ]
+        },
+        "Rht3": {
+            "L_blade": [
+                1,
+                0.7,
+                1
+            ]
+        },
+        "Tremie12": {
+            "L_blade": [
+                0.7,
+                1,
+                1
+            ]
+        },
+        "Tremie13": {
+            "L_blade": [
+                0.7,
+                1,
+                1
+            ],
+            "L_sheath": [
+                0.7,
+                1,
+                1
+            ]
+        }
+    },
+    "dHS_reg": {
+        "Mercia": 3.7,
+        "Rht3": 3.7,
+        "Tremie12": 4.0,
+        "Tremie13": 3.7
+    },
+    "dTT_cohort": {
+        "Mercia": {
+            "first": 30,
+            "increment": 10
+        },
+        "Rht3": {
+            "first": 30,
+            "increment": 10
+        },
+        "Tremie12": {
+            "first": 30,
+            "increment": 10
+        },
+        "Tremie13": {
+            "first": 30,
+            "increment": 10
+        }
+    },
+    "delta_stop_del": {
+        "Mercia": 2.0,
+        "Rht3": 2.0,
+        "Tremie12": 2.0,
+        "Tremie13": 2.0
+    },
+    "density_tuning": null,
+    "disc_level": {
+        "Mercia": 7,
+        "Rht3": 7,
+        "Tremie12": 7,
+        "Tremie13": 7
+    },
+    "emission_reduction": {
+        "Mercia": null,
+        "Rht3": null,
+        "Tremie12": null,
+        "Tremie13": {
+            "T4": 0.5
+        }
+    },
+    "max_order": null,
+    "median_leaf": {
+        "Mercia": true,
+        "Rht3": true,
+        "Tremie12": true,
+        "Tremie13": true
+    },
+    "nff_probabilities": {
+        "Mercia": null,
+        "Rht3": null,
+        "Tremie12": null,
+        "Tremie13": null
+    },
+    "pgen_base": {
+        "TT_hs_break": null
+    },
+    "plant_damages": {
+        "Mercia": {
+            "damage": 0.25,
+            "when": [
+                6,
+                13
+            ]
+        },
+        "Rht3": {
+            "damage": 0.3,
+            "when": [
+                7,
+                13
+            ]
+        },
+        "Tremie12": null,
+        "Tremie13": null
+    },
+    "std_emergence": {
+        "Mercia": null,
+        "Rht3": null,
+        "Tremie12": null,
+        "Tremie13": null
+    },
+    "tiller_damages": {
+        "Mercia": {
+            "damage": {
+                "T1": 0.25,
+                "T2": 0.25,
+                "T3": 0.25
+            },
+            "when": [
+                6,
+                13
+            ]
+        },
+        "Rht3": {
+            "damage": {
+                "T1": 0.3,
+                "T2": 0.3,
+                "T3": 0.3
+            },
+            "when": [
+                7,
+                13
+            ]
+        },
+        "Tremie12": {
+            "damage": {
+                "T3": 0.2
+            },
+            "when": [
+                4.9,
+                5.1
+            ]
+        },
+        "Tremie13": null
+    },
+    "top_leaves": {
+        "Mercia": 4,
+        "Rht3": 4,
+        "Tremie12": 4,
+        "Tremie13": 4
+    },
+    "xy_data": {
+        "Mercia": "MerciaRht_byleafclass",
+        "Rht3": "MerciaRht_byleafclass",
+        "Tremie12": "Tremie_byleafclass",
+        "Tremie13": "Tremie_byleafclass"
+    }
+}

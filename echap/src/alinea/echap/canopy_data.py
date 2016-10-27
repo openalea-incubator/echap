@@ -89,7 +89,7 @@ def image_analysis_data():
 
 #derived / cached data
 
-def ground_cover(variety='Mercia', angle=0):
+def ground_cover_data(variety='Mercia', angle=0):
     df = None
     path = shared_data(alinea.echap) / 'cache' / 'ground_cover_aggregated.csv'
     try:
@@ -126,28 +126,41 @@ def pai57(variety='Mercia'):
 
     return df.merge(tths)
 
-def lai_pai_scan(variety='Tremie12'):
+def lai_pai_scan(variety='Tremie12', reset=False):
     """ Lai/Pai estimates from scanned leaves / biomass data"""
     df = None
     path = shared_data(alinea.echap) / 'cache' / 'lai_pai_scan.csv'
     try:
+        if reset:
+            raise IOError
         df = pandas.read_csv(path)
     except IOError:
         bm = plot_biomass_data()
-        scan = scan_data().loc[:, ('variety', 'daydate', 'rep', 'id_Axe', 'A_bl', 'A_bl_green')]
+        scan = scan_data().loc[:, (
+        'variety', 'daydate', 'rep', 'N', 'id_Axe', 'A_bl', 'A_bl_green',
+        'stem_half_area')]
         scan = scan.loc[scan['daydate'].isin(bm['daydate']),:]
         areas = scan.groupby(('daydate','rep')).agg(sum).reset_index()
+        areas = areas.drop(['stem_half_area', 'N'],axis=1)
+        stem_areas_ms = scan.groupby(('daydate', 'rep', 'N')).agg(
+            numpy.mean).reset_index().groupby(('daydate', 'rep')).agg(
+            sum).reset_index().loc[:,
+                        ('daydate', 'rep', 'stem_half_area')].rename(
+            columns={'stem_half_area': 'A_stem_MS'})
         areas_axe = scan.groupby(('daydate','rep', 'id_Axe')).agg(sum).reset_index()
         areas_ms = areas_axe.loc[areas_axe['id_Axe'] == 'MB', (
         'daydate', 'rep', 'A_bl', 'A_bl_green')].rename(
             columns={'A_bl_green': 'A_bl_green_MS', 'A_bl': 'A_bl_MS'})
         df = bm.merge(areas)
         df = df.merge(areas_ms)
+        df = df.merge(stem_areas_ms)
         frac_scanned = df['nb_plant_scanned'] / df['nb_plant_plot']
         frac_scanned_drymass = df['dry_mass_scanned'] / df['dry_mass_plot']
         df['correction_factor'] = frac_scanned / frac_scanned_drymass
         df['stem_leaf_ratio_biomass'] = df['dry_mass_scanned_stem'] / df[
             'dry_mass_scanned_blade']
+        df['stem_leaf_ratio_area'] = df['A_stem_MS'] / df[
+            'A_bl_MS']
         df['GLAI_density'] = df['A_bl_green'] * 1e-4 / frac_scanned / df['plot_area']
         df['GLAI_biomass'] = df['A_bl_green'] * 1e-4 / frac_scanned_drymass / df['plot_area']
         df['GLAI_MS_density'] = df['A_bl_green_MS'] * 1e-4 / frac_scanned / df['plot_area']
@@ -158,17 +171,12 @@ def lai_pai_scan(variety='Tremie12'):
         df['LAI_biomass'] = numpy.where(df['daydate'] == '2012-03-09',
                                         df['A_bl'] * 1e-4 / frac_scanned_drymass / df['plot_area'],
                                         numpy.nan)
-        df['LAI_MS_density'] = numpy.where(df['daydate'] == '2012-03-09',
-                                        df['A_bl_MS'] * 1e-4 / frac_scanned / df['plot_area'], numpy.nan)
-        df['LAI_MS_biomass'] = numpy.where(df['daydate'] == '2012-03-09',
-                                        df['A_bl_MS'] * 1e-4 / frac_scanned_drymass / df['plot_area'],
-                                        numpy.nan)
         df['plant_density'] = df['nb_plant_plot'] / df['plot_area']
         df['greeness'] = df['A_bl_green'] / df['A_bl']
         df.to_csv(path, index=False)
         #
 
-    df = pandas.concat((df.loc[:,('variety', 'daydate')], df.ix[:, 'GLAI_density':]), axis=1)
+    df = pandas.concat((df.loc[:,('variety', 'daydate')], df.ix[:, 'stem_leaf_ratio_area':]), axis=1)
     df = df.groupby(['variety', 'daydate']).agg([numpy.mean, conf_int])
     df.columns = ['_'.join(c) for c in df.columns]
     df = df.reset_index()

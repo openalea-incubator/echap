@@ -50,9 +50,15 @@ def get_weather(variety='Mercia'):
 
     return weather
 
+# (cached) derived data
 
-def tt_lin(variety='Mercia'):
-    """Build or read  in the cache the daydate/TT time scales"""
+
+def derived_data_path():
+    return shared_data(alinea.echap) / 'cache' / 'derived_data'
+
+
+def tt_lin(variety='Mercia', reset=False):
+    """ compute the daydate <-> TT mapping from sowing to harvest"""
 
     sowing = {'Mercia': '2010-10-05', 'Rht3': '2010-10-05', 'Tremie12': '2011-10-21',
               'Tremie13': '2012-10-29'}
@@ -63,17 +69,18 @@ def tt_lin(variety='Mercia'):
                'Tremie12': 'Tremie12_TTlin_sowing_harvest.csv',
                'Tremie13': 'Tremie13_TTlin_sowing_harvest.csv'}
 
-    df = None
-    path = shared_data(alinea.echap) / 'cache' / filename[variety]
-    try:
-        df = pandas.read_csv(path)
-    except IOError:
-        w = get_weather(variety)
-        tt = linear_degree_days(w.data, start_date=sowing[variety])
-        seq = pandas.date_range(sowing[variety], harvest[variety], tz='UTC')
-        df = pandas.DataFrame({'daydate': seq.strftime('%Y-%m-%d'),
-                               'TT': tt.reindex(seq).values})
-        df.to_csv(path, index=False)
+    path = derived_data_path() / filename[variety]
+    if not reset:
+        try:
+            return pandas.read_csv(path)
+        except IOError:
+            pass
+    w = get_weather(variety)
+    tt = linear_degree_days(w.data, start_date=sowing[variety])
+    seq = pandas.date_range(sowing[variety], harvest[variety], tz='UTC')
+    df = pandas.DataFrame({'daydate': seq.strftime('%Y-%m-%d'),
+                           'TT': tt.reindex(seq).values})
+    df.to_csv(path, index=False)
 
     return df
 
@@ -126,13 +133,14 @@ def tt_hs_tag(variety='Mercia'):
         df = tt_lin(variety)
         df['HS'] = hsfit[variety](df['TT'])
         for t in ('T1', 'T2'):
-            df['tag' + t] = application_tag(variety, df['daydate'].values, t)
+            df['tag_' + t] = application_tag(variety, df['daydate'].values, t)
         df.to_csv(path, index=False)
 
     return df
 
 
-
+def par_sensors_hourly(variety):
+    pass
 
 
 
