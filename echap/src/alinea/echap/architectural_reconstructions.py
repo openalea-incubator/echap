@@ -3,7 +3,6 @@
 import pandas
 import numpy
 import math
-import scipy.stats as stats
 import json
 import os
 

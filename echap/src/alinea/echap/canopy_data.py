@@ -4,7 +4,7 @@ import pandas
 import numpy
 import scipy.stats
 
-from alinea.echap.weather_data import tt_hs_tag
+from alinea.echap.hs_tt import tt_hs_tag
 
 import alinea.echap
 from openalea.deploy.shared_data import shared_data

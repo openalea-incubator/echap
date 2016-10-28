@@ -3,13 +3,20 @@
 
 import pandas
 import numpy
+import os
 import matplotlib.pyplot as plt
 from math import sqrt
-
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 # Import for wheat reconstruction
+import alinea.echap
 from openalea.deploy.shared_data import shared_data
-from alinea.echap.weather_data import *
+from alinea.echap.hs_tt import tt_hs_tag
+#from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
+from alinea.echap.canopy_data import lai_pai_scan, pai57
 from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
                                                         EchapReconstructions,
                                                         HS_fit, density_fits,
@@ -18,6 +25,23 @@ from alinea.adel.postprocessing import ground_cover
 from alinea.caribu.caribu_star import run_caribu
 from alinea.caribu.light import diffuse_source
 from alinea.caribu.label import Label
+
+
+def cache_reconstruction_path(tag):
+    path = shared_data(alinea.echap) / 'cache' / 'reconstructions' / tag
+    if not os.path.exists(str(path)):
+        os.makedirs(str(path))
+    return path
+
+
+def cache_simulation_path(tag, rep):
+    path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag
+    if not os.path.exists(str(path)):
+        os.makedirs(str(path))
+    path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag / 'rep_' + str(rep)
+    if not os.path.exists(str(path)):
+        os.makedirs(str(path))
+    return path
 
 # Run and save canopy properties ###################################################################
 def aggregate_lai(adel, axstat):
@@ -86,7 +110,127 @@ def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
         df_radiation.loc[0, 'LightInterception_%d' %z_level] = 1 - df_radiation.loc[0, 
                                                                     'LightPenetration_%d' %z_level]
     return df_radiation
-    
+
+
+def get_reconstruction(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                       reset=False, reset_echap=False):
+    """ Return adel wheat instance"""
+    sim_path = cache_simulation_path(tag, rep)
+
+    filename = sim_path / 'adel_' + variety.lower() + '_' + str(nplants) + 'pl.pckl'
+    if not reset:
+        try:
+            with open(filename) as saved:
+                return pickle.load(saved)
+        except IOError:
+            pass
+    echap = echap_reconstructions(tag, reset = reset_echap)
+    adel = echap.get_reconstruction(name=variety, nplants=nplants)
+    # TO DO : make (part of ?) adel picklable !
+    # with open(str(filename), 'w') as output:
+    #     pickle.dump(adel, output)
+    return adel
+
+
+def as_daydate(daydate, tths):
+    if daydate.startswith('T1'):
+        return tths.set_index('tag_T1')['daydate'][daydate]
+    elif daydate.startswith('T2'):
+        return tths.set_index('tag_T2')['daydate'][daydate]
+    else:
+        return daydate
+
+def daydate_range(variety, tag, start, stop, by=None, at=None):
+    tths = tt_hs_tag(variety, tag)
+    if at is None:
+        if start is None:
+            start = tths['daydate'][0]
+        else:
+            start = as_daydate(start, tths)
+        if stop is None:
+            stop = tths['daydate'][-1]
+        else:
+            stop = as_daydate(stop, tths)
+        at = tths.set_index('daydate').ix[start:stop:by,].index.values.tolist()
+    else:
+        at = map(lambda x: as_daydate(x, tths), at)
+
+    return at
+
+
+def get_canopy(adel=None, variety = 'Tremie12', nplants=30, daydate='T1', tag = 'reference', rep=1, reset=False, load_geom=True):
+    tths = tt_hs_tag(variety, tag)
+    daydate = as_daydate(daydate, tths)
+
+    sim_path = cache_simulation_path(tag, rep)
+
+    if adel is None:
+        adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag, rep=rep)
+    if not os.path.exists(sim_path / 'canopy'):
+        os.makedirs(sim_path / 'canopy')
+    basename = sim_path / 'canopy' / variety.lower() + '_' + str(
+        nplants) + 'pl_' + '_'.join(daydate.split('-'))
+    if not reset:
+        try:
+            g, age = adel.load(basename=str(basename), load_geom=load_geom)
+            return adel, g, age
+        except IOError:
+            pass
+    age = tths.set_index('daydate')['TT'][daydate]
+    g = adel.setup_canopy(age=age)
+    adel.save(g, basename=str(basename))
+    return adel, g, age
+
+
+def build_canopies(start=None, stop=None, variety='Tremie12', nplants=30, tag='reference', rep=1, reset=False):
+    adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
+                              rep=rep)
+    dd_range = daydate_range(variety, tag, start, stop)
+    for d in dd_range:
+        print d
+        adel, g, age = get_canopy(adel, daydate = d, variety=variety, nplants=nplants, tag=tag, rep=rep)
+
+    return adel, g, age
+
+def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                  start=None, stop=None, by=None, at=None, reset=False):
+
+    sim_path = cache_simulation_path(tag, rep)
+    filename = sim_path / 'lai_' + variety.lower() + '_' + str(
+        nplants) + 'pl.csv'
+    dd_range = daydate_range(variety, tag, start, stop, by, at)
+    done = None
+    missing = dd_range
+    if not reset:
+        try:
+            df = pandas.read_csv(filename)
+            if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                return df.loc[df['daydate'].isin(dd_range),:]
+            else:
+                done = df.loc[df['daydate'].isin(dd_range),:]
+                missing = [d for d in dd_range if d not in done['daydate'].values]
+        except IOError:
+            pass
+    new = []
+    adel=None
+    for d in missing:
+        adel, g, age = get_canopy(adel, daydate=d, variety=variety,
+                                  nplants=nplants, tag=tag, rep=rep, load_geom=False)
+        print d
+        df_lai = get_lai_properties(g, adel)
+        df_lai['variety'] = variety
+        df_lai['daydate'] = d
+        new.append(df_lai)
+
+    df = pandas.concat(new)
+    tths = tt_hs_tag(variety, tag)
+    df = df.merge(tths)
+    df = pandas.concat((done, df))
+    df.to_csv(filename, index=False)
+    return df
+
+
+
 def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = None,
                         age_range = [400., 2600.], time_steps = [20, 100],
                         scale_povray = 1., z_levels = [0, 5, 20, 25], 
@@ -94,9 +238,9 @@ def run_one_simulation(variety = 'Tremie12', nplants = 30, variability_type = No
     # Temp
     if variety in ['Tremie12', 'Tremie13']:
         pars = reconstruction_parameters()
-        pars['density_tuning'] = pdict(None)
-        pars['density_tuning']['Tremie12'] = 0.85
-        pars['density_tuning']['Tremie13'] = 0.85
+        # pars['density_tuning'] = pdict(None)
+        # pars['density_tuning']['Tremie12'] = 0.85
+        # pars['density_tuning']['Tremie13'] = 0.85
         reconst = EchapReconstructions(reset_data=reset_data, pars=pars)
     else:
         reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
@@ -230,54 +374,53 @@ def conf_int(lst, perc_conf=95):
     on a reasonable size sample (>=500) 1.96 is used.
     """
     from scipy.stats import t
-    
+
+    if len(lst) <= 1:
+        return 0
     n, v = len(lst), variance(lst)
     c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
     
     return sqrt(v/n) * c
 
-def plot_mean(data, variable = 'LAI_vert', xaxis = 'ThermalTime', 
-              error_bars = False, error_method = 'confidence_interval', 
+def plot_mean(data, variable = 'LAI_vert', xaxis = 'ThermalTime',
               marker = 'd', empty_marker = False, linestyle = '-', color = 'b', 
               title = None, xlabel = None, ylabel = None,
-              xlims = None, ylims = None, ax = None, return_ax = False):
-    if variable in data.columns:
-        if ax == None:
-            fig, ax = plt.subplots()
-        if empty_marker == False:
-            markerfacecolor = color
+              xlims = None, ylims = None, ax = None):
+
+    var_mean = '_'.join((variable,'mean'))
+    var_err = '_'.join((variable,'conf_int'))
+    df = data.copy(deep=True)
+    if var_mean not in df.columns:
+        if variable not in df.columns:
+            raise KeyError('variable ' + variable + ' not found in data!')
         else:
-            markerfacecolor = 'none'
-            
-        df = data[pandas.notnull(data.loc[:,variable])].loc[:, [xaxis, variable]]
-        df_mean = df.groupby(xaxis).mean()
-        df['nb_rep'] = map(lambda x: df[xaxis].value_counts()[x], df[xaxis])
-        if error_bars == True and len(df['nb_rep'])>0 and min(df['nb_rep'])>1:
-            if error_method == 'confidence_interval':
-                df_err = df.groupby(xaxis).agg(conf_int)
-            elif error_method == 'std_deviation':
-                df_err = df.groupby(xaxis).std()
-            else:
-                raise ValueError("'error_method' unknown: 'try confidence_interval' or 'std_deviation'")
-            ax.errorbar(df_mean.index, df_mean[variable], yerr = df_err[variable].values,
-                        marker = marker, linestyle = linestyle, color = color,
-                        markerfacecolor = markerfacecolor,  markeredgecolor = color)
-        else:
-            ax.plot(df_mean.index, df_mean[variable],
+            df = df.groupby(xaxis).agg([numpy.mean, conf_int])
+            df.columns = ['_'.join(c) for c in df.columns]
+            df = df.reset_index()
+
+    if ax is None:
+        fig, ax = plt.subplots()
+    if empty_marker:
+        markerfacecolor = 'none'
+    else:
+        markerfacecolor = color
+
+    df = df.loc[:, [xaxis, var_mean, var_err]].dropna()
+    ax.errorbar(df[xaxis], df[var_mean].values, yerr = df[var_err].values,
                     marker = marker, linestyle = linestyle, color = color,
                     markerfacecolor = markerfacecolor,  markeredgecolor = color)
-        if title is not None:
-            ax.set_title(title, fontsize = 18)
-        if xlabel is not None:
-            ax.set_xlabel(xlabel, fontsize = 18)
-        if ylabel is not None:
-            ax.set_ylabel(ylabel, fontsize = 18)
-        if xlims is not None:
-            ax.set_xlim(xlims)
-        if ylims is not None:
-            ax.set_ylim(ylims)
-        if return_ax == True:
-            return ax
+    if title is not None:
+        ax.set_title(title, fontsize = 18)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize = 18)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize = 18)
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+
+    return ax
             
 def plot_sum(data, variable = 'LAI_vert', xaxis = 'ThermalTime', 
               marker = 'd', linestyle = '-', color = 'b', 
@@ -377,18 +520,18 @@ def get_all_obs(variety = 'Tremie12', origin_lai_data = 'biomass'):
     df_all = pandas.concat([df_lai, df_TC, df_rad])
     return df_all.reset_index(drop = True)
     
-def plot_sim_obs(df_sim, df_obs, variable = 'LAI_vert', xaxis = 'HS', 
+def plot_sim_obs(df_sim, df_obs=None, variable = 'LAI_vert', xaxis = 'HS',
                  title = None, xlabel = 'Haun Stage', ylabel = 'LAI',
                  colors = ['b', 'r'], markers = ['d', 'o'], linestyles = ['-', '--'],
                  error_bars = [True, True], xlims = None, ylims = None, legend = True, ax = None):
     if ax == None:
         fig, ax = plt.subplots()
-    plot_mean(df_sim, variable = variable, xaxis = xaxis, error_bars = error_bars[0], 
+    plot_mean(df_sim, variable = variable, xaxis = xaxis,
                 color = colors[0], marker = markers[0], linestyle = linestyles[0],
                 title = title, xlabel = xlabel, ylabel = ylabel, 
                 xlims = xlims, ylims = ylims, ax = ax)
     if df_obs is not None:
-        plot_mean(df_obs, variable = variable, xaxis = xaxis, error_bars = error_bars[1], 
+        plot_mean(df_obs, variable = variable, xaxis = xaxis,
                     color = colors[1], marker = markers[1], linestyle = linestyles[1],
                     title = title, xlabel = xlabel, ylabel = ylabel, 
                     xlims = xlims, ylims = ylims, ax = ax)
