@@ -1,0 +1,20 @@
+{
+    "dTT_cohort": {
+        "Mercia": {
+            "first": 30,
+            "increment": 10
+        },
+        "Rht3": {
+            "first": 30,
+            "increment": 10
+        },
+        "Tremie12": {
+            "first": 30,
+            "increment": 10
+        },
+        "Tremie13": {
+            "first": 30,
+            "increment": 10
+        }
+    }
+}

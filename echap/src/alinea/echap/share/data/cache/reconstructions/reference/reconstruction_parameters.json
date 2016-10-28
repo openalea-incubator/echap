@@ -113,6 +113,12 @@
         "Tremie12": 7,
         "Tremie13": 7
     },
+    "ears_per_plant_tuning": {
+        "Mercia": null,
+        "Rht3": null,
+        "Tremie12": 1.2,
+        "Tremie13": null
+    },
     "emission_reduction": {
         "Mercia": null,
         "Rht3": null,

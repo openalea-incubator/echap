@@ -4,25 +4,11 @@ try:
     import cPickle as pickle
 except:
     import pickle
-    
+
+
+from alinea.echap.hs_tt import Pheno_data
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
-
-def dateparse(x):
-    return pandas.datetime.strptime(x, '%d/%m/%Y')
-    
-def TT_lin():
-    filename = {'Mercia': 'MerciaRht3_TTlin_sowing.csv', 
-               'Rht3': 'MerciaRht3_TTlin_sowing.csv', 
-               'Tremie12': 'Tremie12_TTlin_sowing.csv', 
-               'Tremie13': 'Tremie13_TTlin_sowing.csv'}
-    def _read(filepath, label):
-        df = pandas.read_csv(filepath, sep=';', decimal = ',')
-        df['Date'] = df['Date'].apply(dateparse)
-        df['label'] = label
-        return df
-    data = {k:_read(shared_data(alinea.echap)+ '/architectural_measurements/' + v, k) for k,v in filename.iteritems()}
-    return pandas.concat(data.values())
 
 
 #
@@ -351,38 +337,6 @@ def Tillering_data():
 # ____________________________________________________________________________Pheno data (HS, SSI, GL)
 #
 #
-
-def Pheno_data(pheno_dict = {}, sources = ['archi_tagged', 'archi_sampled', 'symptom_tagged'], 
-                count = 0):
-    """ Phenological data (HS, GL, SSI) found for 
-        - Treated tagged plants followed for architectural notations
-        - Treated tagged plant followed for symptom notation (SSI/GL)
-        - some destructive samples (scan /silhouettes data
-        
-        Details in architectural_measurements R pre-processing scripts
-    """
-
-    src = sources[count]
-    count += 1
-    filename = 'Compil_Pheno_treated_' + src +'.csv'
-    filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
-    df = pandas.read_csv(filepath, sep = ',', decimal='.')
-    df['Date'] = df['Date'].apply(dateparse)
-    df_TT = TT_lin()
-    df = pandas.merge(df, df_TT)
-    pheno_dict[src] = df
-    if count < len(sources):
-        return Pheno_data(pheno_dict, sources, count)
-    else:
-        return pheno_dict
-    
-    
-    # file_names = {'archi_tagged': 'Compil_Pheno_treated_archi_tagged.csv',
-                  # 'archi_sampled':'Compil_Pheno_treated_archi_sampled.csv',
-                  # 'symptom_tagged': 'Compil_Pheno_treated_symptom_tagged.csv'}
-    # file_path = {k:str(shared_data(alinea.echap)/'architectural_measurements'/v) for k,v in file_names.iteritems()}
-    # return {k:pandas.read_csv(v, sep = ',', decimal='.') for k,v in file_path.iteritems()}
- 
 #
 # Reader for leaf by leaf data (G. Garin April 2015)
 # 

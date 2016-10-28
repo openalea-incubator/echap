@@ -10,7 +10,7 @@ import os
 from copy import deepcopy
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 
@@ -24,6 +24,7 @@ from openalea.deploy.shared_data import shared_data
 
 import alinea.echap.architectural_data as archidb
 import alinea.echap.architectural_reconstructions_plot as archi_plot
+from alinea.echap.hs_tt import HS_fit
 
 import alinea.adel.plantgen_extensions as pgen_ext
 
@@ -78,11 +79,6 @@ def reconstruction_parameters(tag='reference', reset=False):
     #----------------
     pars['adel_pars'] = {'senescence_leaf_shrink' : 0.5,'leafDuration' : 2, 'fracLeaf' : 0.2, 'stemDuration' : 2. / 1.2, 'dHS_col' : 0.2,'dHS_en': 0,'epsillon' : 1e-6, 'HSstart_inclination_tiller': 1, 'rate_inclination_tiller': 30, 'drop_empty':True}
     #
-    # Haun Stage = f(TT), convergence between axis
-    #---------------------------------------------
-    # delay between emergence of flag leaf on mainstem and flag leaf emergence on cohorts (60 is for Maxwell that has quite large desynchronisation, 30 may be more realistic)
-    pars['dTT_cohort'] = pdict({'first': 30, 'increment': 10})
-    #
     # Green Leaves (ssi) = f(HS)
     #
     # in the original pgen, dHS_bolting is estimated as the decimal number of elongated internodes
@@ -124,6 +120,8 @@ def reconstruction_parameters(tag='reference', reset=False):
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
                               'Tremie12':{'when':[4.9,5.1],'damage':{t:0.2 for t in ['T3']}},
                               'Tremie13': None}
+    # multiplicative tuning of the ears/plant data (allows to change MS/tiller ratio)
+    pars['ears_per_plant_tuning'] = {'Mercia':None, 'Rht3':None, 'Tremie12':1.2, 'Tremie13':None}
     # Dimensions
     #-----------
     #
@@ -159,120 +157,10 @@ def reconstruction_parameters(tag='reference', reset=False):
 #
 # --------------------------------------------------------------- Fit HS = f(TT)
 #
-def linreg_df(x,y):
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-    return pandas.Series({'slope':slope, 'intercept':intercept, 'r2': r_value**2, 'std_err':std_err})
-
-
-def fit_hs(tag='reference'):
-    """ Linear regression for phyllochron data
-    """
-    parameters = reconstruction_parameters(tag)
-    data = archidb.reconstruction_data()
-    tagged = data.Pheno_data['archi_tagged']
-    sampled = data.Pheno_data['archi_sampled']
-    dTT_cohort = parameters.get('dTT_cohort')
-    
-    # HS of mean plant 
-    g = tagged.groupby('label')
-    def _fit(df):
-        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
-        nff = df.groupby('N').agg('mean')['nff'].mean()
-        n = df.groupby('N').agg('mean')['nff'].count()
-        res = linreg_df(dat['TT'],dat['HS'])
-        res['nff'] = nff
-        res['n'] = n
-        return res
-    hs_ms = g.apply(_fit)
-    # complete fit if destructive sample available
-    # for Tremie 12, keep only first sample
-    # for Tremie 13, sampled plants are late / tagged plant : not used
-    gd = sampled.groupby('label')
-    for lab in gd.groups:
-#        if lab == 'Tremie12':
-        dat = g.get_group(lab)
-        dat = dat.loc[dat['HS'] < dat['nff'],('TT','HS')].dropna()
-        datd = gd.get_group(lab)
-        datd = datd.loc[(datd['HS'] < datd['nff']) | (numpy.isnan(datd['nff'])),('TT','HS')].dropna()
-        #datd = datd.loc[datd['HS'] < 10,:]
-        datreg = pandas.concat((dat,datd))
-        res = linreg_df(datreg['TT'],datreg['HS'])
-        hs_ms.loc[lab,'intercept':'std_err'] = res
-    # TTem per label
-    TTem = - hs_ms['intercept'] / hs_ms['slope']
-    # Flag leaf delay per nff
-    TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
-    g = tagged.groupby(('label','nff'))
-    hs_nff = g.apply(_fit)
-    TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
-    TT_flag = TT_nff_flag.reset_index().rename(columns={0:'flag'}).merge(TT_mean_flag.reset_index().rename(columns={0:'mean_flag'}))
-    TT_flag['dTT_flag'] = TT_flag['flag'] - TT_flag['mean_flag']
-    TT_flag = TT_flag.merge(hs_nff['n'].reset_index().rename(columns=({0:'n'})))
-    TT_flag = TT_flag.merge(hs_ms['nff'].reset_index().rename(columns=({'nff':'mean_nff'})))
-    TT_flag = TT_flag.merge(TTem.reset_index().rename(columns=({0:'mean_TTem'})))
-    dTTnff  = TT_flag.groupby('label').apply(lambda x: numpy.average(x['dTT_flag'] * 1. / (x['nff'] - x['mean_nff']), weights = x['n']))
-    # residual variabilityy of emergenece between plants
-    # mean slopes per nff: 
-    dat = TT_flag.set_index(['label', 'nff'], drop=False)
-    a_nff = dat['nff'] / (dat['flag'] - dat['mean_TTem']) 
-    #estimate dTTEm per plant wyth modeled slope
-    g = tagged.groupby(('label', 'N'))
-    def _TTem(df):
-        res = None
-        dat = df.loc[df['HS'] < df['nff'],('TT','HS')].dropna()
-        nff = df['nff'].values[0]
-        label = df['label'].values[0]
-        if not numpy.isnan(nff):
-            a = a_nff[(label, nff)]
-            b = numpy.mean(dat['HS'] - a * dat['TT'])
-            res = -1. * b / a
-        return res
-    TTem_p = g.apply(_TTem)
-    # standard deviation
-    std_TTem = TTem_p.reset_index().groupby('label').agg('std').loc[:,0]
-  
-    # HS fits
-    hs_fits = {k: pgen_ext.HaunStage(1. / hs_ms['slope'][k], TTem[k], std_TTem[k], hs_ms['nff'][k], dTTnff[k] / hs_ms['slope'][k], dTT_cohort[k]) for k in dTT_cohort}
-    return hs_fits
-    
-    
-def HS_fit(tag='reference', reset=False):
-    """ Handle fitted phyllochron persitent object
-    """
-    dir_path = cache_reconstruction_path(tag)
-    if not reset:
-        try:
-            hs_fits = {}
-            for k in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
-                file_path = dir_path / 'HSfit_' + k + '.json'
-                hs_fits[k] = pgen_ext.HaunStage.load(file_path)
-            return hs_fits
-        except IOError:
-            pass
-    hs_fits = fit_hs(tag)
-    for k,hs in hs_fits.iteritems():
-        file_path = dir_path / 'HSfit_' + k + '.json'
-        hs.dump(file_path)
-
-    return hs_fits
-#
-
 def check_hs_fits(tag='reference'):
     fits = HS_fit(tag)
     obs = archidb.haun_stage_aggregated()
     archi_plot.haun_stage_plot(obs, fits)
-
-# if reset_data:
-#     HSfit = HS_fit(reset=True)
-#     vdata = archidb.validation_data(reset=True, HS_fit=HSfit)
-#     rdata = archidb.reconstruction_data(reset=True)
-# else:
-#     HSfit = HS_fit()
-#     vdata = archidb.validation_data()
-#     rdata = archidb.reconstruction_data()
-
-
-
 
 #
 # --------------------------------------------------------------- Fit GL = f(HS since flag)
@@ -283,17 +171,7 @@ def GL_fits(tag='reference'):
     parameters = reconstruction_parameters(tag)
     hsfit = HS_fit(tag)
     GLpars = parameters.get('GLpars')
-    
-    #df_GL_obs_nff,  df_GL_obs_global = data.green_leaves
-    #df_GL_est_nff,  df_GL_est_global = data.green_leaves_estimated   
-    #obs = pandas.concat([df_GL_obs_global, df_GL_est_global])
-    ## compute curvature using Tremie12 data
-    #obsT12 = obs[obs['label']=='Tremie12']
-    #fitT12 = pgen_ext.GreenLeaves(**GLpars['Tremie12'])
-    #fitT12.fit_a(obsT12['HS'].astype(float).values - obsT12['HSflag'].astype(float).values,
-    #                  obsT12['GL_mean'].astype(float).values)
-    #print fitT12.a
-    #
+
     return {k:pgen_ext.GreenLeaves(hsfit[k], **GLpars[k]) for k in GLpars}
 
     
@@ -309,6 +187,7 @@ def check_green_leaves(tag='reference'):
     obs = (gl_obs_nff, gl_est_nff, gl_obs, gl_est)
     archi_plot.green_leaves_plot(obs, fits)
 
+
 #
 # --------------------------------------------------------------- Fit Plant density = f(HS)
 #
@@ -320,6 +199,7 @@ class deepdd(pandas.DataFrame):
         return self.copy(deep=True)
 #
 
+
 def density_fits(tag='reference'):
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
@@ -327,55 +207,68 @@ def density_fits(tag='reference'):
 
     HS_converter = HS_fit(tag)
     parameters = reconstruction_parameters(tag)
-    
+
     data = archidb.reconstruction_data()
     pdb = data.Plot_data
     tdb = data.Tillering_data
 
     damages = parameters.get('plant_damages')
-    
-    #compile density data
+
+    # compile density data
     density_data = {}
     for k in pdb:
-        hs =[]
+        hs = []
         d = []
         if 'plant_density_at_emergence' in pdb[k]:
-            hs.append(HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
+            hs.append(HS_converter[k](
+                pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
             d.append(pdb[k]['plant_density_at_emergence'])
         if 'plant_density' in pdb[k]:
-            for date,densities in pdb[k]['plant_density'].iteritems():
-                hs.extend([HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
+            for date, densities in pdb[k]['plant_density'].iteritems():
+                hs.extend(
+                    [HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
                 d.extend(densities)
         if 'raw_ear_density_at_harvest' in pdb[k]:
-            ear_d = numpy.array(pdb[k]['raw_ear_density_at_harvest']) / tdb[k]['ears_per_plant']
-            hs_harvest = HS_converter[k](pdb[k]['TT_date'][pdb[k]['code_date']['harvest']])
+            epp = tdb[k]['ears_per_plant']
+            if 'ears_per_plant_tuning' in parameters:
+                if parameters['ears_per_plant_tuning'][k] is not None:
+                    epp *= parameters['ears_per_plant_tuning'][k]
+            ear_d = numpy.array(pdb[k]['raw_ear_density_at_harvest']) / epp
+            hs_harvest = HS_converter[k](
+                pdb[k]['TT_date'][pdb[k]['code_date']['harvest']])
             hs.extend([hs_harvest] * len(ear_d))
             d.extend(ear_d.tolist())
-        density_data[k] = pandas.DataFrame({'HS':hs, 'density':d})
+        density_data[k] = pandas.DataFrame({'HS': hs, 'density': d})
 
-    #estimate mean plant density or mean plant density after damages
+    # estimate mean plant density or mean plant density after damages
     if damages is not None:
         for k in damages:
             if damages[k] is not None:
-                density_data[k] = density_data[k].loc[density_data[k]['HS'] > max(damages[k]['when']),:]
-    mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in density_data}
+                density_data[k] = density_data[k].loc[
+                                  density_data[k]['HS'] > max(
+                                      damages[k]['when']), :]
+    mean_plant_density = {k: round(density_data[k]['density'].mean()) for k in
+                          density_data}
     #
-    fits = {k: {'HS':[-20,50],'density':[mean_plant_density[k]] * 2} for k in mean_plant_density}
+    fits = {k: {'HS': [-20, 50], 'density': [mean_plant_density[k]] * 2} for k
+            in mean_plant_density}
     #
     if damages is not None:
         for k in damages:
             if damages[k] is not None:
-                density_at_emergence = round(mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
+                density_at_emergence = round(
+                    mean_plant_density[k] * 1. / (1 - damages[k]['damage']))
                 density_at_harvest = mean_plant_density[k]
-                fits[k] = {'HS':[-20] + damages[k]['when'] + [50], 'density': [density_at_emergence] * 2 + [density_at_harvest] * 2}
-    
-    fits = {k:{'sowing_density': pdb[k]['sowing_density'], 
-                       'inter_row': pdb[k]['inter_row'],
-                       'density_table': pandas.DataFrame(fits[k])} for k in fits}
+                fits[k] = {'HS': [-20] + damages[k]['when'] + [50],
+                           'density': [density_at_emergence] * 2 + [
+                                                                       density_at_harvest] * 2}
 
-                       
+    fits = {k: {'sowing_density': pdb[k]['sowing_density'],
+                'inter_row': pdb[k]['inter_row'],
+                'density_table': pandas.DataFrame(fits[k])} for k in fits}
+
     adjust = parameters.get('density_tuning')
-    if adjust is not None: 
+    if adjust is not None:
         for k in adjust:
             if adjust[k] is not None:
                 df = fits[k]['density_table']
@@ -401,17 +294,20 @@ def check_density_fits(tag='reference'):
 #
 # --------------------------------------------------------------- Fit Tillering
 #
-#
 # fitting functions
-
-                          
-def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages, std_em):
+def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages,
+                std_em):
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = tdb['emission_probabilities']
     emission = pgen_ext.TillerEmission(primary_emission)
-    regression = pgen_ext.TillerRegression(ears_per_plant, dHS_reg, delta_stop_del)
-    return pgen_ext.AxePop(ms_nff_probas, emission, regression, tiller_damages = tiller_damages, max_order=max_order, std_em=std_em)
+    regression = pgen_ext.TillerRegression(ears_per_plant, dHS_reg,
+                                           delta_stop_del)
+    return pgen_ext.AxePop(ms_nff_probas, emission, regression,
+                           tiller_damages=tiller_damages, max_order=max_order,
+                           std_em=std_em)
+
+
 #
 # Fits
 def axepop_fits(tag='reference'):
@@ -432,6 +328,12 @@ def axepop_fits(tag='reference'):
             if emf[k] is not None:
                 for T in emf[k]:
                     tdb[k]['emission_probabilities'][T] *= emf[k][T]
+    eppt = parameters.get('ears_per_plant_tuning')
+    if eppt is not None:
+        for k in eppt:
+            if eppt[k] is not None:
+                tdb[k]['ears_per_plant'] *= eppt[k]
+
 
     # variability of emergence
     std_em = parameters.get('std_emergence')
@@ -464,6 +366,7 @@ def check_tillering_fits(tag='reference'):
 #
 # --------------------------------------------------------------- Fit dimensions
 #
+
 
 def estimate_Wb_Tremie13(dim_fit, data, tag='reference', sep_up_down=4):
     def get_estimate(A, L, ff):
@@ -538,7 +441,6 @@ def dimension_fits(tag='reference'):
     return fits
 
 
-    
 def check_dimension(tag='reference'):
 
     fits = dimension_fits(tag)
@@ -608,7 +510,8 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
     return trajectories, srdb, bins
 
 # azimuth, lindex as function of rankclass (class 1 basal leaves, class 2 upper leaves)    
-   
+
+
 def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """ generate geoLeaf function for Adel """
     rcode = """
@@ -627,12 +530,14 @@ def geoLeaf(nlim=4,dazt=60,dazb=10, Lindex_base = 1, Lindex_top = 2):
     """
     return rcode.format(ntoplim = nlim, dazTop = dazt, dazBase = dazb, top_class=Lindex_top, base_class= Lindex_base)
 
+
 def _addLindex(dfxy, dfsr): 
     dfxy['Lindex'] = 1
     dfxy.loc[dfxy['ranktop'] <= 4,'Lindex'] = 2
     dfsr['Lindex'] = dfsr['rankclass']
     return dfxy, dfsr
-    
+
+
 def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level=7):
     d = {}
     gL = geoLeaf()
@@ -642,13 +547,15 @@ def leaf_fits(bins=[-10, 0.5, 1, 2, 3, 4, 10], ntraj=10, tol_med=0.1, disc_level
         d[k] = Leaves(xy, sr, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
     return d
 
+
 def median_leaf_fits(xydata, sr_data, disc_level=7, top_leaves=3):
     gL = geoLeaf(nlim=top_leaves)   
     trajs,bins = xydata
     sr_data['Lindex'] = sr_data['rankclass']
     srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
     return Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
- 
+
+
 def leafshape_fits(tag='reference'):
     parameters = reconstruction_parameters(tag)
     data = archidb.reconstruction_data()
@@ -664,91 +571,105 @@ def leafshape_fits(tag='reference'):
  
 # Attention pour rht3 on veut geoleaf qui retourne 1 (= feuille du bas) quelque soit le rang !
     # creation de la colonne age et du selecteur d'age 
-    
-            
 
 
 class EchapReconstructions(object):
-    
     def __init__(self, tag='reference'):
         self.tag = tag
-        self.pars = reconstruction_parameters(tag)
+        self.pars = reconstruction_parameters(tag, reset=True)
         # if reset_data:
         #     d = archidb.reconstruction_data(reset=True)
         #     reset_data = False
         self.pgen_base = self.pars['pgen_base']
-        self.HS_fit = HS_fit(tag)
+        self.HS_fit = HS_fit(tag, reset=True)
         self.density_fits = density_fits(tag)
         self.axepop_fits = axepop_fits(tag)
         self.dimension_fits = dimension_fits(tag)
         self.GL_fits = GL_fits(tag)
         self.leaves = leafshape_fits(tag)
 
-   
-    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1, aborting_tiller_reduction=1, aspect = 'square', ssipars={'r1':0.07,'ndelsen':3},**kwds):
+    def get_reconstruction(self, name='Mercia', nplants=30, nsect=3, seed=1,
+                           aborting_tiller_reduction=1, aspect='square',
+                           ssipars={'r1': 0.07, 'ndelsen': 3}, **kwds):
         ''''''
-                
+
         if name == 'Rht3':
-            incT=75
-            dep=10
+            incT = 75
+            dep = 10
         else:
-            incT=60
-            dep=7
-            
+            incT = 60
+            dep = 7
+
         d = self.density_fits[name]
-        stand = AgronomicStand(sowing_density=d['sowing_density'], plant_density=d['density_at_emergence'], inter_row=d['inter_row'], noise=0.04, density_curve_data = d['density_table'])       
-        #n_emerged, domain, positions, area = stand.stand(nplants, aspect)
-        n_emerged = nplants#adel uses smart stand       
+        stand = AgronomicStand(sowing_density=d['sowing_density'],
+                               plant_density=d['density_at_emergence'],
+                               inter_row=d['inter_row'], noise=0.04,
+                               density_curve_data=d['density_table'])
+        # n_emerged, domain, positions, area = stand.stand(nplants, aspect)
+        n_emerged = nplants  # adel uses smart stand
         axp = self.axepop_fits[name]
         plants = axp.plant_list(n_emerged)
-        pgen = pgen_ext.PlantGen(HSfit = self.HS_fit[name], GLfit = self.GL_fits[name], Dimfit=self.dimension_fits[name],base_config=self.pgen_base, adel_pars=self.pars['adel_pars'])
+        pgen = pgen_ext.PlantGen(HSfit=self.HS_fit[name],
+                                 GLfit=self.GL_fits[name],
+                                 Dimfit=self.dimension_fits[name],
+                                 base_config=self.pgen_base,
+                                 adel_pars=self.pars['adel_pars'])
         axeT, dimT, phenT = pgen.adelT(plants)
         axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
-                    
-        leaves = self.leaves[name] 
-       
+
+        leaves = self.leaves[name]
+
         run_adel_pars = self.pars['adel_pars']
-        
-        return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , seed=seed, sample='sequence', leaves = leaves, aborting_tiller_reduction = aborting_tiller_reduction, aspect = aspect,incT=incT, dep=dep, run_adel_pars = run_adel_pars, **kwds)
-    
+
+        return AdelWheat(nplants=nplants, nsect=nsect, devT=devT, stand=stand,
+                         seed=seed, sample='sequence', leaves=leaves,
+                         aborting_tiller_reduction=aborting_tiller_reduction,
+                         aspect=aspect, incT=incT, dep=dep,
+                         run_adel_pars=run_adel_pars, **kwds)
+
     def save(self, filename):
 
         with open(str(filename), 'w') as output:
             pickle.dump(self, output)
-    
+
+
 def echap_reconstructions(tag='reference', reset=False):
     filename = cache_reconstruction_path(tag) / 'EchapReconstructions.pckl'
     if not reset:
         try:
-            with open(filename) as input:
-                return pickle.load(input)
+            with open(filename) as saved:
+                return pickle.load(saved)
         except:
             pass
-    Echap = EchapReconstructions(tag)
-    Echap.save(filename)
-    return Echap   
+    echap = EchapReconstructions(tag)
+    echap.save(filename)
+    return echap
 
-def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250., inter_row=0.15,
-                            nsect=3, seed=1):
+
+def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250.,
+                           inter_row=0.15, nsect=3, seed=1):
     stand = AgronomicStand(sowing_density=sowing_density,
-                            plant_density=plant_density, 
-                            inter_row=inter_row, noise=0.04, density_curve_data = None)       
+                           plant_density=plant_density, inter_row=inter_row,
+                           noise=0.04, density_curve_data=None)
     n_emerged = nplants
-    m = pgen_ext.TillerEmission(primary_tiller_probabilities={'T1':1., 'T2':0.5, 'T3':0.5, 'T4':0.3}) # From Bertheloot Soissons N+
-    axp = pgen_ext.AxePop(Emission=m) # With 11 and 12 it's fine
+    m = pgen_ext.TillerEmission(
+        primary_tiller_probabilities={'T1': 1., 'T2': 0.5, 'T3': 0.5,
+                                      'T4': 0.3})  # From Bertheloot Soissons N+
+    axp = pgen_ext.AxePop(Emission=m)  # With 11 and 12 it's fine
     plants = axp.plant_list(n_emerged)
     hs_fit = HS_fit()
     GLfit = GL_fits()['Mercia']
     Dimfit = dimension_fits()['Mercia']
-    Dimfit.scale = {k:v*1.15 for k,v in Dimfit.scale.iteritems()} # Seen on Soisson 2010 compared to Mercia 2010
+    Dimfit.scale = {k: v * 1.15 for k, v in
+                    Dimfit.scale.iteritems()}  # Seen on Soisson 2010 compared to Mercia 2010
     pgen = pgen_ext.PlantGen(HSfit=hs_fit['Mercia'], GLfit=GLfit, Dimfit=Dimfit)
     axeT, dimT, phenT = pgen.adelT(plants)
     axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
     devT = devCsv(axeT, dimT, phenT)
-    leaves = leafshape_fits()['Mercia'] # TODO Create and Take Soisson
-    return AdelWheat(nplants = nplants, nsect=nsect, devT=devT, stand = stand , 
-                    seed=seed, sample='sequence', leaves = leaves)
+    leaves = leafshape_fits()['Mercia']  # TODO Create and Take Soisson
+    return AdelWheat(nplants=nplants, nsect=nsect, devT=devT, stand=stand,
+                     seed=seed, sample='sequence', leaves=leaves)
     
 # checks consistency adel/fits
 
@@ -759,17 +680,3 @@ if run_plots:
     fit = e.density_fits['Mercia']['density_table']
     ax=fit.plot('TT','density',style='-')
     df.plot('TT','nbplants',style='--',ax=ax)
-    
-    
-    # future deprecated    
-def get_EchapReconstructions():
- 
-    filename = str(shared_data(alinea.echap)/'EchapReconstructions.pckl')
-    f = open(filename)
-    reconst = pickle.load(f)
-    f.close()
-    return reconst
-    
-    
-
-    
