@@ -4,12 +4,15 @@
 import pandas
 import numpy
 import os
+import glob
 import matplotlib.pyplot as plt
 from math import sqrt
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+from alinea.adel.astk_interface import AdelWheat
 # Import for wheat reconstruction
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
@@ -44,22 +47,22 @@ def cache_simulation_path(tag, rep):
     return path
 
 # Run and save canopy properties ###################################################################
-def aggregate_lai(adel, axstat):
+def aggregate_lai(g, axstat):
     colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
                  'PAI_tot', 'PAI_vert']
-    pstat = adel.plot_statistics(axstat)             
+    pstat = AdelWheat.plot_statistics(g,axstat)
     if pstat is None:
         return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
     else:
         return pstat.loc[:, colnames]
 
-def get_lai_properties(g, adel):
-    df_axstat = adel.axis_statistics(g)
-    df_lai_tot = aggregate_lai(adel, df_axstat)
-    df_lai_MS = aggregate_lai(adel, df_axstat[df_axstat['axe_id']=='MS'])
+def get_lai_properties(g):
+    df_axstat = AdelWheat.axis_statistics(g)
+    df_lai_tot = aggregate_lai(g, df_axstat)
+    df_lai_MS = aggregate_lai(g, df_axstat[df_axstat['axe_id']=='MS'])
     df_lai_MS.rename(columns = {col:col+'_MS' for col in ['LAI_tot', 'LAI_vert', 
                                                          'PAI_tot', 'PAI_vert']}, inplace=True)
-    df_lai_ferti = aggregate_lai(adel, df_axstat[df_axstat['has_ear']])
+    df_lai_ferti = aggregate_lai(g, df_axstat[df_axstat['has_ear']])
     df_lai_ferti.rename(columns = {col:col+'_ferti' for col in ['LAI_tot', 'LAI_vert', 
                                                             'PAI_tot', 'PAI_vert']}, inplace=True)
     df_lai = pandas.merge(df_lai_tot, df_lai_MS)
@@ -114,7 +117,7 @@ def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
 
 def get_reconstruction(variety='Tremie12', nplants=30, tag='reference', rep=1,
                        reset=False, reset_echap=False):
-    """ Return adel wheat instance"""
+    """ Return a new adel wheat instance"""
     sim_path = cache_simulation_path(tag, rep)
 
     filename = sim_path / 'adel_' + variety.lower() + '_' + str(nplants) + 'pl.pckl'
@@ -140,6 +143,7 @@ def as_daydate(daydate, tths):
     else:
         return daydate
 
+
 def daydate_range(variety, tag, start, stop, by=None, at=None):
     tths = tt_hs_tag(variety, tag)
     if at is None:
@@ -158,39 +162,59 @@ def daydate_range(variety, tag, start, stop, by=None, at=None):
     return at
 
 
-def get_canopy(adel=None, variety = 'Tremie12', nplants=30, daydate='T1', tag = 'reference', rep=1, reset=False, load_geom=True):
+def build_canopies(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                   start=None, stop=None, by=None, at=None, reset=False):
+
+    sim_path = cache_simulation_path(tag, rep)
+    head_path = sim_path / 'canopy' / variety.lower() + '_' + str(
+            nplants) + 'pl_'
+    if not os.path.exists(sim_path / 'canopy'):
+        os.makedirs(sim_path / 'canopy')
+
+    dd_range = daydate_range(variety, tag, start, stop, by, at)
+    missing = dd_range
+    if not reset:
+        pattern = head_path + '*.pckl'
+        done = glob.glob(pattern)
+        done = map(lambda x: x.split('pl_')[1].split('.')[0], done)
+        missing = [d for d in dd_range if d not in done]
+
+    if len(missing) > 0:
+        adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
+                                  rep=rep)
+        tths = tt_hs_tag(variety, tag)
+        for d in dd_range:
+            print d
+            basename = head_path + '_'.join(d.split('-'))
+            age = tths.set_index('daydate')['TT'][d]
+            g = adel.setup_canopy(age=age)
+            adel.save(g, basename=str(basename))
+
+    return missing
+
+
+def get_canopy(variety='Tremie12', nplants=30, daydate='T1', tag='reference', rep=1, reset=False, load_geom=True):
     tths = tt_hs_tag(variety, tag)
     daydate = as_daydate(daydate, tths)
 
     sim_path = cache_simulation_path(tag, rep)
 
-    if adel is None:
-        adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag, rep=rep)
     if not os.path.exists(sim_path / 'canopy'):
         os.makedirs(sim_path / 'canopy')
     basename = sim_path / 'canopy' / variety.lower() + '_' + str(
         nplants) + 'pl_' + '_'.join(daydate.split('-'))
     if not reset:
         try:
-            g, age = adel.load(basename=str(basename), load_geom=load_geom)
-            return adel, g, age
+            g = AdelWheat.load(basename=str(basename), load_geom=load_geom)
+            return g
         except IOError:
             pass
+    adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag, rep=rep)
     age = tths.set_index('daydate')['TT'][daydate]
     g = adel.setup_canopy(age=age)
     adel.save(g, basename=str(basename))
-    return adel, g, age
+    return g
 
-
-def build_canopies(start=None, stop=None, variety='Tremie12', nplants=30, tag='reference', rep=1, reset=False):
-    adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
-                              rep=rep)
-    dd_range = daydate_range(variety, tag, start, stop)
-    for d in dd_range:
-        print d
-        adel, g, age = get_canopy(adel, daydate = d, variety=variety, nplants=nplants, tag=tag, rep=rep)
-
-    return adel, g, age
 
 def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
                   start=None, stop=None, by=None, at=None, reset=False):
@@ -211,13 +235,15 @@ def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
                 missing = [d for d in dd_range if d not in done['daydate'].values]
         except IOError:
             pass
+    print('building missing canopies..')
+    build_canopies(variety=variety, nplants=nplants, tag=tag, rep=rep, at=missing, reset=False)
+    print('Compute missing plot statistics...')
     new = []
-    adel=None
     for d in missing:
-        adel, g, age = get_canopy(adel, daydate=d, variety=variety,
-                                  nplants=nplants, tag=tag, rep=rep, load_geom=False)
         print d
-        df_lai = get_lai_properties(g, adel)
+        g = get_canopy(daydate=d, variety=variety,
+                                  nplants=nplants, tag=tag, rep=rep, load_geom=False)
+        df_lai = get_lai_properties(g)
         df_lai['variety'] = variety
         df_lai['daydate'] = d
         new.append(df_lai)
