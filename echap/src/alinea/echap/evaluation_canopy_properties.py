@@ -3,6 +3,7 @@
 
 import pandas
 import numpy
+import json
 import os
 import glob
 import matplotlib.pyplot as plt
@@ -13,21 +14,21 @@ except ImportError:
     import pickle
 
 from alinea.adel.astk_interface import AdelWheat
+from alinea.caribu.CaribuScene import CaribuScene
 # Import for wheat reconstruction
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
 from alinea.echap.hs_tt import tt_hs_tag
 #from alinea.echap.weather_data import *
 import alinea.echap.architectural_data as archidb
-from alinea.echap.canopy_data import lai_pai_scan, pai57
+from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data
 from alinea.echap.architectural_reconstructions import (echap_reconstructions, 
                                                         EchapReconstructions,
                                                         HS_fit, density_fits,
                                                         pdict, reconstruction_parameters)
 from alinea.adel.postprocessing import ground_cover
-from alinea.caribu.caribu_star import run_caribu
+
 from alinea.caribu.light import diffuse_source
-from alinea.caribu.label import Label
 
 
 def cache_reconstruction_path(tag):
@@ -45,74 +46,6 @@ def cache_simulation_path(tag, rep):
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
-
-# Run and save canopy properties ###################################################################
-def aggregate_lai(g, axstat):
-    colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
-                 'PAI_tot', 'PAI_vert']
-    pstat = AdelWheat.plot_statistics(g,axstat)
-    if pstat is None:
-        return pandas.DataFrame([np.nan for i in colnames], columns = colnames)
-    else:
-        return pstat.loc[:, colnames]
-
-def get_lai_properties(g):
-    df_axstat = AdelWheat.axis_statistics(g)
-    df_lai_tot = aggregate_lai(g, df_axstat)
-    df_lai_MS = aggregate_lai(g, df_axstat[df_axstat['axe_id']=='MS'])
-    df_lai_MS.rename(columns = {col:col+'_MS' for col in ['LAI_tot', 'LAI_vert', 
-                                                         'PAI_tot', 'PAI_vert']}, inplace=True)
-    df_lai_ferti = aggregate_lai(g, df_axstat[df_axstat['has_ear']])
-    df_lai_ferti.rename(columns = {col:col+'_ferti' for col in ['LAI_tot', 'LAI_vert', 
-                                                            'PAI_tot', 'PAI_vert']}, inplace=True)
-    df_lai = pandas.merge(df_lai_tot, df_lai_MS)
-    df_lai = pandas.merge(df_lai, df_lai_ferti)
-    return df_lai
-    
-def draft_TC(g, adel, zenith, rep, scale = 1):
-    echap_top_camera =  {'type':'perspective', 'distance':200., 
-                         'fov':50., 'azimuth':0, 'zenith':zenith}
-    gc, im, box = ground_cover(g, adel.domain, camera=echap_top_camera, image_width = int(2144 * scale), 
-                                image_height = int(1424*scale), getImages=True, replicate=rep)
-    return gc
-        
-def get_cover_fraction_properties(g, adel, nplants, scale = 1):
-    df_TC = pandas.DataFrame(columns = ['TCgreen', 'TCsen', 'TCtot',
-                                         'TCgreen_57', 'TCsen_57', 'TCtot_57'])
-    if nplants <= 30:
-        reps = [1,2]
-    else:
-        reps = [1,1]
-        
-    for zenith, rep in zip([0,57],reps):
-        dict_TC = draft_TC(g, adel, zenith, rep, scale)
-        if zenith == 0:
-            suffix = ''
-        elif zenith == 57:
-            suffix = '_57'
-        df_TC.loc[0, 'TCgreen'+suffix] = dict_TC['green']
-        df_TC.loc[0, 'TCsen'+suffix] = dict_TC['senescent']
-        df_TC.loc[0, 'TCtot'+suffix] = sum(dict_TC.values())
-        df_TC.loc[0, 'Gapgreen'+suffix] = 1 - df_TC.loc[0, 'TCgreen'+suffix]
-        df_TC.loc[0, 'Gapsen'+suffix] = 1 - df_TC.loc[0, 'TCsen'+suffix]
-        df_TC.loc[0, 'Gaptot'+suffix] = 1 - df_TC.loc[0, 'TCtot'+suffix]
-    return df_TC
-
-def draft_light(g, adel, z_level):
-    scene = adel.scene(g)
-    sources = diffuse_source(46)
-    out = run_caribu(sources, scene, domain=adel.domain, zsoil = z_level)
-    labs = {k:Label(v) for k,v in out['label'].iteritems() if not numpy.isnan(float(v))}
-    ei_soil = [out['Ei'][k] for k in labs if labs[k].is_soil()]
-    return float(numpy.mean(ei_soil))
-    
-def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
-    df_radiation = pandas.DataFrame(columns = ['LightPenetration_%d' %lev for lev in z_levels])
-    for z_level in z_levels:
-        df_radiation.loc[0, 'LightPenetration_%d' %z_level] = draft_light(g, adel, z_level)
-        df_radiation.loc[0, 'LightInterception_%d' %z_level] = 1 - df_radiation.loc[0, 
-                                                                    'LightPenetration_%d' %z_level]
-    return df_radiation
 
 
 def get_reconstruction(variety='Tremie12', nplants=30, tag='reference', rep=1,
@@ -177,7 +110,7 @@ def build_canopies(variety='Tremie12', nplants=30, tag='reference', rep=1,
         pattern = head_path + '*.pckl'
         done = glob.glob(pattern)
         done = map(lambda x: x.split('pl_')[1].split('.')[0], done)
-        missing = [d for d in dd_range if d not in done]
+        missing = [d for d in dd_range if '_'.join(d.split('-')) not in done]
 
     if len(missing) > 0:
         adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
@@ -214,6 +147,30 @@ def get_canopy(variety='Tremie12', nplants=30, daydate='T1', tag='reference', re
     g = adel.setup_canopy(age=age)
     adel.save(g, basename=str(basename))
     return g
+
+
+def aggregate_lai(g, axstat):
+    colnames = ['aire du plot', 'Nbr.plant.perplot', 'ThermalTime', 'LAI_tot', 'LAI_vert',
+                 'PAI_tot', 'PAI_vert']
+    pstat = AdelWheat.plot_statistics(g,axstat)
+    if pstat is None:
+        return pandas.DataFrame([numpy.nan] * len(colnames), columns = colnames)
+    else:
+        return pstat.loc[:, colnames]
+
+
+def get_lai_properties(g):
+    df_axstat = AdelWheat.axis_statistics(g)
+    df_lai_tot = aggregate_lai(g, df_axstat)
+    df_lai_MS = aggregate_lai(g, df_axstat[df_axstat['axe_id']=='MS'])
+    df_lai_MS.rename(columns = {col:col+'_MS' for col in ['LAI_tot', 'LAI_vert',
+                                                         'PAI_tot', 'PAI_vert']}, inplace=True)
+    df_lai_ferti = aggregate_lai(g, df_axstat[df_axstat['has_ear']])
+    df_lai_ferti.rename(columns = {col:col+'_ferti' for col in ['LAI_tot', 'LAI_vert',
+                                                            'PAI_tot', 'PAI_vert']}, inplace=True)
+    df_lai = pandas.merge(df_lai_tot, df_lai_MS)
+    df_lai = pandas.merge(df_lai, df_lai_ferti)
+    return df_lai
 
 
 def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
@@ -254,6 +211,167 @@ def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
     df = pandas.concat((done, df))
     df.to_csv(filename, index=False)
     return df
+
+
+def tag_to_light(tag='zenith'):
+    if tag == 'zenith':
+        return [(1, (0, 0, -1))]
+    else:
+        raise ValueError('Unknown light tag: ' + tag)
+
+
+def canopy_illumination(variety='Tremie12', nplants=30, daydate='T1',
+                        tag='reference', rep=1, light_tag='zenith', z_soil=0,
+                        reset=False):
+    tths = tt_hs_tag(variety, tag)
+    daydate = as_daydate(daydate, tths)
+    sim_path = cache_simulation_path(tag, rep)
+    if not os.path.exists(sim_path / 'illumination'):
+        os.makedirs(sim_path / 'illumination')
+    filename = sim_path / 'illumination' / light_tag + '_z' + str(
+        z_soil) + '_' + variety.lower() + '_' + str(nplants) + 'pl_' + '_'.join(
+        daydate.split('-')) + '.json'
+    if not reset:
+        try:
+            with open(filename, 'r') as input_file:
+                cached = json.load(input_file)
+                raw = {w: {int(k): v for k, v in cached['raw'][w].iteritems()}
+                       for w in cached['raw']}
+                aggregated = {w: {int(k): v for k, v
+                                  in cached['aggregated'][w].iteritems()} for
+                              w in cached['aggregated']}
+            return raw, aggregated, cached['soil']
+        except IOError:
+            pass
+    g = get_canopy(variety=variety, nplants=nplants, daydate=daydate, tag=tag,
+                   rep=rep)
+    scene = AdelWheat.scene(g)
+    meta = AdelWheat.meta_informations(g)
+    sources = tag_to_light(light_tag)
+    c2u = {v: k for k, v in CaribuScene.units.iteritems()}
+    units = c2u.get(meta['convUnit'])
+    cscene = CaribuScene(scene, sources, pattern=meta['domain'], soil_mesh=1,
+                         z_soil=z_soil, scene_unit=units)
+    raw, aggregated = cscene.run(direct=True, infinite=True, simplify=True)
+    soil, _ = cscene.getSoilEnergy()
+    with open(filename, 'w') as output_file:
+        saved = {'raw': raw, 'aggregated': aggregated, 'soil': soil}
+        json.dump(saved, output_file, sort_keys=True, indent=4,
+                  separators=(',', ': '))
+
+    return raw, aggregated, soil
+
+
+def simulated_illumination(variety='Tremie12', nplants=30, tag='reference',
+                           rep=1, light_tag='zenith', z_soil=0, start=None,
+                           stop=None, by=None, at=None, reset=False):
+
+    sim_path = cache_simulation_path(tag, rep)
+    filename = sim_path / 'light_interception_' + variety.lower() + '_' + str(
+        nplants) + 'pl.csv'
+    dd_range = daydate_range(variety, tag, start, stop, by, at)
+    done = None
+    missing = dd_range
+    if not reset:
+        try:
+            df = pandas.read_csv(filename)
+            if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                done = df.loc[df['daydate'].isin(dd_range),:]
+                missing=[]
+            else:
+                done = df.loc[df['daydate'].isin(dd_range),:]
+                missing = [d for d in dd_range if d not in done['daydate'].values]
+        except IOError:
+            pass
+    if len(missing) > 0:
+        print('build missing canopies...')
+        build_canopies(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                       at=missing, reset=False)
+    print('Compute light interception...')
+    sim_tag = 'po_' + light_tag + '_' + str(z_soil)
+    # check if all simul are in done
+    if done is not None:
+        if sim_tag not in done.columns:
+            done[sim_tag] = [numpy.nan] * len(done)
+        for d in done['daydate'].values:
+            found = sim_tag in done.set_index('daydate').loc[d,:].notnull().index
+            if not found:
+                raw, aggregated, soil = canopy_illumination(variety=variety,
+                                                            nplants=nplants,
+                                                            daydate=d,
+                                                            tag=tag,
+                                                            rep=rep,
+                                                            light_tag=light_tag,
+                                                            z_soil=0,
+                                                            reset=False)
+                done.iloc[done['daydate'] == d, 'po_' + sim_tag] = soil
+    new = []
+    for d in missing:
+        print d
+        raw, aggregated, soil = canopy_illumination(variety=variety,
+                                                    nplants=nplants, daydate=d,
+                                                    tag=tag, rep=rep,
+                                                    light_tag=light_tag,
+                                                    z_soil=0, reset=False)
+        df_light = pandas.DataFrame({'rep': rep, 'variety': variety, 'daydate': d, sim_tag:soil}, index=[0])
+        new.append(df_light)
+
+    df = pandas.concat(new)
+    tths = tt_hs_tag(variety, tag)
+    df = df.merge(tths)
+    if done is not None:
+        df = pandas.concat((done, df))
+    df.to_csv(filename, index=False)
+    return df
+
+# Run and save canopy properties ###################################################################
+
+
+def draft_TC(g, adel, zenith, rep, scale = 1):
+    echap_top_camera =  {'type':'perspective', 'distance':200., 
+                         'fov':50., 'azimuth':0, 'zenith':zenith}
+    gc, im, box = ground_cover(g, adel.domain, camera=echap_top_camera, image_width = int(2144 * scale), 
+                                image_height = int(1424*scale), getImages=True, replicate=rep)
+    return gc
+        
+def get_cover_fraction_properties(g, adel, nplants, scale = 1):
+    df_TC = pandas.DataFrame(columns = ['TCgreen', 'TCsen', 'TCtot',
+                                         'TCgreen_57', 'TCsen_57', 'TCtot_57'])
+    if nplants <= 30:
+        reps = [1,2]
+    else:
+        reps = [1,1]
+        
+    for zenith, rep in zip([0,57],reps):
+        dict_TC = draft_TC(g, adel, zenith, rep, scale)
+        if zenith == 0:
+            suffix = ''
+        elif zenith == 57:
+            suffix = '_57'
+        df_TC.loc[0, 'TCgreen'+suffix] = dict_TC['green']
+        df_TC.loc[0, 'TCsen'+suffix] = dict_TC['senescent']
+        df_TC.loc[0, 'TCtot'+suffix] = sum(dict_TC.values())
+        df_TC.loc[0, 'Gapgreen'+suffix] = 1 - df_TC.loc[0, 'TCgreen'+suffix]
+        df_TC.loc[0, 'Gapsen'+suffix] = 1 - df_TC.loc[0, 'TCsen'+suffix]
+        df_TC.loc[0, 'Gaptot'+suffix] = 1 - df_TC.loc[0, 'TCtot'+suffix]
+    return df_TC
+
+
+
+
+
+
+
+    
+def get_radiation_properties(g, adel, z_levels = [0, 5, 20, 25]):
+    df_radiation = pandas.DataFrame(columns = ['LightPenetration_%d' %lev for lev in z_levels])
+    for z_level in z_levels:
+        df_radiation.loc[0, 'LightPenetration_%d' %z_level] = draft_light(g, adel, z_level)
+        df_radiation.loc[0, 'LightInterception_%d' %z_level] = 1 - df_radiation.loc[0, 
+                                                                    'LightPenetration_%d' %z_level]
+    return df_radiation
+
+
 
 
 
