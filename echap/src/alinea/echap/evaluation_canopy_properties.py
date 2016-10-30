@@ -28,7 +28,7 @@ from alinea.echap.architectural_reconstructions import (echap_reconstructions,
                                                         pdict, reconstruction_parameters)
 from alinea.adel.postprocessing import ground_cover
 
-from alinea.caribu.light import diffuse_source
+from alinea.caribu.light import vecteur_direction, diffuse_source
 
 
 def cache_reconstruction_path(tag):
@@ -213,9 +213,39 @@ def simulated_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
     return df
 
 
+
+
+
 def tag_to_light(tag='zenith'):
     if tag == 'zenith':
         return [(1, (0, 0, -1))]
+    elif tag == '57.5':
+        return [(1. / 24, vecteur_direction(90 - 57.5, az)) for az in range(0,360,15)]
+    elif tag == 'soc':
+        return diffuse_source(46)
+    elif tag.startswith('lai2000r'):
+        zenith = 7, 23, 38, 53, 68
+        #w = 0.034, 0.104, 0.16, 0.218, 0.494
+        r = int(tag.split('r')[1]) - 1
+        return [(1. / 24, vecteur_direction(90 - zenith[r], az)) for az in range(0,360, 15)]
+    else:
+        raise ValueError('Unknown light tag: ' + tag)
+
+
+def tag_to_zenith(tag='zenith'):
+    if tag == 'zenith':
+        return 0
+    elif tag == '57.5':
+        return 57.5
+    elif tag == 'soc':
+        energy, directions = zip(*diffuse_source(46))
+        z = numpy.array(zip(*directions)[2])
+        return numpy.mean(numpy.degrees(numpy.arccos(-z)))
+    elif tag.startswith('lai2000r'):
+        zenith = 7, 23, 38, 53, 68
+        #w = 0.034, 0.104, 0.16, 0.218, 0.494
+        r = int(tag.split('r')[1]) - 1
+        return zenith[r]
     else:
         raise ValueError('Unknown light tag: ' + tag)
 
@@ -288,14 +318,14 @@ def simulated_illumination(variety='Tremie12', nplants=30, tag='reference',
         build_canopies(variety=variety, nplants=nplants, tag=tag, rep=rep,
                        at=missing, reset=False)
     print('Compute light interception...')
-    sim_tag = 'po_' + light_tag + '_' + str(z_soil)
+    sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
     # check if all simul are in done
     if done is not None:
         if sim_tag not in done.columns:
             done[sim_tag] = [numpy.nan] * len(done)
         for d in done['daydate'].values:
-            found = sim_tag in done.set_index('daydate').loc[d,:].notnull().index
-            if not found:
+            if not pandas.notnull(done.set_index('daydate').loc[d, sim_tag]):
+                print d
                 raw, aggregated, soil = canopy_illumination(variety=variety,
                                                             nplants=nplants,
                                                             daydate=d,
@@ -303,8 +333,8 @@ def simulated_illumination(variety='Tremie12', nplants=30, tag='reference',
                                                             rep=rep,
                                                             light_tag=light_tag,
                                                             z_soil=0,
-                                                            reset=False)
-                done.iloc[done['daydate'] == d, 'po_' + sim_tag] = soil
+                                                            reset=reset)
+                done.loc[done['daydate'] == d, sim_tag] = soil
     new = []
     for d in missing:
         print d
@@ -312,16 +342,25 @@ def simulated_illumination(variety='Tremie12', nplants=30, tag='reference',
                                                     nplants=nplants, daydate=d,
                                                     tag=tag, rep=rep,
                                                     light_tag=light_tag,
-                                                    z_soil=0, reset=False)
+                                                    z_soil=0, reset=reset)
         df_light = pandas.DataFrame({'rep': rep, 'variety': variety, 'daydate': d, sim_tag:soil}, index=[0])
         new.append(df_light)
 
-    df = pandas.concat(new)
-    tths = tt_hs_tag(variety, tag)
-    df = df.merge(tths)
-    if done is not None:
-        df = pandas.concat((done, df))
-    df.to_csv(filename, index=False)
+    if len(new) > 0:
+        df = pandas.concat(new)
+        tths = tt_hs_tag(variety, tag)
+        df = df.merge(tths)
+        if done is not None:
+            df = pandas.concat((done, df))
+    elif done is not None:
+        df = done
+    else:
+        df = None
+    if df is not None:
+        df['p1_' + light_tag + '_z' + str(z_soil)] = 1 - df[sim_tag]
+        g_miller = 0.5 / numpy.cos(numpy.radians(tag_to_zenith(light_tag)))
+        df['lai_' + light_tag + '_z' + str(z_soil)] = - numpy.log(df[sim_tag]) / g_miller
+        df.to_csv(filename, index=False)
     return df
 
 # Run and save canopy properties ###################################################################

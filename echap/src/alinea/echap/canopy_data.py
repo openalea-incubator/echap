@@ -4,7 +4,7 @@ import pandas
 import numpy
 import scipy.stats
 
-from alinea.echap.hs_tt import tt_hs_tag
+from alinea.echap.hs_tt import tt_hs_tag, derived_data_path
 
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
@@ -89,9 +89,9 @@ def image_analysis_data():
 
 #derived / cached data
 
-def ground_cover_data(variety='Mercia', angle=0):
+def ground_cover_data(variety='Mercia', tag='reference', angle=0):
     df = None
-    path = shared_data(alinea.echap) / 'cache' / 'ground_cover_aggregated.csv'
+    path = derived_data_path(tag) / 'ground_cover_aggregated.csv'
     try:
         df = pandas.read_csv(path)
     except IOError:
@@ -103,33 +103,34 @@ def ground_cover_data(variety='Mercia', angle=0):
         df.to_csv(path, index=False)
 
     df = df.loc[(df['variety'] == variety) & (df['zenith_angle'] == angle),:]
-    tths = tt_hs_tag(variety)
+    tths = tt_hs_tag(variety, tag)
 
     return df.merge(tths)
 
 
-def pai57(variety='Mercia'):
+def pai57(variety='Mercia', tag='reference'):
     df = None
-    path = shared_data(alinea.echap) / 'cache' / 'pai_aggregated.csv'
+    path = derived_data_path(tag) /  'pai_aggregated.csv'
     try:
         df = pandas.read_csv(path)
     except IOError:
         df = image_analysis_data()
-        df['pai'] = - 0.5 * numpy.log(df['po']) / numpy.cos(numpy.radians(df['zenith_angle']))
+        g_miller = 0.5 / numpy.cos(numpy.radians(df['zenith_angle']))
+        df['pai'] = - numpy.log(df['po']) / g_miller
         df = df.groupby(['variety', 'daydate', 'zenith_angle']).agg([numpy.mean, conf_int])
         df.columns = ['_'.join(c) for c in df.columns]
         df = df.reset_index()
         df.to_csv(path, index=False)
 
     df = df.loc[(df['variety'] == variety) & (df['zenith_angle'] == 57.5),:]
-    tths = tt_hs_tag(variety)
+    tths = tt_hs_tag(variety, tag)
 
     return df.merge(tths)
 
-def lai_pai_scan(variety='Tremie12', reset=False):
+def lai_pai_scan(variety='Tremie12', tag='reference', reset=False):
     """ Lai/Pai estimates from scanned leaves / biomass data"""
     df = None
-    path = shared_data(alinea.echap) / 'cache' / 'lai_pai_scan.csv'
+    path = derived_data_path(tag) / 'lai_pai_scan.csv'
     try:
         if reset:
             raise IOError
@@ -181,7 +182,7 @@ def lai_pai_scan(variety='Tremie12', reset=False):
     df.columns = ['_'.join(c) for c in df.columns]
     df = df.reset_index()
     df = df.loc[df['variety'] == variety, :]
-    tths = tt_hs_tag(variety)
+    tths = tt_hs_tag(variety, tag)
 
     return df.merge(tths)
 
