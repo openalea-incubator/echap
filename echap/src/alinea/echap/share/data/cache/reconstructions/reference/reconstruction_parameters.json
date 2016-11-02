@@ -82,31 +82,18 @@
         "Tremie12": 4.0,
         "Tremie13": 3.7
     },
-    "dTT_cohort": {
-        "Mercia": {
-            "first": 30,
-            "increment": 10
-        },
-        "Rht3": {
-            "first": 30,
-            "increment": 10
-        },
-        "Tremie12": {
-            "first": 30,
-            "increment": 10
-        },
-        "Tremie13": {
-            "first": 30,
-            "increment": 10
-        }
-    },
     "delta_stop_del": {
         "Mercia": 2.0,
         "Rht3": 2.0,
         "Tremie12": 2.0,
         "Tremie13": 2.0
     },
-    "density_tuning": null,
+    "density_tuning": {
+        "Mercia": null,
+        "Rht3": null,
+        "Tremie12": null,
+        "Tremie13": null
+    },
     "disc_level": {
         "Mercia": 7,
         "Rht3": 7,
@@ -116,7 +103,7 @@
     "ears_per_plant_tuning": {
         "Mercia": null,
         "Rht3": null,
-        "Tremie12": 1.2,
+        "Tremie12": 1.5,
         "Tremie13": null
     },
     "emission_reduction": {
@@ -190,15 +177,7 @@
                 13
             ]
         },
-        "Tremie12": {
-            "damage": {
-                "T3": 0.2
-            },
-            "when": [
-                4.9,
-                5.1
-            ]
-        },
+        "Tremie12": null,
         "Tremie13": null
     },
     "top_leaves": {

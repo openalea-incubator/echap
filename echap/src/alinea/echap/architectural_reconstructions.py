@@ -1,5 +1,6 @@
 """ Reconstruction of Wheat for Boigneville data
 """
+
 import pandas
 import numpy
 import math
@@ -27,8 +28,8 @@ from alinea.echap.hs_tt import HS_fit
 
 import alinea.adel.plantgen_extensions as pgen_ext
 
-run_plots = False # prevent ipython %run to make plots
-reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
+# run_plots = False # prevent ipython %run to make plots
+# reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
 
 
 #---------- reconstructions
@@ -96,7 +97,7 @@ def reconstruction_parameters(tag='reference', reset=False):
                              'Rht3':{'when':[7,13], 'damage': 0.3},
                              'Tremie12': None, 'Tremie13': None}
     # density tuning factor(multiplicative effect on density curve)
-    pars['density_tuning'] = None
+    pars['density_tuning'] = {'Mercia':None, 'Rht3':None, 'Tremie12':None, 'Tremie13':None}
     # variability of plant emergence
     pars['std_emergence'] = pdict(None)
     # Tillering
@@ -117,10 +118,11 @@ def reconstruction_parameters(tag='reference', reset=False):
     #pars['tiller_damages'] = None
     pars['tiller_damages'] = {'Mercia':{'when':[6,13],'damage':{t:0.25 for t in ('T1','T2','T3')}}, 
                               'Rht3':{'when':[7,13],'damage':{t:0.3 for t in ('T1','T2','T3')}}, 
-                              'Tremie12':{'when':[4.9,5.1],'damage':{t:0.2 for t in ['T3']}},
+                              # 'Tremie12':{'when':[4.9,5.1],'damage':{t:0.2 for t in ['T3']}},
+                              'Tremie12': None,
                               'Tremie13': None}
     # multiplicative tuning of the ears/plant data (allows to change MS/tiller ratio)
-    pars['ears_per_plant_tuning'] = {'Mercia':None, 'Rht3':None, 'Tremie12':1.2, 'Tremie13':None}
+    pars['ears_per_plant_tuning'] = {'Mercia':None, 'Rht3':None, 'Tremie12':1.5, 'Tremie13':None}
     # Dimensions
     #-----------
     #
@@ -164,23 +166,23 @@ def check_hs_fits(tag='reference'):
 #
 # --------------------------------------------------------------- Fit GL = f(HS since flag)
 #
-def GL_fits(tag='reference'):
+def GL_fits(tag='reference', reset=False):
     """ Regression for Green leaf data
     """
-    parameters = reconstruction_parameters(tag)
+    parameters = reconstruction_parameters(tag, reset=reset)
     hsfit = HS_fit(tag)
     GLpars = parameters.get('GLpars')
 
     return {k:pgen_ext.GreenLeaves(hsfit[k], **GLpars[k]) for k in GLpars}
 
     
-def check_green_leaves(tag='reference'):
+def check_green_leaves(tag='reference', reset=False):
     hsfit = HS_fit(tag)
     gl_obs_nff, gl_obs = archidb.green_leaves_aggregated(hsfit)
     gl_est_nff, gl_est = archidb.green_leaves_estimated(hsfit)
     # Compare varieties
     obs = (gl_obs, gl_est)
-    fits = GL_fits(tag)
+    fits = GL_fits(tag, reset=reset)
     archi_plot.green_leaves_plot_mean(obs, fits)
     # Compare nff
     obs = (gl_obs_nff, gl_est_nff, gl_obs, gl_est)
@@ -199,13 +201,13 @@ class deepdd(pandas.DataFrame):
 #
 
 
-def density_fits(tag='reference'):
+def density_fits(tag='reference', reset=False):
     """
     Manual fit of plant density based on mean plant density and estimate of plant density at harvest
     """
 
     HS_converter = HS_fit(tag)
-    parameters = reconstruction_parameters(tag)
+    parameters = reconstruction_parameters(tag, reset=reset)
 
     data = archidb.reconstruction_data()
     pdb = data.Plot_data
@@ -285,8 +287,8 @@ def density_fits(tag='reference'):
 
 
 #
-def check_density_fits(tag='reference'):
-    fits = density_fits(tag)
+def check_density_fits(tag='reference', reset=False):
+    fits = density_fits(tag, reset=reset)
     obs = archidb.PlantDensity()
     HSfit = HS_fit(tag)
     archi_plot.density_plot(obs, fits, HSfit)
@@ -309,17 +311,17 @@ def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages,
 
 #
 # Fits
-def axepop_fits(tag='reference'):
-    parameters = reconstruction_parameters(tag)
+def axepop_fits(tag='reference', reset=False):
+    parameters = reconstruction_parameters(tag, reset=reset)
     # tillering model parameters
     delta_stop_del = parameters.get('delta_stop_del')
     dHS_reg = parameters.get('dHS_reg')
     max_order = parameters.get('max_order')
     tiller_damages = parameters.get('tiller_damages')
     # Emission probabilities tuning
-    #  
+    #
     data = archidb.reconstruction_data()
-    tdb = deepcopy(data.Tillering_data)    
+    tdb = deepcopy(data.Tillering_data)
     # apply manual reductions
     emf = parameters.get('emission_reduction')
     if emf is not None:
@@ -346,22 +348,22 @@ def axepop_fits(tag='reference'):
     return fits
 
 
-def check_tillering_fits(tag='reference'):
+def check_tillering_fits(tag='reference', reset=False):
     # populate with fits
-    fits = axepop_fits(tag)
+    fits = axepop_fits(tag, reset=reset)
     hs_fits = HS_fit(tag)
     
     #1 graph tillering par var -> 4 graph sur une feuille
     archi_plot.multi_plot_tillering(archidb.tillers_per_plant(), fits, hs_fits)
     
     #tallage primary pour les 4 var   
-    archi_plot.tillering_primary(archidb.tillers_per_plant(), fits, hs_fits)
+    #archi_plot.tillering_primary(archidb.tillers_per_plant(), fits, hs_fits)
     
     #tallage total pour les 4 var    
-    archi_plot.tillering_tot(archidb.tillers_per_plant(), fits, hs_fits)
+    #archi_plot.tillering_tot(archidb.tillers_per_plant(), fits, hs_fits)
    
    # primary emissions
-    archi_plot.graph_primary_emission(archidb.emission_probabilities_table())
+    #archi_plot.graph_primary_emission(archidb.emission_probabilities_table())
 #
 # --------------------------------------------------------------- Fit dimensions
 #
@@ -406,10 +408,10 @@ def estimate_Wb_Tremie13(dim_fit, data, tag='reference', sep_up_down=4):
     return data
 
 
-def dimension_fits(tag='reference'):
+def dimension_fits(tag='reference', reset=False):
     """ semi-manual fit of dimension data
     """
-    parameters = reconstruction_parameters(tag)
+    parameters = reconstruction_parameters(tag, reset=reset)
     hsfit = HS_fit(tag)
     data = archidb.reconstruction_data()
     obs = data.Dimension_data
@@ -440,9 +442,9 @@ def dimension_fits(tag='reference'):
     return fits
 
 
-def check_dimension(tag='reference'):
+def check_dimension(tag='reference', reset=False):
 
-    fits = dimension_fits(tag)
+    fits = dimension_fits(tag, reset=reset)
     obs = archidb.dimensions_aggregated()
     
     archi_plot.dimension_plot(obs, fit = fits, dimension = 'L_blade')
@@ -581,6 +583,7 @@ class EchapReconstructions(object):
         #     reset_data = False
         self.pgen_base = self.pars['pgen_base']
         self.HS_fit = HS_fit(tag, reset=True)
+        # parameters already reset : can use cache
         self.density_fits = density_fits(tag)
         self.axepop_fits = axepop_fits(tag)
         self.dimension_fits = dimension_fits(tag)
@@ -672,7 +675,7 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250.,
     
 # checks consistency adel/fits
 
-if run_plots:
+def check_adel():
     e=echap_reconstructions()
     adel = e.get_reconstruction()
     df = adel.checkAxeDyn()
