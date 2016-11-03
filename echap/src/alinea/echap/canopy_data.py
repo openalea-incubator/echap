@@ -4,7 +4,7 @@ import pandas
 import numpy
 import scipy.stats
 
-from alinea.echap.hs_tt import tt_hs_tag, derived_data_path
+from alinea.echap.hs_tt import tt_hs_tag, derived_data_path, daydate_range
 from alinea.echap.weather_data import par_transmittance
 
 import alinea.echap
@@ -109,18 +109,20 @@ def ground_cover_data(variety='Mercia', tag='reference', angle=0):
     return df.merge(tths)
 
 
-def transmittance_data(variety='Mercia', tag='reference', reset=False):
+def transmittance_data(variety='Mercia', tag='reference', start='T1', stop='T2', reset=False):
     tths = tt_hs_tag(variety, tag)
+    dd_range = daydate_range(variety, tag, start=start, stop=stop)
     path = derived_data_path(tag) / 'transmittance_aggregated.csv'
     if not reset:
         try:
             df = pandas.read_csv(path)
+            df = df.loc[df['daydate'].isin(dd_range), :]
             return df.merge(tths)
         except IOError:
             pass
     df = par_transmittance(variety)
-    df = df.loc[df['daydate'].isin(tths['daydate']),:]
     df.to_csv(path, index=False)
+    df = df.loc[df['daydate'].isin(dd_range),:]
     return df.merge(tths)
 
 
