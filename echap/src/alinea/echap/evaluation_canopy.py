@@ -23,6 +23,8 @@ from alinea.caribu.light import vecteur_direction, diffuse_source
 from alinea.echap.canopy_simulation import (cache_simulation_path, get_canopy,
                                             build_canopies)
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
+from alinea.echap.interception_data import petri_data
+
 from alinea.echap.evaluation_canopy_plot import plot_mean
 
 
@@ -128,6 +130,9 @@ def tag_to_light(tag='zenith'):
     elif tag == '57.5':
         return [(1. / 24, vecteur_direction(90 - 57.5, az)) for az in
                 range(0, 360, 15)]
+    elif tag == 'spray':
+        return [(1. / 24, vecteur_direction(90 - 17, az)) for az in
+                range(0, 360, 15)]
     elif tag == 'soc':
         return diffuse_source(46)
     elif tag.startswith('lai2000r'):
@@ -144,6 +149,8 @@ def tag_to_zenith(tag='zenith'):
         return 0
     elif tag == '57.5':
         return 57.5
+    elif tag == 'spray':
+        return 17
     elif tag == 'soc':
         energy, directions = zip(*diffuse_source(46))
         z = numpy.array(zip(*directions)[2])
@@ -207,14 +214,23 @@ def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
     sim_path = cache_simulation_path(tag, rep)
     filename = sim_path / 'light_interception_' + variety.lower() + '_' + str(
         nplants) + 'pl.csv'
+    sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
+
     if all(map(lambda x: x is None, [start, stop, by, at])):
-        try:
-            df = pandas.read_csv(filename)
-            return df
-        except IOError:
-            raise ValueError(
-                'No simulation found for ' + variety +
-                ' please specify start, stop, (by) or at')
+        if not reset:
+            try:
+                df = pandas.read_csv(filename)
+                if sim_tag not in df.columns:
+                    raise IOError
+                return df
+            except IOError:
+                raise ValueError(
+                    'No simulation found for ' + variety + ' ' + sim_tag +
+                    ' please try reset without args or specify start, stop, (by) or at')
+        else:
+            # TO DO : scan cached light simulation and restore corresponding df
+            raise NotImplementedError
+
 
     print('Check/build canopies..')
     dd_range = build_canopies(variety=variety, nplants=nplants, tag=tag,
@@ -223,7 +239,6 @@ def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
                               reset_reconstruction=reset_reconstruction)
 
     print('Compute light interception...')
-    sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
     df = None
     done = None
     missing = dd_range
@@ -307,6 +322,9 @@ def compare_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
     if light_tag in ['zenith', '57.5']:
         dfobs = ground_cover_data(variety, tag, angle=tag_to_zenith(light_tag))
         obs = 'po'
+    elif light_tag == 'spray':
+        dfobs = petri_data(variety, tag, 'soil')
+        obs = 'po'
     elif light_tag == 'soc':
         dfobs = transmittance_data(variety, tag,
                                    start=dfsim['daydate'].sort_values().values[0],
@@ -318,12 +336,13 @@ def compare_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
         pass
     if dfobs is not None and obs is not None:
         plot_mean(dfobs, obs, xaxis='HS', ax=ax, color=color, linestyle='')
+
     ax.set_yscale('log')
     # get_ticks / set_ticks
     return ax
 
 
-def compare_all_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
+def compare_all_po(variety='Tremie12', nplants=30, tag='reference', rep=1, top_petri=False,
                    start=None, stop=None, by=None, at=None, reset=False,
                    reset_build=False, reset_reconstruction=False):
     ax = compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
@@ -338,6 +357,16 @@ def compare_all_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
                light_tag='soc', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
                reset_reconstruction=reset_reconstruction, ax=ax, color='lightgreen')
+    compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
+               light_tag='spray', z_soil=0, start=start, stop=stop, by=by, at=at,
+               reset=reset, reset_build=reset_build,
+               reset_reconstruction=reset_reconstruction, ax=ax, color='m')
+
+    if top_petri:
+        dfobs = petri_data(variety, tag, 'top')
+        if dfobs is not None:
+            plot_mean(dfobs, 'po', xaxis='HS', ax=ax, color='darkviolet', linestyle='')
+
     return ax
 
 

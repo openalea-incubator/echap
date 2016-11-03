@@ -92,7 +92,7 @@ def image_analysis_data():
 
 def ground_cover_data(variety='Mercia', tag='reference', angle=0):
     df = None
-    path = derived_data_path(tag) / 'ground_cover_aggregated.csv'
+    path = derived_data_path(None) / 'ground_cover_aggregated.csv'
     try:
         df = pandas.read_csv(path)
     except IOError:
@@ -112,7 +112,7 @@ def ground_cover_data(variety='Mercia', tag='reference', angle=0):
 def transmittance_data(variety='Mercia', tag='reference', start='T1', stop='T2', reset=False):
     tths = tt_hs_tag(variety, tag)
     dd_range = daydate_range(variety, tag, start=start, stop=stop)
-    path = derived_data_path(tag) / 'transmittance_aggregated.csv'
+    path = derived_data_path(None) / 'transmittance_aggregated.csv'
     if not reset:
         try:
             df = pandas.read_csv(path)
@@ -128,7 +128,7 @@ def transmittance_data(variety='Mercia', tag='reference', start='T1', stop='T2',
 
 def pai57(variety='Mercia', tag='reference'):
     df = None
-    path = derived_data_path(tag) /  'pai_aggregated.csv'
+    path = derived_data_path(None) / 'pai_aggregated.csv'
     try:
         df = pandas.read_csv(path)
     except IOError:
@@ -148,7 +148,7 @@ def pai57(variety='Mercia', tag='reference'):
 def lai_pai_scan(variety='Tremie12', tag='reference', reset=False):
     """ Lai/Pai estimates from scanned leaves / biomass data"""
     df = None
-    path = derived_data_path(tag) / 'lai_pai_scan.csv'
+    path = derived_data_path(None) / 'lai_pai_scan.csv'
     try:
         if reset:
             raise IOError

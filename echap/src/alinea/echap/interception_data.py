@@ -7,8 +7,9 @@ import scipy.stats
 
 import alinea.echap
 from openalea.deploy.shared_data import shared_data
-from alinea.echap.architectural_reconstructions import fit_HS
-from alinea.echap.architectural_data import TT_lin, Pheno_data
+from alinea.echap.hs_tt import tt_hs_tag, derived_data_path
+#from alinea.echap.architectural_reconstructions import fit_HS
+#from alinea.echap.architectural_data import TT_lin, Pheno_data
 
         
 def conf_int(lst, perc_conf=95):
@@ -132,13 +133,15 @@ def dye_interception(coef=0.045):
     df=df.set_index('variety')
                                                                       
     return df
-    
+
+
 def petri_dye_interception(coef=0.045, diameter=8.5):
     """ Dye interception data in petri dishes placed above and below the canopy
     
     coef : slope of the absobance = f(concentration) [mg.l-1] relationships 
            (absorbance = coef * concentration, ie conc = abs/coeff)
-           In original files, in 2011 and 2012 a coef of 0.0448 was used whereas a coeff of 0.0453 was used in 2013
+           In original files, in 2011 and 2012 a coef of 0.0448 was used whereas
+            a coeff of 0.0453 was used in 2013
            here we use a mean value of 0.045
     diameter: diameter of the petri dish (cm)
     
@@ -148,15 +151,44 @@ def petri_dye_interception(coef=0.045, diameter=8.5):
         dilution: water volume used to dilute intercepted dye (cl)
         absorbance :optical read
         
-    deposit (g / g.cm-2 applied) = abs / coef * dilution / volume / concentration * 1000
+    deposit (g / g.cm-2 applied) =
+                        abs / coef * dilution / volume / concentration * 1000
     """
-    
-    data_file = shared_data(alinea.echap, 'dye_interception_petri.csv')
+
+    data_file = shared_data(
+        alinea.echap) / 'interception_data' / 'dye_interception_petri.csv'
     df = pandas.read_csv(data_file, decimal=',', sep=';')
-    df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000
-    df['fraction_intercepted'] = df['deposit'] / (numpy.pi * diameter**2 / 4)
+    df['variety'] = numpy.where(df['year'] == 2012, 'Tremie12', 'Tremie13')
+    df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / \
+                    df['concentration'] * 1000
+    df['po'] = df['deposit'] / (numpy.pi * diameter ** 2 / 4)
+    treatment = df.pop('treatment')
+    var = df['variety']
+    df['daydate'] = numpy.where(var == 'Tremie12',
+                                numpy.where(treatment == 'T1', '2012-04-11',
+                                            '2012-05-09'),
+                                numpy.where(treatment == 'T1', '2013-04-25',
+                                            '2013-05-17'))
     return df
-    
+
+
+def petri_data(variety='Tremie12', tag='reference', level='soil'):
+    df = None
+    path = derived_data_path(None) / 'petri_dye_interception.csv'
+    try:
+        df = pandas.read_csv(path)
+    except IOError:
+        df = petri_dye_interception().loc[:,
+             ('variety', 'daydate', 'level', 'po')]
+        df.to_csv(path, index=False)
+
+    if variety in df['variety'].values:
+        df = df.loc[(df['variety'] == variety) & (df['level'] == level), :]
+        tths = tt_hs_tag(variety, tag)
+        df = df.merge(tths)
+    return df
+
+
 def gap_fraction():
     """ Gap fraction (non green fraction) estimated from vertical images
     """
@@ -357,29 +389,3 @@ def dye_applications():
     }
     return apps
     
-def Petri_data(name='Tremie12'):
-    HSconv = fit_HS()
-    conv = HSconv[name]
-    if name is 'Tremie12':
-        data_file_T1 = shared_data(alinea.echap, 'petri_T1_20112012.csv')
-        data_file_T2 = shared_data(alinea.echap, 'petri_T2_20112012.csv')
-    if name is 'Tremie13':
-        data_file_T1 = shared_data(alinea.echap, 'petri_T1_20122013.csv')
-        data_file_T2 = shared_data(alinea.echap, 'petri_T2_20122013.csv')
-    # HS T1 et T2
-    dateT1, HS_T1 = dye_applications()[name]['T1']
-    dateT2, HS_T2 = dye_applications()[name]['T2']
-    # lecture des csv
-    header_row=['PETRI','Volume','Niveau','Bloc','ABSORBANCE','DILUTION','concentration(mg/l)','ConcentrationArrondie(mg/l)','quantiteRetenue(mg)','quantite(g/ha)','rapportPoucentage(sol/emis)']
-    df1 = pandas.read_csv(data_file_T1, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
-    df2 = pandas.read_csv(data_file_T2, dayfirst=True, names=header_row, sep=';', index_col=0, skiprows=0, decimal=',')
-    # bon format pourcentage
-    df1['rapportPoucentage(sol/emis)'] = df1['rapportPoucentage(sol/emis)'] / 100.
-    df2['rapportPoucentage(sol/emis)'] = df2['rapportPoucentage(sol/emis)'] / 100.
-    # ajout TT et conversion en HS
-    df1['HS'] = HS_T1; df2['HS'] = HS_T2
-    df1['TT'] = conv.TT(HS_T1); df2['TT'] = conv.TT(HS_T2)   
-    # on filtre sur niveau = sol
-    grouped1 = df1.groupby('Niveau'); grouped2 = df2.groupby('Niveau')
-    petri1 = grouped1.get_group('sol'); petri2 = grouped2.get_group('sol')
-    return petri1, petri2
