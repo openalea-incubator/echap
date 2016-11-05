@@ -1,5 +1,6 @@
 import os
 import glob
+import pandas
 try:
     import cPickle as pickle
 except ImportError:
@@ -25,6 +26,13 @@ def cache_simulation_path(tag, rep):
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag / 'rep_' + str(rep)
+    if not os.path.exists(str(path)):
+        os.makedirs(str(path))
+    return path
+
+
+def cache_analysis_path(tag):
+    path = shared_data(alinea.echap) / 'cache' / 'analysis' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -110,3 +118,30 @@ def get_canopy(variety='Tremie12', nplants=30, daydate='T1', tag='reference',
     midribs = adel.get_midribs(g)
     midribs.to_csv(basename + '_midribs.csv', index=False)
     return g
+
+def get_midribs(variety='Tremie12', nplants=30, daydate='T1', tag='reference',
+               rep=1, reset=False, reset_reconstruction=False):
+    tths = tt_hs_tag(variety, tag)
+    daydate = as_daydate(daydate, tths)
+
+    sim_path = cache_simulation_path(tag, rep)
+
+    if not os.path.exists(sim_path / 'canopy'):
+        os.makedirs(sim_path / 'canopy')
+    basename = sim_path / 'canopy' / variety.lower() + '_' + str(
+        nplants) + 'pl_' + '_'.join(daydate.split('-'))
+    if not reset:
+        try:
+            midribs = pandas.read_csv(basename + '_midribs.csv')
+            return midribs
+        except IOError:
+            pass
+    adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
+                              rep=rep,
+                              reset_reconstruction=reset_reconstruction)
+    age = tths.set_index('daydate')['TT'][daydate]
+    g = adel.setup_canopy(age=age)
+    adel.save(g, basename=str(basename))
+    midribs = adel.get_midribs(g)
+    midribs.to_csv(basename + '_midribs.csv', index=False)
+    return midribs

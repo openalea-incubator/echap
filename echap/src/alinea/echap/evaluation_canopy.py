@@ -20,8 +20,8 @@ from alinea.echap.hs_tt import tt_hs_tag, as_daydate
 
 from alinea.caribu.light import vecteur_direction, diffuse_source
 
-from alinea.echap.canopy_simulation import (cache_simulation_path, get_canopy,
-                                            build_canopies)
+from alinea.echap.cache_simulation import (cache_simulation_path, get_canopy,
+                                           build_canopies)
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
 
