@@ -8,14 +8,41 @@ from alinea.echap.cache_simulation import (cache_simulation_path, get_canopy,
                                            build_canopies)
 
 
-def tag_to_light(tag='zenith'):
+def light_simulation_parameters(tag='reference', reset=False):
+    path = cache_simulation_path(tag) / 'light_simulation_parameters.json'
+    if not reset:
+        try:
+            with open(path, 'r') as input_file:
+                cached = json.load(input_file)
+            return cached
+        except IOError:
+            pass
+    pars={}
+    genos = ('Mercia', 'Rht3', 'Tremie12', 'Tremie13')
+    pars['spraying_angle'] = {k: 17 for k in genos}
+    pars['lambda0'] = {k: 0.6 for k in genos}
+    with open(path, 'w') as output_file:
+        json.dump(pars, output_file, sort_keys=True, indent=4,
+                  separators=(',', ': '))
+    #
+    return pars
+
+
+def lambda0(tag='reference', variety='Tremie12'):
+    pars = light_simulation_parameters(tag)
+    return pars['lambda0'][variety]
+
+
+def tag_to_light(tag='zenith', sim_tag='reference', variety='Tremie12'):
+    pars = light_simulation_parameters(sim_tag)
+    spraying_angle = pars['spraying_angle'][variety]
     if tag == 'zenith':
         return [(1, (0, 0, -1))]
     elif tag == '57.5':
         return [(1. / 24, vecteur_direction(90 - 57.5, az)) for az in
                 range(0, 360, 15)]
     elif tag == 'spray':
-        return [(1. / 24, vecteur_direction(90 - 17, az)) for az in
+        return [(1. / 24, vecteur_direction(90 - spraying_angle, az)) for az in
                 range(0, 360, 15)]
     elif tag == 'soc':
         return diffuse_source(46)
@@ -28,13 +55,15 @@ def tag_to_light(tag='zenith'):
         raise ValueError('Unknown light tag: ' + tag)
 
 
-def tag_to_zenith(tag='zenith'):
+def tag_to_zenith(tag='zenith', sim_tag='reference', variety='Tremie12'):
+    pars = light_simulation_parameters(sim_tag)
+    spraying_angle = pars['spraying_angle'][variety]
     if tag == 'zenith':
         return 0
     elif tag == '57.5':
         return 57.5
     elif tag == 'spray':
-        return 17
+        return spraying_angle
     elif tag == 'soc':
         energy, directions = zip(*diffuse_source(46))
         z = numpy.array(zip(*directions)[2])
@@ -84,7 +113,7 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
             g = get_canopy(variety=variety, nplants=nplants, daydate=daydate,
                            tag=tag, rep=rep)
             meta = g.property('meta').values()[0]
-            sources = tag_to_light(light_tag)
+            sources = tag_to_light(light_tag, sim_tag=tag, variety=variety)
             c2u = {v: k for k, v in CaribuScene.units.iteritems()}
             units = c2u.get(meta['convUnit'])
             cscene = CaribuScene(g, sources, pattern=meta['domain'],

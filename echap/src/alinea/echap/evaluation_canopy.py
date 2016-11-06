@@ -21,7 +21,7 @@ from alinea.echap.hs_tt import tt_hs_tag
 
 from alinea.echap.cache_simulation import (cache_analysis_path, get_canopy,
                                            build_canopies)
-from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light, tag_to_zenith
+from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light, tag_to_zenith, lambda0
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
 
@@ -199,7 +199,8 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
 
     if len(redo + new) > 0:
         df['p1_' + light_tag + '_z' + str(z_soil)] = 1 - df[sim_tag]
-        g_miller = 0.5 / numpy.cos(numpy.radians(tag_to_zenith(light_tag)))
+        zenith = tag_to_zenith(light_tag, tag, variety)
+        g_miller = 0.5 / numpy.cos(numpy.radians(zenith))
         df['lai_' + light_tag + '_z' + str(z_soil)] = - numpy.log(
             df[sim_tag]) / g_miller
         rings = ['lai_lai2000r' + str(i) + '_z0' for i in range(1, 6)]
@@ -213,15 +214,40 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
     return df.loc[df['daydate'].isin(dd_range), :]
 
 
-def compare_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
+def po_miller(light_tag='zenith', variety='Tremie12', nplants=30,
+              tag='reference', rep=1, start=None, stop=None, by=None, at=None,
+              reset_build=False, reset_reconstruction=False):
+    df = simulate_lai(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                       start=start, stop=stop, by=by, at=at,
+                       reset_build=reset_build,
+                       reset_reconstruction=reset_reconstruction)
+    zenith = tag_to_zenith(light_tag, tag, variety)
+    l = lambda0(tag, variety)
+    k = l * 0.5 / numpy.cos(numpy.radians(zenith))
+    sim_tag = 'po_' + light_tag + '_z0'
+    df[sim_tag] = numpy.exp(-k * df['LAI_tot'])
+    df['p1_' + light_tag + '_z0'] = 1 - df[sim_tag]
+    return df
+
+
+def compare_po(model='adel', variety='Tremie12', nplants=30, tag='reference', rep=1,
                light_tag='zenith', z_soil=0, start=None, stop=None, by=None,
                at=None, reset=False, reset_light=False, reset_build=False,
                reset_reconstruction=False, ax=None, color='b'):
-    dfsim = simulate_po_light(variety=variety, nplants=nplants, tag=tag, rep=rep,
-                           light_tag=light_tag, z_soil=z_soil, start=start,
-                           stop=stop, by=by, at=at, reset=reset,
-                           reset_light=reset_light,reset_build=reset_build,
-                           reset_reconstruction=reset_reconstruction)
+    if model == 'adel':
+        dfsim = simulate_po_light(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                               light_tag=light_tag, z_soil=z_soil, start=start,
+                               stop=stop, by=by, at=at, reset=reset,
+                               reset_light=reset_light,reset_build=reset_build,
+                               reset_reconstruction=reset_reconstruction)
+    elif model == 'miller':
+        dfsim = po_miller(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                               light_tag=light_tag, start=start,
+                               stop=stop, by=by, at=at, reset_build=reset_build,
+                               reset_reconstruction=reset_reconstruction)
+    else:
+        raise ValueError('unknown model: ' + model)
+
     sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
     ax = plot_mean(dfsim, sim_tag, xaxis='HS', ax=ax, color=color, marker='')
     dfobs = None
@@ -249,22 +275,22 @@ def compare_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
     return ax
 
 
-def compare_all_po(variety='Tremie12', nplants=30, tag='reference', rep=1, top_petri=False,
+def compare_all_po(model='adel',variety='Tremie12', nplants=30, tag='reference', rep=1, top_petri=False,
                    start=None, stop=None, by=None, at=None, reset=False,
                    reset_build=False, reset_reconstruction=False):
-    ax = compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
+    ax = compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                     light_tag='57.5', z_soil=0, start=start, stop=stop, by=by,
                     at=at, reset=reset, reset_build=reset_build,
                     reset_reconstruction=reset_reconstruction)
-    compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
+    compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                light_tag='zenith', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
                reset_reconstruction=reset_reconstruction, ax=ax, color='r')
-    compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
+    compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                light_tag='soc', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
                reset_reconstruction=reset_reconstruction, ax=ax, color='lightgreen')
-    compare_po(variety=variety, nplants=nplants, tag=tag, rep=rep,
+    compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                light_tag='spray', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
                reset_reconstruction=reset_reconstruction, ax=ax, color='m')

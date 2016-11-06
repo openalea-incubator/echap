@@ -21,13 +21,14 @@ def cache_reconstruction_path(tag):
     return path
 
 
-def cache_simulation_path(tag, rep):
+def cache_simulation_path(tag, rep=None):
     path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
-    path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag / 'rep_' + str(rep)
-    if not os.path.exists(str(path)):
-        os.makedirs(str(path))
+    if rep is not None:
+        path = shared_data(alinea.echap) / 'cache' / 'simulations' / tag / 'rep_' + str(rep)
+        if not os.path.exists(str(path)):
+            os.makedirs(str(path))
     return path
 
 
