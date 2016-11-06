@@ -101,24 +101,6 @@ def plot_sum(data, variable='LAI_vert', xaxis='ThermalTime', marker='d',
 
 
 
-def get_radiation_obs(variety='Tremie12'):
-    weather = read_weather_variety(variety)
-    dfa, tab0, tab20 = mat_ray_obs(variety)
-    tab0 = tab0.rename(columns={'%': 'LightPenetration_0'})
-    tab20 = tab20.rename(columns={'%': 'LightPenetration_20'})
-    df_obs = pandas.merge(tab0, tab20)
-    d = pandas.to_datetime(
-        (df_obs['datetime'].map(str) + ' ' + '12:00:00').values, dayfirst=True,
-        utc=True)
-    df_obs['date'] = df_obs['datetime'].apply(
-        lambda x: datetime.datetime.strptime(x, '%d-%m-%Y'))
-    df_obs['ThermalTime'] = weather.data.degree_days[d].values
-    HSconv = HS_fit()[variety]
-    df_obs['HS'] = HSconv(df_obs['ThermalTime'])
-    df_obs['LightInterception_0'] = 1 - df_obs['LightPenetration_0']
-    df_obs['LightInterception_20'] = 1 - df_obs['LightPenetration_20']
-    return df_obs
-
 
 def get_all_obs(variety='Tremie12', origin_lai_data='biomass'):
     df_lai = get_lai_obs(variety=variety, origin=origin_lai_data)
@@ -148,17 +130,7 @@ def plot_sim_obs(df_sim, df_obs=None, variable='LAI_vert', xaxis='HS',
                   bbox_to_anchor=(1, 0.5))
 
 
-def compare_sim_obs(variety='Tremie12', nplants=30, nrep=1, origin='biomass',
-                    variable='LAI_vert', xaxis='HS', title=None,
-                    xlabel='Haun Stage', ylabel=None, colors=['b', 'r'],
-                    markers=['d', 'o'], linestyles=['-', '--'],
-                    error_bars=[True, True], xlims=None, ylims=None, ax=None):
-    df_sim = get_simu_results(variety=variety)
-    df_obs = get_all_obs(variety=variety, origin_lai_data=origin)
-    plot_sim_obs(df_sim, df_obs, variable=variable, xaxis=xaxis, title=title,
-                 xlabel=xlabel, ylabel=ylabel, colors=colors, markers=markers,
-                 linestyles=linestyles, error_bars=error_bars, xlims=xlims,
-                 ylims=ylims)
+
 
 
 def test_architecture_canopy_single(variety='Tremie12', nplants=30, nrep=1,

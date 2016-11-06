@@ -130,11 +130,11 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
 
 
 def get_light(light_tag='zenith', z_soil=0, variety='Tremie12', nplants=30,
-              daydate='T1', tag='reference', rep=1, reset=False,
+              daydate='T1', tag='reference', rep=1, reset=False, reset_build=False,
               reset_reconstruction=False):
     dd_range = illuminate_canopies(light_tag=light_tag, z_soil=z_soil,
                                    variety=variety, nplants=nplants, tag=tag,
-                                   rep=rep, at=[daydate], reset=reset,
+                                   rep=rep, at=[daydate], reset=reset, reset_build=reset_build,
                                    reset_reconstruction=reset_reconstruction)
     daydate = dd_range[0]
     filename = cache_light_path(tag, rep) / light_tag + '_z' + str(
