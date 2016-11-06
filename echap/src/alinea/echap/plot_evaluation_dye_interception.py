@@ -89,7 +89,7 @@ def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=range(1, 5),
 def deposit_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
                            by='ntop_cur', xleaf=None, ylim=(0, 6.5),
                            simulation='reference', treatments=None, reset=False,
-                           reset_data=False, frac=1):
+                           reset_data=False, frac=1, model='adel'):
     if treatments is None:
         treatments = idata.tag_treatments()[variety]['application']
     # obs
@@ -104,8 +104,14 @@ def deposit_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
                                    simulation=simulation, treatments=treatments,
                                    reset=reset, reset_reconstruction=reset_data)
     df_sim['deposit_Tartrazine'] *= frac
-    sim = idye.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by,
+    if model == 'adel':
+        sim = idye.leaf_statistics(df_sim, what='deposit_Tartrazine', by=by,
                                axis=axis)
+    elif model == 'miller':
+        sim = idye.dye_interception_miller(variety=variety, nplants=nplants,
+                                           tag=simulation, rep=1, at=treatments)
+    else:
+        raise ValueError('unknown model: ' + model)
     # plot
     color = colors_variety()[variety]
     prefix = prefix_xbar()[by]

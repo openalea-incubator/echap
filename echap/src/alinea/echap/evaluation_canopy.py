@@ -57,6 +57,7 @@ def get_lai_properties(g):
 def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
                  start=None, stop=None, by=None, at=None, reset=False,
                  reset_build=False, reset_reconstruction=False):
+
     sim_path = cache_analysis_path(tag)
     filename = sim_path / 'lai_' + variety.lower() + '_' + str(
         nplants) + 'pl.csv'

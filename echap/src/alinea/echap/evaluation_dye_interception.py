@@ -11,6 +11,9 @@ from alinea.echap.hs_tt import tt_hs_tag
 from alinea.echap.cache_simulation import cache_analysis_path
 from alinea.echap.cache_dye_simulation import dye_aggregation_types, \
     dye_interception_canopies, get_dye_interception
+from alinea.echap.cache_light_simmulation import tag_to_zenith, lambda0
+from alinea.echap.evaluation_canopy import simulate_lai
+
 
 # def pdict(value):
 #     """ create a parameter dict for all echap cultivar with value
@@ -216,5 +219,33 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int,
     return agg
 
 
+def dye_interception_miller(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                          at=('T1','T2')):
+    df_sim = simulate_dye_interception(variety=variety, nplants=nplants, tag=tag, rep=rep, at=at)
+
+
+    df_lai = simulate_lai(variety=variety, nplants=nplants, tag=tag, rep=1,
+                          at=at)
+    zenith = tag_to_zenith('spray', tag, variety)
+    l = lambda0(tag, variety)
+    k = l * 0.5 / numpy.cos(numpy.radians(zenith))
+    sim = leaf_statistics(df_sim, what='area', by='ntop_cur', axis='MS')
+    res = []
+    for tr, dat in sim.groupby(sim.index):
+        dat['deposit_Tartrazine'] = 0
+        area_sum = dat['area'].sum()
+        if tr.startswith('T1'):
+            coltr = 'tag_T1'
+        else:
+            coltr = 'tag_T2'
+        lai = df_lai.set_index(coltr).loc[tr, 'LAI_tot']
+        for i in range(len(dat)):
+            lai_cum = [0] + dat['area'].cumsum().values.tolist()
+            io = numpy.exp(-k * lai_cum[i] / area_sum * lai)
+            lai_leaf = dat['area'].values[i] / area_sum * lai
+            dat.ix[i, 'deposit_Tartrazine'] = io * (1 - numpy.exp(-k * lai_leaf)) * dat['area'].values[i]
+        dat['ybar'] = dat['deposit_Tartrazine']
+        res.append(dat)
+    return pandas.concat(res)
 
 
