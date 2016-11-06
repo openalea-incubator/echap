@@ -261,7 +261,7 @@ def get_sim(variety='Tremie12', nplants=30, daydate='T1', tag='reference',
                    reset_reconstruction=reset_reconstruction)
     _, light, _ = canopy_illumination(variety=variety, nplants=nplants,
                                       daydate=daydate, tag=tag, rep=rep,
-                                      light_tag='zenith', z_soil=0, reset=reset)
+                                      light_tag='spray', z_soil=0, reset=reset)
     g.add_property('light_interception')
     g.property('light_interception').update(light['Ei'])
     recorder = LeafElementRecorder()

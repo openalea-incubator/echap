@@ -23,7 +23,7 @@ import alinea.echap
 from openalea.deploy.shared_data import shared_data
 
 import alinea.echap.architectural_data as archidb
-import alinea.echap.architectural_reconstructions_plot as archi_plot
+import alinea.echap.plot_architectural_reconstructions as archi_plot
 from alinea.echap.hs_tt import HS_fit
 
 import alinea.adel.plantgen_extensions as pgen_ext

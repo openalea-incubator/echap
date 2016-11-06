@@ -108,7 +108,8 @@ def dye_interception(coef=0.045):
         - at first date of application, for all cultivar, we hypothetise that the 1st leaf measured (F1) was in fact F2, 
          as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
     """
-    data_file = shared_data(alinea.echap, 'dye_interception.txt')
+    data_file = shared_data(
+        alinea.echap) / 'interception_data' / 'dye_interception.txt'
     df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
     df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000 
     #add aggregators
