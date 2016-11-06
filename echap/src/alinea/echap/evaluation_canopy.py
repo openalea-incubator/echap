@@ -3,8 +3,7 @@
 
 import pandas
 import numpy
-import json
-import os
+
 
 try:
     import cPickle as pickle
@@ -12,16 +11,17 @@ except ImportError:
     import pickle
 
 from alinea.adel.astk_interface import AdelWheat
-from alinea.caribu.CaribuScene import CaribuScene
+
 # Import for wheat reconstruction
-from alinea.echap.hs_tt import tt_hs_tag, as_daydate
+from alinea.echap.hs_tt import tt_hs_tag
 
 # from alinea.adel.postprocessing import ground_cover
 
-from alinea.caribu.light import vecteur_direction, diffuse_source
 
-from alinea.echap.cache_simulation import (cache_simulation_path, get_canopy,
+
+from alinea.echap.cache_simulation import (cache_analysis_path, get_canopy,
                                            build_canopies)
+from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light, tag_to_zenith
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
 
@@ -57,17 +57,9 @@ def get_lai_properties(g):
 def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
                  start=None, stop=None, by=None, at=None, reset=False,
                  reset_build=False, reset_reconstruction=False):
-    sim_path = cache_simulation_path(tag, rep)
+    sim_path = cache_analysis_path(tag)
     filename = sim_path / 'lai_' + variety.lower() + '_' + str(
         nplants) + 'pl.csv'
-
-    if all(map(lambda x: x is None, [start, stop, by, at])):
-        try:
-            df = pandas.read_csv(filename)
-            return df
-        except IOError:
-            raise ValueError(
-                'No simulation found for ' + variety + ' please specify start, stop, (by) or at')
 
     print('Check/build canopies..')
     dd_range = build_canopies(variety=variety, nplants=nplants, tag=tag,
@@ -77,13 +69,19 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
 
     print('Compute missing plot statistics...')
     missing = dd_range
+    df = None
     if not reset:
         try:
             df = pandas.read_csv(filename)
-            if all(map(lambda x: x in df['daydate'].values, dd_range)):
-                return df.loc[df['daydate'].isin(dd_range), :]
-            else:
-                missing = [d for d in dd_range if d not in df['daydate'].values]
+            try:
+                df = df.set_index('rep').loc[rep,:].reset_index()
+                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                    return df.loc[df['daydate'].isin(dd_range), :]
+                else:
+                    missing = [d for d in dd_range if
+                               d not in df['daydate'].values]
+            except KeyError:
+                pass
         except IOError:
             pass
     new = []
@@ -94,13 +92,17 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
         df_lai = get_lai_properties(g)
         df_lai['variety'] = variety
         df_lai['daydate'] = d
+        df_lai['rep'] = rep
         new.append(df_lai)
-
-    df_new = pandas.concat(new)
-    tths = tt_hs_tag(variety, tag)
-    df_new = df_new.merge(tths)
-    df = pandas.concat((df, df_new))
-    df.to_csv(filename, index=False)
+    if len(new) > 0:
+        df_new = pandas.concat(new)
+        tths = tt_hs_tag(variety, tag)
+        df_new = df_new.merge(tths)
+        if df is not None:
+            df = pandas.concat((df, df_new))
+        else:
+            df = df_new
+        df.to_csv(filename, index=False)
 
     return df.loc[df['daydate'].isin(dd_range), :]
 
@@ -124,121 +126,24 @@ def compare_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
     return ax
 
 
-def tag_to_light(tag='zenith'):
-    if tag == 'zenith':
-        return [(1, (0, 0, -1))]
-    elif tag == '57.5':
-        return [(1. / 24, vecteur_direction(90 - 57.5, az)) for az in
-                range(0, 360, 15)]
-    elif tag == 'spray':
-        return [(1. / 24, vecteur_direction(90 - 17, az)) for az in
-                range(0, 360, 15)]
-    elif tag == 'soc':
-        return diffuse_source(46)
-    elif tag.startswith('lai2000r'):
-        zenith = 7, 23, 38, 53, 68
-        r = int(tag.split('r')[1]) - 1
-        return [(1. / 24, vecteur_direction(90 - zenith[r], az)) for az in
-                range(0, 360, 15)]
-    else:
-        raise ValueError('Unknown light tag: ' + tag)
-
-
-def tag_to_zenith(tag='zenith'):
-    if tag == 'zenith':
-        return 0
-    elif tag == '57.5':
-        return 57.5
-    elif tag == 'spray':
-        return 17
-    elif tag == 'soc':
-        energy, directions = zip(*diffuse_source(46))
-        z = numpy.array(zip(*directions)[2])
-        return numpy.mean(numpy.degrees(numpy.arccos(-z)))
-    elif tag.startswith('lai2000r'):
-        zenith = 7, 23, 38, 53, 68
-        r = int(tag.split('r')[1]) - 1
-        return zenith[r]
-    else:
-        raise ValueError('Unknown light tag: ' + tag)
-
-
-def canopy_illumination(variety='Tremie12', nplants=30, daydate='T1',
-                        tag='reference', rep=1, light_tag='zenith', z_soil=0,
-                        reset=False, reset_build=False,
-                        reset_reconstruction=False):
-
-    tths = tt_hs_tag(variety, tag)
-    daydate = as_daydate(daydate, tths)
-    sim_path = cache_simulation_path(tag, rep)
-    if not os.path.exists(sim_path / 'light'):
-        os.makedirs(sim_path / 'light')
-    filename = sim_path / 'light' / light_tag + '_z' + str(
-        z_soil) + '_' + variety.lower() + '_' + str(nplants) + 'pl_' + '_'.join(
-        daydate.split('-')) + '.json'
-
-    if not reset:
-        try:
-            with open(filename, 'r') as input_file:
-                cached = json.load(input_file)
-                raw = {w: {int(k): v for k, v in cached['raw'][w].iteritems()}
-                       for w in cached['raw']}
-                aggregated = {w: {int(k): v for k, v
-                                  in cached['aggregated'][w].iteritems()} for
-                              w in cached['aggregated']}
-            return raw, aggregated, cached['soil']
-        except IOError:
-            pass
-    g = get_canopy(variety=variety, nplants=nplants, daydate=daydate, tag=tag,
-                   rep=rep, reset=reset_build, reset_reconstruction=reset_reconstruction)
-    meta = AdelWheat.meta_informations(g)
-    sources = tag_to_light(light_tag)
-    c2u = {v: k for k, v in CaribuScene.units.iteritems()}
-    units = c2u.get(meta['convUnit'])
-    cscene = CaribuScene(g, sources, pattern=meta['domain'], soil_mesh=1,
-                         z_soil=z_soil, scene_unit=units)
-    raw, aggregated = cscene.run(direct=True, infinite=True, simplify=True)
-    soil, _ = cscene.getSoilEnergy()
-    with open(filename, 'w') as output_file:
-        saved = {'raw': raw, 'aggregated': aggregated, 'soil': soil}
-        json.dump(saved, output_file, sort_keys=True, indent=4,
-                  separators=(',', ': '))
-
-    return raw, aggregated, soil
-
-
-def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
-                   light_tag='zenith', z_soil=0, start=None, stop=None, by=None,
-                   at=None, reset=False, reset_build=False,
-                   reset_reconstruction=False):
-    sim_path = cache_simulation_path(tag, rep)
-    filename = sim_path / 'light_interception_' + variety.lower() + '_' + str(
+def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
+                      nplants=30, tag='reference', rep=1, start=None, stop=None,
+                      by=None, at=None, reset=False, reset_light=False,
+                      reset_build=False, reset_reconstruction=False):
+    sim_path = cache_analysis_path(tag)
+    filename = sim_path / 'light_po_' + variety.lower() + '_' + str(
         nplants) + 'pl.csv'
     sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
 
-    if all(map(lambda x: x is None, [start, stop, by, at])):
-        if not reset:
-            try:
-                df = pandas.read_csv(filename)
-                if sim_tag not in df.columns:
-                    raise IOError
-                return df
-            except IOError:
-                raise ValueError(
-                    'No simulation found for ' + variety + ' ' + sim_tag +
-                    ' please try reset without args or specify start, stop, (by) or at')
-        else:
-            # TO DO : scan cached light simulation and restore corresponding df
-            raise NotImplementedError
+    print('Check/illuminate canopies..')
+    dd_range = illuminate_canopies(light_tag=light_tag, z_soil=z_soil,
+                                   variety=variety, nplants=nplants, tag=tag,
+                                   rep=rep, start=start, stop=stop, by=by,
+                                   at=at, reset=reset_light,
+                                   reset_build=reset_build,
+                                   reset_reconstruction=reset_reconstruction)
 
-
-    print('Check/build canopies..')
-    dd_range = build_canopies(variety=variety, nplants=nplants, tag=tag,
-                              rep=rep, start=start, stop=stop, by=by, at=at,
-                              reset=reset_build,
-                              reset_reconstruction=reset_reconstruction)
-
-    print('Compute light interception...')
+    print('Compute po_light statistics...')
     df = None
     done = None
     missing = dd_range
@@ -247,13 +152,17 @@ def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
             df = pandas.read_csv(filename)
             if sim_tag not in df.columns:
                 df[sim_tag] = [numpy.nan] * len(df)
-            if all(map(lambda x: x in df['daydate'].values, dd_range)):
-                done = df.loc[df['daydate'].isin(dd_range), :]
-                missing = []
-            else:
-                done = df.loc[df['daydate'].isin(dd_range), :]
-                missing = [d for d in dd_range if
-                           d not in done['daydate'].values]
+            try:
+                df = df.set_index('rep').loc[rep, :].reset_index()
+                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                    done = df.loc[df['daydate'].isin(dd_range), :]
+                    missing = []
+                else:
+                    done = df.loc[df['daydate'].isin(dd_range), :]
+                    missing = [d for d in dd_range if
+                               d not in done['daydate'].values]
+            except KeyError:
+                pass
         except IOError:
             pass
 
@@ -268,11 +177,9 @@ def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
     new = []
     for d in missing + redo:
         print d
-        raw, aggregated, soil = canopy_illumination(variety=variety,
-                                                    nplants=nplants, daydate=d,
-                                                    tag=tag, rep=rep,
-                                                    light_tag=light_tag,
-                                                    z_soil=0, reset=reset)
+        raw, aggregated, soil = get_light(variety=variety, nplants=nplants,
+                                          daydate=d, tag=tag, rep=rep,
+                                          light_tag=light_tag, z_soil=0)
         if d in redo:
             df.loc[df['daydate'] == d, sim_tag] = soil
         else:
@@ -308,12 +215,12 @@ def simulate_light(variety='Tremie12', nplants=30, tag='reference', rep=1,
 
 def compare_po(variety='Tremie12', nplants=30, tag='reference', rep=1,
                light_tag='zenith', z_soil=0, start=None, stop=None, by=None,
-               at=None, reset=False, reset_build=False,
+               at=None, reset=False, reset_light=False, reset_build=False,
                reset_reconstruction=False, ax=None, color='b'):
-    dfsim = simulate_light(variety=variety, nplants=nplants, tag=tag, rep=rep,
+    dfsim = simulate_po_light(variety=variety, nplants=nplants, tag=tag, rep=rep,
                            light_tag=light_tag, z_soil=z_soil, start=start,
                            stop=stop, by=by, at=at, reset=reset,
-                           reset_build=reset_build,
+                           reset_light=reset_light,reset_build=reset_build,
                            reset_reconstruction=reset_reconstruction)
     sim_tag = 'po_' + light_tag + '_z' + str(z_soil)
     ax = plot_mean(dfsim, sim_tag, xaxis='HS', ax=ax, color=color, marker='')
