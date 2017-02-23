@@ -24,7 +24,7 @@ def conf_int(lst, perc_conf=95):
     return ci
 
 
-def plot_mean(data, variable='LAI_vert', xaxis='ThermalTime', marker='d',
+def plot_mean(data, variable='LAI_vert', xaxis='ThermalTime', marker='d', markersize=9,
               empty_marker=False, linestyle='-', color='b', title=None,
               xlabel=None, ylabel=None, xlims=None, ylims=None, ax=None, logy=False):
     var_mean = '_'.join((variable, 'mean'))
@@ -48,9 +48,14 @@ def plot_mean(data, variable='LAI_vert', xaxis='ThermalTime', marker='d',
         markerfacecolor = color
 
     df = df.loc[:, [xaxis, var_mean, var_err]].dropna()
-    ax.errorbar(df[xaxis], df[var_mean].values, yerr=df[var_err].values,
-                marker=marker, linestyle=linestyle, color=color,
-                markerfacecolor=markerfacecolor, markeredgecolor=color)
+    if df[var_err].sum() > 0:
+        ax.errorbar(df[xaxis], df[var_mean].values, yerr=df[var_err].values,
+                    marker=marker, linestyle=linestyle, color=color,
+                    markerfacecolor=markerfacecolor, markeredgecolor=color, markersize=markersize)
+    else:
+        ax.plot(df[xaxis], df[var_mean].values,
+                    marker=marker, linestyle=linestyle, color=color,
+                    markerfacecolor=markerfacecolor, markeredgecolor=color, markersize=markersize)
     if title is not None:
         ax.set_title(title, fontsize=18)
     if xlabel is not None:

@@ -484,7 +484,7 @@ def dimension_plot_old(dimension_data, fits, leaf_fits, scan, scan_old):
     fig.suptitle("Dimension data / Dimension fits")'''
 
 
-def density_plot(density_data, density_fits, HS_converter):
+def density_plot(density_data, density_fits, HS_converter, legend=True):
     # plt.ion()
     col = colors()
     names = varieties()
@@ -494,16 +494,17 @@ def density_plot(density_data, density_fits, HS_converter):
     for name in names:
         dens = grouped.get_group(name)
         dens['HS'] = HS_converter[name](dens['TT'])
-        ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'].values, fmt='o' + col[name], label=name + ' density')
+        ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'].values, fmt='o' + col[name], label=name + ' density', markersize=7)
         #
         df = density_fits[name]['density_table']
         ax.plot(df['HS'], df['density'], '-' + col[name], label=name + ' density fits')
       
-    ax.set_title("Plant density")
-    ax.set_xlabel("HS")
+    ax.set_ylabel("Plant density (pl/m2)", fontsize = 18)
+    ax.set_xlabel("Haun Stage", fontsize = 18)
     ax.set_xlim([0, 25])
     ax.set_ylim([0, 350])
-    ax.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
+    if legend:
+        ax.legend(bbox_to_anchor=(1.1, 1.1), prop={'size':9})
     return ax
     
 '''
@@ -590,8 +591,10 @@ def tillering_primary(obs_data, fits, HS_converter):
             plt.plot(obs['HS'], obs['FT'], '^'+color, label='_nolegend_', markersize=9)
         
     plt.xlim(xmax=20)
-    plt.xlabel('HS')
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+    plt.ylim(ymax=6)
+    plt.xlabel('Haun Stage', fontsize = 18)
+    plt.ylabel('Tiller #', fontsize = 18)
+    # plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
     
 def tillering_tot(obs_data, fits, HS_converter):
     plt.ion()
@@ -620,8 +623,9 @@ def tillering_tot(obs_data, fits, HS_converter):
             plt.plot(obs['HS'], obs['FT'], '^'+color, label='_nolegend_', markersize=9)
         
     plt.xlim(xmax=20)
-    plt.xlabel('HS')
-    plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
+    plt.xlabel('Haun Stage', fontsize = 18)
+    plt.ylabel('Tiller #', fontsize = 18)
+    #plt.legend(numpoints=1, bbox_to_anchor=(1.1, 1.1), prop={'size': 9})
    
 def graph_primary_emission(obs_data):
     plt.ion()

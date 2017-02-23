@@ -249,3 +249,29 @@ def dye_interception_miller(variety='Tremie12', nplants=30, tag='reference', rep
     return pandas.concat(res)
 
 
+def dye_interception_miller_no_layer(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                          at=('T1','T2')):
+    df_sim = simulate_dye_interception(variety=variety, nplants=nplants, tag=tag, rep=rep, at=at)
+
+    df_lai = simulate_lai(variety=variety, nplants=nplants, tag=tag, rep=1,
+                          at=at)
+    zenith = tag_to_zenith('spray', tag, variety)
+    l = lambda0(tag, variety)
+    k = l * 0.5 / numpy.cos(numpy.radians(zenith))
+    sim = leaf_statistics(df_sim, what='area', by='ntop_cur', axis='MS')
+    res = []
+    for tr, dat in sim.groupby(sim.index):
+        dat['deposit_Tartrazine'] = 0
+        area_sum = dat['area'].sum()
+        if tr.startswith('T1'):
+            coltr = 'tag_T1'
+        else:
+            coltr = 'tag_T2'
+        lai = df_lai.set_index(coltr).loc[tr, 'LAI_tot']
+        intercepted = 1 - numpy.exp(-k * lai)
+        for i in range(len(dat)):
+            lai_leaf = dat['area'].values[i] / area_sum * lai
+            dat.ix[i, 'deposit_Tartrazine'] = lai_leaf / lai * intercepted * dat['area'].values[i]
+        dat['ybar'] = dat['deposit_Tartrazine']
+        res.append(dat)
+    return pandas.concat(res)

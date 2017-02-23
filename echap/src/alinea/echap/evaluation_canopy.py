@@ -3,6 +3,7 @@
 
 import pandas
 import numpy
+import matplotlib.pyplot as plt
 
 
 try:
@@ -113,16 +114,16 @@ def compare_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
                 reset_build=False, reset_reconstruction=False):
     dfsim = simulate_lai(variety, nplants, tag, rep, start, stop, by, at, reset,
                          reset_build, reset_reconstruction)
-    ax = plot_mean(dfsim, 'LAI_vert', xaxis='HS', marker=' ')
+    ax = plot_mean(dfsim, 'LAI_vert', xaxis='HS', color='g', marker='', xlabel='Haun Stage', ylabel='LAI')
     plot_mean(dfsim, 'LAI_vert_MS', xaxis='HS', color='r', ax=ax, marker=' ')
     dfobs = lai_pai_scan(variety)
     plot_mean(dfobs, 'GLAI_MS_biomass', xaxis='HS', color='r', ax=ax,
               linestyle=' ')
-    plot_mean(dfobs, 'GLAI_biomass', xaxis='HS', ax=ax, linestyle=' ')
+    plot_mean(dfobs, 'GLAI_biomass', xaxis='HS', ax=ax, linestyle=' ', color='g')
     if variety == 'Tremie12':
-        plot_mean(dfsim, 'LAI_tot', xaxis='HS', color='g', ax=ax, marker=' ',
+        plot_mean(dfsim, 'LAI_tot', xaxis='HS', color='b', ax=ax, marker=' ',
                   linestyle='--')
-        plot_mean(dfobs, 'LAI_biomass', xaxis='HS', color='g', ax=ax,
+        plot_mean(dfobs, 'LAI_biomass', xaxis='HS', color='b', ax=ax,
                   linestyle=' ')
     return ax
 
@@ -217,13 +218,14 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
 
 def po_miller(light_tag='zenith', variety='Tremie12', nplants=30,
               tag='reference', rep=1, start=None, stop=None, by=None, at=None,
-              reset_build=False, reset_reconstruction=False):
+              reset_build=False, reset_reconstruction=False, l=None):
     df = simulate_lai(variety=variety, nplants=nplants, tag=tag, rep=rep,
                        start=start, stop=stop, by=by, at=at,
                        reset_build=reset_build,
                        reset_reconstruction=reset_reconstruction)
     zenith = tag_to_zenith(light_tag, tag, variety)
-    l = lambda0(tag, variety)
+    if l is None:
+        l = lambda0(tag, variety)
     k = l * 0.5 / numpy.cos(numpy.radians(zenith))
     sim_tag = 'po_' + light_tag + '_z0'
     df[sim_tag] = numpy.exp(-k * df['LAI_tot'])
@@ -246,6 +248,11 @@ def compare_po(model='adel', variety='Tremie12', nplants=30, tag='reference', re
                                light_tag=light_tag, start=start,
                                stop=stop, by=by, at=at, reset_build=reset_build,
                                reset_reconstruction=reset_reconstruction)
+    elif model == 'miller_raw':
+        dfsim = po_miller(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                          light_tag=light_tag, start=start, stop=stop, by=by,
+                          at=at, reset_build=reset_build,
+                          reset_reconstruction=reset_reconstruction, l=1)
     else:
         raise ValueError('unknown model: ' + model)
 
@@ -290,7 +297,7 @@ def compare_all_po(model='adel',variety='Tremie12', nplants=30, tag='reference',
     compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                light_tag='soc', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
-               reset_reconstruction=reset_reconstruction, ax=ax, color='lightgreen')
+               reset_reconstruction=reset_reconstruction, ax=ax, color='green')
     compare_po(model=model, variety=variety, nplants=nplants, tag=tag, rep=rep,
                light_tag='spray', z_soil=0, start=start, stop=stop, by=by, at=at,
                reset=reset, reset_build=reset_build,
@@ -301,10 +308,61 @@ def compare_all_po(model='adel',variety='Tremie12', nplants=30, tag='reference',
         if dfobs is not None:
             plot_mean(dfobs, 'po', xaxis='HS', ax=ax, color='darkviolet', linestyle='')
 
+
+    xlabel = 'Haun Stage'
+    ylabel = 'Gap Fraction'
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+
     return ax
 
 
+def check_lai57(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                start=None, stop=None, by=None, at=None, reset=False,
+                reset_build=False, reset_reconstruction=False):
+    df = simulate_lai(variety, nplants, tag, rep, start, stop, by, at, reset,
+                      reset_build, reset_reconstruction)
+    po = simulate_po_light('57.5')
+    df = df.merge(po)
+    fig, ax = plt.subplots()
 
+    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
+    ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
+    ax.plot(df['LAI_tot'], df['lai_57.5_z0'], marker='d',markersize=7,color='m')
+
+    ax.set_xlim((0, 6))
+    ax.set_ylim((0, 6))
+    xlabel = 'LAI'
+    ylabel = 'effective LAI'
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+
+    return ax
+
+
+def check_lai2000(variety='Tremie12', nplants=30, tag='reference', rep=1,
+                start=None, stop=None, by=None, at=None, reset=False,
+                reset_build=False, reset_reconstruction=False):
+    df = simulate_lai(variety, nplants, tag, rep, start, stop, by, at, reset,
+                      reset_build, reset_reconstruction)
+    po = simulate_po_light()
+    df = df.merge(po)
+    fig, ax = plt.subplots()
+
+    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
+    ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
+    ax.plot(df['LAI_tot'], df['lai_lai2000'], marker='d',markersize=7,color='b')
+
+    ax.set_xlim((0, 6))
+    ax.set_ylim((0, 6))
+    xlabel = 'LAI'
+    ylabel = 'effective LAI'
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+
+    return ax
 
 # Run and save canopy properties ###################################################################
 

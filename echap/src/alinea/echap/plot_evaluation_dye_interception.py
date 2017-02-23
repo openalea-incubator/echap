@@ -73,7 +73,8 @@ def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=range(1, 5),
                                             s_color=s_color)
 
         if ifig == 0 and ylab is not None:
-            ax.set_ylabel(ylab)
+            ax.set_ylabel(ylab, fontsize=18)
+            ax.set_xlabel('Leaf position', fontsize=18)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.text(min(xleaf) + 0.5, .8 * max(ax.get_ylim()), '' + str(treatment),
@@ -110,6 +111,9 @@ def deposit_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     elif model == 'miller':
         sim = idye.dye_interception_miller(variety=variety, nplants=nplants,
                                            tag=simulation, rep=1, at=treatments)
+    elif model == 'miller_no_layer':
+        sim = idye.dye_interception_miller_no_layer(variety=variety, nplants=nplants,
+                                           tag=simulation, rep=1, at=treatments)
     else:
         raise ValueError('unknown model: ' + model)
     # plot
@@ -121,7 +125,7 @@ def deposit_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     title = variety + ' ' + simulation
     fig = fig_observe_simule(obs, sim, treatments=treatments, xleaf=xleaf,
                              prefix=prefix, s_color=color, ylim=ylim, ylab=ylab,
-                             title=title)
+                             title=" ")
     return fig
 
 
