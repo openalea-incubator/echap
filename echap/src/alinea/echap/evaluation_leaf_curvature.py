@@ -1,6 +1,7 @@
 """ Evaluation of leaf curvature in ADEL"""
 from alinea.echap.architectural_data import xydb_reader
 from alinea.adel.leaf.curvature import *
+from alinea.echap.cache_simulation import build_canopies, get_midribs
 import numpy
 import pandas
 import matplotlib.pyplot as plt
@@ -20,14 +21,19 @@ def get_file_path(variety = 'Tremie12', nplants = 30):
                                                         
 # Run Simulations
 #
-def simulation_curvatures(variety = 'Tremie12', nplants = 30, 
-                          reset = False, reset_data = False):
-    harvests={'Tremie12':{1: 7.4, 2:11.5,3:13, 4:17.8}, 'Tremie13':{1:11.1}, 'Mercia':{1:4,2:7, 3:8, 4:13}, 'Rht3':{1:4,2:6, 3:8, 5:15.5}}
+def simulation_curvatures(variety='Tremie12', nplants=30, tag='reference',
+                          rep=1):
+    harvests = {'Tremie12': {1: '2012-03-09', 2: '2012-05-09', 3: '2012-04-11',
+                             4: '2012-06-12'}, 'Tremie13': {1: 11.1},
+                'Mercia': {1: 4, 2: 7, 3: 8, 4: 13},
+                'Rht3': {1: 4, 2: 6, 3: 8, 5: 15.5}}
     harvests = harvests[variety]
-    reconst = echap_reconstructions(reset=reset, reset_data=reset_data)
-    HSconv = reconst.HS_fit[variety]
-    adel = reconst.get_reconstruction(name=variety, nplants = nplants)
-    sims = {h:adel.get_midribs(adel.setup_canopy(age=HSconv.TT(harvests[h])),resample=True) for h in harvests}
+    build_canopies(variety=variety, nplants=nplants, tag=tag, rep=rep,
+                   at=harvests.values())
+    sims = {
+    h: get_midribs(variety=variety, nplants=nplants, daydate=harvests[h],
+                   tag=tag, rep=rep) for h in harvests}
+    # sims = {h:adel.get_midribs(adel.setup_canopy(age=HSconv.TT(harvests[h])),resample=True) for h in harvests}
     ldf = []
     for h,df_sim in sims.iteritems():
         df = df_sim[df_sim['axe'] == 'MS']
@@ -44,8 +50,7 @@ def simulation_curvatures(variety = 'Tremie12', nplants = 30,
     
 def save_simulation_curvatures(variety = 'Tremie12', nplants = 30, 
                                 reset = False, reset_data = False):
-    df = simulation_curvatures(variety=variety, nplants=nplants, 
-                                reset=reset, reset_data=reset_data)
+    df = simulation_curvatures(variety=variety, nplants=nplants)
     df.to_csv(get_file_path(variety = variety, nplants = nplants), index = False)
   
 def load_simulation_curvature(variety = 'Tremie12', nplants = 30):
@@ -55,50 +60,33 @@ def load_simulation_curvature(variety = 'Tremie12', nplants = 30):
 def is_iterable(obj):
     return isinstance(obj, collections.Iterable)
 
-def plot_leaf_curvature(name = 'Tremie12', nplants = 30, numbering = 'relative_ranktop', 
+def plot_leaf_curvature(name = 'Tremie12', nplants = 30, numbering = 'relative_ranktop', at=None,
                         alternate = True, hins_mean = False, 
                         fixed_color = None, alpha = 1., axs = None, 
-                        fixed_xlims = [-15, 15], fixed_ylims = [-10, 90], set_lims = True, add_sim=False):
+                        fixed_xlims = [-15, 15], fixed_ylims = [-10, 90], set_lims = True, add_sim=False, annotate=True):
+
     df = xydb_reader(name = name)
-    
-    if axs is None:
-        fig, axs = plt.subplots(1, len(numpy.unique(df['harvest'])))
-    if is_iterable(axs):
-        iter_ax = axs.flat
+
+    if at is None:
+        if axs is None:
+            fig, axs = plt.subplots(1, len(numpy.unique(df['harvest'])))
+        if is_iterable(axs):
+            iter_ax = axs.flat
+        else:
+            iter_ax = iter([axs])
     else:
+        fig, axs = plt.subplots()
         iter_ax = iter([axs])
-    
-    for h in numpy.unique(df['harvest']):
-        ax = next(iter_ax)
-        ax.set_color_cycle(None)
-        colors = ax._get_lines.color_cycle
-        df_h = df[df['harvest'] == h]
-        if hins_mean == True:
-            df_grouped = df_h.groupby(numbering).mean()
-        for leaf in numpy.unique(df_h[numbering]):
-            if fixed_color is not None:
-                color = fixed_color
-            else:
-                color = next(colors)
-            for pl in numpy.unique(df_h['plant']):
-                df_pl = df_h[(df_h['plant'] == pl) & (df_h[numbering] == leaf)]
-                if len(df_pl)>0:
-                    if alternate == True:
-                        side = df_pl.loc[:,'side'] * numpy.power(-1, leaf%2)
-                    else:
-                        side = 1
-                        
-                    if hins_mean == True:
-                        ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_grouped.loc[leaf,'hins'],
-                                color = color, alpha = alpha)
-                    else:
-                        ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_pl.loc[:,'hins'], 
-                                color = color, alpha = alpha)
-        if add_sim:
-            dfsim = load_simulation_curvature(name, nplants=nplants)
+        what = at
+
+    for i, h in enumerate(numpy.unique(df['harvest'])):
+        if at is None:
+            what = i
+        if i == what:
+            ax = next(iter_ax)
             ax.set_color_cycle(None)
             colors = ax._get_lines.color_cycle
-            df_h = dfsim[dfsim['harvest'] == h]
+            df_h = df[df['harvest'] == h]
             if hins_mean == True:
                 df_grouped = df_h.groupby(numbering).mean()
             for leaf in numpy.unique(df_h[numbering]):
@@ -113,15 +101,41 @@ def plot_leaf_curvature(name = 'Tremie12', nplants = 30, numbering = 'relative_r
                             side = df_pl.loc[:,'side'] * numpy.power(-1, leaf%2)
                         else:
                             side = 1
-                            
+
                         if hins_mean == True:
                             ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_grouped.loc[leaf,'hins'],
-                                    color = color, alpha = alpha,linestyle = ':')
+                                    color = color, alpha = alpha)
                         else:
-                            ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_pl.loc[:,'hins'], 
-                                    color = color, alpha = alpha,linestyle = ':')
+                            ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_pl.loc[:,'hins'],
+                                    color = color, alpha = alpha)
+            if add_sim:
+                dfsim = load_simulation_curvature(name, nplants=nplants)
+                ax.set_color_cycle(None)
+                colors = ax._get_lines.color_cycle
+                df_h = dfsim[dfsim['harvest'] == h]
+                if hins_mean == True:
+                    df_grouped = df_h.groupby(numbering).mean()
+                for leaf in numpy.unique(df_h[numbering]):
+                    if fixed_color is not None:
+                        color = fixed_color
+                    else:
+                        color = next(colors)
+                    for pl in numpy.unique(df_h['plant']):
+                        df_pl = df_h[(df_h['plant'] == pl) & (df_h[numbering] == leaf)]
+                        if len(df_pl)>0:
+                            if alternate == True:
+                                side = df_pl.loc[:,'side'] * numpy.power(-1, leaf%2)
+                            else:
+                                side = 1
 
-        ax.annotate('Harvest %d' % h, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
+                            if hins_mean == True:
+                                ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_grouped.loc[leaf,'hins'],
+                                        color = color, alpha = alpha,linestyle = ':')
+                            else:
+                                ax.plot(df_pl.loc[:,'x']*side, df_pl.loc[:,'y']+df_pl.loc[:,'hins'],
+                                        color = color, alpha = alpha,linestyle = ':')
+            if annotate:
+                ax.annotate('Harvest %d' % h, xy=(0.05, 0.85), xycoords='axes fraction', fontsize=18)
     
     if is_iterable(axs):
         if set_lims == True:
