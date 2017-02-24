@@ -40,7 +40,7 @@ def tag_to_light(tag='zenith', sim_tag='reference', variety='Tremie12'):
         return [(1, (0, 0, -1))]
     elif tag == '57.5':
         return [(1. / 24, vecteur_direction(90 - 57.5, az)) for az in
-                range(0, 360, 15)]
+                range(0, 360, 15)]# to check if perpendiculr to row is not more appropriate ?
     elif tag == 'spray':
         return [(1. / 24, vecteur_direction(90 - spraying_angle, az)) for az in
                 range(0, 360, 15)]

@@ -269,12 +269,12 @@ def HS_fit(tag='reference', reset=False):
 def tt_hs_tag(variety='Mercia', tag='reference'):
     """A multiple time index"""
 
-    hsfit = HS_fit(tag)
     df = None
     path = derived_data_path(tag) / variety + '_TT_HS_tag.csv'
     try:
         df = pandas.read_csv(path)
     except IOError:
+        hsfit = HS_fit(tag)
         df = tt_lin(variety)
         df['HS'] = hsfit[variety](df['TT'])
         for t in ('T1', 'T2'):
@@ -285,9 +285,9 @@ def tt_hs_tag(variety='Mercia', tag='reference'):
 
 
 def as_daydate(daydate, tths):
-    if daydate.startswith('T1'):
+    if str(daydate).startswith('T1'):
         return tths.set_index('tag_T1')['daydate'][daydate]
-    elif daydate.startswith('T2'):
+    elif str(daydate).startswith('T2'):
         return tths.set_index('tag_T2')['daydate'][daydate]
     else:
         return daydate
