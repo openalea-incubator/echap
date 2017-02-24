@@ -3,7 +3,7 @@
 
 #from openalea.multiprocessing.parallel import pymap
 #from multiprocessing import cpu_count
-from alinea.echap.evaluation_canopy_properties import *
+from alinea.echap.evaluation_canopy import *
 
 def run_variety(variety = 'Tremie12'):
     run_and_save_multi_simu(variety = variety, nplants = 30, age_range = [400, 2600],

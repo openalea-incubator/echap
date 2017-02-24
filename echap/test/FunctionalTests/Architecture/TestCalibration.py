@@ -23,7 +23,7 @@ from alinea.caribu.caribu_star import diffuse_source, run_caribu
 from alinea.adel.astk_interface import AdelWheat
 import alinea.echap.interception_data as idata
 
-from alinea.echap.evaluation_canopy_properties import draft_TC, draft_light
+from alinea.echap.evaluation_canopy import draft_TC, draft_light
 
 plt.ion()
 
@@ -259,7 +259,7 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
 #-----------------------------------------------------------------------------
 # Image plante
 def silhouette(name='Mercia', n=1, aborting_tiller_reduction=1, seed=1, **kwds):   
-    # visualiser une seule plante aux differents HS correspondants à ceux de la fonction plot_HS dans dye_interception.py et enregistrer image
+    # visualiser une seule plante aux differents HS correspondants à ceux de la fonction plot_HS dans plot_evaluation_dye_interception.py et enregistrer image
     # !!! pas de positionnement de la camera : il faut regler la vue sur plantGL et relancer la fonction pour avoir de belles images et pouvoir notamment monter le film de la croissance de la plante
     if name is 'Mercia':
         HS = [9.34,9.54,9.74,9.94,10.14,12.4,12.6,12.8,13,13.2,13.3,13.8,14.3,14.8,15.3]
