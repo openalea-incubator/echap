@@ -4,13 +4,12 @@
 import matplotlib.pyplot as plt
 import pandas
 import numpy
+from scipy.interpolate import interp1d
 
 
 import alinea.echap.architectural_data as archidb
-vdata = archidb.validation_data()
-rdata = archidb.reconstruction_data()
-
 from alinea.echap.architectural_reconstructions import EchapReconstructions
+
 fit = EchapReconstructions()
 
 def varieties():
@@ -27,6 +26,50 @@ def markers_nff():
 
 def markers_source():
     return {'tagged':'s', 'sampled':'^', 'symptom':'o', 'estimated_sampled':'*'}
+
+
+def axe_density_plot(what='primary_axe_density'):
+
+    cols = vcolors()
+    fig, ax = plt.subplots()
+    obs = archidb.axe_density_aggregated()
+    plant_density = fit.density_fits
+    axepop = fit.axepop_fits
+    hs = fit.HS_fit
+
+    for variety in varieties():
+        color = cols[variety]
+        df = obs[obs['label'] == variety]
+        df = df[df['tag_event'] != 'sowing']
+        marker_src = {'plot_data': 's', 'tillering_data': 'd'}
+        for src in marker_src:
+            if src in df['source'].tolist():
+                df_src = df[df['source'] == src]
+                ax.errorbar(df_src['TT'].values, df_src[what + '_mean'].values,
+                            yerr=df_src[what + '_nanstd'].values, linestyle='',
+                            color=color,
+                            markerfacecolor=color, markeredgecolor=color,
+                            marker=marker_src[src], markersize=7)
+
+        start, end = hs[variety]([0, 2500])
+        pd = plant_density[variety]['density_table']
+        pd.ix[0, 'HS'] = start
+        pd.ix[len(pd) - 1, 'HS'] = end
+        pd_fun = interp1d(pd['HS'], pd['density'])
+        sim = axepop[variety].axis_dynamics(pd_fun, start=start, end=end)
+        sim['TT'] = hs[variety].TT(sim['HS'])
+        if what.startswith('primary'):
+            ax.plot(sim['TT'], sim['primary'], color=color)
+            ax.set_ylim((0, 1500))
+            ax.set_ylabel('Axe density (m-2)', fontsize=17)
+        else:
+            ax.plot(sim['TT'], sim['total'], color=color)
+            ax.set_ylim((0, 2000))
+            ax.set_ylabel('Axe density (m-2)', fontsize=17)
+
+    ax.set_xlabel('Thermal time (dd)', fontsize=17)
+    return ax
+
 
 def _dim_plot(ax, what, data,model, along='rank', legend=True, xlab='', ylab=''):
     markers = markers_source()
@@ -59,20 +102,22 @@ def _dim_plot(ax, what, data,model, along='rank', legend=True, xlab='', ylab='')
         ax.legend(proxys, labels, loc=1)
     
     
-def dimension_plot(along='ranktop', xlab='Leaf Position'):
+def dimension_plot(along='ranktop', xlab='Leaf Position',
+                   what = ['L_blade', 'H_col']):
     """ Plot comparing blade lengths / collar heights for the differents varieties
         phytomers numbered from top
     """
     
-    data = rdata.Dimension_data
+    data = archidb.Dim_data()
     data = data[pandas.notnull(data['nff'])]
     data.loc[:,'ranktop'] = data.loc[:,'nff'] - data.loc[:,'rank'] + 1
     df_dim,df_dim_nff = archidb.dimensions_aggregated(data, along)
     model = fit.dimension_fits
     
     fig, axs = plt.subplots(1, 2)
-    what = ['L_blade', 'H_col']
-    labels = {'L_blade':'Leaf length (cm)', 'H_col':'Leaf height (cm)'}
+
+    labels = {'L_blade':'Leaf length (cm)', 'H_col':'Leaf height (cm)',
+              'W_blade': 'Leaf width (cm)', 'L_sheath': 'Sheath length (cm)'}
     for i, ax in enumerate(axs.flat):
         _dim_plot(ax, what[i], df_dim, model,along, legend=False, xlab=xlab, ylab=labels[what[i]])
         
@@ -90,7 +135,7 @@ def pheno_plot():
     
     # HS plot
     ax = axs[0]
-    obs_nff, obsM = vdata.haun_stage
+    obs_nff, obsM = archidb.haun_stage_aggregated()
     
     for variety in vars:
     
@@ -128,7 +173,7 @@ def pheno_plot():
     
     # Green leaf duration plot
     ax = axs[1]
-    obs_nff, obsM = vdata.ssi
+    obs_nff, obsM = archidb.ssi_aggregated()
     
     for variety in vars:
     
@@ -168,4 +213,5 @@ def pheno_plot():
                         
         ax.set_xlabel('Leaf position', fontsize = 18)
         ax.set_ylabel('Green life span (dd)', fontsize = 18)
-        
+
+

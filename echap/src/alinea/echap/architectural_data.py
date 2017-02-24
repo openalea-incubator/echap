@@ -6,7 +6,8 @@ except:
     import pickle
 
 
-from alinea.echap.hs_tt import Pheno_data
+from alinea.echap.hs_tt import Pheno_data, TT_lin
+from alinea.echap.data_processing import aggregate, conf_int
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
@@ -60,7 +61,7 @@ def Plot_data_Tremie_2011_2012():
     'raw_ear_density_at_harvest':[479, 490, 598, 608, 538, 503, 493, 430, 458, 437, 486, 489, 465, 406],
     'inter_row':0.143,
     'plant_density':{'2012-03-20': [238, 304, 287, 237, 290, 301, 290, 287, 273],
-                     '2012-04-11': [301, 273, 315], 
+                     '2012-04-11': [301, 273, 315],
                      '2012-05-09':[257, 301, 263]},
     'axe_density': {'2012-04-11': [918, 956, 979],
                     '2012-05-09':[601, 585, 506]}, 
@@ -70,7 +71,8 @@ def Plot_data_Tremie_2011_2012():
     d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
     d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
     return d
-    
+
+
 def Plot_data_Tremie_2012_2013():
     """
     Plot data for Boigneville 2012-2013 
@@ -103,9 +105,126 @@ def Plot_data():
               'Tremie13':Plot_data_Tremie_2012_2013()})
     return d
 
+
+def axe_density_data():
+    """Compile axe density data"""
+
+    dflist = []
+    pd = Plot_data()
+    for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
+        pdata = pd[g]
+        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        tag = []
+        daydate = []
+        density = []
+        pdensity = []
+        fdensity = []
+        if 'sowing_density' in pdata:
+            tag.append('sowing')
+            daydate.append(pdata['code_date']['sowing'])
+            density.append(pdata['sowing_density'])
+            pdensity.append(pdata['sowing_density'])
+            fdensity.append(numpy.nan)
+        if 'plant_density_at_emergence' in pdata:
+            tag.append('emergence')
+            daydate.append(pdata['code_date']['emergence'])
+            density.append(pdata['plant_density_at_emergence'])
+            pdensity.append(pdata['plant_density_at_emergence'])
+            fdensity.append(numpy.nan)
+        if 'axe_density' in pdata: #Tremie 12 only, considered as primary
+            for k, v in pdata['axe_density'].iteritems():
+                tag.extend([date_code[k]] * len(v))
+                daydate.extend([k] * len(v))
+                density.extend(v)
+                pdensity.extend(v)
+                fd = [numpy.nan] * len(v)
+                if 'fertile_axis_density' in pdata:
+                    if k in pdata['fertile_axis_density']:
+                        fd = pdata['fertile_axis_density'][k]
+                fdensity.extend(fd)
+        if 'raw_ear_density_at_harvest' in pdata:
+            n = len(pdata['raw_ear_density_at_harvest'])
+            tag.extend(['harvest'] * n)
+            daydate.extend([pdata['code_date']['harvest']] * n)
+            density.extend(pdata['raw_ear_density_at_harvest'])
+            pdensity.extend(pdata['raw_ear_density_at_harvest'])
+            fdensity.extend(pdata['raw_ear_density_at_harvest'])
+        n = len(tag)
+        df_plot = pandas.DataFrame({'label': [g] * n,
+                               'tag_event': tag,
+                               'daydate': daydate,
+                               'axe_density': density,
+                               'primary_axe_density': pdensity,
+                                'ear_density': fdensity})
+        dflist.append(df_plot)
+
+    return pandas.concat(dflist)
+
+
+def plant_density_data():
+    """Compile plant density data"""
+
+    dflist = []
+    pd = Plot_data()
+    for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
+        pdata = pd[g]
+        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        tag = []
+        daydate = []
+        density = []
+        if 'sowing_density' in pdata:
+            tag.append('sowing')
+            daydate.append(pdata['code_date']['sowing'])
+            density.append(pdata['sowing_density'])
+        if 'plant_density_at_emergence' in pdata:
+            tag.append('emergence')
+            daydate.append(pdata['code_date']['emergence'])
+            density.append(pdata['plant_density_at_emergence'])
+        if 'plant_density' in pdata:
+            for k, v in pdata['plant_density'].iteritems():
+                tag.extend([date_code[k]] * len(v))
+                daydate.extend([k] * len(v))
+                density.extend(v)
+        n = len(tag)
+        df_plot = pandas.DataFrame({'label': [g] * n,
+                               'tag_event': tag,
+                               'daydate': daydate,
+                               'plant_density': density})
+        dflist.append(df_plot)
+
+    return pandas.concat(dflist)
+
 #
-# ____________________________________________________________________________Tillering data
+# _____________________________________________________Tillering data
 #
+
+
+def tillering_data(trials=('MerciaRht3', 'Tremie12', 'Tremie13')):
+
+    dflist=[]
+    date_code = {'MerciaRht3': {1:'2011-01-19', 2:'2011-04-18', 3:'2011-04-27',
+                                4:'2011-05-26', 5:'2011-06-01', 6:'2011-06-09'},
+                 'Tremie12': {1:'2012-03-09', 2:'2012-04-02', 3:'2012-04-11',
+                              4:'2012-05-09', 5:'2012-05-29', 6:'2012-06-12',
+                              7:'2012-07-12', 8:'2012-04-04'},
+                 'Tremie13': {1:'2013-02-13', 2:'2013-03-29', 3: '2012-04-19'}
+                 }
+
+    for trial in trials:
+        csv = trial + '_Tillering_data.csv'
+        fn = str(shared_data(alinea.echap)/'architectural_measurements'/ csv)
+        data = pandas.read_csv(fn,decimal=',', sep='\t')
+        for w in ('T6','T7'):
+            if not w in data:
+                data[w] = [0] * len(data)
+        data['daydate'] = [date_code[trial][i] for i in data['Date']]
+        data['label'] = data['Var']
+        dflist.append(data)
+
+    return pandas.concat(dflist)
+
+
+
 # Utilities for processing tillering data
 def _maxna(x):
     m = x.max()
@@ -141,7 +260,7 @@ def nff_probabilities(df):
     prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
     d = dict(zip(range(len(prop)), prop))
     return {k:v for k,v in d.iteritems() if v > 0}
-    
+
 
 def Tillering_data_Mercia_Rht3_2010_2011():
     """Tillering data for Boigneville 2010-2011
@@ -164,16 +283,16 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     - at date 3 TT3F was estimated as total primary  + delta secondary
     - at date 3, on the 2 x 12 plants measured in details, it was possble to count presence/absence of living primary tillers (T1->T5). Living wes defined as Green leaves > 2 (minimal value of the GL model). 
 """
-    
-    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'MerciaRht3_Tillering_data.csv')
-    data = pandas.read_csv(fn,decimal=',',sep='\t')
+
+    data = tillering_data(['MerciaRht3'])
+
+
     date_code = {'d1':'2011-01-19', 'd2':'2011-04-18', 'd3':'2011-04-27', 'd4':'2011-05-26', 'd5':'2011-06-01', 'd6':'2011-06-09'}
     TT_code = {'d1':473, 'd2':1145, 'd3':1278, 'd4':1710, 'd5':1800, 'd6':1940}
     
     # infer emision at date 3 from Total primary present (TP)
     #add statistics for T6 as well as it may be present at date 3    
     def infer_d3(g):
-        g.insert(13,'T6',0.0)
         g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
         TP = g['TP']
         date = g['Date']
@@ -647,12 +766,44 @@ def median_leaf_trajectories():
 #    
 
 
+def axe_density_aggregated():
+    """Compile axe density data"""
+
+    dfplot = axe_density_data()
+    dfplot['source'] = ['plot_data'] * len(dfplot)
+
+    # add estimates using tillering data and mean plant density
+    pd = plant_density_data()
+    plant_density = pd.loc[pd['tag_event']!='sowing',:].groupby('label').agg('mean')
+    td = tillering_data()
+    td = td.merge(plant_density.reset_index())
+    axe_density = td['plant_density'] * (
+        numpy.where(td['MB'].isnull(), 0, td['MB']) +
+        numpy.where(td['MB'].isnull(), 0, td['TT']))
+    primary_axe_density = td['plant_density'] * (
+        numpy.where(td['MB'].isnull(), 0, td['MB']) +
+        numpy.where(td['MB'].isnull(), 0, td['TP']))
+
+    dft = pandas.DataFrame({'label': td['label'],
+                               'source': ['tillering_data'] * len(td),
+                               'tag_event': ['d%d'%(d) for d in td['Date']],
+                               'daydate': td['daydate'],
+                               'axe_density': axe_density,
+                               'primary_axe_density': primary_axe_density
+                               })
+
+    df = pandas.concat([dfplot, dft])
+    tt = TT_lin()
+    dfa = aggregate(df, ('label', 'daydate', 'source', 'tag_event'))
+
+    return dfa.merge(tt)
+
     
 def _add_ghs(df, g):
     #hs_conv = HS_converter[g]
     df['Var'] = g
     #df['HS'] = hs_conv(df['TT'])
-    df = df.sort('TT')
+    df = df.sort_values('TT')
     return df
 
 def PlantDensity():
@@ -799,29 +950,6 @@ def emission_probabilities_table():
     dfs = [pandas.DataFrame({'variety':var, 'tiller':probas.keys(), 'probability': probas.values()}) for  var,probas in emdb.iteritems()]
     return pandas.concat(dfs)
 
-def variance(lst):
-    """
-    Uses standard variance formula (sum of each (data point - mean) squared)
-    all divided by number of data points
-    """
-    mu = numpy.mean(lst)
-    return 1.0/(len(lst)-1) * sum([(i-mu)**2 for i in lst]) if len(lst)>1 else 0.
-        
-def conf_int(lst, perc_conf=95):
-    """
-    Confidence interval - given a list of values compute the square root of
-    the variance of the list (v) divided by the number of entries (n)
-    multiplied by a constant factor of (c). This means that I can
-    be confident of a result +/- this amount from the mean.
-    The constant factor can be looked up from a table, for 95pcent confidence
-    on a reasonable size sample (>=500) 1.96 is used.
-    """
-    from scipy.stats import t
-    
-    n, v = len(lst), variance(lst)
-    c = t.interval(perc_conf * 1.0 / 100, n-1)[1]
-    
-    return numpy.sqrt(v/n) * c
 
 def haun_stage_aggregated():
     """ Get mean, standard error and confidence interval for HS calibration data """
