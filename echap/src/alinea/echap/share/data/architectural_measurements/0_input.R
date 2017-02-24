@@ -73,14 +73,14 @@ plantdb <- lapply(notdb, function(x) plant_notations(x))
 #
 # leaf counts notation (subset of plant notation, completed for sampling with no notation using inspection of images)
 #
-leafcdb <- lapply(plantdb, function(x) x[,c('Source','N', 'nff', 'Nflig','Nfvis')])
+leafcdb <- lapply(plantdb, function(x) x[,c('Source','N', 'nff', 'Nflig','Nfvis','stem_half_area')])
 # for scan data Tremie 12 of sampled plant april 2, nflig = last measured leaf, hypothethise one growing leaf
 data <- scandb$Tremie12[scandb$Tremie12$Source=='sampled_plants_020412',]
-nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=max(x$rank), Nfvis=1)))
+nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=max(x$rank), Nfvis=1, stem_half_area=NA)))
 leafcdb$Tremie12 <- rbind(leafcdb$Tremie12, nfl)
 # for curvature Tremie 13 on 29 april, nflig=9 by convention (see input.R), hypothethise one growing leaf
 data <- curvdb$Tremie13[curvdb$Tremie13$Source=='sampled_plants_290413',]
-nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=9, Nfvis=1)))
+nfl <- do.call('rbind', lapply(split(data, data$N), function(x) data.frame(Source=x$Source[1],N=x$N[1],nff=NA, Nflig=9, Nfvis=1, stem_half_area=NA)))
 leafcdb$Tremie13 <- rbind(leafcdb$Tremie13, nfl)
 #
 # Extract 'other than leaf width profile' data from scan, homogenise and mix with leaf counts

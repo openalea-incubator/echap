@@ -65,13 +65,14 @@ get_shapes <- function(sphi_fits,blades,topleaves=4) {
 #
 # fit interpolated x(s,age),y(s,age)
 #
-sxy_interpolation <- function(sxy,shapes,at=seq(0,12,0.5)) {
+sxy_interpolation <- function(sxy,shapes,at=seq(0,12,0.5),nzero=1000) {
   xymed <- NULL
   s <- do.call('cbind',lapply(sxy,function(fit) fit$s))
   x <- do.call('cbind',lapply(sxy,function(fit) fit$x))
   y <- do.call('cbind',lapply(sxy,function(fit) fit$y))
   #
   smed <- apply(s,1,median)
+  #
   xmed <- try(t(apply(x,1,function(xage) predict(smooth.spline(shapes$age,xage,df=3),at)$y)),TRUE)
   ymed <- try(t(apply(y,1,function(yage) predict(smooth.spline(shapes$age,yage,df=3),at)$y)),TRUE)
   hproj_med <- try(predict(smooth.spline(shapes$age,shapes$hproj,df=4),at)$y, TRUE)
