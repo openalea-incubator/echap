@@ -1,15 +1,13 @@
-''' Data for pesticide/dye interception experiments
-'''
+""" Data for pesticide/dye interception experiments
+"""
 
 import pandas
 import numpy
 import scipy.stats
-
-import alinea.echap
 from openalea.deploy.shared_data import shared_data
-from alinea.echap.hs_tt import tt_hs_tag, derived_data_path
-#from alinea.echap.architectural_reconstructions import fit_HS
-#from alinea.echap.architectural_data import TT_lin, Pheno_data
+import alinea.echap
+from alinea.echap.hs_tt import tt_hs_tag, derived_data_path, TT_lin, Pheno_data
+
 
         
 def conf_int(lst, perc_conf=95):

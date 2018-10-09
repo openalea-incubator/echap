@@ -56,7 +56,7 @@ else:
 #wralea_entry_points = ['%s = %s'%(pkg,namespace + '.' + pkg) for pkg in top_pkgs]
 
 # dependencies to other eggs
-setup_requires = ['openalea.deploy']
+setup_requires = []
 if("win32" in sys.platform):
     install_requires = []
 else:
