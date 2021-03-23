@@ -6,7 +6,7 @@ Created on Thu Apr 04 11:25:45 2013
 """
 import pandas
 import os
-import StringIO
+import io
 from numpy import exp
 from alinea.astk.caribu_interface import *
 from alinea.caribu.caribu_star import rain_and_light_star, caribu_rain_star
@@ -26,7 +26,7 @@ def pesticide_applications(data, sep=','):
     if os.path.isfile(str(data)):
        path_or_buffer = data
     else:
-       path_or_buffer = StringIO.StringIO(data)
+       path_or_buffer = io.StringIO(data)
     calendar = pandas.read_csv(path_or_buffer, sep=sep, skipinitialspace = True)
     calendar.index = pandas.to_datetime(calendar['date'])
     calendar = calendar.sort_index()
@@ -53,9 +53,9 @@ def product_dose(product_name, dose, productsDB):
     """
     compound_name = None
     active_dose = 0
-    for prod, sub in productsDB.iteritems():
+    for prod, sub in productsDB.items():
         if prod == product_name:
-            for compound_name, compound_dose in sub.iteritems():
+            for compound_name, compound_dose in sub.items():
                 active_dose = (compound_dose * dose) * 1e-4
     return compound_name, active_dose
 
@@ -107,7 +107,7 @@ class CaribuInterceptModel(object):
             Dict of doses (g.m-2) calculated with the interception model for each leaf and stem element
         """       
         compound_name, Einc = interception_dose(product_name, dose, scene_geometry, self.productsDB, self.elevation, self.azimuth)
-        doses = dict([(k,{compound_name:v}) for k,v in Einc.iteritems()])
+        doses = dict([(k,{compound_name:v}) for k,v in Einc.items()])
         return doses
 
 

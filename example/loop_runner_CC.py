@@ -78,7 +78,7 @@ def g_constr(name, sim, nplants):
     elif sim == 'Tremie13_T2':
         HS = 11.04 #HS convert
     else :
-        print 'Warning = PB sim - pas de HS'
+        print('Warning = PB sim - pas de HS')
     
     #conversion du HS en TT necessaire a setup_canopy
     conv = HSconv[name]
@@ -100,7 +100,7 @@ def g_constr(name, sim, nplants):
     elif sim == 'Tremie13_T2':
         df = repartition_at_applicationArch(appdate = '2013-05-17', dose = 1, g=g)
     else :
-        print 'Warning = PB sim - pas de return df'
+        print('Warning = PB sim - pas de return df')
         
     return df
     
@@ -202,7 +202,7 @@ def treatment(name='Tremie12', sim='T1', nplants=30, save=True):
     if save is True:
         save_csv(name, data, data2, dataSFsum, dataCF, grCF, grCFm, grCFmean)
     else:
-        print 'Pas de sauvegarde de fichiers sous forme csv'
+        print('Pas de sauvegarde de fichiers sous forme csv')
   
     return grtest4, grtest3
 
@@ -227,7 +227,7 @@ def plot(name='Mercia'):
         dat = df_obs[(df_obs['var_stade'] == var_stade)]
         data = dat.groupby(['feuille']).moy_intercepte.sum()
         print (data)
-        print type(data.index)
+        print(type(data.index))
         left = [k[0] for k in enumerate(data)]
         right = [k[1] for k in enumerate(data)]
 

@@ -44,9 +44,9 @@ def pesticide_interception(g, interception_model, application_data, label='LeafE
             g.add_property('surfacic_doses')
         surfacic_doses = g.property('surfacic_doses')
         penetrated_doses = g.property('penetrated_doses')
-        for vid, nd in surf_dose.iteritems():
+        for vid, nd in surf_dose.items():
             if g.label(vid).startswith(label):
-                for name, dose in nd.iteritems():
+                for name, dose in nd.items():
                     if vid in surfacic_doses:
                         if name in surfacic_doses[vid]:
                             surfacic_doses[vid][name] += dose
@@ -142,9 +142,9 @@ def pesticide_surfacic_decay(g, decay_model, weather_data, label='LeafElement'):
         
         lut = decay_model.setup_climate(global_climate = weather_data, local_climates = microclimate)
         timestep = len(weather_data)
-        for vid, d in surfacic_doses.iteritems():
+        for vid, d in surfacic_doses.items():
             if g.label(vid).startswith(label):
-                for compound_name,compound_dose in d.iteritems():
+                for compound_name,compound_dose in d.items():
                     local_climate = microclimate.get(vid,{})
                     if vid in lut:
                         local_climate = lut[vid]
@@ -193,7 +193,7 @@ def pesticide_penetrated_decay(g, decay_model, weather_data, label='LeafElement'
     """
     if 'penetrated_doses' in g.property_names():
         penetrated_doses = g.property('penetrated_doses')
-        for vid, d in penetrated_doses.iteritems():
+        for vid, d in penetrated_doses.items():
             if g.label(vid).startswith(label):
                 penetrated_doses = decay_model.decay(d,weather_data)
     return g
@@ -279,7 +279,7 @@ def rain_interception(g, rain_interception_model, weather_data, label='LeafEleme
         if not 'rain' in g.properties():
             g.add_property('rain')
         rain_leaf, rain_fate = rain_interception_model.intercept(scene_geometry, intensity)
-        rain = dict([(k,{'water':v}) for k,v in rain_leaf.iteritems()])
+        rain = dict([(k,{'water':v}) for k,v in rain_leaf.items()])
         g.property('rain').update(rain_fate)
         #vids = [vid for vid in g.property('rain')]
         #for v in vids : 
@@ -293,7 +293,7 @@ def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     ng tentative debug date 12/12/12
     """
     date = weather_data.index[-1].to_datetime()# recording occurs at the end of the time step
-    print date
+    print(date)
     for vid in g:
         n = g.node(vid)
         if n.label is not None:
@@ -317,7 +317,7 @@ def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     return g
 
 def print_date(g,weather_data):
-    print weather_data.index[-1]
+    print(weather_data.index[-1])
     return g
     
 def save_records(recorder, path):

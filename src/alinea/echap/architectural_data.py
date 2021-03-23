@@ -1,7 +1,8 @@
 import pandas
 import numpy
+from functools import reduce
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except:
     import pickle
 
@@ -69,7 +70,7 @@ def Plot_data_Tremie_2011_2012():
     }
     d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
     d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,list(d['plant_density'].values())))
     return d
 
 
@@ -96,7 +97,7 @@ def Plot_data_Tremie_2012_2013():
     }
     d['ear_density_at_harvest'] = numpy.mean(d['raw_ear_density_at_harvest'])
     d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,list(d['plant_density'].values())))
     return d
 
 def Plot_data():
@@ -113,7 +114,7 @@ def axe_density_data():
     pd = Plot_data()
     for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
         pdata = pd[g]
-        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        date_code = {v:k for k, v in pdata['code_date'].items()}
         tag = []
         daydate = []
         density = []
@@ -132,7 +133,7 @@ def axe_density_data():
             pdensity.append(pdata['plant_density_at_emergence'])
             fdensity.append(numpy.nan)
         if 'axe_density' in pdata: #Tremie 12 only, considered as primary
-            for k, v in pdata['axe_density'].iteritems():
+            for k, v in pdata['axe_density'].items():
                 tag.extend([date_code[k]] * len(v))
                 daydate.extend([k] * len(v))
                 density.extend(v)
@@ -168,7 +169,7 @@ def plant_density_data():
     pd = Plot_data()
     for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
         pdata = pd[g]
-        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        date_code = {v:k for k, v in pdata['code_date'].items()}
         tag = []
         daydate = []
         density = []
@@ -181,7 +182,7 @@ def plant_density_data():
             daydate.append(pdata['code_date']['emergence'])
             density.append(pdata['plant_density_at_emergence'])
         if 'plant_density' in pdata:
-            for k, v in pdata['plant_density'].iteritems():
+            for k, v in pdata['plant_density'].items():
                 tag.extend([date_code[k]] * len(v))
                 daydate.extend([k] * len(v))
                 density.extend(v)
@@ -257,9 +258,9 @@ def axis_dynamics(df):
     return res
     
 def nff_probabilities(df):
-    prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
-    d = dict(zip(range(len(prop)), prop))
-    return {k:v for k,v in d.iteritems() if v > 0}
+    prop = 1. * numpy.bincount(list(map(int,df['Nff'].dropna()))) / len(df['Nff'].dropna())
+    d = dict(list(zip(list(range(len(prop))), prop)))
+    return {k:v for k,v in d.items() if v > 0}
 
 
 def Tillering_data_Mercia_Rht3_2010_2011():
@@ -486,7 +487,7 @@ def Dim_data():
         df['Source'] = source
         return df
     sources = ['sampled', 'tagged']
-    return pandas.concat(map(lambda source: read_dim_data(source), sources))
+    return pandas.concat([read_dim_data(source) for source in sources])
     
 # blade dimension data from Corinne/Tino scans in 2009/2010
 
@@ -520,10 +521,10 @@ def scan_dep_Tremie12():
         - Manip 'archi/silhouette': Scan des feuilles aux dates 09/03/2012 (HS 7.4)
                                                      11/04/2012 (HS 10.5)
                                                      09/05/2013 (HS 13.06)
-                                files : C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
-                                C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
+                                files : C:\\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
+                                C:\\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
                                 Avec fichier de notations associe
-                                C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
+                                C:\\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
             stat = 1 : feuille entiere et en bon etat
             stat = 2 : longueur correcte mais surface affectee
             stat = 3 : feuille abimee OU en croissance
@@ -555,7 +556,7 @@ def scan_dep_Tremie12():
 def scan_dep_Tremie13():
     '''
     Scan des feuilles non depouillees pour le 22/04/2012 et le 03/05/2012
-    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+    C:\\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
     '''
     data_file = shared_data(alinea.echap, 'architectural_measurements/Tremie13_scan_sampled_plants_220413.txt')
     df = pandas.read_csv(data_file, sep='\t')
@@ -601,7 +602,7 @@ def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all
             A_bl.append(data['A_bl'][cpt])
             cpt += 1
             
-    surfSet = zip(dater,moy_feuille,ntop,A_bl)
+    surfSet = list(zip(dater,moy_feuille,ntop,A_bl))
     df_fin = pandas.DataFrame(data = surfSet, columns=['HS', 'moyenne id_Feuille', 'ntop_cur', 'Area A_bl'])
     return df_fin    
     
@@ -646,8 +647,8 @@ def surface_data():
 
 def mean_nff():
     def _nff(ms_nff_probas):
-        return sum([int(k)*v for k,v in ms_nff_probas.iteritems()])
-    return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().iteritems()}
+        return sum([int(k)*v for k,v in ms_nff_probas.items()])
+    return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().items()}
    
 def sr_data():
         
@@ -918,11 +919,11 @@ def tillers_per_plant():
     pdata = Plot_data_Tremie_2011_2012()
     axd = pdata['axe_density']
     faxd = pdata['fertile_axis_density']
-    dfp= pandas.DataFrame({'date' : axd.keys(), 
+    dfp= pandas.DataFrame({'date' : list(axd.keys()), 
                 'TT': [pdata['TT_date'][k] for k in axd],
                 'TPS': [numpy.mean(axd[k]) / numpy.mean(pdata['plant_density'][k]) - 1 for k in axd]})
     dfp['FT'] = numpy.nan
-    d = faxd.keys()[0]
+    d = list(faxd.keys())[0]
     dfp.ix[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
     df = pandas.concat([df, dfp])
     df = _add_ghs(df, 'Tremie12')
@@ -947,7 +948,7 @@ def emission_probabilities_table():
     emdb['Tremie12'] = Tillering_data_Tremie12_2011_2012()['emission_probabilities']
     emdb['Tremie13'] = Tillering_data_Tremie13_2012_2013()['emission_probabilities']
 
-    dfs = [pandas.DataFrame({'variety':var, 'tiller':probas.keys(), 'probability': probas.values()}) for  var,probas in emdb.iteritems()]
+    dfs = [pandas.DataFrame({'variety':var, 'tiller':list(probas.keys()), 'probability': list(probas.values())}) for  var,probas in emdb.items()]
     return pandas.concat(dfs)
 
 
@@ -972,16 +973,15 @@ def haun_stage_aggregated():
                                   aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'HS_conf')], axis=1)
     
     # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
-    (df_HS_tagged_global, df_HS_sampled_global) = map(lambda x: pandas.concat(
+    (df_HS_tagged_global, df_HS_sampled_global) = [pandas.concat(
                                                   [aggregate(x, ['TT', 'label'], numpy.mean, 'HS_mean'),
                                                    aggregate(x, ['TT', 'label'], numpy.nanstd, 'HS_std'),
-                                                   aggregate(x, ['TT', 'label'], conf_int, 'HS_conf')], axis=1),
-                                                   (tagged, sampled))
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'HS_conf')], axis=1) for x in (tagged, sampled)]
     df_HS_tagged_global['source'] = 'tagged'
     df_HS_sampled_global['source'] = 'sampled'
     df_HS_global = pandas.concat([df_HS_tagged_global, df_HS_sampled_global])
     
-    (df_HS_tagged, df_HS_global) = map(lambda x: x.reset_index(), (df_HS_tagged, df_HS_global))
+    (df_HS_tagged, df_HS_global) = [x.reset_index() for x in (df_HS_tagged, df_HS_global)]
     return df_HS_tagged, df_HS_global
 
 def ssi_aggregated():
@@ -1005,16 +1005,15 @@ def ssi_aggregated():
                                   aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'SSI_conf')], axis=1)
     
     # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
-    (df_SSI_tagged_global, df_SSI_sampled_global) = map(lambda x: pandas.concat(
+    (df_SSI_tagged_global, df_SSI_sampled_global) = [pandas.concat(
                                                   [aggregate(x, ['TT', 'label'], numpy.mean, 'SSI_mean'),
                                                    aggregate(x, ['TT', 'label'], numpy.nanstd, 'SSI_std'),
-                                                   aggregate(x, ['TT', 'label'], conf_int, 'SSI_conf')], axis=1),
-                                                   (tagged, sampled))
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'SSI_conf')], axis=1) for x in (tagged, sampled)]
     df_SSI_tagged_global['source'] = 'tagged'
     df_SSI_sampled_global['source'] = 'sampled'
     df_SSI_global = pandas.concat([df_SSI_tagged_global, df_SSI_sampled_global])
     
-    (df_SSI_tagged, df_SSI_global) = map(lambda x: x.reset_index(), (df_SSI_tagged, df_SSI_global))
+    (df_SSI_tagged, df_SSI_global) = [x.reset_index() for x in (df_SSI_tagged, df_SSI_global)]
     return df_SSI_tagged, df_SSI_global
     
 
@@ -1131,16 +1130,15 @@ def green_leaves_estimated(HS_fit):
     symptom_est_ap = symptom_est_ap.rename(columns = {'GLap':'GL', 'SSIap':'SSI'})
     
     # Get mean, standard error and confidence interval of estimated GL for plants with known nff
-    (tagged_est_nff, symptom_est) = map(lambda x: estimate_GL(x), (tagged_est_nff, symptom_est))
+    (tagged_est_nff, symptom_est) = [estimate_GL(x) for x in (tagged_est_nff, symptom_est)]
     sources = {'tagged':tagged_est_nff, 'symptom':symptom_est}
     df_GL_est_nff = pandas.concat([aggregate_GLsource(sources[k], ['TT', 'label', 'nff'], k) for k in sources])
     df_GL_est_nff = df_GL_est_nff.reset_index()
     # Get mean, standard error and confidence interval of estimated GL for all NFFs for 
     # tagged plants, sampled plants and symptom plants
     (tagged_est_global, sampled_est_global, 
-    symptom_est, symptom_est_ap) = map(lambda x: estimate_GL(x), 
-                                        (tagged_est_global, sampled_est_global,
-                                        symptom_est, symptom_est_ap))
+    symptom_est, symptom_est_ap) = [estimate_GL(x) for x in (tagged_est_global, sampled_est_global,
+                                        symptom_est, symptom_est_ap)]
     sources = {'tagged':tagged_est_global, 'sampled':sampled_est_global, 'symptom':symptom_est, 'symptom_ap':symptom_est_ap}
     df_GL_est_global = pandas.concat([aggregate_GLsource(sources[k], ['TT', 'label'], k) for k in sources])
     df_GL_est_global = df_GL_est_global.reset_index()
@@ -1160,7 +1158,7 @@ def dimensions_aggregated(df_dim = Dim_data(), along = 'rank'):
     def get_aggregate(data, group = ['label', 'Source', along]):
         funcs = {'mean':numpy.mean, 'std':numpy.std, 'conf':conf_int}
         df_ag = None
-        for name, func in funcs.iteritems():
+        for name, func in funcs.items():
             if df_ag is None:
                 df_ag = _aggregate(data, group=group, func=func, column_name=name)
             else:

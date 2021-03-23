@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 
@@ -77,7 +77,7 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
             df = pandas.read_csv(filename)
             try:
                 df = df.set_index('rep').loc[rep,:].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     return df.loc[df['daydate'].isin(dd_range), :]
                 else:
                     missing = [d for d in dd_range if
@@ -88,7 +88,7 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
             pass
     new = []
     for d in missing:
-        print d
+        print(d)
         g = get_canopy(daydate=d, variety=variety, nplants=nplants, tag=tag,
                        rep=rep, load_geom=False)
         df_lai = get_lai_properties(g)
@@ -156,7 +156,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
                 df[sim_tag] = [numpy.nan] * len(df)
             try:
                 df = df.set_index('rep').loc[rep, :].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     done = df.loc[df['daydate'].isin(dd_range), :]
                     missing = []
                 else:
@@ -178,7 +178,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
 
     new = []
     for d in missing + redo:
-        print d
+        print(d)
         raw, aggregated, soil = get_light(variety=variety, nplants=nplants,
                                           daydate=d, tag=tag, rep=rep,
                                           light_tag=light_tag, z_soil=0)
@@ -206,7 +206,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
         df['lai_' + light_tag + '_z' + str(z_soil)] = - numpy.log(
             df[sim_tag]) / g_miller
         rings = ['lai_lai2000r' + str(i) + '_z0' for i in range(1, 6)]
-        if all(map(lambda x: x in df.columns.values, rings)):
+        if all([x in df.columns.values for x in rings]):
             w = 0.034, 0.104, 0.16, 0.218, 0.494
             df['lai_lai2000'] = 0
             for i, ring in enumerate(rings):
@@ -326,7 +326,7 @@ def check_lai57(variety='Tremie12', nplants=30, tag='reference', rep=1,
     df = df.merge(po)
     fig, ax = plt.subplots()
 
-    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(list(range(7)), list(range(7)), color='b', linestyle='--')
     ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
     ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
     ax.plot(df['LAI_tot'], df['lai_57.5_z0'], marker='d',markersize=7,color='m')
@@ -350,7 +350,7 @@ def check_lai2000(variety='Tremie12', nplants=30, tag='reference', rep=1,
     df = df.merge(po)
     fig, ax = plt.subplots()
 
-    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(list(range(7)), list(range(7)), color='b', linestyle='--')
     ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
     ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
     ax.plot(df['LAI_tot'], df['lai_lai2000'], marker='d',markersize=7,color='b')

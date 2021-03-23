@@ -9,7 +9,7 @@ import os
 
 from copy import deepcopy
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 
@@ -225,7 +225,7 @@ def density_fits(tag='reference', reset=False):
                 pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
             d.append(pdb[k]['plant_density_at_emergence'])
         if 'plant_density' in pdb[k]:
-            for date, densities in pdb[k]['plant_density'].iteritems():
+            for date, densities in pdb[k]['plant_density'].items():
                 hs.extend(
                     [HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
                 d.extend(densities)
@@ -664,7 +664,7 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250.,
     GLfit = GL_fits()['Mercia']
     Dimfit = dimension_fits()['Mercia']
     Dimfit.scale = {k: v * 1.15 for k, v in
-                    Dimfit.scale.iteritems()}  # Seen on Soisson 2010 compared to Mercia 2010
+                    Dimfit.scale.items()}  # Seen on Soisson 2010 compared to Mercia 2010
     pgen = pgen_ext.PlantGen(HSfit=hs_fit['Mercia'], GLfit=GLfit, Dimfit=Dimfit)
     axeT, dimT, phenT = pgen.adelT(plants)
     axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])

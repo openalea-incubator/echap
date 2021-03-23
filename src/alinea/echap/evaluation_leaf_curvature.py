@@ -11,6 +11,7 @@ from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
 from alinea.echap.architectural_reconstructions import echap_reconstructions
+from functools import reduce
 
 def get_file_name(variety = 'Tremie12', nplants = 30,):
     return 'curvature_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
@@ -29,13 +30,13 @@ def simulation_curvatures(variety='Tremie12', nplants=30, tag='reference',
                 'Rht3': {1: 4, 2: 6, 3: 8, 5: 15.5}}
     harvests = harvests[variety]
     build_canopies(variety=variety, nplants=nplants, tag=tag, rep=rep,
-                   at=harvests.values())
+                   at=list(harvests.values()))
     sims = {
     h: get_midribs(variety=variety, nplants=nplants, daydate=harvests[h],
                    tag=tag, rep=rep) for h in harvests}
     # sims = {h:adel.get_midribs(adel.setup_canopy(age=HSconv.TT(harvests[h])),resample=True) for h in harvests}
     ldf = []
-    for h,df_sim in sims.iteritems():
+    for h,df_sim in sims.items():
         df = df_sim[df_sim['axe'] == 'MS']
         df.loc[:,'variety_name'] = variety
         df.loc[:,'side'] = 1
@@ -196,8 +197,8 @@ def plot_mean_by_point_leaf_curvature(name = 'Tremie12', nplants = 30,
 def mean_leaf(leaves):
     """ leaves is a xy list pf dataframes
     """
-    s=map(lambda x: curvilinear_abscisse(x['x'],x['y']),leaves)
-    curvs=map(lambda x:curvature_xys(x[0]['x'].values,x[0]['y'].values,x[1]),zip(leaves,s))
+    s=[curvilinear_abscisse(x['x'],x['y']) for x in leaves]
+    curvs=[curvature_xys(x[0]['x'].values,x[0]['y'].values,x[1]) for x in zip(leaves,s)]
     sum_curv = reduce(lambda x,y: [(x[0][0]+y[0][0],x[0][1] + y[0][1]),x[1] + y[1],x[2] + y[2], x[3]+ y[3]],curvs)
     w = 1./len(leaves)
     p,t,ss,dt=sum_curv

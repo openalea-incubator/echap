@@ -52,7 +52,7 @@ def parton_logan(dailyMinMaxTemp, latitude=55, param="air150cm"):
     Tmin = dailyMinMaxTemp['Tmin']
     Tmax = dailyMinMaxTemp['Tmax']
     
-    daily_series = pandas.Series(range(Tmin.size), index=Tmin.index)    
+    daily_series = pandas.Series(list(range(Tmin.size)), index=Tmin.index)    
         
     def calc_daylength(i):
         dayNumber = dailyMinMaxTemp.index[i].toordinal() + 1 - datetime.datetime(dailyMinMaxTemp.index[i].year,1,1).toordinal()
@@ -94,7 +94,7 @@ def parton_logan(dailyMinMaxTemp, latitude=55, param="air150cm"):
     
     hourly_idx = pandas.DateRange(Tmin.index[0], Tmin.index[-1] + 23 * Hour(), offset=Hour())
 
-    hourly_series = pandas.Series(range(hourly_idx.size), index=hourly_idx)                               
+    hourly_series = pandas.Series(list(range(hourly_idx.size)), index=hourly_idx)                               
                                           
     def calc_hourlyTemp(abs_hour):
         abs_day = abs_hour / 24

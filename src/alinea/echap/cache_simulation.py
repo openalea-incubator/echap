@@ -77,10 +77,10 @@ def build_canopies(variety='Tremie12', nplants=30, tag='reference', rep=1,
     pattern = head_path + '*.pckl'
     done = glob.glob(pattern)
     if len(done) > 0:
-        done = map(lambda x: x.split('pl_')[1].split('.')[0], done)
-        done = map(lambda x: '-'.join(x.split('_')), done)
+        done = [x.split('pl_')[1].split('.')[0] for x in done]
+        done = ['-'.join(x.split('_')) for x in done]
 
-    if all(map(lambda x: x is None, [start, stop, by, at])):
+    if all([x is None for x in [start, stop, by, at]]):
         if len(done) > 0:
             dd_range = done
         else:
@@ -99,7 +99,7 @@ def build_canopies(variety='Tremie12', nplants=30, tag='reference', rep=1,
                                   reset_reconstruction=reset_reconstruction)
         tths = tt_hs_tag(variety, tag)
         for d in missing:
-            print d
+            print(d)
             basename = head_path + '_'.join(d.split('-'))
             age = tths.set_index('daydate')['TT'][d]
             g = adel.setup_canopy(age=age)

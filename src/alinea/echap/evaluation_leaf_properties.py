@@ -56,20 +56,20 @@ class AdelLeafRecorder:
         dict_lf['length'] = sum([lengths[id] for id in id_list])
         dict_lf['green_length'] = sum([green_lengths[id] for id in id_list])
         dict_lf['senesced_length'] = sum([senesced_lengths[id] for id in id_list])
-        heights = [numpy.mean(get_height({id:geometries[id]}).values()) for id in id_list]
+        heights = [numpy.mean(list(get_height({id:geometries[id]}).values())) for id in id_list]
         dict_lf['height'] = numpy.mean(heights) if len(heights)>0. else 0.
         dict_lf['min_height'] = min(heights) if len(heights)>0. else 0.
         dict_lf['max_height'] = max(heights) if len(heights)>0. else 0.
         return dict_lf
         
     def record(self, g, date = None, degree_days = None):
-        self.a_labels = {vid:lab for vid, lab in adel_labels(g, scale = 5).iteritems() 
+        self.a_labels = {vid:lab for vid, lab in adel_labels(g, scale = 5).items() 
                             if 'LeafElement' in lab}
         v_length = g.property('visible_length')
         labels = g.property('label')
         geometries = g.property('geometry')
         areas = g.property('area')
-        blades = [id for id,lb in labels.iteritems() if lb.startswith('blade') and v_length[id]>0]
+        blades = [id for id,lb in labels.items() if lb.startswith('blade') and v_length[id]>0]
         for blade in blades:
             id_list = [id for id in g.components(blade) if geometries.get(id) is not None 
                                                         and areas.get(id) is not None
@@ -121,9 +121,8 @@ class AdelLeafRecorder:
         
         df_mean = self.data.groupby(['date', 'num_plant', 'axis']).mean()
         df_mean = df_mean.reset_index()
-        df_mean.loc[:, 'degree_days'] = map(lambda x: numpy.round(x),
-                                            df_mean.loc[:, 'degree_days'])
-        df_mean.loc[:, 'HS'] = map(lambda x: numpy.round(x, 2), df_mean.loc[:, 'HS'])
+        df_mean.loc[:, 'degree_days'] = [numpy.round(x) for x in df_mean.loc[:, 'degree_days']]
+        df_mean.loc[:, 'HS'] = [numpy.round(x, 2) for x in df_mean.loc[:, 'HS']]
         df_mean.to_csv(filename[:-4]+'_mean'+filename[-4:], index = False)
         
         df_sum = self.data.groupby(['date', 'num_plant', 'axis']).sum()
@@ -153,7 +152,7 @@ def add_notation_dates(weather_data, variety):
     if variety in ['Mercia', 'Rht3']:
         df = pandas.DataFrame(numpy.zeros(len(weather_data)), index = weather_data.index)
     else:
-        dates = map(lambda x: pandas.to_datetime(x, dayfirst=True), archidb.scan_dates(variety = variety))
+        dates = [pandas.to_datetime(x, dayfirst=True) for x in archidb.scan_dates(variety = variety)]
         df = pandas.DataFrame(numpy.zeros(len(weather_data)), index = weather_data.index)
         df.loc[dates, :] = 1
     return df.values == 1
@@ -164,7 +163,7 @@ def ddays_and_notations_filter(seq, weather, delay = 20.):
     ddays.ix[0] = 0.
     df = notations.copy()
     count_ddays = 0.
-    for i, row in df.iteritems():
+    for i, row in df.items():
         if row == True:
             count_ddays = 0.
         count_ddays += ddays[i]
@@ -204,7 +203,7 @@ def run_and_save(variety = 'Tremie12', nplants = 30, delay = 20.,
     # Run annual loop and save outputs
     for i, canopy_iter in enumerate(canopy_timing):
         if canopy_iter:
-            print canopy_iter.value.index[0]
+            print(canopy_iter.value.index[0])
             g = adel.setup_canopy(age = canopy_iter.value.degree_days[0])
             recorder.record(g, date = canopy_iter.value.index[0], 
                             degree_days = canopy_iter.value.degree_days[0])
@@ -236,7 +235,7 @@ def add_nb_axis(df_sim):
             df_sim.loc[i, 'nb_axis'] = nb_ax
     
 def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days', 
-                  leaves = range(1, 14), from_top = True, plant_axis = ['MS'],
+                  leaves = list(range(1, 14)), from_top = True, plant_axis = ['MS'],
                   error_bars = False, error_method = 'confidence_interval', 
                   marker = '', empty_marker = False, linestyle = '-', fixed_color = None, 
                   title = None, legend = True, xlabel = None, ylabel = None,
@@ -277,7 +276,7 @@ def plot_by_leaf(data, variable = 'green_area', xaxis = 'degree_days',
         return ax
             
 def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days', 
-                  leaves = range(1, 14), from_top = True,
+                  leaves = list(range(1, 14)), from_top = True,
                   error_bars = False, error_method = 'confidence_interval', 
                   markers = ['', '', ''], linestyle = ['-', '--', ':'], colors = [None, None, None], 
                   title = None, xlabel = None, ylabel = None,
@@ -289,12 +288,12 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
     df = data[data['axis'] == 'MS']
     if ax is None:
         fig, ax = plt.subplots(figsize = fig_size)
-    colors, markers, linestyles = map(lambda x: iter(x), (colors, markers, linestyles))
+    colors, markers, linestyles = [iter(x) for x in (colors, markers, linestyles)]
     markers = iter()
     labels = []
     for fnl in set(df['fnl']):
         df_fnl = df[df['fnl'] == fnl]
-        (color, marker, linestyle) = map(lambda x: next(x), (colors, markers, linestyles))
+        (color, marker, linestyle) = [next(x) for x in (colors, markers, linestyles)]
         plot_by_leaf(df_fnl, variable = variable, xaxis = xaxis, 
                       error_bars = error_bars, error_method = error_method, 
                       marker = marker, linestyle = linestyle, fixed_color = color,
@@ -305,8 +304,8 @@ def plot_by_leaf_by_fnl(data, variable = 'green_area', xaxis = 'degree_days',
     # Customize legend
     color_list = [next(ax._get_lines.color_cycle) for lf in leaves]
     leg = ax.legend(ax._get_legend_handles(), labels, loc='center left', bbox_to_anchor=(1, 0.5))
-    labels, handles = zip(*sorted(zip(labels, ax._get_legend_handles()), 
-                            key=lambda t: color_list.index(t[1].get_c())))
+    labels, handles = list(zip(*sorted(zip(labels, ax._get_legend_handles()), 
+                            key=lambda t: color_list.index(t[1].get_c()))))
     leg = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
     
 # Read scan data ###################################################################################
@@ -349,7 +348,7 @@ def get_scan_dimensions(variety = 'Tremie12'):
     return df.reset_index(drop = True)
 
 def plot_sim_obs_MS(df_sim, df_obs, variable = 'length', xaxis = 'degree_days', 
-                     leaves = range(7, 14), from_top = False, error_bars = [False, True],
+                     leaves = list(range(7, 14)), from_top = False, error_bars = [False, True],
                      markers = ['', 'o'], linestyles = ['-', '--'], 
                      xlims = None, ylims = None, legend = True, 
                      title = None, ax = None, fig_size = None):
@@ -370,7 +369,7 @@ def plot_sim_obs_MS(df_sim, df_obs, variable = 'length', xaxis = 'degree_days',
                  legend = legend, ax = ax)
     
 def compare_sim_scan(variety = 'Tremie12', nplants = 30, variable = 'length', xaxis = 'degree_days', 
-                     leaves = range(7, 14), from_top = False, exclude_stat = None, 
+                     leaves = list(range(7, 14)), from_top = False, exclude_stat = None, 
                      xlims = None, ylims = None, legend = True, ax = None, df_sim = None, 
                      fig_size = (10, 8)):
     if df_sim is None:
@@ -384,7 +383,7 @@ def compare_sim_scan(variety = 'Tremie12', nplants = 30, variable = 'length', xa
 
 def compare_sim_archi_tagged(variety = 'Tremie12', nplants = 30,
                             variable = 'length', xaxis = 'degree_days', 
-                            leaves = range(8, 14), from_top = False, xlims = None, ylims = None, 
+                            leaves = list(range(8, 14)), from_top = False, xlims = None, ylims = None, 
                             legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
         df_sim = get_simu_results(variety = variety, nplants = nplants)
@@ -395,7 +394,7 @@ def compare_sim_archi_tagged(variety = 'Tremie12', nplants = 30,
                     xlims = xlims, ylims = ylims, legend = legend, ax = ax, fig_size = fig_size)
                       
 def compare_sim_symptom_tagged(variety = 'Tremie12',  nplants = 30, 
-                               variable = 'necro', xaxis = 'degree_days', leaves = range(8, 14), 
+                               variable = 'necro', xaxis = 'degree_days', leaves = list(range(8, 14)), 
                                from_top = False, xlims = None, ylims = None, 
                                legend = True, ax = None, df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
@@ -408,7 +407,7 @@ def compare_sim_symptom_tagged(variety = 'Tremie12',  nplants = 30,
 
 def plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
                     variety = 'Tremie12', variable = 'necro', xaxis = 'degree_days', 
-                    leaves = range(8, 14), from_top = False, error_bars = True,
+                    leaves = list(range(8, 14)), from_top = False, error_bars = True,
                     xlims = None, ylims = None, 
                     legend = True, ax = None, fig_size = (10, 8)):
     if ax is None:
@@ -444,7 +443,7 @@ def plot_sim_tagged(df_sim, df_obs_archi, df_obs_symptom,
     ax.add_artist(leg2)
                       
 def compare_sim_tagged(variety = 'Tremie12', nplants=30, variable = 'necro', xaxis = 'degree_days', 
-                        leaves = range(8, 14), from_top = False, error_bars = True, 
+                        leaves = list(range(8, 14)), from_top = False, error_bars = True, 
                         xlims = None, ylims = None, legend = True, ax = None, 
                         df_sim = None, fig_size = (10, 8)):
     if df_sim is None:
@@ -458,7 +457,7 @@ def compare_sim_tagged(variety = 'Tremie12', nplants=30, variable = 'necro', xax
                     legend = legend, ax = ax)
                       
 def compare_sim_tagged_by_fnl(variety = 'Tremie12', nplants=30, variable = 'necro', xaxis = 'degree_days', 
-                        leaves = range(8, 14), from_top = False, error_bars = True, 
+                        leaves = list(range(8, 14)), from_top = False, error_bars = True, 
                         xlims = None, ylims = None, 
                         legend = True, ax = None, df_sim = None, fig_size = (10, 17)):
     if df_sim is None:
@@ -479,7 +478,7 @@ def compare_sim_tagged_by_fnl(variety = 'Tremie12', nplants=30, variable = 'necr
         axs[i].annotate('FNL %d' % fnl, xy=(0.05, 0.4), xycoords='axes fraction', fontsize=18)
         
 def compare_sim_scan_archi_tagged(variety = 'Tremie12', nplants=30, variable = 'length', xaxis = 'degree_days', 
-                            leaves = range(8, 14), exclude_stat = None,
+                            leaves = list(range(8, 14)), exclude_stat = None,
                             xlims = None, ylims = None, fig_size = (16, 10)):
     df_sim = get_simu_results(variety = variety, nplants = nplants)
     fig, axs = plt.subplots(1, 2, figsize = fig_size)
@@ -496,7 +495,7 @@ def compare_sim_scan_archi_tagged(variety = 'Tremie12', nplants=30, variable = '
         
 def compare_sim_scan_symptom_tagged(variety = 'Tremie12', nplants=30,
                                     variable = 'length', xaxis = 'degree_days', 
-                                    leaves = range(8, 14), exclude_stat = None,
+                                    leaves = list(range(8, 14)), exclude_stat = None,
                                     xlims = None, ylims = None, fig_size = (15, 10)):
     df_sim = get_simu_results(variety = variety, nplants = nplants)
     fig, axs = plt.subplots(1, 2, figsize = fig_size)
@@ -517,11 +516,10 @@ def compare_splant(variety = 'Tremie12', nplants=30, variable = 'length', xaxis 
     df_sim = get_simu_results(variety = variety, nplants = nplants, group = group)
     df_obs = get_scan_dimensions(variety = variety)
     if axes == 'MS':
-        (df_sim, df_obs) = map(lambda x: x[x['axis'] == 'MS'], (df_sim, df_obs))
+        (df_sim, df_obs) = [x[x['axis'] == 'MS'] for x in (df_sim, df_obs)]
     elif axes == 'tillers':
-        (df_sim, df_obs) = map(lambda x: x[x['axis'].isin(
-                                [ax for ax in set(x['axis']) if ax.startswith('T')])], 
-                                (df_sim, df_obs))
+        (df_sim, df_obs) = [x[x['axis'].isin(
+                                [ax for ax in set(x['axis']) if ax.startswith('T')])] for x in (df_sim, df_obs)]
     if exclude_stat is not None:
         df_obs = df_obs[df_obs['stat'] < exclude_stat]
     

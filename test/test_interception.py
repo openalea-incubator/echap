@@ -7,7 +7,7 @@ def test_intercept_caribu():
     pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
     interception_model = CaribuInterceptModel(pest_calendar=pest_calendar)
     tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
-    time_control = tc.next()
+    time_control = next(tc)
     g = pesticide_interception(g, interception_model, time_control)
     return g
 
@@ -17,7 +17,7 @@ def test_intercept_popdrops():
     pest_calendar = {'datetime':["2000-10-01 01:00:00"], 'dose':[1.5], 'product_name':['Opus']}
     interception_model = PesticideInterceptionModel(pest_calendar=pest_calendar)
     tc = TimeControl(steps = 1, model = interception_model, start_date = "2000-10-01 01:00:00")
-    time_control = tc.next()
+    time_control = next(tc)
     g = pesticide_interception(g, interception_model, time_control)
     return g
 
@@ -30,6 +30,6 @@ def test_intercept_rain():
     weather = Weather(data_file=meteo01_filepath)
     interception_model = RainInterceptionModel()
     rain_timing = TimeControl(delay = 1, steps = 1, model = interception_model, weather = weather, start_date = t_deb)
-    time_control = rain_timing.next()
+    time_control = next(rain_timing)
     g = rain_interception(g, interception_model, time_control)
     return g

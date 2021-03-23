@@ -28,7 +28,7 @@ def runcaribu(sectors, scene, energy):
     - 'id_out' (dict) - Meteorological variable at the leaf scale
     """
     energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy) 
-    sources = zip(energie,direction)
+    sources = list(zip(energie,direction))
     c_scene = CaribuScene()    
     idmap = c_scene.add_Shapes(scene)    
     c_scene.addSources(sources)
@@ -44,8 +44,8 @@ def microclimate_leaf(sectors, meteo_plugin, scene):
     id_out = runcaribu(sectors, scene, energy = mean_globalclimate['PAR'])
     EiInf = id_out['EiInf']
     EiSup = id_out['EiSup']
-    for Infid, e in EiInf.iteritems():
-        for Supid, a in EiSup.iteritems():
+    for Infid, e in EiInf.items():
+        for Supid, a in EiSup.items():
             if Infid == Supid:
                 PAR_leaf[Infid] = {'PAR': e + a}
 # Rain
@@ -55,8 +55,8 @@ def microclimate_leaf(sectors, meteo_plugin, scene):
     id_out = runcaribu(sectors, scene, energy = meteo_plugin.convert_par(mean_globalclimate['PAR']))
     EiInf = id_out['EiInf']
     EiSup = id_out['EiSup']
-    for Infid, e in EiInf.iteritems():
-        for Supid, a in EiSup.iteritems():
+    for Infid, e in EiInf.items():
+        for Supid, a in EiSup.items():
             if Infid == Supid:
                 microclimate[Infid] = {'radiation': e + a, 'rain': rain_leaf[Infid], 'humidity':mean_globalclimate['HR'], 'wind':mean_globalclimate['Vent']} 
                 if PAR_leaf[Infid]['PAR'] == 0:

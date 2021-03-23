@@ -10,10 +10,10 @@ def som_temp_micro(g, dt):
     microclimate = g.property('microclimate')
     temp = g.property('temp')
     temp_leaf={}
-    for vid,clim in microclimate.iteritems():
+    for vid,clim in microclimate.items():
         temp_leaf = dict({vid:clim['Tair']}, **temp_leaf)
-    mean_temp_leaf = sum(temp_leaf.values()) / len(temp_leaf.values())
-    mean_temp_air = sum(temp.values()) / len(temp.values())
+    mean_temp_leaf = sum(temp_leaf.values()) / len(list(temp_leaf.values()))
+    mean_temp_air = sum(temp.values()) / len(list(temp.values()))
     for v in g.vertices(scale=1): 
         n = g.node(v)
         if not 'sum_temp_leaf' in g.property_names():

@@ -59,7 +59,7 @@ def make_canopy(dir = './Tem'):
     
     for control in canopy_timing:
         if control:
-            print control.value.index[-1]
+            print(control.value.index[-1])
             it += 1
             g = adel.grow(g, control.value)
             rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
@@ -84,7 +84,7 @@ def run_disease(SspoSol = 0.01, compute_star=False, dir = './Nopest'):
         canopy_iter, rain_iter = controls
         if canopy_iter:
             it += 1
-            print('canopy iter %d ...'%(it))
+            print(('canopy iter %d ...'%(it)))
             newg,TT = adel.load(it, './Tem')
             move_properties(g,newg)
             g = newg
@@ -95,7 +95,7 @@ def run_disease(SspoSol = 0.01, compute_star=False, dir = './Nopest'):
         if rain_iter:
             wdata = rain_iter.value
             if wdata.rain.sum() > 0:
-                print 'raining...'
+                print('raining...')
                 g = external_contamination(g, inoc, contaminator, wdata)
                 g = disperse(g, emitter, transporter, fungus.name, label='LeafElement', weather_data=wdata)
                 infect(g, rain_iter.dt, infection_controler, label='LeafElement')
@@ -123,7 +123,7 @@ def run_disease_and_decay(start = 0, refdir = './Nopest', dir = './doses'):
         canopy_iter, rain_iter, pest_iter = controls
         if canopy_iter:
             it += 1
-            print('canopy iter %d ...'%(it))
+            print(('canopy iter %d ...'%(it)))
             newg,TT = adel.load(it, refdir)
             move_properties(g,newg)
             g = newg
@@ -135,13 +135,13 @@ def run_disease_and_decay(start = 0, refdir = './Nopest', dir = './doses'):
         if rain_iter:
             wdata = rain_iter.value
             if wdata.rain.sum() > 0:
-                print 'raining...'
+                print('raining...')
                 g = external_contamination(g, inoc, contaminator, wdata)
                 g = disperse(g, emitter, transporter, fungus.name, label='LeafElement', weather_data=wdata)
                 infect(g, rain_iter.dt, infection_controler, label='LeafElement')
         if pest_iter:
             if pest_iter.value.dose.sum() > 0:
-                print 'pesticide application...'
+                print('pesticide application...')
                 pesticide_intercept(g, pest_iter.value)
                        
     recorder.save_records(dir+'/records.csv')

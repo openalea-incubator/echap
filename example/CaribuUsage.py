@@ -16,7 +16,7 @@ def adelR(nplants,dd):
     return pars,cantable
 
 def leaves_db():
-    import cPickle as Pickle
+    import pickle as Pickle
     fn = 'E:/openaleapkg/adel/adel/data/leaves_simple.db'
     f = open(fn)
     leaves = Pickle.load(f)
@@ -25,7 +25,7 @@ def leaves_db():
     return leaves
 
 def leaves_db_flow(fn):
-    import cPickle as Pickle
+    import pickle as Pickle
     f = open(fn)
     leaves = Pickle.load(f)
     f.close()
@@ -103,7 +103,7 @@ source = turtle
 #sectors='16'
 energy, emission, direction, elevation, azimuth = turtle.turtle(sectors='46', energy=1) 
 # Tout est fait avec 1 en energie de départ
-sources = zip(energy, direction)
+sources = list(zip(energy, direction))
 # Caribu
 c_scene = CaribuScene()    
 idmap = c_scene.add_Shapes(scene)    
@@ -116,16 +116,16 @@ output = c_scene.runCaribu(infinity=False)
 microclimate_A = g.property('microclimate_A')
 Einc = c_scene.output_by_id(output, idmap)['Einc']
 Area = c_scene.output_by_id(output, idmap)['Area']
-for eid, e in Einc.iteritems():
-    for aid, a in Area.iteritems():
+for eid, e in Einc.items():
+    for aid, a in Area.items():
         if eid == aid:
             microclimate_A[eid] = {'radiation': e / a} 
 
 microclimate_E = g.property('microclimate_E')
 EiInf = c_scene.output_by_id(output, idmap)['EiInf']
 EiSup = c_scene.output_by_id(output, idmap)['EiSup']
-for Infid, e in EiInf.iteritems():
-    for Supid, a in EiSup.iteritems():
+for Infid, e in EiInf.items():
+    for Supid, a in EiSup.items():
         if Infid == Supid:
             microclimate_E[Infid] = {'radiation': e + a} 
 

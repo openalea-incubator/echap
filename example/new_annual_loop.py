@@ -103,7 +103,7 @@ def annual_loop(name='Mercia', dTT_stop=0, original=False, nplants=3):
         canopy_iter, doses_iter, rain_iter, pest_iter = controls
         
         if canopy_iter:
-            print '--', canopy_iter.value.index[-1], '--'
+            print('--', canopy_iter.value.index[-1], '--')
             g = adel.grow(g, canopy_iter.value)
             _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
             _=update_lesions(g, canopy_iter.dt, True)
@@ -112,13 +112,13 @@ def annual_loop(name='Mercia', dTT_stop=0, original=False, nplants=3):
             _=pesticide_intercept(g, pest_iter.value)
             #plot_pesticide(g)
         if doses_iter:
-            print '-- update microclimate / doses --'
+            print('-- update microclimate / doses --')
             _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
             _=update_pesticides(g, doses_iter.value)
             #plot_pesticide(g)
             _=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
         if rain_iter:
-            print '-- rain --'
+            print('-- rain --')
             wdata = rain_iter.value
             dispersion(g, wdata, domain, domain_area, convUnit)
             _=contamination(g,wdata, SspoSol, domain, domain_area, convUnit)

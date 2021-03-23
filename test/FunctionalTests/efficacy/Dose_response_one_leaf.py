@@ -56,7 +56,7 @@ def example_one_leaf(fungus=s3d_fungus, growth_controler = None, infection_contr
 
 #senescence
     #hypothetic days after senescence when 'killing' senescence ocurs
-    sene = np.interp(range(nb_steps),(senescence['J']+delta)*24,senescence['psen']*leaf_area)
+    sene = np.interp(list(range(nb_steps)),(senescence['J']+delta)*24,senescence['psen']*leaf_area)
 
     
     # Initiate disease111

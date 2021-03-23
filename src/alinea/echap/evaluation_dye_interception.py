@@ -84,7 +84,7 @@ def simulate_dye_interception(variety='Tremie12', nplants=30, rep=1,
             df = pandas.read_csv(filename)
             try:
                 df = df.set_index('rep').loc[rep, :].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     return df.loc[df['daydate'].isin(dd_range), :]
                 else:
                     missing = [d for d in dd_range if
@@ -95,7 +95,7 @@ def simulate_dye_interception(variety='Tremie12', nplants=30, rep=1,
             pass
     new = []
     for d in missing:
-        print d
+        print(d)
         df_i = get_dye_interception(variety=variety, nplants=nplants, tag=tag,
                                     rep=rep, daydate=d)
         new.append(df_i)
@@ -116,7 +116,7 @@ def dye_interception(variety='Tremie12', nplants=30, nrep=1,
                      simulation='reference', treatments=('T1', 'T2'),
                      reset=False, reset_dye=False, reset_build=False,
                      reset_light=False, reset_reconstruction=False):
-    repetitions = range(1, nrep + 1)
+    repetitions = list(range(1, nrep + 1))
     reps = []
     for i_sim in repetitions:
         df = simulate_dye_interception(variety=variety, nplants=nplants,

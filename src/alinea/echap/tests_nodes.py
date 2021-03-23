@@ -52,9 +52,9 @@ def dose_norm(dose, dose_max_ha):
 def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', dose_max_ha=125, cmap=green_lightblue_blue):
     """ plot the plant with pesticide doses """
     prop = g.property(property_name)
-    keys = prop.keys()
+    keys = list(prop.keys())
     value = []
-    for k, val in prop.iteritems():
+    for k, val in prop.items():
         value.append(val[compound_name])
         val = numpy.array(value)
     if type(cmap) is str:
@@ -72,7 +72,7 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
-            n.color = tuple(dict(zip(keys,colors))[vid])
+            n.color = tuple(dict(list(zip(keys,colors)))[vid])
         else : 
             n.color = green
     scene = plot3d(g)
@@ -109,7 +109,7 @@ def compounds_from_csv(csvname, delimiter = ';'):
         - 'decay_rate'    
     """
     tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = [dict(zip(tab.dtype.names, data)) for data in tab]
+    d = [dict(list(zip(tab.dtype.names, data))) for data in tab]
     return d
 
 

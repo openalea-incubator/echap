@@ -1,8 +1,8 @@
-from recorder import LeafElementRecorder
+from .recorder import LeafElementRecorder
 from alinea.echap.interfaces import record as do_record #to avoid confusion with numpy record
 echap_recorder = LeafElementRecorder()
 
-from architectural_reconstructions import Mercia_2010, age_at_application
+from .architectural_reconstructions import Mercia_2010, age_at_application
 
 from alinea.alep.protocol import update
 from alinea.septo3d.cycle.alep_objects import GrowthControlModel
@@ -14,7 +14,7 @@ def update_lesions(g,dt,activate=True):
 from alinea.echap.interfaces import pesticide_surfacic_decay, pesticide_penetrated_decay, pesticide_efficacy, pesticide_interception
 
 from alinea.pearl.pearl_leaf import PearLeafDecayModel
-from pesticide_data import pearl_parameters
+from .pesticide_data import pearl_parameters
 PearlLeaf = PearLeafDecayModel(pearl_parameters)
 
 from alinea.echap.milne_leaf import PenetratedDecayModel
@@ -65,7 +65,7 @@ def simple_contamination(g, weather_data, level, domain, domain_area, convUnit):
 
 
 from alinea.echap.interception_leaf import InterceptModel, pesticide_applications
-from pesticide_data import products_data
+from .pesticide_data import products_data
 interception = InterceptModel(products_data)
 
 def pesticide_intercept(g, application_data, label='LeafElement'):

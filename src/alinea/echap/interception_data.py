@@ -7,6 +7,7 @@ import scipy.stats
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 from alinea.echap.hs_tt import tt_hs_tag, derived_data_path, TT_lin, Pheno_data
+from functools import reduce
 
 
         
@@ -81,7 +82,7 @@ def dye_interception(coef=0.045):
     df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000 
     #add aggregators
     df['axe'] = 'MS'
-    df['ntop_cur'] = map(lambda x: int(x.split('F')[1]), df['leaf'])
+    df['ntop_cur'] = [int(x.split('F')[1]) for x in df['leaf']]
     # hypothetic ntop_lig: one leaf is growing and has beeen measured, except if all leaves are ligulated
     df['ntop_lig'] = df['ntop_cur'] - 1
     # adjust
@@ -168,7 +169,7 @@ def gap_fraction():
             'Rht3':{'19/01/2011':'T1-90','18/04/2011':'T1-1','27/04/2011':'T2-14','01/06/2011':'T2+21'},
             'Tremie12':{'09/03/2012':'T1-33', '11/04/2012':'T1','09/05/2012':'T2'},
             'Tremie13':{'17/04/2013':'T1-8','26/04/2013':'T1+1', '29/05/2013':'T2+12','13/06/2013':'T2+27'}}
-    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['date']))
+    df['treatment'] = [tags[var_d[0]][var_d[1]] for var_d in zip(df['variety'], df['date'])]
     
     return df.groupby(['variety','treatment']).agg('mean').reset_index()
     
@@ -177,7 +178,7 @@ def scan_data():
     df = pandas.read_csv(data_file, decimal='.', sep=',')
     tags = {'Tremie12':{'09/03/2012':'T1-33', '02/04/2012':'T1-9', '11/04/2012':'T1','09/05/2012':'T2'},
             'Tremie13':{'22/04/2013':'T1-3', '03/05/2013':'T2-14'}}
-    df['treatment'] = map(lambda (var,d): tags[var][d], zip(df['variety'], df['prelevement']))
+    df['treatment'] = [tags[var_d1[0]][var_d1[1]] for var_d1 in zip(df['variety'], df['prelevement'])]
     df = df[df['id_Axe'] == "MB"]
     #add aggregator
     df['axe'] = 'MS'
@@ -201,7 +202,7 @@ def silhouettes():
     df = df[~((df['harvest']==2) & (df['plant'].isin([19, 20, 21])))]
     tags = {'Tremie12':{'1':'T1-33', '2': 'T1', '3': 'T2', '4':'T2+34'},
             'Tremie13': {'5': 'T1+4'}}
-    df['treatment'] = map(lambda (var, h): tags[var][str(h)], zip(df['variety'], df['harvest']))
+    df['treatment'] = [tags[var_h[0]][str(var_h[1])] for var_h in zip(df['variety'], df['harvest'])]
     # reduce to projection factor / hins
     def _compress(x):
         return pandas.Series({'HS':x['HS'].values[0], 'insertion_height':x['hins'].values[0], 
@@ -243,8 +244,8 @@ def haun_stages():
                            aggregate(data, 'HS', ['Date', 'TT', 'label'], conf_int, 'HS_conf')], axis=1)
                            
     df_HS = df_HS.reset_index()
-    df_HS = df_HS[df_HS['Date'].isin(reduce(lambda x,y: x+y, [tags[v].keys() for v in tags],[]))]
-    df_HS['treatment'] = map(lambda (var,d): tags[var][d.strftime('%Y-%m-%d')], zip(df_HS['label'], df_HS['Date']))
+    df_HS = df_HS[df_HS['Date'].isin(reduce(lambda x,y: x+y, [list(tags[v].keys()) for v in tags],[]))]
+    df_HS['treatment'] = [tags[var_d2[0]][var_d2[1].strftime('%Y-%m-%d')] for var_d2 in zip(df_HS['label'], df_HS['Date'])]
     df_HS = df_HS.reset_index().set_index('label')
     
     return df_HS

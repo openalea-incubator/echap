@@ -145,9 +145,7 @@ def application_tag(variety, daydate, which='T1'):
         origin = sowing[variety]
 
     delta = (pandas.to_datetime(daydate) - pandas.to_datetime(origin)).days
-    tags = numpy.where(delta == 0, which, numpy.where(delta > 0, map(
-        lambda x: which + '+' + str(x), delta), map(
-        lambda x: which + '-' + str(abs(x)), delta)))
+    tags = numpy.where(delta == 0, which, numpy.where(delta > 0, [which + '+' + str(x) for x in delta], [which + '-' + str(abs(x)) for x in delta]))
     return tags
 
 
@@ -259,7 +257,7 @@ def HS_fit(tag='reference', reset=False):
         except IOError:
             pass
     hs_fits = fit_hs(tag)
-    for k, hs in hs_fits.iteritems():
+    for k, hs in hs_fits.items():
         file_path = dir_path / 'HSfit_' + k + '.json'
         hs.dump(file_path)
 
@@ -306,6 +304,6 @@ def daydate_range(variety, tag, start=None, stop=None, by=None, at=None):
             stop = as_daydate(stop, tths)
         at = tths.set_index('daydate').ix[start:stop:by,].index.values.tolist()
     else:
-        at = map(lambda x: as_daydate(x, tths), at)
+        at = [as_daydate(x, tths) for x in at]
 
     return at

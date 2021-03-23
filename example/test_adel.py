@@ -8,6 +8,7 @@ from alinea.astk.Weather import Weather, sample_weather
 from alinea.echap.weather_data import *
 
 from alinea.echap.interfaces import record as do_record
+from functools import reduce
 
 plt.ion()
 
@@ -18,7 +19,7 @@ def get_reconstruction(name='Mercia', **args):
     
     
 def sim_LAI_methode1(adel, domain_area, convUnit, nplants, start=0, end = 2400, bydd=100):
-    dd = range(start,end,bydd)
+    dd = list(range(start,end,bydd))
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
