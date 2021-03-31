@@ -214,7 +214,7 @@ def tillering_data(trials=('MerciaRht3', 'Tremie12', 'Tremie13')):
 
     for trial in trials:
         csv = trial + '_Tillering_data.csv'
-        fn = str(shared_data(alinea.echap)/'architectural_measurements'/ csv)
+        fn = str(share_dir/'architectural_measurements'/ csv)
         data = pandas.read_csv(fn,decimal=',', sep='\t')
         for w in ('T6','T7'):
             if not w in data:
@@ -298,16 +298,16 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
         TP = g['TP']
         date = g['Date']
-        if all(TP[date==3].notnull()) and all(pandas.isnull(g.ix[date==3,'TC':'T6'])):
-            infer = g.ix[date==2,'TC':'T6'] 
+        if all(TP[g.Date==3].notnull()) and all(pandas.isnull(g.loc[g.Date==3,'TC':'T6'])):
+            infer = g.loc[g.Date==2,'TC':'T6'] 
             if all(TP[date==3] > TP[date==2]):
                 d = int(TP[date==3].values - TP[date==2].values)
                 try:
                     lastT = int(max(2, max(numpy.where(infer > 0)[1])))
                 except ValueError:
                     lastT = 2
-                infer.ix[:,(lastT+1):(lastT + 1 + d)] = 1                
-            g.ix[g['Date']==3,'TC':'T6'] = infer
+                infer.loc[:,(lastT+1):(lastT + 1 + d)] = 1                
+            g.loc[g['Date']==3,'TC':'T6'] = infer
         return g
         
     grouped = data.groupby(['Var', 'N'],as_index=False)
@@ -1191,7 +1191,7 @@ class ReconstructionData(object):
             pickle.dump(self, output)
  
 def reconstruction_data(reset=False):
-    filename = str(shared_data(alinea.echap)/'architectural_ReconstructionData.pckl')
+    filename = str(share_dir/'architectural_ReconstructionData.pckl')
     if not reset:
         try:
             with open(filename) as input:
