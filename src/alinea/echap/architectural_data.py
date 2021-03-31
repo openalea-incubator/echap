@@ -238,20 +238,29 @@ def emission_probabilities(df, last='T6'):
     grouped = df.groupby('N',as_index=False)
     em = grouped.agg(_maxna)
     # em = em.reset_index()
-    s = em.ix[:,'TC':last].sum()
-    n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
-    probas = s / n
+    def _safe_mean(x):
+        s=x.sum()
+        n= x.dropna().count()
+        if n==0: 
+            return None
+        else: 
+            return s /n
+    probas = em.loc[:,'TC':last].apply(_safe_mean)
+        
+    #s = em.loc[:,'TC':last].sum()
+    #n = em.loc[:,'TC':last].apply(lambda x: x.dropna().count())
+    #probas = s / n
     return probas.to_dict()
     
 def plant_viability(df):
-    grouped = df.groupby('Date', as_index=False)
+    grouped = df.groupby('Date', as_index=True)
     res = grouped.apply(lambda x: x['MB'].count() * 1.0 / len(x['MB']))
     return {'Date':res.index.tolist(), 'viability':res.tolist()}
   
 def axis_dynamics(df):
     grouped = df.groupby('Date')
-    s = grouped.agg('sum').ix[:,'TP':]
-    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
+    s = grouped.agg('sum').loc[:,'TP':]
+    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).loc[:,'TP':]
     axis =  s / n
     axis = axis.replace(numpy.inf, numpy.nan)
     res = axis.to_dict('list')
@@ -300,13 +309,13 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         date = g['Date']
         if all(TP[g.Date==3].notnull()) and all(pandas.isnull(g.loc[g.Date==3,'TC':'T6'])):
             infer = g.loc[g.Date==2,'TC':'T6'] 
-            if all(TP[date==3] > TP[date==2]):
+            if all(TP[date==3].values > TP[date==2].values):
                 d = int(TP[date==3].values - TP[date==2].values)
                 try:
                     lastT = int(max(2, max(numpy.where(infer > 0)[1])))
                 except ValueError:
                     lastT = 2
-                infer.loc[:,(lastT+1):(lastT + 1 + d)] = 1                
+                infer.iloc[:,(lastT+1):(lastT + 1 + d)] = 1                
             g.loc[g['Date']==3,'TC':'T6'] = infer
         return g
         
@@ -316,21 +325,21 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     # compute emmission probability using notations before date 6
     edata = newdata[newdata['Date'] < 6]
     edata = edata.reset_index()
-    grouped = edata.groupby('Var',as_index=False)
+    grouped = edata.groupby('Var',as_index=True)
     emission = {k:emission_probabilities(v) for k,v in grouped}
     
     # compute nff probabilities
-    grouped = data.groupby('Var',as_index=False)
+    grouped = data.groupby('Var',as_index=True)
     nff_prop = {k:nff_probabilities(v) for k,v in grouped}
     
     # compute ear_per_plante (including main stem) 
     eardata = newdata[newdata['Date'] >= 6]
     eardata = eardata.reset_index()
-    grouped = eardata.groupby('Var',as_index=False)
+    grouped = eardata.groupby('Var',as_index=True)
     ears_per_plant = {k:  1  + (v['FT'].sum() / v['FT'].dropna().count()) for k,v in grouped}
     
     # compute plant viability
-    grouped = data.groupby('Var',as_index=False)
+    grouped = data.groupby('Var',as_index=True)
     viability = {k:plant_viability(v) for k,v in grouped}
     
     #compute tillering dynamics
@@ -367,7 +376,7 @@ def Tillering_data_Tremie12_2011_2012():
     - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
     """
     
-    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie12_Tillering_data.csv')
+    fn = str(share_dir/'architectural_measurements'/'Tremie12_Tillering_data.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     date_code = {'d1':'2012-03-09', 'd2':'2012-04-02', 'd3':'2012-04-11', 'd4':'2012-05-09', 'd5':'2012-05-29', 'd6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
     TT_code = {'d1':905, 'd2':1160, 'd3':1240, 'd4':1515, 'd5':1813, 'd6':2031, 'd7':2536, 'd8':1179}
@@ -385,7 +394,7 @@ def Tillering_data_Tremie12_2011_2012():
     axdyn = axis_dynamics(data)
     
     # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
-    eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
+    eardata = pandas.DataFrame(axdyn).loc[:,('Date', 'FT')].dropna()
     pdata = Plot_data_Tremie_2011_2012()
     ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1 #remove main stem to get FT count 
     # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
@@ -417,7 +426,7 @@ def Tillering_data_Tremie13_2012_2013():
     - data from date 3 are to be included
     """
     
-    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie13_Tillering_data.csv')
+    fn = str(share_dir/'architectural_measurements'/'Tremie13_Tillering_data.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     date_code = {'d1':'2013-02-13', 'd2':'2013-03-29', 'd3': '2012-04-19'}
     TT_code = {'d1':566, 'd2':739, 'd3':915}
@@ -474,7 +483,7 @@ def treated_symptom_tagged_data(variety = 'Tremie12'):
     
 def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
     filename = variety+'_scan_sampled_plants_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
-    file_path = filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
+    file_path = filepath = str(share_dir/'architectural_measurements'/filename)
     return pandas.read_csv(file_path, sep = "\t")
 
 
@@ -657,10 +666,10 @@ def sr_data():
         header_row_srdb = ['rankclass','s','r']
         return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
     
-    srdb = {'Mercia': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Rht3': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Tremie12': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Tremie13': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')}
+    srdb = {'Mercia': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Rht3': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Tremie12': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Tremie13': share_dir / 'srdb_GrignonMercia2010.csv'}
 
     return {k: sr_reader(srdb[k]) for k in srdb}
 
@@ -743,8 +752,8 @@ def read_trajectories(fn):
     agemed = (numage[1:]  + numage[:-1]) / 2.0
     bins = [numage[0] - 1.0] + agemed.tolist() + [numage[-1] + 1.0]
     dat['age_class'] = pandas.cut(dat['age'], bins,labels=False)
-    grouped = dat.groupby(('lindex','age_class'))   
-    trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
+    grouped = dat.groupby(['lindex','age_class'])   
+    trajs = {k:[{a:grouped.get_group((k,a)).loc[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
     return trajs, bins
 
 def median_leaf_trajectories():
@@ -758,9 +767,9 @@ def median_leaf_trajectories():
              'Soissons':'Soissons_Grignon2010',
              'Tremie12':'Tremie12',
              'Tremie13':'Tremie13',
-             'Mercia11':'Mercia11',
-              'Rht311':'Rht311'}
-    fn = {k:shared_data(alinea.echap, 'architectural_measurements/median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
+             'Mercia11':'MerciaRht_Grignon2010',
+              'Rht311':'MerciaRht_Grignon2010'}
+    fn = {k:share_dir/ 'architectural_measurements' / 'median_leaf_trajectories_' + trajs[k] + '.csv' for k in trajs}
     return {k:read_trajectories(fn[k]) for k in trajs}
     
 #
@@ -925,7 +934,7 @@ def tillers_per_plant():
                 'TPS': [numpy.mean(axd[k]) / numpy.mean(pdata['plant_density'][k]) - 1 for k in axd]})
     dfp['FT'] = numpy.nan
     d = list(faxd.keys())[0]
-    dfp.ix[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
+    dfp.loc[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
     df = pandas.concat([df, dfp])
     df = _add_ghs(df, 'Tremie12')
     ld.append(df)
@@ -1187,7 +1196,7 @@ class ReconstructionData(object):
         self.sr_data = sr_data()
         
     def save(self, filename):
-        with open(filename, 'w') as output:
+        with open(filename, 'wb') as output:
             pickle.dump(self, output)
  
 def reconstruction_data(reset=False):
@@ -1224,7 +1233,7 @@ class ValidationData(object):
         
     
 def validation_data(reset=False, HS_fit=None):
-    filename = str(shared_data(alinea.echap)/'architectural_ValidationData.pckl')
+    filename = str(share_dir/'architectural_ValidationData.pckl')
     Data = None
     if not reset:
         try:

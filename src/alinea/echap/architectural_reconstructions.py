@@ -301,6 +301,7 @@ def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages,
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = tdb['emission_probabilities']
+    primary_emission = {k:v for k,v in primary_emission.items() if k not in ['TC','TP','TS','TT','FT','TT3F']}
     emission = pgen_ext.TillerEmission(primary_emission)
     regression = pgen_ext.TillerRegression(ears_per_plant, dHS_reg,
                                            delta_stop_del)
