@@ -176,7 +176,7 @@ def axis_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, axis='MS'):
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
 
-    sub = data.ix[:, ['treatment', what]]
+    sub = data.loc[:, ['treatment', what]]
     agg = sub.groupby('treatment').mean().reset_index()
     errag = sub.groupby('treatment').agg(err).reset_index()
     agg['ybar'] = agg[what]
@@ -188,7 +188,7 @@ def axis_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, axis='MS'):
 def plant_statistics(df_sim, what='deposit_Tartrazine', err=conf_int):
     data = aggregate_by_plant(df_sim)
 
-    sub = data.ix[:, ['treatment', what]]
+    sub = data.loc[:, ['treatment', what]]
     agg = sub.groupby('treatment').mean().reset_index()
     errag = sub.groupby('treatment').agg(err).reset_index()
     agg['ybar'] = agg[what]
@@ -204,7 +204,7 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int,
         data = data[data['axe'] == 'MS']
     if not isinstance(what, list):
         what = [what]
-    sub = data.ix[:, ['treatment', by] + what]
+    sub = data.loc[:, ['treatment', by] + what]
     agg = sub.groupby(['treatment', by]).mean().reset_index()
     errag = sub.groupby(['treatment', by]).agg(err).reset_index()
     agg['ybar'] = agg[what[0]]
@@ -243,7 +243,7 @@ def dye_interception_miller(variety='Tremie12', nplants=30, tag='reference', rep
             lai_cum = [0] + dat['area'].cumsum().values.tolist()
             io = numpy.exp(-k * lai_cum[i] / area_sum * lai)
             lai_leaf = dat['area'].values[i] / area_sum * lai
-            dat.ix[i, 'deposit_Tartrazine'] = io * (1 - numpy.exp(-k * lai_leaf)) * dat['area'].values[i]
+            dat.loc[i, 'deposit_Tartrazine'] = io * (1 - numpy.exp(-k * lai_leaf)) * dat['area'].values[i]
         dat['ybar'] = dat['deposit_Tartrazine']
         res.append(dat)
     return pandas.concat(res)
@@ -271,7 +271,7 @@ def dye_interception_miller_no_layer(variety='Tremie12', nplants=30, tag='refere
         intercepted = 1 - numpy.exp(-k * lai)
         for i in range(len(dat)):
             lai_leaf = dat['area'].values[i] / area_sum * lai
-            dat.ix[i, 'deposit_Tartrazine'] = lai_leaf / lai * intercepted * dat['area'].values[i]
+            dat.loc[i, 'deposit_Tartrazine'] = lai_leaf / lai * intercepted * dat['area'].values[i]
         dat['ybar'] = dat['deposit_Tartrazine']
         res.append(dat)
     return pandas.concat(res)
