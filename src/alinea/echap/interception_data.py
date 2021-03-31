@@ -77,7 +77,7 @@ def dye_interception(coef=0.045):
          as simulations indicate that F1 was small (5-10 cm2), hence probably not measured (confimed by Arvalis)
     """
     data_file = shared_data(
-        alinea.echap) / 'interception_data' / 'dye_interception.txt'
+        alinea.echap,share_path='../../share') / 'interception_data' / 'dye_interception.txt'
     df = pandas.read_csv(data_file, decimal=',', delim_whitespace=True)
     df['deposit'] = df['absorbance'] / coef * df['dilution'] / df['volume'] / df['concentration'] * 1000 
     #add aggregators
