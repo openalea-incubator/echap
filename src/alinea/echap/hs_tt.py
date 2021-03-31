@@ -198,7 +198,7 @@ def fit_hs(tag='reference'):
     TTem = - hs_ms['intercept'] / hs_ms['slope']
     # Flag leaf delay per nff
     TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
-    g = tagged.groupby(('label', 'nff'))
+    g = tagged.groupby(['label', 'nff'])
     hs_nff = g.apply(_fit)
     TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
     TT_flag = TT_nff_flag.reset_index().rename(columns={0: 'flag'}).merge(
@@ -218,7 +218,7 @@ def fit_hs(tag='reference'):
     dat = TT_flag.set_index(['label', 'nff'], drop=False)
     a_nff = dat['nff'] / (dat['flag'] - dat['mean_TTem'])
     # estimate dTTEm per plant wyth modeled slope
-    g = tagged.groupby(('label', 'N'))
+    g = tagged.groupby(['label', 'N'])
 
     def _TTem(df):
         res = None
