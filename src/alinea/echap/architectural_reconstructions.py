@@ -35,7 +35,7 @@ import alinea.adel.plantgen_extensions as pgen_ext
 #---------- reconstructions
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap) / 'cache' / 'reconstructions' / tag
+    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path

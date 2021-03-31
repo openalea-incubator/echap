@@ -13,7 +13,7 @@ import alinea.echap
 
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap) / 'cache' / 'reconstructions' / tag
+    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -21,9 +21,9 @@ def cache_reconstruction_path(tag):
 
 def derived_data_path(tag=None):
     if tag is None:
-        path = shared_data(alinea.echap) / 'cache' / 'derived_data'
+        path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'derived_data'
     else:
-        path = shared_data(alinea.echap) / 'cache' / 'derived_data' / tag
+        path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'derived_data' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -109,7 +109,7 @@ def Pheno_data(pheno_dict={},
     count += 1
     filename = 'Compil_Pheno_treated_' + src + '.csv'
     filepath = str(
-        shared_data(alinea.echap) / 'architectural_measurements' / filename)
+        shared_data(alinea.echap,share_path='../../share') / 'architectural_measurements' / filename)
     df = pandas.read_csv(filepath, sep=',', decimal='.')
     df['Date'] = df['Date'].apply(dateparse)
     df['daydate'] = df.set_index('Date').index.strftime('%Y-%m-%d')

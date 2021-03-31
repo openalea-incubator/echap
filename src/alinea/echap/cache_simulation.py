@@ -15,14 +15,14 @@ from alinea.echap.architectural_reconstructions import echap_reconstructions
 
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'reconstructions' / 'tag'
+    path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
 
 
 def cache_simulation_path(tag, rep=None):
-    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'simulations' / 'tag'
+    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'simulations' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     if rep is not None:
@@ -33,7 +33,7 @@ def cache_simulation_path(tag, rep=None):
 
 
 def cache_analysis_path(tag):
-    path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'analysis' / 'tag'
+    path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'analysis' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
