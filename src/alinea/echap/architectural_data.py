@@ -12,6 +12,7 @@ from alinea.echap.data_processing import aggregate, conf_int
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
+share_dir= shared_data(alinea.echap, share_path='../../share')
 
 #
 # ____________________________________________________________________________Plot data
@@ -481,8 +482,8 @@ def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
     
 def Dim_data():
     def read_dim_data(source = 'sampled'):
-        filepath = shared_data(alinea.echap,
-                    'architectural_measurements/Compil_Dim_treated_archi_'+source+'.csv')
+
+        filepath = share_dir/'architectural_measurements'/'Compil_Dim_treated_archi_'+source+'.csv'
         df = pandas.read_csv(filepath, na_values=('NA'), sep=',')
         df['Source'] = source
         return df
