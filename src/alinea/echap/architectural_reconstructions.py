@@ -505,9 +505,9 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
             trajectories[k].append({})
             for t in set(validxy['age_class']):
                 x = grouped.get_group((k,t))
-                trajectories[k][i][t] = x.ix[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
+                trajectories[k][i][t] = x.loc[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
     
-    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
+    srdb = {k:v.loc[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
     
     return trajectories, srdb, bins
 
@@ -554,7 +554,7 @@ def median_leaf_fits(xydata, sr_data, disc_level=7, top_leaves=3):
     gL = geoLeaf(nlim=top_leaves)   
     trajs,bins = xydata
     sr_data['Lindex'] = sr_data['rankclass']
-    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
+    srdb = {k:v.loc[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
     return Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
 
 
