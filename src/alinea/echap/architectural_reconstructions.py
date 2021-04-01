@@ -633,7 +633,7 @@ class EchapReconstructions(object):
 
     def save(self, filename):
 
-        with open(str(filename), 'w') as output:
+        with open(str(filename), 'wb') as output:
             pickle.dump(self, output)
 
 
