@@ -31,11 +31,12 @@ import alinea.adel.plantgen_extensions as pgen_ext
 # run_plots = False # prevent ipython %run to make plots
 # reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
 
+share_dir = shared_data(alinea.echap,share_path='../../share')
 
 #---------- reconstructions
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'reconstructions' / tag
+    path = share_dir / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -618,7 +619,7 @@ class EchapReconstructions(object):
                                  base_config=self.pgen_base,
                                  adel_pars=self.pars['adel_pars'])
         axeT, dimT, phenT = pgen.adelT(plants)
-        axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
+        axeT = axeT.sort_values(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
 
         leaves = self.leaves[name]
@@ -668,7 +669,7 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250.,
                     Dimfit.scale.items()}  # Seen on Soisson 2010 compared to Mercia 2010
     pgen = pgen_ext.PlantGen(HSfit=hs_fit['Mercia'], GLfit=GLfit, Dimfit=Dimfit)
     axeT, dimT, phenT = pgen.adelT(plants)
-    axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
+    axeT = axeT.sort_values(['id_plt', 'id_cohort', 'N_phytomer'])
     devT = devCsv(axeT, dimT, phenT)
     leaves = leafshape_fits()['Mercia']  # TODO Create and Take Soisson
     return AdelWheat(nplants=nplants, nsect=nsect, devT=devT, stand=stand,
