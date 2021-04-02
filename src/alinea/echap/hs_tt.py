@@ -4,6 +4,7 @@ import numpy
 import os
 import json
 import scipy.stats as stats
+from datetime import datetime
 
 from alinea.astk.Weather import linear_degree_days
 from alinea.adel.plantgen_extensions import HaunStage
@@ -11,9 +12,10 @@ from alinea.echap.weather_data import get_weather
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
+share_dir = shared_data(alinea.echap,share_path='../../share')
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap,share_path='../../share') / 'cache' / 'reconstructions' / tag
+    path = share_dir / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -21,9 +23,9 @@ def cache_reconstruction_path(tag):
 
 def derived_data_path(tag=None):
     if tag is None:
-        path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'derived_data'
+        path = share_dir / 'cache' / 'derived_data'
     else:
-        path = shared_data(alinea.echap, share_path='../../share') / 'cache' / 'derived_data' / tag
+        path = share_dir / 'cache' / 'derived_data' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -104,7 +106,7 @@ def Pheno_data(pheno_dict={},
     """
 
     def dateparse(x):
-        return pandas.datetime.strptime(x, '%d/%m/%Y')
+        return datetime.strptime(x, '%d/%m/%Y')
     src = sources[count]
     count += 1
     filename = 'Compil_Pheno_treated_' + src + '.csv'
