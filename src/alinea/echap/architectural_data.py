@@ -581,9 +581,9 @@ def scan_dep_Tremie13():
 
 def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all'
 
-    if name is 'Tremie12':
+    if name == 'Tremie12':
         df = scan_dep_Tremie12()
-    elif name is 'Tremie13':
+    elif name == 'Tremie13':
         df = scan_dep_Tremie13()
 
     # on prend maintenant tjrs stat 1, 2 ou 3, plus besoin du parametre stat='all'
@@ -683,7 +683,7 @@ def leaf_curvature_data(name='Mercia'):
         header_row_srdb = ['rankclass','s','r']
         return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
         
-    if name is 'Mercia':
+    if name == 'Mercia':
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
@@ -694,7 +694,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR
         dfsr = sr_reader(data_file_srdb)
 
-    if name is 'Rht3':
+    if name == 'Rht3':
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
@@ -704,7 +704,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR : use same as Mercia ???
         dfsr = sr_reader(data_file_srdb)
         
-    if name is 'Tremie12':
+    if name == 'Tremie12':
         # fichier angle non dispo encore, on prend mercia en attendant
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
@@ -715,7 +715,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR
         dfsr = sr_reader(data_file_srdb)
         
-    if name is 'Tremie13':
+    if name == 'Tremie13':
         # fichier angle non dispo encore, on prend mercia en attendant
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
