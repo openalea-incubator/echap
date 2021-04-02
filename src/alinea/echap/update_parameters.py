@@ -26,14 +26,14 @@ def get_df_out(time,g):
     sd = g.property('surfacic_doses')
     lab = g.property('label')
     sp = g.property('penetrated_doses')            
-    recs = [(id,lab[id],comp,dose) for id,v in sd.items() for comp, dose in v.items() if lab[id] is 'LeafElement']
+    recs = [(id,lab[id],comp,dose) for id,v in sd.items() for comp, dose in v.items() if lab[id] == 'LeafElement']
     ids,labs,compounds,surfdose = list(zip(*recs))
     dfs = DataFrame({'time':[time]*len(ids), 'id' : ids, 'label': labs,'compound' : compounds, 'surfacic_doses' : surfdose})
     if not 'penetrated_doses' in g.property_names():
         df=dfs        
         #dfp = DataFrame(columns=('time', 'id', 'label','compound', 'penetrated_dose'))
     else:
-        recp = [(id,lab[id],comp,dose) for id,v in sp.items() for comp, dose in v.items() if lab[id] is 'LeafElement']
+        recp = [(id,lab[id],comp,dose) for id,v in sp.items() for comp, dose in v.items() if lab[id] == 'LeafElement']
         idp,labp,compoundp,pendose = list(zip(*recp))
         dfp = DataFrame({'time':[time]*len(idp), 'id' : idp, 'label': labp,'compound' : compoundp, 'penetrated_doses' : pendose})
         df = merge(dfs, dfp, left_on=('compound', 'id', 'label', 'time'), right_on=('compound', 'id', 'label', 'time'), how='outer')    

@@ -75,11 +75,11 @@ def get_weather(variety='Mercia'):
 
 
 def par_sensors_hourly(variety='Tremie12'):
-    if variety is 'Mercia' or variety is 'Rht3':
+    if variety == 'Mercia' or variety == 'Rht3':
         data_file = 'METEO_stationINRA_20102011.csv'
-    elif variety is 'Tremie12':
+    elif variety == 'Tremie12':
         data_file = 'METEO_stationINRA_20112012.csv'
-    elif variety is 'Tremie13':
+    elif variety == 'Tremie13':
         data_file = 'METEO_stationINRA_20122013.csv'
 
     header_row = ['date', 'h', 'record', 'QR_PAR_Avg', 'SE_PAR_Avg_1',
