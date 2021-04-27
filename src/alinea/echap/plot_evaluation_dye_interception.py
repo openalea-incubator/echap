@@ -60,7 +60,7 @@ def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=list(range(1, 5)
                        title=None, add_obs=None, add_sim=None):
     nt = len(treatments)
     lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg),
+    fig, axes = plt.subplots(nrows=lg, ncols=int(nt / lg + (nt - nt / lg * lg)),
                              sharey=True)
     axlist = fig.get_axes()
     for ifig, treatment in enumerate(treatments):

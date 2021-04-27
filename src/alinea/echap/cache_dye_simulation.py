@@ -100,7 +100,7 @@ class LeafElementRecorder:
     def get_records(self):
         d = pandas.DataFrame(self.data)
         df = d.T
-        df = df.convert_objects()
+        df = df.apply(pandas.to_numeric, errors='ignore')
         return df
 
 
