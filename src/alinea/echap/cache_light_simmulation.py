@@ -88,6 +88,7 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
                         nplants=30, tag='reference', rep=1, start=None,
                         stop=None, by=None, at=None, reset=False,
                         reset_build=False, reset_reconstruction=False):
+    
     print('Check/build canopies..')
     dd_range = build_canopies(variety=variety, nplants=nplants, tag=tag,
                               rep=rep, start=start, stop=stop, by=by, at=at,
@@ -117,10 +118,11 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
             c2u = {v: k for k, v in CaribuScene.units.items()}
             units = c2u.get(meta['convUnit'])
             cscene = CaribuScene(g, sources, pattern=meta['domain'],
-                                 soil_mesh=1, z_soil=z_soil, scene_unit=units)
+                                 soil_mesh=None, z_soil=z_soil, scene_unit=units) #HACK see CaribuScene pb with soil label (sort(str and int)
             raw, aggregated = cscene.run(direct=True, infinite=True,
                                          simplify=True)
-            soil, _ = cscene.getSoilEnergy()
+ #           soil, _ = cscene.getSoilEnergy()
+            soil=0 #HACK See previous hack
             with open(filename, 'w') as output_file:
                 saved = {'raw': raw, 'aggregated': aggregated, 'soil': soil}
                 json.dump(saved, output_file, sort_keys=True, indent=4,
