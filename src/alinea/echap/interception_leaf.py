@@ -8,7 +8,6 @@ import pandas
 import os
 import io
 from numpy import exp
-from alinea.astk.caribu_interface import *
 from alinea.caribu.caribu_star import rain_and_light_star, caribu_rain_star
 
 
