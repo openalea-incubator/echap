@@ -23,6 +23,7 @@ from alinea.echap.milne_leaf import *
 from alinea.echap.interfaces import pesticide_penetrated_decay
 # Interception
 from alinea.echap.interception_leaf import *
+from alinea.echap.caribu_astk_interface import *
 from alinea.echap.interfaces import pesticide_interception
 # Microclimate
 from alinea.weather.global_weather import *
