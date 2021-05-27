@@ -32,7 +32,7 @@ def test_intercept_popdrops():
 ############# Rain interception
 def test_intercept_rain():    
     g = adel_mtg()
-    meteo01_filepath = shared_data(['alinea/echap'])/ 'meteo01.csv'
+    meteo01_filepath = shared_data('alinea.echap','meteo01.csv')
     t_deb = "2000-10-01 01:00:00"
     weather = Weather(data_file=meteo01_filepath)
     interception_model = RainInterceptionModel()
