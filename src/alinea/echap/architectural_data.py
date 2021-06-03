@@ -12,7 +12,7 @@ from alinea.echap.data_processing import aggregate, conf_int
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
-share_dir= shared_data(alinea.echap, share_path='../../share')
+share_dir= shared_data(alinea.echap, share_path='../../share/data')
 
 #
 # ____________________________________________________________________________Plot data
