@@ -1,5 +1,23 @@
 ################### Imports
-from alinea.echap.imports_echap import *
+from alinea.astk.TimeControl import TimeControl
+from alinea.astk.Weather import Weather
+
+from alinea.alep.disease_operation import create_stock
+from alinea.alep.inoculation import RandomInoculation
+from alinea.alep.dispersal_transport import RandomDispersal
+from alinea.alep.protocol import initiate, infect, update, disperse
+
+
+from alinea.pesticide_efficacy.pesticide_efficacy import PesticideEfficacyModel
+from alinea.pearl.pearl_leaf import PearLeafDecayModel
+from alinea.septo3d.cycle.alep_objects import GrowthControlModel
+
+from alinea.echap.wheat_mtg import adel_mtg, adel_mtg2
+from alinea.echap.tests_nodes import update_no_doses, update_on_leaves, set_initial_properties_g, plot_pesticide_norm
+from alinea.echap.milne_leaf import PenetratedDecayModel
+from alinea.echap.interception_leaf import CaribuInterceptModel, RapillyInterceptionModel
+from alinea.echap.microclimate_leaf import MicroclimateLeaf
+from alinea.echap.interfaces import pesticide_surfacic_decay, pesticide_penetrated_decay, pesticide_interception, local_microclimate, pesticide_efficacy, rain_interception
 
 ########################## tests decays
 
@@ -231,7 +249,6 @@ def test_disperse():
 ##################################### loop test
 
 def test_decay_doses():
-    from alinea.echap.imports_echap import *
     db = {'Epoxiconazole':{'MolarMass':329.8, 'VapourPressure':0.00001, 'TemVapPre':20, 'WatSolubility':7.1, 'TemWatSol':20, 
     'ThicknessLay':0.0006,'DT50Pen':0.33,'DT50Tra':0.433, 'CofDifAir':0.428, 'TemDif':20, 'FacWas':0.0001, 'FraDepRex':0}, 
     'Chlorothalonil':{'MolarMass':265.9, 'VapourPressure':0.0000762, 'TemVapPre':20, 'WatSolubility':0.81, 'TemWatSol':20, 

@@ -6,7 +6,6 @@ Created on 25 oct. 2011
 
 import numpy
 import pandas
-from pandas.core.datetools import Hour
 import math
 import datetime
 
@@ -92,7 +91,7 @@ def parton_logan(dailyMinMaxTemp, latitude=55, param="air150cm"):
     # minimal temperature at the day after
     Tmina = pandas.Series(numpy.concatenate((Tmin.values[1:], [Tmin.values[-1]])), index=Tsunset.index)
     
-    hourly_idx = pandas.DateRange(Tmin.index[0], Tmin.index[-1] + 23 * Hour(), offset=Hour())
+    hourly_idx = pandas.DateRange(Tmin.index[0], Tmin.index[-1] + pandas.DateOffset(hours=23), offset=Hour())
 
     hourly_series = pandas.Series(list(range(hourly_idx.size)), index=hourly_idx)                               
                                           
