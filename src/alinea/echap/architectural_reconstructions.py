@@ -18,20 +18,21 @@ from alinea.adel.astk_interface import AdelWheat
 from alinea.adel.geometric_elements import Leaves
 from alinea.adel.Stand import AgronomicStand
 from alinea.adel.AdelR import devCsv
-
-import alinea.echap
 from openalea.deploy.shared_data import shared_data
 
+import alinea.adel.plantgen_extensions as pgen_ext
+
+import alinea.echap
 import alinea.echap.architectural_data as archidb
 import alinea.echap.plot_architectural_reconstructions as archi_plot
 from alinea.echap.hs_tt import HS_fit
 
-import alinea.adel.plantgen_extensions as pgen_ext
+
 
 # run_plots = False # prevent ipython %run to make plots
 # reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
 
-share_dir = shared_data(alinea.echap,share_path='../../share')
+share_dir = shared_data(alinea.echap,share_path='./share/data')
 
 #---------- reconstructions
 
