@@ -1,5 +1,5 @@
 """ Test decay function calls on a simplistic static structure"""
-
+import openalea #add opeanalea for conda install package with develop package. remove when bugfix
 from alinea.echap.interfaces import pesticide_surfacic_decay
 has_pearl = True
 try:

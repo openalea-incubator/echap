@@ -1,4 +1,5 @@
 ################### Imports
+import openalea #add opeanalea for conda install package with develop package. remove when bugfix
 from alinea.astk.TimeControl import TimeControl
 from alinea.astk.Weather import Weather
 

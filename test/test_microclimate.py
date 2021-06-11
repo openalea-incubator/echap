@@ -1,3 +1,4 @@
+import openalea #add opeanalea for conda install package with develop package. remove when bugfix
 from alinea.adel.astk_interface import initialise_stand
 from alinea.astk.Weather import sample_weather
 import alinea.adel.data_samples as adel_samples
