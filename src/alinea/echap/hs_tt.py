@@ -6,13 +6,18 @@ import json
 import scipy.stats as stats
 from datetime import datetime
 
+import openalea #add opeanalea for conda install package with develop package. remove when bugfix
+from openalea.deploy.shared_data import shared_data
+
 from alinea.astk.Weather import linear_degree_days
 from alinea.adel.plantgen_extensions import HaunStage
-from alinea.echap.weather_data import get_weather
-from openalea.deploy.shared_data import shared_data
-import alinea.echap
 
-share_dir = shared_data(alinea.echap,share_path='../../share')
+import alinea.echap
+from alinea.echap.weather_data import get_weather
+
+
+
+share_dir = shared_data(alinea.echap,share_path='./share/data')
 
 def cache_reconstruction_path(tag):
     path = share_dir / 'cache' / 'reconstructions' / tag
@@ -110,8 +115,7 @@ def Pheno_data(pheno_dict={},
     src = sources[count]
     count += 1
     filename = 'Compil_Pheno_treated_' + src + '.csv'
-    filepath = str(
-        shared_data(alinea.echap,share_path='../../share') / 'architectural_measurements' / filename)
+    filepath = str(share_dir / 'architectural_measurements' / filename)
     df = pandas.read_csv(filepath, sep=',', decimal='.')
     df['Date'] = df['Date'].apply(dateparse)
     df['daydate'] = df.set_index('Date').index.strftime('%Y-%m-%d')
