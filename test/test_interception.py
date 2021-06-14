@@ -39,7 +39,7 @@ def test_intercept_rain():
     g = adel_mtg()
     meteo01_filepath = share_dir / 'meteo01.csv'
     t_deb = "2000-10-01 01:00:00"
-    weather = Weather(data_file=meteo01_filepath)
+    weather = Weather(data_file=meteo01_filepath,sep=";")
     interception_model = RainInterceptionModel()
     rain_timing = TimeControl(delay = 1, steps = 1, model = interception_model, weather = weather, start_date = t_deb)
     time_control = next(rain_timing)
