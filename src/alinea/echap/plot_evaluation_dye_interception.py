@@ -253,12 +253,12 @@ def petri_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
         treatments = idata.tag_treatments()[variety]['application']
     # obs
     df_obs = idata.petri_dye_interception()
-    df_obs = df_obs.loc[variety, :]
+    df_obs = df_obs[df_obs['variety']==variety]
     obs = df_obs.set_index('treatment')
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
     sim = idye.axis_statistics(df_sim, what='haun_stage', axis=axis)
 

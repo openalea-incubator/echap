@@ -143,7 +143,7 @@ def aggregate_by_axe(df_leaf):
                                     as_index=False):
         df_agg = gr.groupby(['daydate', 'plant', 'axe', 'numero_sim'],
                             as_index=False).agg(dye_aggregation_types(what))
-        gr = gr.sort('metamer')
+        gr = gr.sort_values('metamer')
         frac = gr['length'] / gr['mature_length']
         ilig = numpy.max(numpy.where(frac >= 1))
         df_agg['haun_stage'] = gr['metamer'].values[ilig] + frac[
