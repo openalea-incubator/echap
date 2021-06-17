@@ -21,7 +21,7 @@ from alinea.echap.hs_tt import tt_hs_tag
 
 
 from alinea.echap.cache_simulation import (cache_analysis_path, get_canopy,
-                                           build_canopies)
+                                           build_canopies, get_reconstruction)
 from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light, tag_to_zenith, lambda0
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
@@ -29,24 +29,24 @@ from alinea.echap.interception_data import petri_data
 from alinea.echap.plot_evaluation_canopy import plot_mean
 
 
-def aggregate_lai(g, axstat):
+def aggregate_lai(adel, g, axstat):
     colnames = ['aire du plot', 'Nbr.plant.perplot', 'Nbr.axe.tot.m2', 'ThermalTime', 'LAI_tot', 'LAI_vert',
                  'PAI_tot', 'PAI_vert']
-    pstat = AdelWheat.plot_statistics(g,axstat)
+    pstat = adel.plot_statistics(g,axstat)
     if pstat is None:
         return pandas.DataFrame([numpy.nan] * len(colnames), columns = colnames)
     else:
         return pstat.loc[:, colnames]
 
 
-def get_lai_properties(g):
-    df_axstat = AdelWheat.axis_statistics(g)
-    df_lai_tot = aggregate_lai(g, df_axstat)
-    df_lai_MS = aggregate_lai(g, df_axstat[df_axstat['axe_id'] == 'MS'])
+def get_lai_properties(adel, g):
+    df_axstat = adel.axis_statistics(g)
+    df_lai_tot = aggregate_lai(adel, g, df_axstat)
+    df_lai_MS = aggregate_lai(adel, g, df_axstat[df_axstat['axe_id'] == 'MS'])
     df_lai_MS.rename(columns={col: col + '_MS' for col in
                               ['LAI_tot', 'LAI_vert', 'PAI_tot', 'PAI_vert',
                                'Nbr.axe.tot.m2']}, inplace=True)
-    df_lai_ferti = aggregate_lai(g, df_axstat[df_axstat['has_ear']])
+    df_lai_ferti = aggregate_lai(adel, g, df_axstat[df_axstat['has_ear']])
     df_lai_ferti.rename(columns={col: col + '_ferti' for col in
                                  ['LAI_tot', 'LAI_vert', 'PAI_tot', 'PAI_vert',
                                   'Nbr.axe.tot.m2']}, inplace=True)
@@ -89,9 +89,11 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
     new = []
     for d in missing:
         print(d)
+        adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
+                                  rep=rep)
         g = get_canopy(daydate=d, variety=variety, nplants=nplants, tag=tag,
                        rep=rep, load_geom=False)
-        df_lai = get_lai_properties(g)
+        df_lai = get_lai_properties(adel, g)
         df_lai['variety'] = variety
         df_lai['daydate'] = d
         df_lai['rep'] = rep

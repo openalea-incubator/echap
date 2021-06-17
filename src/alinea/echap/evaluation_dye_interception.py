@@ -269,9 +269,11 @@ def dye_interception_miller_no_layer(variety='Tremie12', nplants=30, tag='refere
             coltr = 'tag_T2'
         lai = df_lai.set_index(coltr).loc[tr, 'LAI_tot']
         intercepted = 1 - numpy.exp(-k * lai)
+        deposit = []
         for i in range(len(dat)):
             lai_leaf = dat['area'].values[i] / area_sum * lai
-            dat.loc[i, 'deposit_Tartrazine'] = lai_leaf / lai * intercepted * dat['area'].values[i]
+            deposit.append(lai_leaf / lai * intercepted * dat['area'].values[i])
+        dat.loc[:, 'deposit_Tartrazine'] = deposit
         dat['ybar'] = dat['deposit_Tartrazine']
         res.append(dat)
     return pandas.concat(res)
