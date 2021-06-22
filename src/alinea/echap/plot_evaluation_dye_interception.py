@@ -59,7 +59,7 @@ def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=list(range(1, 5)
                        prefix='F', s_color='b', ylim=None, ylab=None,
                        title=None, add_obs=None, add_sim=None):
     nt = len(treatments)
-    lg = max(1, nt / 2)
+    lg = max(1, nt // 2)
     fig, axes = plt.subplots(nrows=lg, ncols=int(nt / lg + (nt - nt / lg * lg)),
                              sharey=True)
     axlist = fig.get_axes()
@@ -146,7 +146,7 @@ def hs_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
     sim = idye.axis_statistics(df_sim, what='haun_stage', axis=axis)
 
@@ -231,7 +231,7 @@ def sil_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     sim = idye.leaf_statistics(df_sim, what=what, by=by, axis=axis)
     # plot
     color = colors_variety()[variety]
