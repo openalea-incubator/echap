@@ -26,7 +26,7 @@ from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light,
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
 
-from alinea.echap.plot_evaluation_canopy import plot_mean
+#from alinea.echap.plot_evaluation_canopy import plot_mean
 
 
 def aggregate_lai(adel, g, axstat):
