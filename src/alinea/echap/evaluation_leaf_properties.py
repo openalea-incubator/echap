@@ -12,7 +12,7 @@ from alinea.adel.newmtg import adel_labels
 from alinea.astk.plantgl_utils import get_height
 from alinea.echap.weather_data import *
 from alinea.astk.TimeControl import *
-from alinea.echap.evaluation_canopy import plot_mean, plot_sum
+#from alinea.echap.evaluation_canopy import plot_mean, plot_sum
 
 # Run simu and save leaf properties ################################################################
 class AdelLeafRecorder:
