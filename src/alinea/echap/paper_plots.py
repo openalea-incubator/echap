@@ -53,8 +53,8 @@ def axe_density_plot(what='primary_axe_density'):
 
         start, end = hs[variety]([0, 2500])
         pd = plant_density[variety]['density_table']
-        pd.ix[0, 'HS'] = start
-        pd.ix[len(pd) - 1, 'HS'] = end
+        pd.loc[0, 'HS'] = start
+        pd.loc[len(pd) - 1, 'HS'] = end
         pd_fun = interp1d(pd['HS'], pd['density'])
         sim = axepop[variety].axis_dynamics(pd_fun, start=start, end=end)
         sim['TT'] = hs[variety].TT(sim['HS'])
