@@ -805,7 +805,7 @@ def axe_density_aggregated():
 
     df = pandas.concat([dfplot, dft])
     tt = TT_lin()
-    dfa = aggregate(df, ('label', 'daydate', 'source', 'tag_event'))
+    dfa = aggregate(df, ['label', 'daydate', 'source', 'tag_event'])
 
     return dfa.merge(tt)
 
