@@ -493,7 +493,7 @@ def density_plot(density_data, density_fits, HS_converter, legend=True):
     grouped = density_data.groupby('Var')    
     for name in names:
         dens = grouped.get_group(name)
-        dens['HS'] = HS_converter[name](dens['TT'])
+        dens.loc[:, 'HS'] = HS_converter[name](dens['TT'])
         ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'].values, fmt='o' + col[name], label=name + ' density', markersize=7)
         #
         df = density_fits[name]['density_table']

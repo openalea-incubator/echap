@@ -837,7 +837,7 @@ def PlantDensity():
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
         # add survival data
         for i,d in enumerate(tdata['plant_survival']['Date']):
-            lab = 'd%d'%(d+1)
+            lab = 'd%d'%(d)
             events.append(lab)
             date.append(tdata['date_code'][lab])
             TT.append(tdata['TT_code'][lab])

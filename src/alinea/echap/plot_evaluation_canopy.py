@@ -1,11 +1,31 @@
 import numpy
+import pandas
 import scipy.stats
 import matplotlib.pyplot as plt
-
-from alinea.echap.evaluation_leaf_properties import get_simu_results
+from openalea.deploy.shared_data import shared_data
+import alinea.echap
 
 #from alinea.echap.evaluation_canopy import get_lai_sim, get_light_sim
 
+
+def get_file_name(variety = 'Tremie12', nplants = 30, group = None):
+    if group is None:
+        return 'leaf_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
+    else:
+        assert group in ['sum', 'mean'], ValueError("group unknown, try 'sum' or 'mean'")
+        return 'leaf_'+variety.lower() + '_' + str(nplants) + 'pl_' + group + '.csv'
+
+def get_file_path(variety = 'Tremie12', nplants = 30, group = None):
+    filename = get_file_name(variety = variety, nplants = nplants, group = group)
+    return str(shared_data(alinea.echap)/'architectural_simulations'/filename)
+
+
+def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
+    file_path = get_file_path(variety = variety, nplants = nplants, group = group)
+    df = pandas.read_csv(file_path)
+    df['necro'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    df['necro_tot'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    return df
 
 def conf_int(lst, perc_conf=95):
     """
