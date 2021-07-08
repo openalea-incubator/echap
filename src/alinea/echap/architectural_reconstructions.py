@@ -637,6 +637,11 @@ class EchapReconstructions(object):
 
         with open(str(filename), 'wb') as output:
             pickle.dump(self, output)
+    
+    @staticmethod
+    def load(filename):
+        with open(filename,'rb') as saved:
+            return pickle.load(saved,encoding='bytes')
 
 
 def echap_reconstructions(tag='reference', reset=False):
