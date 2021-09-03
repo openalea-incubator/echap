@@ -9,6 +9,7 @@ from itertools import groupby
 from numpy import exp,log
 
 from alinea.echap.pesticide_data import milne_parameters
+from functools import reduce
 
 class SimcyclePesticide(Exception): pass       
 
@@ -76,7 +77,7 @@ def global_efficacy(doses, compound_parameters=[]):
             raise SimcyclePesticide('product %s not found in parameter dict'%k)
         d[k].update(dose=doses[k])
     # Sort products in order to group them by mode of action with 'groupby'
-    d = sorted(d.values(),key= itemgetter('type_code')) 
+    d = sorted(list(d.values()),key= itemgetter('type_code')) 
     d = [list(g) for k,g in groupby(d,key= itemgetter('type_code'))]
     
     A = {'eradicant':'Ae','protectant':'Ap'}

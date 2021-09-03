@@ -91,7 +91,8 @@ def local_microclimate(g, climate_model, weather_data, label='LeafElement'):
       >>> local_microclimate(g, weather, climate_model, t_deb, label='LeafElement', timestep)
       >>> return g, mean_globalclimate, globalclimate, t_deb
     """
-     scene_geometry = g.property('geometry')
+ 
+    scene_geometry = g.property('geometry')
     local_meteo = climate_model.microclim(scene_geometry, weather_data)
     g.add_property('microclimate')
     g.property('microclimate').update(local_meteo)
@@ -292,7 +293,7 @@ def record(g, weather_data, recorder, header={}, label = 'LeafElement'):
     tentative protocol for recording data during a simulation
     ng tentative debug date 12/12/12
     """
-    date = weather_data.index[-1].to_datetime()# recording occurs at the end of the time step
+    date = weather_data.index[-1].to_datetime64()# recording occurs at the end of the time step
     print(date)
     for vid in g:
         n = g.node(vid)
