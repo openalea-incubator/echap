@@ -308,7 +308,7 @@ def daydate_range(variety, tag, start=None, stop=None, by=None, at=None):
             stop = tths['daydate'][-1]
         else:
             stop = as_daydate(stop, tths)
-        at = tths.set_index('daydate').ix[start:stop:by,].index.values.tolist()
+        at = tths.set_index('daydate').iloc[start:stop:by,].index.values.tolist()
     else:
         at = [as_daydate(x, tths) for x in at]
 

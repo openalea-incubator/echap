@@ -8,7 +8,10 @@ import pandas
 import os
 import io
 from numpy import exp
-from alinea.caribu.caribu_star import rain_and_light_star, caribu_rain_star
+
+from alinea.echap.caribu_star import caribu_rain_star #copy caribu_star from caribu to alep 
+
+from alinea.caribu.plantgl_adaptor import mtg_to_cscene
 
 
 

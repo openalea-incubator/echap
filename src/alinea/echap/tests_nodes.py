@@ -4,7 +4,7 @@ Created on Tue Apr 16 17:15:32 2013
 
 @author: lepse
 """
-from openalea.color import colormap
+#from openalea.color import colormap
 
 import numpy
 from numpy import recfromcsv
@@ -27,7 +27,7 @@ green_lightblue_blue = green_lightblue_blue(levels=10)
 
 def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     """ plot the plant with pesticide doses """
-    from matplotlib import mpl
+    import matplotlib as mpl
     cmap = mpl.cm.get_cmap(colmap)
     green = (0,180,0)
     for v in g.vertices(scale=g.max_scale()) : 
@@ -37,8 +37,8 @@ def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
             n.color = (int(r*255),int(gg*255),int(b*255))           
         else : 
             n.color = green
-    scene = plot3d(g)
-    Viewer.display(scene)
+    scene = plot3d(g , colors=g.property("color"))
+   # Viewer.display(scene)
     return scene
 
 
