@@ -43,7 +43,7 @@ def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUn
     return g
 
 # deprecated
-from alinea.astk.caribu_interface import *
+from alinea.caribu.caribu_interface import *
 
 
 class MicroclimateLeaf(object):
