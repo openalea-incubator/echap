@@ -1,6 +1,7 @@
 from alinea.echap.wheat_mtg import *
 from pandas import *
 
+from matplotlib import cm
 
 #################### Update
 
@@ -26,15 +27,15 @@ def get_df_out(time,g):
     sd = g.property('surfacic_doses')
     lab = g.property('label')
     sp = g.property('penetrated_doses')            
-    recs = [(id,lab[id],comp,dose) for id,v in sd.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
-    ids,labs,compounds,surfdose = zip(*recs)
+    recs = [(id,lab[id],comp,dose) for id,v in sd.items() for comp, dose in v.items() if lab[id].startswith('LeafElement')]
+    ids,labs,compounds,surfdose = list(zip(*recs))
     dfs = DataFrame({'time':[time]*len(ids), 'id' : ids, 'label': labs,'compound' : compounds, 'surfacic_doses' : surfdose})
     if not 'penetrated_doses' in g.property_names():
         df=dfs        
         #dfp = DataFrame(columns=('time', 'id', 'label','compound', 'penetrated_dose'))
     else:
-        recp = [(id,lab[id],comp,dose) for id,v in sp.iteritems() for comp, dose in v.iteritems() if lab[id] is 'LeafElement']
-        idp,labp,compoundp,pendose = zip(*recp)
+        recp = [(id,lab[id],comp,dose) for id,v in sp.items() for comp, dose in v.items() if lab[id].startswith('LeafElement')]
+        idp,labp,compoundp,pendose = list(zip(*recp))
         dfp = DataFrame({'time':[time]*len(idp), 'id' : idp, 'label': labp,'compound' : compoundp, 'penetrated_doses' : pendose})
         df = merge(dfs, dfp, left_on=('compound', 'id', 'label', 'time'), right_on=('compound', 'id', 'label', 'time'), how='outer')    
     return df
@@ -46,11 +47,11 @@ def plot_decay(out, leaf=12):
     #from pylab import *
     df = out[out['id']==leaf]
     plt.plot(df['time'], df['surfacic_doses'])
-    plt.plot(df['time'], df['penetrated_doses'])
+    #plt.plot(df['time'], df['penetrated_doses'])
     plt.show()
 
 
-def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=green_lightblue_blue):
+def plot_pesticide(g, property_name='surfacic_doses', compound_name='Epoxiconazole', cmap=cm.winter_r):
     """ plot the plant with pesticide doses """
     if type(cmap) is str:
         try:

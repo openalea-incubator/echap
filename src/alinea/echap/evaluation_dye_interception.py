@@ -84,7 +84,7 @@ def simulate_dye_interception(variety='Tremie12', nplants=30, rep=1,
             df = pandas.read_csv(filename)
             try:
                 df = df.set_index('rep').loc[rep, :].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     return df.loc[df['daydate'].isin(dd_range), :]
                 else:
                     missing = [d for d in dd_range if
@@ -95,7 +95,7 @@ def simulate_dye_interception(variety='Tremie12', nplants=30, rep=1,
             pass
     new = []
     for d in missing:
-        print d
+        print(d)
         df_i = get_dye_interception(variety=variety, nplants=nplants, tag=tag,
                                     rep=rep, daydate=d)
         new.append(df_i)
@@ -116,7 +116,7 @@ def dye_interception(variety='Tremie12', nplants=30, nrep=1,
                      simulation='reference', treatments=('T1', 'T2'),
                      reset=False, reset_dye=False, reset_build=False,
                      reset_light=False, reset_reconstruction=False):
-    repetitions = range(1, nrep + 1)
+    repetitions = list(range(1, nrep + 1))
     reps = []
     for i_sim in repetitions:
         df = simulate_dye_interception(variety=variety, nplants=nplants,
@@ -143,7 +143,7 @@ def aggregate_by_axe(df_leaf):
                                     as_index=False):
         df_agg = gr.groupby(['daydate', 'plant', 'axe', 'numero_sim'],
                             as_index=False).agg(dye_aggregation_types(what))
-        gr = gr.sort('metamer')
+        gr = gr.sort_values('metamer')
         frac = gr['length'] / gr['mature_length']
         ilig = numpy.max(numpy.where(frac >= 1))
         df_agg['haun_stage'] = gr['metamer'].values[ilig] + frac[
@@ -176,7 +176,7 @@ def axis_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, axis='MS'):
     if axis == 'MS':
         data = data[data['axe'] == 'MS']
 
-    sub = data.ix[:, ['treatment', what]]
+    sub = data.loc[:, ['treatment', what]]
     agg = sub.groupby('treatment').mean().reset_index()
     errag = sub.groupby('treatment').agg(err).reset_index()
     agg['ybar'] = agg[what]
@@ -188,7 +188,7 @@ def axis_statistics(df_sim, what='deposit_Tartrazine', err=conf_int, axis='MS'):
 def plant_statistics(df_sim, what='deposit_Tartrazine', err=conf_int):
     data = aggregate_by_plant(df_sim)
 
-    sub = data.ix[:, ['treatment', what]]
+    sub = data.loc[:, ['treatment', what]]
     agg = sub.groupby('treatment').mean().reset_index()
     errag = sub.groupby('treatment').agg(err).reset_index()
     agg['ybar'] = agg[what]
@@ -204,7 +204,7 @@ def leaf_statistics(df_sim, what='deposit_Tartrazine', err=conf_int,
         data = data[data['axe'] == 'MS']
     if not isinstance(what, list):
         what = [what]
-    sub = data.ix[:, ['treatment', by] + what]
+    sub = data.loc[:, ['treatment', by] + what]
     agg = sub.groupby(['treatment', by]).mean().reset_index()
     errag = sub.groupby(['treatment', by]).agg(err).reset_index()
     agg['ybar'] = agg[what[0]]
@@ -239,11 +239,13 @@ def dye_interception_miller(variety='Tremie12', nplants=30, tag='reference', rep
         else:
             coltr = 'tag_T2'
         lai = df_lai.set_index(coltr).loc[tr, 'LAI_tot']
+        deposit=[]
         for i in range(len(dat)):
             lai_cum = [0] + dat['area'].cumsum().values.tolist()
             io = numpy.exp(-k * lai_cum[i] / area_sum * lai)
             lai_leaf = dat['area'].values[i] / area_sum * lai
-            dat.ix[i, 'deposit_Tartrazine'] = io * (1 - numpy.exp(-k * lai_leaf)) * dat['area'].values[i]
+            deposit.append(io * (1 - numpy.exp(-k * lai_leaf)) * dat['area'].values[i])
+        dat.loc[:, 'deposit_Tartrazine'] = deposit
         dat['ybar'] = dat['deposit_Tartrazine']
         res.append(dat)
     return pandas.concat(res)
@@ -269,9 +271,11 @@ def dye_interception_miller_no_layer(variety='Tremie12', nplants=30, tag='refere
             coltr = 'tag_T2'
         lai = df_lai.set_index(coltr).loc[tr, 'LAI_tot']
         intercepted = 1 - numpy.exp(-k * lai)
+        deposit = []
         for i in range(len(dat)):
             lai_leaf = dat['area'].values[i] / area_sum * lai
-            dat.ix[i, 'deposit_Tartrazine'] = lai_leaf / lai * intercepted * dat['area'].values[i]
+            deposit.append(lai_leaf / lai * intercepted * dat['area'].values[i])
+        dat.loc[:, 'deposit_Tartrazine'] = deposit
         dat['ybar'] = dat['deposit_Tartrazine']
         res.append(dat)
     return pandas.concat(res)

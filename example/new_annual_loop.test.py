@@ -65,7 +65,7 @@ pest_timing = IterWithDelays(*time_control(seq, every_pest, pest_calendar))
 for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_timing)):
     canopy_iter, doses_iter, rain_iter, pest_iter = controls
     if canopy_iter:
-        print canopy_iter.value.index[-1]
+        print(canopy_iter.value.index[-1])
         g = adel.grow(g, canopy_iter.value)
         _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
         #_=update_lesions(g, canopy_iter.dt, True)   
@@ -74,7 +74,7 @@ for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_t
         _=pesticide_intercept(g, pest_iter.value)
         plot_pesticide(g)
     if doses_iter:
-        print 'updte microclimate / doses...'
+        print('updte microclimate / doses...')
         _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
         #_=update_pesticides(g, doses_iter.value)
         #plot_pesticide(g)
@@ -94,7 +94,7 @@ recorder.save_records('test.csv')
 for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_timing)):
     canopy_iter, doses_iter, rain_iter, pest_iter = controls
     if canopy_iter:
-        print canopy_iter.value.index[-1]
+        print(canopy_iter.value.index[-1])
         g = adel.grow(g, canopy_iter.value)
         _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
         #_=update_lesions(g, canopy_iter.dt, True)   
@@ -103,7 +103,7 @@ for i,controls in enumerate(zip(canopy_timing, doses_timing, rain_timing, pest_t
         _=pesticide_intercept(g, pest_iter.value)
         plot_pesticide(g)
     if doses_iter:
-        print 'updte microclimate / doses...'
+        print('updte microclimate / doses...')
         _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
         _=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
 

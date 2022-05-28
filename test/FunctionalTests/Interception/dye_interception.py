@@ -47,7 +47,7 @@ def sensibilite_nplants(var_lst = ['Mercia','Rht3','Tremie12','Tremie13'], axis=
                 x=1
                 while x<=5: 
                     npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
-                    print 'var = '+var+' stade = '+stade+' - nplants = '+str(npl)+' - simulation num = '+str(x)+'/5 ok' #verif etat avancement
+                    print('var = '+var+' stade = '+stade+' - nplants = '+str(npl)+' - simulation num = '+str(x)+'/5 ok') #verif etat avancement
                     dfmoy['var'] = var
                     dfmoy['dim'] = stade
                     dfmoy['nb_plantes_sim'] = npl
@@ -73,15 +73,15 @@ def colors_variety():
     return {'Mercia':'r', 'Rht3':'g', 'Tremie12':'c', 'Tremie13':'m'}
     
 def xleaf_by():
-    return {'metamer': range(7,14), 'ntop_cur': range(0,6), 'ntop_lig': range(-1,5)}
+    return {'metamer': list(range(7,14)), 'ntop_cur': list(range(0,6)), 'ntop_lig': list(range(-1,5))}
 
 def prefix_xbar():
     return {'metamer': 'L', 'ntop_cur': 'F', 'ntop_lig': 'Fl'}
     
-def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), prefix ='F', o_color='y', s_color='b', opacity=0.4, bar_width=0.4):
+def barplot_leaf(ax, obs, sim, loc, xleaf=list(range(1,5)), prefix ='F', o_color='y', s_color='b', opacity=0.4, bar_width=0.4):
     
     leaves = [prefix + str(x) for x in xleaf]
-    xbar = dict(zip(leaves, xleaf))
+    xbar = dict(list(zip(leaves, xleaf)))
         
     obs_bar = None
     if obs is not None:
@@ -103,7 +103,7 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1,5), prefix ='F', o_color='y', 
     return obs_bar, sim_bar
     
 def fig_observe_simule(obs, sim, treatments=['T1','T2'], 
-                        xleaf=range(1,5), prefix='F', s_color='b', ylim=None, ylab=None,title=None,add_obs=None, add_sim=None):
+                        xleaf=list(range(1,5)), prefix='F', s_color='b', ylim=None, ylab=None,title=None,add_obs=None, add_sim=None):
     nt = len(treatments)
     lg = max(1, nt / 2)
     fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg), sharey=True)
@@ -422,7 +422,7 @@ def simulation_dimension(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
             dim_lst = [[0.5,'/2'], [0.75,'/1.25'], [0.9,'/1.1'], [1,'1'], [1.1,'x1.1'], [1.25,'x1.25'], [1.5,'x1.5']]
             for dim, dim_label in dim_lst:
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', dimension=dim, to_csv=False)
-                print 'var = '+var+' stade = '+dim_label+' - nbre de plantes sim = '+str(npl)
+                print('var = '+var+' stade = '+dim_label+' - nbre de plantes sim = '+str(npl))
                     
                 dfmoy['var'] = var; dfmoy['dim'] = dim_label
                 df_sim = df_sim.append(dfmoy)
@@ -492,7 +492,7 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie12','T
             
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #index_dim pour classer les dim dans l ordre souhaite
@@ -534,8 +534,8 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie12','T
             if var=='Tremie12' or var=='Tremie13':
                 df_scan_var = df_scan[df_scan['var']==var]
                 df_sim_var = df_sim[df_sim['var']==var]
-                df_scan_var.HS=map(str,df_scan_var.HS)
-                df_sim_var.HS=map(str,df_sim_var.HS)
+                df_scan_var.HS=list(map(str,df_scan_var.HS))
+                df_sim_var.HS=list(map(str,df_sim_var.HS))
                 df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
                 df_all = df_all[df_all['ntop_cur']<=3]
                 #plot
@@ -550,7 +550,7 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie12','T
                 else:
                     val = [[0,8.7],[1,11.04]]
                 for x, date in val:
-                    df_all.HS=map(float,df_all.HS)
+                    df_all.HS=list(map(float,df_all.HS))
                     df_fin = df_all[df_all['HS']==date]
                     #index_dim
                     df_fin['index_dim'] = df_fin['dim']
@@ -626,7 +626,7 @@ def plot_dimension(plot1=True, plot2=False, plot3=True, varieties=['Tremie12','T
             
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date]
                 #index_dim
@@ -719,7 +719,7 @@ def simulation_density(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
             dens_lst = [0.1,0.5,0.75,0.9,1,1.1,1.25,1.5,1.9] 
             for dens in dens_lst:         
                 npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False, density=dens)
-                print 'var = '+var+' stade = '+stade+' density = '+str(dens)+' - nbre de plantes sim = '+str(npl)
+                print('var = '+var+' stade = '+stade+' density = '+str(dens)+' - nbre de plantes sim = '+str(npl))
                 dfmoy['var'] = var
                 dfmoy['density'] = dens
                 df_sim = df_sim.append(dfmoy)
@@ -790,7 +790,7 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #mean_dens pour dessiner les obs seulement qd densite=1
@@ -825,8 +825,8 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             if var=='Tremie12' or var=='Tremie13':
                 df_scan_var = df_scan[df_scan['var']==var]
                 df_sim_var = df_sim[df_sim['var']==var]
-                df_scan_var.HS=map(str,df_scan_var.HS)
-                df_sim_var.HS=map(str,df_sim_var.HS)
+                df_scan_var.HS=list(map(str,df_scan_var.HS))
+                df_sim_var.HS=list(map(str,df_sim_var.HS))
                 df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
                 df_all = df_all[df_all['ntop_cur']<=5]
                 #plot
@@ -837,7 +837,7 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
                 else:
                     val = [[0,8.7],[1,11.04]]
                 for x, date in val:
-                    df_all.HS=map(float,df_all.HS)
+                    df_all.HS=list(map(float,df_all.HS))
                     df_fin = df_all[df_all['HS']==date]
                     #Area A_bl dens pour dessiner les obs seulement qd densite=1
                     df_fin['Area A_bl dens'] = df_fin['Area A_bl']
@@ -864,7 +864,7 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
                     fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
                 axes[x].legend((rects1[0], rects2[0], rects2[7], rects2[14]), ('Scan', 'Sim F1', 'Sim F2', 'Sim F3'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
             else :
-                print 'Pas de scan pour variete : '+var
+                print('Pas de scan pour variete : '+var)
             
     # PLOT 3
     if plot3 is True :
@@ -907,7 +907,7 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date]
                 #mean_dens pour dessiner les obs seulement qd densite=1
@@ -940,8 +940,8 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            df_obs_var.HS=list(map(str,df_obs_var.HS))
+            df_sim_var.HS=list(map(str,df_sim_var.HS))
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean']], how='outer')
             df_all = df_all[df_all['ntop_cur']<=5]
             #plot
@@ -956,7 +956,7 @@ def plot_density(plot1=True, plot2=False, plot3=True, plot4=False, varieties=['T
                 val = [[0,8.7],[1,11.04]]
             fig, axes = plt.subplots(nrows=1, ncols=2) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_fin = df_all[df_all['HS']==date] 
                 #mean_dens pour dessiner les obs seulement qd densite=1
                 df_fin['mean_dens'] = df_fin['mean']
@@ -1042,7 +1042,7 @@ def simulation_HS(name='Tremie12', n_sim=5, n_plt=200, ajust=True):
     while x<=n_sim:
         for var, stade in lst :          
             npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis='MS', to_csv=False)
-            print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+            print('var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl))
             dfmoy['var'] = var
             df_sim = df_sim.append(dfmoy)
         x+=1
@@ -1109,7 +1109,7 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
                 val = [[0,round(hs_moyen,2)]]
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:                
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #for f in [-0.8,-0.6,-0.4,-0.2,+0.2,+0.4,+0.6,+0.8]:
@@ -1148,8 +1148,8 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
             if var=='Tremie12' or var=='Tremie13':
                 df_scan_var = df_scan[df_scan['var']==var]
                 df_sim_var = df_sim[df_sim['var']==var]
-                df_scan_var.HS=map(str,df_scan_var.HS)
-                df_sim_var.HS=map(str,df_sim_var.HS)
+                df_scan_var.HS=list(map(str,df_scan_var.HS))
+                df_sim_var.HS=list(map(str,df_sim_var.HS))
                 df_all = df_sim_var.merge(df_scan_var.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
                 df_all = df_all[df_all['ntop_cur']<=5]
                 #plot
@@ -1160,7 +1160,7 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
                 elif var == 'Tremie13' :
                     val = [[0,8.7],[1,11.04]]
                 for x, date in val:
-                    df_all.HS=map(float,df_all.HS)
+                    df_all.HS=list(map(float,df_all.HS))
                     df_fin = df_all[df_all['HS']==date] 
                     if x == 0:
                         for f in [-0.4,-0.2,0.2,0.4]:
@@ -1193,7 +1193,7 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
                     fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
                 axes[x].legend((rects2[0], rects2[15], rects2[30], rects1[0]), ( 'Sim F1', 'Sim F2', 'Sim F3', 'Obs'), bbox_to_anchor=[1.10, 1.12], prop={'size':14} )
             else :
-                print 'Pas de scan pour variete : '+var
+                print('Pas de scan pour variete : '+var)
             
     # PLOT 3
     if plot3 is True :
@@ -1201,8 +1201,8 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
             df_obs_var = df_obs[df_obs['name']==var]
             df_obs_var['ntop_cur'] = df_obs_var['N feuille']
             df_sim_var = df_sim[df_sim['var']==var]
-            df_obs_var.HS=map(str,df_obs_var.HS)
-            df_sim_var.HS=map(str,df_sim_var.HS)
+            df_obs_var.HS=list(map(str,df_obs_var.HS))
+            df_sim_var.HS=list(map(str,df_sim_var.HS))
             df_all = df_sim_var.merge(df_obs_var.ix[:,['HS','ntop_cur','mean','sd']], how='outer')
             df_all = df_all[df_all['ntop_cur']<=3]
             df_all['tartrazine/area'] = df_all['deposit_Tartrazine']/df_all['area']
@@ -1235,7 +1235,7 @@ def plot_HS(plot1=True, plot2=False, plot3=True, varieties=['Tremie12', 'Tremie1
                 val = [[0,round(hs_moyen,2)]]
             fig, ax0 = plt.subplots(nrows=1, ncols=1) 
             for x, date in val:
-                df_all.HS=map(float,df_all.HS)
+                df_all.HS=list(map(float,df_all.HS))
                 df_all['HS'] = numpy.round(df_all['HS'], decimals=2)
                 df_fin = df_all[df_all['HS']==date] 
                 #for f in [-0.8,-0.6,-0.4,-0.2,+0.2,+0.4,+0.6,+0.8]:
@@ -1281,7 +1281,7 @@ def sim_HScom(var='Mercia', stade='T1', axis='MS'):
         else:
             n=30
         npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
-        print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)+ ' - nbr simul = '+str(x)+'/5'
+        print('var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)+ ' - nbr simul = '+str(x)+'/5')
         dfmoy['var'] = var
         if stade=='T2':
             dfmoy['stade'] = 'T2_'+var
@@ -1323,8 +1323,8 @@ def plot_HScom(varieties=['Mercia','Rht3','Tremie12','Tremie13'], appdate_lst = 
             else:
                 delta = 6
             #verif
-            print 'nff moyen ref '+name+' = '+str(mean['nff'])
-            print 'delta ref '+name+' = '+str(delta)
+            print('nff moyen ref '+name+' = '+str(mean['nff']))
+            print('delta ref '+name+' = '+str(delta))
             #simulation
             #hs_ref = hs+delta
             df_ref = sim_HScom(var=name, stade=str(hs), axis=axis)
@@ -1350,8 +1350,8 @@ def plot_HScom(varieties=['Mercia','Rht3','Tremie12','Tremie13'], appdate_lst = 
                 #HS
                 HS_other = mean_other['nff'] + delta
                 #verif
-                print 'nff moyen '+nameo+' = '+str(mean_other['nff'])
-                print 'HS other '+nameo+' = '+str(HS_other)
+                print('nff moyen '+nameo+' = '+str(mean_other['nff']))
+                print('HS other '+nameo+' = '+str(HS_other))
                 #simulation
                 df_other = sim_HScom(var=nameo, stade=str(HS_other), axis=axis)
                 df_other['dim'] = appdate+'_'+name
@@ -1545,7 +1545,7 @@ def simulation_efficacy(name='Mercia', hs=12, n_sim=5, n_plt=200, axis='MS'):
     while x <= n_sim:
         for var, stade in lst :          
             npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n, axis=axis, to_csv=False)
-            print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+            print('var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl))
             dfmoy['var'] = var
             df_sim = df_sim.append(dfmoy)
         x+=1
@@ -2057,7 +2057,7 @@ def simulation_nffmoyen(var='Mercia', n_sim=5, n_plt=200, hs=12, axis='MS'): #ax
     df_sim = pandas.DataFrame() 
     while x <= n_sim: 
         npl, dfmoy, dfsd = treatment(name=var, sim=str(hs), nplants=n_plt, axis=axis, to_csv=False)
-        print 'var = '+var+' stade = '+str(hs)+' - nplants = '+str(npl)
+        print('var = '+var+' stade = '+str(hs)+' - nplants = '+str(npl))
         dfmoy['var'] = var
         df_sim = df_sim.append(dfmoy)
         x+=1
@@ -2155,12 +2155,12 @@ def plot_data_simnffmoyen(varieties=['Mercia','Rht3','Tremie12','Tremie13'], n_s
             if rects == rects2 :
                 list=['F1','F2','F3','F4']
             else:
-                print 'pb'
+                print('pb')
             for rect in rects:
                 height = rect.get_height()
                 if int(rect.get_x()) <4 :
                     if x==0:
-                        print int(rect.get_x())
+                        print(int(rect.get_x()))
                         axes[x].text(rect.get_x()+rect.get_width()/2. -0.1, 1.05*height + 0.2, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8)
         autolabel(rects2)
         
@@ -2196,7 +2196,7 @@ def simulation_sim_simnffmoyen(var='Tremie12', n_sim=5, n_plt=200, axis='MS'): #
     while x<=n_sim:
         for var, stade in lst :          
             npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False)
-            print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+            print('var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl))
             dfmoy['var'] = var
             df_sim = df_sim.append(dfmoy)
         x+=1
@@ -2350,7 +2350,7 @@ def plot_data_sim_simnffmoyen(varieties=['Tremie12','Tremie13'], n_sim=1, n_plt=
                     list=['simulation nff moyen + delta','','','']
                 for rect in rects:
                     height = rect.get_height()
-                    print height
+                    print(height)
                     ax1.text(rect.get_x()+rect.get_width()/2., 1.05*height, list[int(rect.get_x())], ha='center', va='bottom', fontsize=8, rotation=90)
             autolabel(rects1)
             autolabel(rects2)
@@ -2394,7 +2394,7 @@ def simulation_courbure(var='Tremie12', n_sim=1, n_plt=30, axis='MS'): #axis = M
                     npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False, nlim_Tremie12=nlim)
                 elif var=='Tremie13':
                     npl, dfmoy, dfsd = treatment(name=var, sim=stade, nplants=n_plt, axis='MS', to_csv=False, nlim_Tremie13=nlim)
-                print 'var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl)
+                print('var = '+var+' stade = '+stade+' - nbre de plantes sim = '+str(npl))
                 dfmoy['var'] = var
                 dfmoy['nlim'] = nlim
                 df_sim = df_sim.append(dfmoy)

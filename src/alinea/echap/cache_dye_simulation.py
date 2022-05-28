@@ -31,7 +31,7 @@ def dye_aggregation_types(what=None):
     types = {'nb_plantes_sim': first_val, 'domain_area': first_val,
              'age': first_val, 'nff': first_val, 'area': numpy.sum,
              'green_area': numpy.sum, 'senesced_area': numpy.sum,
-             'id': lambda (x): '_'.join(map(str, x)), 'length': numpy.sum,
+             'id': lambda x: '_'.join(map(str, x)), 'length': numpy.sum,
              'ntop': first_val, 'organ': first_val, 'mature_length': first_val,
              'surfacic_doses_Tartrazine': numpy.mean,
              'deposit_Tartrazine': numpy.sum, 'lifetime': first_val,
@@ -53,7 +53,7 @@ class LeafElementRecorder:
         tentative protocol for recording data during a simulation
         ng tentative debug date 12/12/12
         """
-        print daydate
+        print(daydate)
         for vid in g:
             n = g.node(vid)
             if n.label is not None:
@@ -100,7 +100,7 @@ class LeafElementRecorder:
     def get_records(self):
         d = pandas.DataFrame(self.data)
         df = d.T
-        df = df.convert_objects()
+        df = df.apply(pandas.to_numeric, errors='ignore')
         return df
 
 
@@ -121,8 +121,8 @@ def dye_interception_canopies(variety='Tremie12', nplants=30, tag='reference',
     pattern = head_path + '*.csv'
     done = glob.glob(pattern)
     if len(done) > 0:
-        done = map(lambda x: x.split('pl_')[1].split('.')[0], done)
-        done = map(lambda x: '-'.join(x.split('_')), done)
+        done = [x.split('pl_')[1].split('.')[0] for x in done]
+        done = ['-'.join(x.split('_')) for x in done]
 
     missing = dd_range
     if not reset:
@@ -145,7 +145,7 @@ def dye_interception_canopies(variety='Tremie12', nplants=30, tag='reference',
             recorder = LeafElementRecorder()
             recorder.record_mtg(g, daydate)
             df = recorder.get_records()
-            meta = g.property('meta').values()[0]
+            meta = list(g.property('meta').values())[0]
             # add columns
             df['treatment'] = treatment
             df['surfacic_doses_Tartrazine'] = df['light_interception']

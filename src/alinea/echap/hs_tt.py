@@ -4,16 +4,23 @@ import numpy
 import os
 import json
 import scipy.stats as stats
+from datetime import datetime
+
+import openalea #add opeanalea for conda install package with develop package. remove when bugfix
+from openalea.deploy.shared_data import shared_data
 
 from alinea.astk.Weather import linear_degree_days
 from alinea.adel.plantgen_extensions import HaunStage
-from alinea.echap.weather_data import get_weather
-from openalea.deploy.shared_data import shared_data
-import alinea.echap
 
+import alinea.echap
+from alinea.echap.weather_data import get_weather
+
+
+
+share_dir = shared_data(alinea.echap,share_path='./share/data')
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap) / 'cache' / 'reconstructions' / tag
+    path = share_dir / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -21,9 +28,9 @@ def cache_reconstruction_path(tag):
 
 def derived_data_path(tag=None):
     if tag is None:
-        path = shared_data(alinea.echap) / 'cache' / 'derived_data'
+        path = share_dir / 'cache' / 'derived_data'
     else:
-        path = shared_data(alinea.echap) / 'cache' / 'derived_data' / tag
+        path = share_dir / 'cache' / 'derived_data' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -104,12 +111,11 @@ def Pheno_data(pheno_dict={},
     """
 
     def dateparse(x):
-        return pandas.datetime.strptime(x, '%d/%m/%Y')
+        return datetime.strptime(x, '%d/%m/%Y')
     src = sources[count]
     count += 1
     filename = 'Compil_Pheno_treated_' + src + '.csv'
-    filepath = str(
-        shared_data(alinea.echap) / 'architectural_measurements' / filename)
+    filepath = str(share_dir / 'architectural_measurements' / filename)
     df = pandas.read_csv(filepath, sep=',', decimal='.')
     df['Date'] = df['Date'].apply(dateparse)
     df['daydate'] = df.set_index('Date').index.strftime('%Y-%m-%d')
@@ -145,9 +151,7 @@ def application_tag(variety, daydate, which='T1'):
         origin = sowing[variety]
 
     delta = (pandas.to_datetime(daydate) - pandas.to_datetime(origin)).days
-    tags = numpy.where(delta == 0, which, numpy.where(delta > 0, map(
-        lambda x: which + '+' + str(x), delta), map(
-        lambda x: which + '-' + str(abs(x)), delta)))
+    tags = numpy.where(delta == 0, which, numpy.where(delta > 0, [which + '+' + str(x) for x in delta], [which + '-' + str(abs(x)) for x in delta]))
     return tags
 
 
@@ -200,7 +204,7 @@ def fit_hs(tag='reference'):
     TTem = - hs_ms['intercept'] / hs_ms['slope']
     # Flag leaf delay per nff
     TT_mean_flag = (hs_ms['nff'] - hs_ms['intercept']) / hs_ms['slope']
-    g = tagged.groupby(('label', 'nff'))
+    g = tagged.groupby(['label', 'nff'])
     hs_nff = g.apply(_fit)
     TT_nff_flag = (hs_nff['nff'] - hs_nff['intercept']) / hs_nff['slope']
     TT_flag = TT_nff_flag.reset_index().rename(columns={0: 'flag'}).merge(
@@ -220,7 +224,7 @@ def fit_hs(tag='reference'):
     dat = TT_flag.set_index(['label', 'nff'], drop=False)
     a_nff = dat['nff'] / (dat['flag'] - dat['mean_TTem'])
     # estimate dTTEm per plant wyth modeled slope
-    g = tagged.groupby(('label', 'N'))
+    g = tagged.groupby(['label', 'N'])
 
     def _TTem(df):
         res = None
@@ -259,7 +263,7 @@ def HS_fit(tag='reference', reset=False):
         except IOError:
             pass
     hs_fits = fit_hs(tag)
-    for k, hs in hs_fits.iteritems():
+    for k, hs in hs_fits.items():
         file_path = dir_path / 'HSfit_' + k + '.json'
         hs.dump(file_path)
 
@@ -304,8 +308,8 @@ def daydate_range(variety, tag, start=None, stop=None, by=None, at=None):
             stop = tths['daydate'][-1]
         else:
             stop = as_daydate(stop, tths)
-        at = tths.set_index('daydate').ix[start:stop:by,].index.values.tolist()
+        at = tths.set_index('daydate').iloc[start:stop:by,].index.values.tolist()
     else:
-        at = map(lambda x: as_daydate(x, tths), at)
+        at = [as_daydate(x, tths) for x in at]
 
     return at

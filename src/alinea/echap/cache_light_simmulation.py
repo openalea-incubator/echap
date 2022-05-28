@@ -65,8 +65,8 @@ def tag_to_zenith(tag='zenith', sim_tag='reference', variety='Tremie12'):
     elif tag == 'spray':
         return spraying_angle
     elif tag == 'soc':
-        energy, directions = zip(*diffuse_source(46))
-        z = numpy.array(zip(*directions)[2])
+        energy, directions = list(zip(*diffuse_source(46)))
+        z = numpy.array(list(zip(*directions))[2])
         return numpy.mean(numpy.degrees(numpy.arccos(-z)))
     elif tag.startswith('lai2000r'):
         zenith = 7, 23, 38, 53, 68
@@ -88,6 +88,7 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
                         nplants=30, tag='reference', rep=1, start=None,
                         stop=None, by=None, at=None, reset=False,
                         reset_build=False, reset_reconstruction=False):
+    
     print('Check/build canopies..')
     dd_range = build_canopies(variety=variety, nplants=nplants, tag=tag,
                               rep=rep, start=start, stop=stop, by=by, at=at,
@@ -100,8 +101,8 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
     pattern = head_path + '*.json'
     done = glob.glob(pattern)
     if len(done) > 0:
-        done = map(lambda x: x.split('pl_')[1].split('.')[0], done)
-        done = map(lambda x: '-'.join(x.split('_')), done)
+        done = [x.split('pl_')[1].split('.')[0] for x in done]
+        done = ['-'.join(x.split('_')) for x in done]
 
     missing = dd_range
     if not reset:
@@ -112,15 +113,16 @@ def illuminate_canopies(light_tag='zenith', z_soil=0, variety='Tremie12',
             filename = head_path + '_'.join(daydate.split('-')) + '.json'
             g = get_canopy(variety=variety, nplants=nplants, daydate=daydate,
                            tag=tag, rep=rep)
-            meta = g.property('meta').values()[0]
+            meta = list(g.property('meta').values())[0]
             sources = tag_to_light(light_tag, sim_tag=tag, variety=variety)
-            c2u = {v: k for k, v in CaribuScene.units.iteritems()}
+            c2u = {v: k for k, v in CaribuScene.units.items()}
             units = c2u.get(meta['convUnit'])
             cscene = CaribuScene(g, sources, pattern=meta['domain'],
-                                 soil_mesh=1, z_soil=z_soil, scene_unit=units)
+                                 soil_mesh=None, z_soil=z_soil, scene_unit=units) #HACK see CaribuScene pb with soil label (sort(str and int)
             raw, aggregated = cscene.run(direct=True, infinite=True,
                                          simplify=True)
-            soil, _ = cscene.getSoilEnergy()
+ #           soil, _ = cscene.getSoilEnergy()
+            soil=0 #HACK See previous hack
             with open(filename, 'w') as output_file:
                 saved = {'raw': raw, 'aggregated': aggregated, 'soil': soil}
                 json.dump(saved, output_file, sort_keys=True, indent=4,
@@ -142,9 +144,9 @@ def get_light(light_tag='zenith', z_soil=0, variety='Tremie12', nplants=30,
         daydate.split('-')) + '.json'
     with open(filename, 'r') as input_file:
         cached = json.load(input_file)
-        raw = {w: {int(k): v for k, v in cached['raw'][w].iteritems()} for w in
+        raw = {w: {int(k): v for k, v in cached['raw'][w].items()} for w in
                cached['raw']}
         aggregated = {
-            w: {int(k): v for k, v in cached['aggregated'][w].iteritems()} for w
+            w: {int(k): v for k, v in cached['aggregated'][w].items()} for w
             in cached['aggregated']}
     return raw, aggregated, cached['soil']

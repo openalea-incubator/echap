@@ -1,10 +1,31 @@
 import numpy
+import pandas
 import scipy.stats
 import matplotlib.pyplot as plt
-
+from openalea.deploy.shared_data import shared_data
+import alinea.echap
 
 #from alinea.echap.evaluation_canopy import get_lai_sim, get_light_sim
 
+
+def get_file_name(variety = 'Tremie12', nplants = 30, group = None):
+    if group is None:
+        return 'leaf_'+variety.lower() + '_' + str(nplants) + 'pl.csv'
+    else:
+        assert group in ['sum', 'mean'], ValueError("group unknown, try 'sum' or 'mean'")
+        return 'leaf_'+variety.lower() + '_' + str(nplants) + 'pl_' + group + '.csv'
+
+def get_file_path(variety = 'Tremie12', nplants = 30, group = None):
+    filename = get_file_name(variety = variety, nplants = nplants, group = group)
+    return str(shared_data(alinea.echap)/'architectural_simulations'/filename)
+
+
+def get_simu_results(variety = 'Tremie12', nplants = 30, group = None):
+    file_path = get_file_path(variety = variety, nplants = nplants, group = group)
+    df = pandas.read_csv(file_path)
+    df['necro'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    df['necro_tot'] = 100*df['senesced_area']/df['area'].replace({ 0 : numpy.inf })
+    return df
 
 def conf_int(lst, perc_conf=95):
     """
@@ -141,9 +162,9 @@ def plot_sim_obs(df_sim, df_obs=None, variable='LAI_vert', xaxis='HS',
 def test_architecture_canopy_single(variety='Tremie12', nplants=30, nrep=1,
                                     fig_size=(10, 10), color='b', title=None,
                                     axs=None, tight_layout=False):
-    if axs == None:
+    if axs.all() == None:
         fig, axs = plt.subplots(2, 2, figsize=fig_size)
-    df_sim = get_simu_results(variety=variety, nplants=nplants, nrep=nrep)
+    df_sim = get_simu_results(variety=variety, nplants=nplants)
     df_obs = get_all_obs(variety=variety, origin_lai_data='biomass')
     plot_sim_obs(df_sim, df_obs, variable='TCgreen_57', xaxis='HS',
                  xlabel='Haun stage', ylabel='Cover fraction (oblique view)',

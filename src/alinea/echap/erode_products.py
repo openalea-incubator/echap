@@ -13,11 +13,11 @@ def erode_products(erosion_rates, compound_parameters = products_parameters):
     
     ptable = dict([(p['compound'],p) for p in compound_parameters])
     new_pars = ptable.copy()
-    for k in erosion_rates.keys() :
-        if not k in ptable.keys():
+    for k in list(erosion_rates.keys()) :
+        if not k in list(ptable.keys()):
             raise SimcyclePesticide('%s not found in compound_parameters'%k)
         
         new_pars[k]['Ap'] *= (1 - erosion_rates[k])
         new_pars[k]['Ae'] *= (1 - erosion_rates[k])
 
-    return ptable.values(),
+    return list(ptable.values()),

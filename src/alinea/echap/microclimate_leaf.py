@@ -43,7 +43,7 @@ def microclimate_leaf(g, weather_data, light_sectors='16', domain = None, convUn
     return g
 
 # deprecated
-from alinea.astk.caribu_interface import *
+from alinea.caribu.caribu_interface import *
 
 
 class MicroclimateLeaf(object):
@@ -88,8 +88,8 @@ class MicroclimateLeaf(object):
         id_out = turtle_interception(sectors, scene_geometry, energy = weather_data[['PPFD']].mean().item(0))
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
-        for Infid, e in EiInf.iteritems():
-            for Supid, a in EiSup.iteritems():
+        for Infid, e in EiInf.items():
+            for Supid, a in EiSup.items():
                 if Infid == Supid:
                     PAR_leaf[Infid] = {'PAR': e + a}
     # Rain
@@ -99,8 +99,8 @@ class MicroclimateLeaf(object):
         id_out = turtle_interception(sectors, scene_geometry, energy = mean_global_radiation)
         EiInf = id_out['EiInf']
         EiSup = id_out['EiSup']
-        for Infid, e in EiInf.iteritems():
-            for Supid, a in EiSup.iteritems():
+        for Infid, e in EiInf.items():
+            for Supid, a in EiSup.items():
                 if Infid == Supid:
                     microclimate[Infid] = {'global_radiation': e + a, 
                                             'rain': rain_leaf[Infid],

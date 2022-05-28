@@ -24,6 +24,7 @@ from alinea.adel.astk_interface import AdelWheat
 import alinea.echap.interception_data as idata
 
 from alinea.echap.evaluation_canopy import draft_TC, draft_light
+from functools import reduce
 
 plt.ion()
 
@@ -46,7 +47,7 @@ def get_reconstruction(name='Mercia', **args):
 #    
     
 def test_axis_dynamics(name='Mercia', color='r'):
-    dates = range(0,2500,100)
+    dates = list(range(0,2500,100))
     adel = AdelWheat()
     res = AdelWheat.checkAxeDyn(adel, dates, density=1)
 
@@ -108,7 +109,7 @@ def conf_int(lst, perc_conf=95):
 def simLAI(adel, domain_area, convUnit, nplants):
     from alinea.adel.postprocessing import axis_statistics, plot_statistics 
      
-    dd = range(500,2500,100)
+    dd = list(range(500,2500,100))
     
     outs = [adel.get_exposed_areas(g, convert=True) for g in (adel.setup_canopy(age) for age in dd)]
     new_outs = [df for df in outs if not df.empty]
@@ -232,7 +233,7 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
     else:
         color='m'
 
-    dd = range(500,2500,100)
+    dd = list(range(500,2500,100))
     
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction=aborting_tiller_reduction, **kwds)
     sim = [adel.setup_canopy(age) for age in dd]
@@ -242,7 +243,7 @@ def height(name='Mercia', n=30, aborting_tiller_reduction=1, **kwds):
         #pgl.Viewer.display(scene)
         scene_geom = g.property('geometry')
         heights = get_height(scene_geom)
-        max_height = max(map(numpy.min,heights.values()))
+        max_height = max(list(map(numpy.min,list(heights.values()))))
         max_h.append(max_height)
 
     h = pandas.DataFrame({'tt':dd, 'height':max_h})
@@ -348,12 +349,12 @@ def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie1
             Slv.append(data['Slv'][cpt])
             Slvgreen.append(data['Slvgreen'][cpt])
             cpt += 1
-    surfSet = zip(date, moy_numphy, ntop, Slv, Slvgreen)
+    surfSet = list(zip(date, moy_numphy, ntop, Slv, Slvgreen))
     df_fin = pandas.DataFrame(data = surfSet, columns=['HS', 'moyenne numphy', 'ntop_cur', 'Slv', 'Slvgreen'])
 
     #plot obs/sim sur le meme diagramme
-    df_fin.HS=map(str,df_fin.HS)
-    df_obs.HS=map(str,df_obs.HS)
+    df_fin.HS=list(map(str,df_fin.HS))
+    df_obs.HS=list(map(str,df_obs.HS))
     df_all = df_fin.merge(df_obs.ix[:,['HS','ntop_cur','Area A_bl']], how='outer')
     df_all = df_all[df_all['ntop_cur']<=5]
 
@@ -362,7 +363,7 @@ def plot_scan_obs_sim_surface(name='Tremie12', n=30): # Pour Tremie12 et Tremie1
     val = df_all['HS'].unique()
         
     for x, HS in enumerate(val):
-        print HS
+        print(HS)
         df_fin = df_all[df_all['HS']==HS]
         n_groups = len(df_fin['ntop_cur'].unique())
         index = numpy.arange(n_groups)      
@@ -485,7 +486,7 @@ def plot_scan_obs_dimfactor(name='Tremie12', n=30): # Pour Tremie12 et Tremie13
             
 #------------------------------------------------------------------------------------- 
 # Taux de couverture    
-def comp_TC(name='Mercia', n=30, zenith=0, dd = range(400,2600,100), scale = 1, aborting_tiller_reduction=1, seed=1, density=1, **kwds): #zenith = 0 or 57
+def comp_TC(name='Mercia', n=30, zenith=0, dd = list(range(400,2600,100)), scale = 1, aborting_tiller_reduction=1, seed=1, density=1, **kwds): #zenith = 0 or 57
     conv = HSconv[name]
 
     if zenith==0:
@@ -621,7 +622,7 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
     tab0 = tab0.merge(bid); tab20 = tab20.merge(bid)
     tab0 = tab0.sort(['TT']); tab20 = tab20.sort(['TT'])
     
-    dd = range(500,2500,100) #dd = range(400,2600,300)
+    dd = list(range(500,2500,100)) #dd = range(400,2600,300)
     
     # PARTIE DONNEES ----------------------------------
     #obs tous les points
@@ -690,7 +691,7 @@ def graph_meteo(name='Mercia', level=5, n=30, aborting_tiller_reduction=1, seed=
         #plt.errorbar(petri_T1['HS'][1], mean1, yerr=IC1, fmt='or', label = 'Petri T1, mean+IC, '+name)
         #plt.errorbar(petri_T2['HS'][1], mean2, yerr=IC2, fmt='^r', label = 'Petri T2, mean+IC, '+name)
     else :
-        print '--Pas de donnees de boites de Petri pour '+name+'--'
+        print('--Pas de donnees de boites de Petri pour '+name+'--')
         
     # PARTIE SIM --------------------------------------------------------------------------------
     adel, domain, domain_area, convUnit, nplants = get_reconstruction(name, nplants = n, aborting_tiller_reduction = aborting_tiller_reduction, seed=seed, **kwds)
@@ -812,7 +813,7 @@ def plot_sup(graph1=False, graph2=False, graph3=False, graph4=False, graph5=True
             sim_lai = simLAI(adel, domain_area, convUnit, nplants)
             sim_lai = sim_lai.rename(columns={'ThermalTime' : 'TT'})            
             #TC sim, ajout colonne TC total    
-            dd = range(400,2600,100)    
+            dd = list(range(400,2600,100))    
             adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)
             sim = (adel.setup_canopy(age) for age in dd)
             TC_sim = [draft_TC(g, adel, domain, zenith=0, rep=1) for g in sim]
@@ -983,7 +984,7 @@ def plot_sup(graph1=False, graph2=False, graph3=False, graph4=False, graph5=True
             #TC sim
             #sim_tc = 'files/sim_tc_'+var+'.csv'
             #sim_tc = pandas.read_csv(sim_tc, decimal='.', sep=',')            
-            dd = range(400,2600,100)    
+            dd = list(range(400,2600,100))    
             adel, domain, domain_area, convUnit, nplants = get_reconstruction(name=var, nplants = 30, aborting_tiller_reduction = 1, seed=1)
             sim = (adel.setup_canopy(age) for age in dd)
             TC_sim = [draft_TC(g, adel, domain, zenith=57, rep=2) for g in sim]

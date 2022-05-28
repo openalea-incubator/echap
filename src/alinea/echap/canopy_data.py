@@ -159,14 +159,14 @@ def lai_pai_scan(variety='Tremie12', tag='reference', reset=False):
         'variety', 'daydate', 'rep', 'N', 'id_Axe', 'A_bl', 'A_bl_green',
         'stem_half_area')]
         scan = scan.loc[scan['daydate'].isin(bm['daydate']),:]
-        areas = scan.groupby(('daydate','rep')).agg(sum).reset_index()
+        areas = scan.groupby(['daydate','rep']).agg(sum).reset_index()
         areas = areas.drop(['stem_half_area', 'N'],axis=1)
-        stem_areas_ms = scan.groupby(('daydate', 'rep', 'N')).agg(
-            numpy.mean).reset_index().groupby(('daydate', 'rep')).agg(
+        stem_areas_ms = scan.groupby(['daydate', 'rep', 'N']).agg(
+            numpy.mean).reset_index().groupby(['daydate', 'rep']).agg(
             sum).reset_index().loc[:,
-                        ('daydate', 'rep', 'stem_half_area')].rename(
+                        ['daydate', 'rep', 'stem_half_area']].rename(
             columns={'stem_half_area': 'A_stem_MS'})
-        areas_axe = scan.groupby(('daydate','rep', 'id_Axe')).agg(sum).reset_index()
+        areas_axe = scan.groupby(['daydate','rep', 'id_Axe']).agg(sum).reset_index()
         areas_ms = areas_axe.loc[areas_axe['id_Axe'] == 'MB', (
         'daydate', 'rep', 'A_bl', 'A_bl_green')].rename(
             columns={'A_bl_green': 'A_bl_green_MS', 'A_bl': 'A_bl_MS'})
@@ -195,7 +195,7 @@ def lai_pai_scan(variety='Tremie12', tag='reference', reset=False):
         df.to_csv(path, index=False)
         #
 
-    df = pandas.concat((df.loc[:,('variety', 'daydate')], df.ix[:, 'stem_leaf_ratio_area':]), axis=1)
+    df = pandas.concat((df.loc[:,('variety', 'daydate')], df.loc[:, 'stem_leaf_ratio_area':]), axis=1)
     df = df.groupby(['variety', 'daydate']).agg([numpy.mean, conf_int])
     df.columns = ['_'.join(c) for c in df.columns]
     df = df.reset_index()

@@ -60,7 +60,7 @@ for tc in timer:
     g = pesticide_efficacy(g, efficacy_model, label='LeafElement', timestep=1)
     # Microclimate (timer)
     g,_ = local_microclimate(g, climate_model, tc['microclim'], label='LeafElement')
-    print g.property('microclimate')
+    print(g.property('microclimate'))
     # Rain interception (timer)
     g = rain_interception(g, rain_interception_model, tc['rain'], label='LeafElement', geometry = 'geometry')
     # Infect (timer)

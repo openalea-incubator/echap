@@ -98,22 +98,22 @@ def group_by_fnl(data, from_top = True):
     grps = get_fnl_by_plant(data)
     # Get data by FNL
     if from_top == True:
-        return {fnl:data[data['num_plant'].isin(grps[fnl])] for fnl in grps.iterkeys()}
+        return {fnl:data[data['num_plant'].isin(grps[fnl])] for fnl in grps.keys()}
     else:
         groups = {}
-        for fnl in grps.iterkeys():
+        for fnl in grps.keys():
             group = data[data['num_plant'].isin(grps[fnl])]
             groups[fnl] = group
         return groups
 
 def get_ratio_fnl(data, weather, variable='septo_green'):
     data_grouped = group_by_fnl(data)
-    len_dfs=list([len(set(v['num_plant'])) for v in data_grouped.values()])
+    len_dfs=list([len(set(v['num_plant'])) for v in list(data_grouped.values())])
     fnls=list(data_grouped.keys())
     fnl_main = fnls[len_dfs.index(max(len_dfs))]
     fnl_non_main = fnls[len_dfs.index(min(len_dfs))]
     dict_df_count = {}
-    for fnl, df in data_grouped.iteritems():
+    for fnl, df in data_grouped.items():
         df_count = table_count_notations(df, weather, variable = variable)
         df_count = df_count[df_count.applymap(np.isreal)]
         df_count = df_count.astype(float)
@@ -150,7 +150,7 @@ def data_reader_tremis(data_file='tremis_2012_tnt.csv', green_on_green = True):
         return necro*ratio_septo_necro/100
     
     def septo_green_on_green(septo_green, necro):
-        septo_green_on_green = map(lambda (x,y): 100*x / (100 - y) if y<100 else 0., zip(septo_green, necro))
+        septo_green_on_green = [100*x_y[0] / (100 - x_y[1]) if x_y[1]<100 else 0. for x_y in zip(septo_green, necro)]
         return septo_green_on_green
     
     file_path = shared_data(alinea.echap, 'disease_measurements/'+data_file)
@@ -287,7 +287,7 @@ def get_df_dates_xaxis(data, xaxis):
     """ Get dates of leaf stage in argument xaxis from data """
     date_name = get_date_name_event(xaxis)
     df_dates = pd.DataFrame(index = set(data['num_leaf_top']))
-    df_dates[xaxis] = map(lambda x: np.mean(data[date_name][data['num_leaf_top']==x]), df_dates.index)
+    df_dates[xaxis] = [np.mean(data[date_name][data['num_leaf_top']==x]) for x in df_dates.index]
     return df_dates
 
 def adapt_data(data, weather, adel = None, hide_old_data = False, 
@@ -410,10 +410,10 @@ def compare_contingency_by_fnl(data, weather, variable = 'septo_green'):
     """ Generate comparative dataframe with number of notations for given fnl """
     data_grouped = group_by_fnl(data)
     dict_df_count = {}
-    for fnl, df in data_grouped.iteritems():
+    for fnl, df in data_grouped.items():
         df_count = table_count_notations(df, weather, variable = variable)
         df_count.columns = pd.MultiIndex.from_product([['FNL %d' %fnl], df_count.columns])
         dict_df_count[fnl] = df_count
     df_empty = pd.DataFrame(['/' for i in range(len(df_count))], index = df_count.index, 
                             columns=pd.MultiIndex.from_product([['/'], ['/']]))
-    return pd.concat([pd.concat([df, df_empty], axis=1) for df in dict_df_count.itervalues()], axis = 1)
+    return pd.concat([pd.concat([df, df_empty], axis=1) for df in dict_df_count.values()], axis = 1)

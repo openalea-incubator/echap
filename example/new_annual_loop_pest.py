@@ -49,17 +49,17 @@ def pesticide_loop(meteo_file='meteo00-01.txt', start="2000-04-25", periods=8, f
     for i,controls in enumerate(zip(canopy_timing, doses_timing, pest_timing)):
         canopy_iter, doses_iter, pest_iter = controls
         if canopy_iter:
-            print canopy_iter.value.index[-1]
+            print(canopy_iter.value.index[-1])
             g = adel.grow(g, canopy_iter.value)
             _=rain_and_light_star(g, light_sectors = '1', domain=domain, convUnit=convUnit)
-            print('recording, iter %d, tt%f'%(i,adel.canopy_age))
+            print(('recording, iter %d, tt%f'%(i,adel.canopy_age)))
             _=do_record(g, canopy_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
         if pest_iter:
-            print pest_iter.value
-            print '\n\npesticide_loop!!\n\n'
+            print(pest_iter.value)
+            print('\n\npesticide_loop!!\n\n')
             _=pesticide_intercept(g, pest_iter.value)
         if doses_iter:
-            print 'updte microclimate / doses...'
+            print('updte microclimate / doses...')
             _=microclimate_leaf(g, doses_iter.value, domain = domain, convUnit = convUnit)
             _=update_pesticides(g, doses_iter.value)
             _=do_record(g, doses_iter.value, recorder, header={'iter':i, 'TT':adel.canopy_age})
@@ -69,7 +69,7 @@ from alinea.echap.architectural_reconstructions import reconst_db
 
 # pour homogeneite avec donnees experimentales : dose = 10000 lieu de 1 l.ha-1
 def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
-    print '\n\nrepartition_at_application 3!!\n\n'
+    print('\n\nrepartition_at_application 3!!\n\n')
     from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
     recorder = LeafElementRecorder()
@@ -80,7 +80,7 @@ def repartition_at_application(appdate = '2011-04-19', dose = 1, age = 1166):
     g,_=pesticide_intercept(g, application_data)
     do_record(g, application_data, recorder)
     df =  recorder.get_records()
-    print 'repartition_at_application df.columns before ', df.columns
+    print('repartition_at_application df.columns before ', df.columns)
     return df
 
 
@@ -99,7 +99,7 @@ def get_reconstruction(name='Mercia', nplants=30):
     return adel, adel.domain, adel.domain_area, adel.convUnit, adel.nplants
 
 def repartition_at_applicationArch(appdate, dose, g):
-    print '\n\nrepartition_at_applicationArch 3!!\n\n'
+    print('\n\nrepartition_at_applicationArch 3!!\n\n')
 #   from macros_annual_loop import setup_canopy
     from alinea.echap.recorder import LeafElementRecorder
     recorder = LeafElementRecorder()
@@ -110,7 +110,7 @@ def repartition_at_applicationArch(appdate, dose, g):
     g,_=pesticide_intercept(g, application_data)
     do_record(g, application_data, recorder)
     df =  recorder.get_records()
-    print 'repartition_at_application df.columns before ', df.columns
+    print('repartition_at_application df.columns before ', df.columns)
     return df
 
 

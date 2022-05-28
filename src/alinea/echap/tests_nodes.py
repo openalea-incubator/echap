@@ -4,7 +4,7 @@ Created on Tue Apr 16 17:15:32 2013
 
 @author: lepse
 """
-from openalea.color import colormap
+#from openalea.color import colormap
 
 import numpy
 from numpy import recfromcsv
@@ -27,7 +27,7 @@ green_lightblue_blue = green_lightblue_blue(levels=10)
 
 def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
     """ plot the plant with pesticide doses """
-    from matplotlib import mpl
+    import matplotlib as mpl
     cmap = mpl.cm.get_cmap(colmap)
     green = (0,180,0)
     for v in g.vertices(scale=g.max_scale()) : 
@@ -37,8 +37,8 @@ def plot_pesticide(g, compound_name='Epoxiconazole', colmap=cm.winter_r):
             n.color = (int(r*255),int(gg*255),int(b*255))           
         else : 
             n.color = green
-    scene = plot3d(g)
-    Viewer.display(scene)
+    scene = plot3d(g , colors=g.property("color"))
+   # Viewer.display(scene)
     return scene
 
 
@@ -52,9 +52,9 @@ def dose_norm(dose, dose_max_ha):
 def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxiconazole', dose_max_ha=125, cmap=green_lightblue_blue):
     """ plot the plant with pesticide doses """
     prop = g.property(property_name)
-    keys = prop.keys()
+    keys = list(prop.keys())
     value = []
-    for k, val in prop.iteritems():
+    for k, val in prop.items():
         value.append(val[compound_name])
         val = numpy.array(value)
     if type(cmap) is str:
@@ -72,7 +72,7 @@ def plot_pesticide_norm(g, property_name='surfacic_doses', compound_name='Epoxic
     for vid in g.vertices(scale=g.max_scale()): 
         n = g.node(vid)
         if 'surfacic_doses' in n.properties():
-            n.color = tuple(dict(zip(keys,colors))[vid])
+            n.color = tuple(dict(list(zip(keys,colors)))[vid])
         else : 
             n.color = green
     scene = plot3d(g)
@@ -109,7 +109,7 @@ def compounds_from_csv(csvname, delimiter = ';'):
         - 'decay_rate'    
     """
     tab = recfromcsv(csvname, delimiter = delimiter, case_sensitive = True)
-    d = [dict(zip(tab.dtype.names, data)) for data in tab]
+    d = [dict(list(zip(tab.dtype.names, data))) for data in tab]
     return d
 
 

@@ -41,7 +41,7 @@ def haun_stage_plot(obs_HS, fit_HS):
               plt.Line2D((0,1),(0,0), linestyle='',
               markerfacecolor='None', markeredgecolor='k', marker = 's')]
     labels = ['fit mean NFF', 'tagged mean NFF', 'sampled mean NFF']
-    for nff in colors.iterkeys():
+    for nff in colors.keys():
         labels += ['fit NFF %d' %nff, 'data NFF %d' %nff]
         proxys += [plt.Line2D((0,1),(0,0), color=colors[nff], linestyle='-'),
                    plt.Line2D((0,1),(0,0), linestyle='', markerfacecolor=colors[nff],
@@ -103,14 +103,14 @@ def green_leaves_plot(obs_GL, fit_GL):
     markers = markers_source()
     proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
     labels = ['fit mean NFF']
-    for mark, symb in markers.iteritems():
+    for mark, symb in markers.items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='k', markeredgecolor='k', marker = symb)]
         labels += ['source: ' + mark]
     proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='None', markeredgecolor='k', marker = symb)]
     labels += ['estimated' ]
-    for nff, col in colors.iteritems():
+    for nff, col in colors.items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='-', color = col)]
         labels += ['NFF: %d' %nff]
     
@@ -177,14 +177,14 @@ def green_leaves_plot_mean(obs_GL, fit_GL):
     
     proxys = [plt.Line2D((0,1),(0,0), color='k', linestyle='-')]
     labels = ['fit mean']
-    for mark, symb in markers.iteritems():
+    for mark, symb in markers.items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='k', markeredgecolor='k', marker = symb)]
         labels += ['source: ' + mark]
     proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='None', markeredgecolor='k', marker = symb)]
     labels += ['estimated' ]
-    for variety, col in colors().iteritems():
+    for variety, col in colors().items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
                     markerfacecolor=col, markeredgecolor=col, marker = symb)]
         labels += [variety]
@@ -235,7 +235,7 @@ def dimension_plot(dimension_data, fit = None, dimension = 'L_blade', estimates_
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
         labels += ['source: ' + src]
-    for nff, col in cols.iteritems():
+    for nff, col in cols.items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='-', color = col)]
         labels += ['NFF: %d' %nff]
     
@@ -315,7 +315,7 @@ def dimension_plot_mean(dimension_data, fit = None, dimension = 'L_blade', ax = 
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
         labels += ['source: ' + src]
-    for variety, col in colors().iteritems():
+    for variety, col in colors().items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
                     markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
         labels += [variety]
@@ -340,7 +340,7 @@ def dimension_plot_varieties(dimension_data, fit = None):
         proxys += [plt.Line2D((0,1),(0,0), linestyle='',
                     markerfacecolor='k', markeredgecolor='k', marker = markers[src])]
         labels += ['source: ' + src]
-    for variety, col in colors().iteritems():
+    for variety, col in colors().items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
                     markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
         labels += [variety]
@@ -493,7 +493,7 @@ def density_plot(density_data, density_fits, HS_converter, legend=True):
     grouped = density_data.groupby('Var')    
     for name in names:
         dens = grouped.get_group(name)
-        dens['HS'] = HS_converter[name](dens['TT'])
+        dens.loc[:, 'HS'] = HS_converter[name](dens['TT'])
         ax.errorbar(dens['HS'], dens['density'], yerr=dens['SD'].values, fmt='o' + col[name], label=name + ' density', markersize=7)
         #
         df = density_fits[name]['density_table']

@@ -37,7 +37,7 @@ def milne_leaf(initial_dose, compound_parameters, hours):
     """
     days = float(hours) / 24
     ptable = compound_parameters
-    for name, dose in initial_dose.iteritems():
+    for name, dose in initial_dose.items():
         try:
             initial_dose[name] = _dose_decay(ptable[name]['decay_rate'], initial_dose[name], days)
         except KeyError:
@@ -52,8 +52,8 @@ class MilneModel(object):
         self.compound_parameters = compound_parameters
         
     def decay(self, dose, time_sequence):
-        hours = range(len(time_sequence))
-        doses = map(lambda x: _dose_decay(self.compound_parameters['decay_rate'], dose, float(x) / 24), hours)
+        hours = list(range(len(time_sequence)))
+        doses = [_dose_decay(self.compound_parameters['decay_rate'], dose, float(x) / 24) for x in hours]
         res = pandas.DataFrame({'datetime' : time_sequence, 'dose' :doses})
         res.index = res['datetime']
         return res

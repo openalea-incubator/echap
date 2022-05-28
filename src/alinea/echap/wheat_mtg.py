@@ -21,26 +21,21 @@ def adelR(nplants,dd):
 
 def adel_mtg():
     """ create a very simple adel mtg """
-    d = {'plant':[1,1],'axe_id':['MS','T1'],'ms_insertion':[0,1],'numphy':[1,1], 'Lr':[0,0],
-         'Laz': [0,90], 'Ll' :[3,3], 'Lv' :[3,3] , 'Lsen':[0,0], 'L_shape':[3,3], 'Lw_shape':[.3,.3], 'Linc':[0,0],
-         'Einc':[0,45],'El':[1,1],'Ev':[1,1],'Esen':[0,0],'Ed': [0.1,0.1]}
-    g=mtg_factory(d,adel_metamer,leaf_db=adel_data.leaves_db(), leaf_sectors=1)
-    g=mtg_interpreter(g)
-    return g
+    return adel_data.adel_two_metamers()
 
 def adel_one_leaf():
     """ create a very simple adel mtg """
     d = {'plant':[1],'axe_id':['MS'],'ms_insertion':[0],'numphy':[1], 
          'Laz': [0], 'Ll' :[3], 'Lv' :[3] , 'Lsen':[0], 'L_shape':[3], 'Lw_shape':[.3], 'Linc':[0],
-         'Einc':[0],'El':[0],'Ev':[0],'Esen':[0],'Ed': [0.1]}
-    g=mtg_factory(d,adel_metamer,leaf_db=adel_data.leaves_db(), leaf_sectors=1)
+         'Einc':[0],'El':[0],'Ev':[0],'Esen':[0],'Ed': [0.1],'HS_final':[2],'nff':[2]}
+    g=mtg_factory(d,adel_metamer, leaf_sectors=1)
     g=mtg_interpreter(g)
     return g
 
 def adel_mtg2(nb_sect=1):
     """ create a less simple adel mtg """
     p, d = adelR(3,1000)
-    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,leaf_db=adel_data.leaves_db(),stand=[((0,0,0),0),((10,0,0),90), ((0,10,0), 0)])
+    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,stand=[((0,0,0),0),((10,0,0),90), ((0,10,0), 0)])
     g=mtg_interpreter(g)
     return g
 
@@ -54,6 +49,6 @@ def adel_mtg3(nb_sect=1, d=None, p=None):
         stand = [((int(i)-10*size/2., int(j)-10*size/2., 0),random.randint(0,90)) for i, j in 10*stand[:p]]
     else:
         stand = [((0,0,0),0),((10,0,0),90), ((0,10,0), 0)]
-    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,leaf_db=adel_data.leaves_db(),stand=stand)
+    g=mtg_factory(d,adel_metamer, leaf_sectors=nb_sect,stand=stand)
     g=mtg_interpreter(g)
     return g

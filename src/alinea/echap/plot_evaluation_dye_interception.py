@@ -22,18 +22,18 @@ def colors_variety():
 
 
 def xleaf_by():
-    return {'metamer': range(7, 14), 'ntop_cur': range(0, 6),
-            'ntop_lig': range(-1, 5)}
+    return {'metamer': list(range(7, 14)), 'ntop_cur': list(range(0, 6)),
+            'ntop_lig': list(range(-1, 5))}
 
 
 def prefix_xbar():
     return {'metamer': 'L', 'ntop_cur': 'F', 'ntop_lig': 'Fl'}
 
 
-def barplot_leaf(ax, obs, sim, loc, xleaf=range(1, 5), prefix='F', o_color='y',
+def barplot_leaf(ax, obs, sim, loc, xleaf=list(range(1, 5)), prefix='F', o_color='y',
                  s_color='b', opacity=0.4, bar_width=0.4):
     leaves = [prefix + str(x) for x in xleaf]
-    xbar = dict(zip(leaves, xleaf))
+    xbar = dict(list(zip(leaves, xleaf)))
 
     obs_bar = None
     if obs is not None:
@@ -55,12 +55,12 @@ def barplot_leaf(ax, obs, sim, loc, xleaf=range(1, 5), prefix='F', o_color='y',
     return obs_bar, sim_bar
 
 
-def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=range(1, 5),
+def fig_observe_simule(obs, sim, treatments=['T1', 'T2'], xleaf=list(range(1, 5)),
                        prefix='F', s_color='b', ylim=None, ylab=None,
                        title=None, add_obs=None, add_sim=None):
     nt = len(treatments)
-    lg = max(1, nt / 2)
-    fig, axes = plt.subplots(nrows=lg, ncols=nt / lg + (nt - nt / lg * lg),
+    lg = max(1, nt // 2)
+    fig, axes = plt.subplots(nrows=lg, ncols=int(nt / lg + (nt - nt / lg * lg)),
                              sharey=True)
     axlist = fig.get_axes()
     for ifig, treatment in enumerate(treatments):
@@ -146,7 +146,7 @@ def hs_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
     sim = idye.axis_statistics(df_sim, what='haun_stage', axis=axis)
 
@@ -231,7 +231,7 @@ def sil_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     sim = idye.leaf_statistics(df_sim, what=what, by=by, axis=axis)
     # plot
     color = colors_variety()[variety]
@@ -253,12 +253,12 @@ def petri_observe_simule(variety='Tremie12', nplants=30, nrep=1, axis='MS',
         treatments = idata.tag_treatments()[variety]['application']
     # obs
     df_obs = idata.petri_dye_interception()
-    df_obs = df_obs.loc[variety, :]
+    df_obs = df_obs[df_obs['variety']==variety]
     obs = df_obs.set_index('treatment')
     # sim
     df_sim = idye.dye_interception(variety, nplants=nplants, nrep=nrep,
                                    simulation=simulation, treatments=treatments,
-                                   reset=reset, reset_data=reset_data)
+                                   reset=reset, reset_reconstruction=reset_data)
     df_sim['HStarget'] = numpy.minimum(df_sim['HS'], df_sim['nff'])
     sim = idye.axis_statistics(df_sim, what='haun_stage', axis=axis)
 

@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 __revision__ = "$Id: $"
 
-import sys
-import os
+import os,sys
 
 from setuptools import setup, find_packages
 from openalea.deploy.metainfo import read_metainfo
 
+
 # Share datas
-share_dirs = {'share':'share'}
+share_dirs = {'share':'share/data/'}
 
 # Reads the metainfo file
 metadata = read_metainfo('metainfo.ini', verbose=True)
-for key,value in metadata.iteritems():
+for key,value in metadata.items():
     exec("%s = '%s'" % (key, value))
 
 #The metainfo files must contains
@@ -56,7 +56,8 @@ else:
 #wralea_entry_points = ['%s = %s'%(pkg,namespace + '.' + pkg) for pkg in top_pkgs]
 
 # dependencies to other eggs
-setup_requires = []
+setup_requires = ['openalea.deploy']
+
 if("win32" in sys.platform):
     install_requires = []
 else:
@@ -74,14 +75,15 @@ setup(
     author_email=authors_email,
     url=url,
     license=license,
-    keywords = '',	
+    keywords = '',
+    py_modules = [],	
 
-    # package installation
+    # package installation 
     packages= packages,	
-    package_dir= package_dir,
+    package_dir=package_dir,
 
     # Namespace packages creation by deploy
-    #namespace_packages = [namespace],
+    namespace_packages = ['alinea'],
     #create_namespaces = False,
     zip_safe= False,
 
@@ -89,7 +91,6 @@ setup(
     setup_requires = setup_requires,
     install_requires = install_requires,
     dependency_links = dependency_links,
-
 
     # Binary installation (if necessary)
     # Define what to execute with scons	
@@ -105,7 +106,7 @@ setup(
     # (you can provide an exclusion dictionary named exclude_package_data to remove parasites).
     # alternatively to global inclusion, list the file to include   
     #package_data = {'' : ['*.pyd', '*.so'],},
-    share_dirs = {'share':'share'},
+    share_dirs = share_dirs,
     # postinstall_scripts = ['',],
 
     # Declare scripts and wralea as entry_points (extensions) of your package 
@@ -118,5 +119,6 @@ setup(
         #	'wralea': wralea_entry_points
         },
     )
+    
 
 

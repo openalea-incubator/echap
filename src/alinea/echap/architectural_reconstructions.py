@@ -9,7 +9,7 @@ import os
 
 from copy import deepcopy
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 
@@ -18,24 +18,26 @@ from alinea.adel.astk_interface import AdelWheat
 from alinea.adel.geometric_elements import Leaves
 from alinea.adel.Stand import AgronomicStand
 from alinea.adel.AdelR import devCsv
-
-import alinea.echap
 from openalea.deploy.shared_data import shared_data
 
+import alinea.adel.plantgen_extensions as pgen_ext
+
+import alinea.echap
 import alinea.echap.architectural_data as archidb
 import alinea.echap.plot_architectural_reconstructions as archi_plot
 from alinea.echap.hs_tt import HS_fit
 
-import alinea.adel.plantgen_extensions as pgen_ext
+
 
 # run_plots = False # prevent ipython %run to make plots
 # reset_data = False# control the ipython %run behavior concerning data + HSfit dependent data
 
+share_dir = shared_data(alinea.echap,share_path='./share/data')
 
 #---------- reconstructions
 
 def cache_reconstruction_path(tag):
-    path = shared_data(alinea.echap) / 'cache' / 'reconstructions' / tag
+    path = share_dir / 'cache' / 'reconstructions' / tag
     if not os.path.exists(str(path)):
         os.makedirs(str(path))
     return path
@@ -225,7 +227,7 @@ def density_fits(tag='reference', reset=False):
                 pdb[k]['TT_date'][pdb[k]['code_date']['emergence']]))
             d.append(pdb[k]['plant_density_at_emergence'])
         if 'plant_density' in pdb[k]:
-            for date, densities in pdb[k]['plant_density'].iteritems():
+            for date, densities in pdb[k]['plant_density'].items():
                 hs.extend(
                     [HS_converter[k](pdb[k]['TT_date'][date])] * len(densities))
                 d.extend(densities)
@@ -301,6 +303,7 @@ def _axepop_fit(tdb, delta_stop_del, dHS_reg, max_order, tiller_damages,
     ms_nff_probas = tdb['nff_probabilities']
     ears_per_plant = tdb['ears_per_plant']
     primary_emission = tdb['emission_probabilities']
+    primary_emission = {k:v for k,v in primary_emission.items() if k not in ['TC','TP','TS','TT','FT','TT3F']}
     emission = pgen_ext.TillerEmission(primary_emission)
     regression = pgen_ext.TillerRegression(ears_per_plant, dHS_reg,
                                            delta_stop_del)
@@ -504,9 +507,9 @@ def leaf_trajectories(dfxy, dfsr, bins = [-10, 0.5, 1, 2, 3, 4, 10], ntraj = 10,
             trajectories[k].append({})
             for t in set(validxy['age_class']):
                 x = grouped.get_group((k,t))
-                trajectories[k][i][t] = x.ix[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
+                trajectories[k][i][t] = x.loc[x['inerv'] == random.sample(set(x['inerv']),1),['x','y']].to_dict('list')
     
-    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
+    srdb = {k:v.loc[:,['s','r']].to_dict('list') for k, v in dfsr.groupby('Lindex')}
     
     return trajectories, srdb, bins
 
@@ -553,7 +556,7 @@ def median_leaf_fits(xydata, sr_data, disc_level=7, top_leaves=3):
     gL = geoLeaf(nlim=top_leaves)   
     trajs,bins = xydata
     sr_data['Lindex'] = sr_data['rankclass']
-    srdb = {k:v.ix[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
+    srdb = {k:v.loc[:,['s','r']].to_dict('list') for k, v in sr_data.groupby('Lindex')}
     return Leaves(trajs, srdb, geoLeaf=gL, dynamic_bins = bins, discretisation_level = disc_level)
 
 
@@ -617,7 +620,7 @@ class EchapReconstructions(object):
                                  base_config=self.pgen_base,
                                  adel_pars=self.pars['adel_pars'])
         axeT, dimT, phenT = pgen.adelT(plants)
-        axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
+        axeT = axeT.sort_values(['id_plt', 'id_cohort', 'N_phytomer'])
         devT = devCsv(axeT, dimT, phenT)
 
         leaves = self.leaves[name]
@@ -632,8 +635,13 @@ class EchapReconstructions(object):
 
     def save(self, filename):
 
-        with open(str(filename), 'w') as output:
+        with open(str(filename), 'wb') as output:
             pickle.dump(self, output)
+    
+    @staticmethod
+    def load(filename):
+        with open(filename,'rb') as saved:
+            return pickle.load(saved,encoding='bytes')
 
 
 def echap_reconstructions(tag='reference', reset=False):
@@ -664,10 +672,10 @@ def soisson_reconstruction(nplants=30, sowing_density=250., plant_density=250.,
     GLfit = GL_fits()['Mercia']
     Dimfit = dimension_fits()['Mercia']
     Dimfit.scale = {k: v * 1.15 for k, v in
-                    Dimfit.scale.iteritems()}  # Seen on Soisson 2010 compared to Mercia 2010
+                    Dimfit.scale.items()}  # Seen on Soisson 2010 compared to Mercia 2010
     pgen = pgen_ext.PlantGen(HSfit=hs_fit['Mercia'], GLfit=GLfit, Dimfit=Dimfit)
     axeT, dimT, phenT = pgen.adelT(plants)
-    axeT = axeT.sort(['id_plt', 'id_cohort', 'N_phytomer'])
+    axeT = axeT.sort_values(['id_plt', 'id_cohort', 'N_phytomer'])
     devT = devCsv(axeT, dimT, phenT)
     leaves = leafshape_fits()['Mercia']  # TODO Create and Take Soisson
     return AdelWheat(nplants=nplants, nsect=nsect, devT=devT, stand=stand,

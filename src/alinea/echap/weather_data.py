@@ -30,7 +30,7 @@ boigneville = {'city': 'Boigneville', 'latitude': 48.3, 'longitude': 2.3,
                'altitude': 100}
 
 
-def arvalis_reader(data_file):
+def arvalis_reader(data_file,sep=";"):
     """ reads meteorological data from arvalis database 
     
     Caution : missing data labeled as 'Abs!' should be removed before parsing
@@ -41,7 +41,7 @@ def arvalis_reader(data_file):
     data = pandas.read_csv(data_file, names=['date', 'h', 'temperature_air',
                                              'relative_humidity', 'rain',
                                              'wind_speed', 'global_radiation'],
-                           sep=';', skiprows=2, decimal=',')
+                           sep=sep, skiprows=2, decimal=',')
     # create datetime index
     data.index = pandas.to_datetime(data['date'].map(str) + ' ' + data['h'],
                                     dayfirst=True)
@@ -65,7 +65,7 @@ def get_weather(variety='Mercia'):
 
     filename = 'Boigneville_' + str(year) + '_' + str(year + 1) + '_h.csv'
     meteo_path = shared_data(alinea.echap) / 'weather_data' / filename
-    weather = Weather(meteo_path, reader=arvalis_reader,
+    weather = Weather(meteo_path, reader=arvalis_reader,sep=';',
                       localisation=boigneville)
     weather.check(
         ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain',
@@ -75,11 +75,11 @@ def get_weather(variety='Mercia'):
 
 
 def par_sensors_hourly(variety='Tremie12'):
-    if variety is 'Mercia' or variety is 'Rht3':
+    if variety == 'Mercia' or variety == 'Rht3':
         data_file = 'METEO_stationINRA_20102011.csv'
-    elif variety is 'Tremie12':
+    elif variety == 'Tremie12':
         data_file = 'METEO_stationINRA_20112012.csv'
-    elif variety is 'Tremie13':
+    elif variety == 'Tremie13':
         data_file = 'METEO_stationINRA_20122013.csv'
 
     header_row = ['date', 'h', 'record', 'QR_PAR_Avg', 'SE_PAR_Avg_1',

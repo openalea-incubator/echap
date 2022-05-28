@@ -1,7 +1,8 @@
 import pandas
 import numpy
+from functools import reduce
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except:
     import pickle
 
@@ -11,6 +12,7 @@ from alinea.echap.data_processing import aggregate, conf_int
 from openalea.deploy.shared_data import shared_data
 import alinea.echap
 
+share_dir= shared_data(alinea.echap, share_path='../../share/data')
 
 #
 # ____________________________________________________________________________Plot data
@@ -69,7 +71,7 @@ def Plot_data_Tremie_2011_2012():
     }
     d['ear_density_at_harvest']=numpy.mean(d['raw_ear_density_at_harvest'])
     d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,list(d['plant_density'].values())))
     return d
 
 
@@ -96,7 +98,7 @@ def Plot_data_Tremie_2012_2013():
     }
     d['ear_density_at_harvest'] = numpy.mean(d['raw_ear_density_at_harvest'])
     d['ear_density_at_harvest_SD'] = numpy.nanstd(d['raw_ear_density_at_harvest'])
-    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,d['plant_density'].values()))
+    d['mean_plant_density'] = numpy.mean(reduce(lambda x,y:x+y,list(d['plant_density'].values())))
     return d
 
 def Plot_data():
@@ -113,7 +115,7 @@ def axe_density_data():
     pd = Plot_data()
     for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
         pdata = pd[g]
-        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        date_code = {v:k for k, v in pdata['code_date'].items()}
         tag = []
         daydate = []
         density = []
@@ -132,7 +134,7 @@ def axe_density_data():
             pdensity.append(pdata['plant_density_at_emergence'])
             fdensity.append(numpy.nan)
         if 'axe_density' in pdata: #Tremie 12 only, considered as primary
-            for k, v in pdata['axe_density'].iteritems():
+            for k, v in pdata['axe_density'].items():
                 tag.extend([date_code[k]] * len(v))
                 daydate.extend([k] * len(v))
                 density.extend(v)
@@ -168,7 +170,7 @@ def plant_density_data():
     pd = Plot_data()
     for g in ('Mercia', 'Rht3', 'Tremie12', 'Tremie13'):
         pdata = pd[g]
-        date_code = {v:k for k, v in pdata['code_date'].iteritems()}
+        date_code = {v:k for k, v in pdata['code_date'].items()}
         tag = []
         daydate = []
         density = []
@@ -181,7 +183,7 @@ def plant_density_data():
             daydate.append(pdata['code_date']['emergence'])
             density.append(pdata['plant_density_at_emergence'])
         if 'plant_density' in pdata:
-            for k, v in pdata['plant_density'].iteritems():
+            for k, v in pdata['plant_density'].items():
                 tag.extend([date_code[k]] * len(v))
                 daydate.extend([k] * len(v))
                 density.extend(v)
@@ -212,7 +214,7 @@ def tillering_data(trials=('MerciaRht3', 'Tremie12', 'Tremie13')):
 
     for trial in trials:
         csv = trial + '_Tillering_data.csv'
-        fn = str(shared_data(alinea.echap)/'architectural_measurements'/ csv)
+        fn = str(share_dir/'architectural_measurements'/ csv)
         data = pandas.read_csv(fn,decimal=',', sep='\t')
         for w in ('T6','T7'):
             if not w in data:
@@ -236,20 +238,29 @@ def emission_probabilities(df, last='T6'):
     grouped = df.groupby('N',as_index=False)
     em = grouped.agg(_maxna)
     # em = em.reset_index()
-    s = em.ix[:,'TC':last].sum()
-    n = em.ix[:,'TC':last].apply(lambda x: x.dropna().count())
-    probas = s / n
+    def _safe_mean(x):
+        s=x.sum()
+        n= x.dropna().count()
+        if n==0: 
+            return None
+        else: 
+            return s /n
+    probas = em.loc[:,'TC':last].apply(_safe_mean)
+        
+    #s = em.loc[:,'TC':last].sum()
+    #n = em.loc[:,'TC':last].apply(lambda x: x.dropna().count())
+    #probas = s / n
     return probas.to_dict()
     
 def plant_viability(df):
-    grouped = df.groupby('Date', as_index=False)
+    grouped = df.groupby('Date', as_index=True)
     res = grouped.apply(lambda x: x['MB'].count() * 1.0 / len(x['MB']))
     return {'Date':res.index.tolist(), 'viability':res.tolist()}
   
 def axis_dynamics(df):
     grouped = df.groupby('Date')
-    s = grouped.agg('sum').ix[:,'TP':]
-    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).ix[:,'TP':]
+    s = grouped.agg('sum').loc[:,'TP':]
+    n = grouped.agg(lambda x: x.apply(lambda x: x.dropna().count())).loc[:,'TP':]
     axis =  s / n
     axis = axis.replace(numpy.inf, numpy.nan)
     res = axis.to_dict('list')
@@ -257,9 +268,9 @@ def axis_dynamics(df):
     return res
     
 def nff_probabilities(df):
-    prop = 1. * numpy.bincount(map(int,df['Nff'].dropna())) / len(df['Nff'].dropna())
-    d = dict(zip(range(len(prop)), prop))
-    return {k:v for k,v in d.iteritems() if v > 0}
+    prop = 1. * numpy.bincount(list(map(int,df['Nff'].dropna()))) / len(df['Nff'].dropna())
+    d = dict(list(zip(list(range(len(prop))), prop)))
+    return {k:v for k,v in d.items() if v > 0}
 
 
 def Tillering_data_Mercia_Rht3_2010_2011():
@@ -296,16 +307,16 @@ def Tillering_data_Mercia_Rht3_2010_2011():
         g['T6'][g['MB']!=1] = numpy.nan # avoid infering T6 = 0 on dead plants
         TP = g['TP']
         date = g['Date']
-        if all(TP[date==3].notnull()) and all(pandas.isnull(g.ix[date==3,'TC':'T6'])):
-            infer = g.ix[date==2,'TC':'T6'] 
-            if all(TP[date==3] > TP[date==2]):
+        if all(TP[g.Date==3].notnull()) and all(pandas.isnull(g.loc[g.Date==3,'TC':'T6'])):
+            infer = g.loc[g.Date==2,'TC':'T6'] 
+            if all(TP[date==3].values > TP[date==2].values):
                 d = int(TP[date==3].values - TP[date==2].values)
                 try:
                     lastT = int(max(2, max(numpy.where(infer > 0)[1])))
                 except ValueError:
                     lastT = 2
-                infer.ix[:,(lastT+1):(lastT + 1 + d)] = 1                
-            g.ix[g['Date']==3,'TC':'T6'] = infer
+                infer.iloc[:,(lastT+1):(lastT + 1 + d)] = 1                
+            g.loc[g['Date']==3,'TC':'T6'] = infer
         return g
         
     grouped = data.groupby(['Var', 'N'],as_index=False)
@@ -314,21 +325,21 @@ def Tillering_data_Mercia_Rht3_2010_2011():
     # compute emmission probability using notations before date 6
     edata = newdata[newdata['Date'] < 6]
     edata = edata.reset_index()
-    grouped = edata.groupby('Var',as_index=False)
+    grouped = edata.groupby('Var',as_index=True)
     emission = {k:emission_probabilities(v) for k,v in grouped}
     
     # compute nff probabilities
-    grouped = data.groupby('Var',as_index=False)
+    grouped = data.groupby('Var',as_index=True)
     nff_prop = {k:nff_probabilities(v) for k,v in grouped}
     
     # compute ear_per_plante (including main stem) 
     eardata = newdata[newdata['Date'] >= 6]
     eardata = eardata.reset_index()
-    grouped = eardata.groupby('Var',as_index=False)
+    grouped = eardata.groupby('Var',as_index=True)
     ears_per_plant = {k:  1  + (v['FT'].sum() / v['FT'].dropna().count()) for k,v in grouped}
     
     # compute plant viability
-    grouped = data.groupby('Var',as_index=False)
+    grouped = data.groupby('Var',as_index=True)
     viability = {k:plant_viability(v) for k,v in grouped}
     
     #compute tillering dynamics
@@ -365,7 +376,7 @@ def Tillering_data_Tremie12_2011_2012():
     - at date 7, values of fertile tiller  per plants seems buggy compared to other dates
     """
     
-    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie12_Tillering_data.csv')
+    fn = str(share_dir/'architectural_measurements'/'Tremie12_Tillering_data.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     date_code = {'d1':'2012-03-09', 'd2':'2012-04-02', 'd3':'2012-04-11', 'd4':'2012-05-09', 'd5':'2012-05-29', 'd6':'2012-06-12', 'd7':'2012-07-12', 'd8':'2012-04-04'}
     TT_code = {'d1':905, 'd2':1160, 'd3':1240, 'd4':1515, 'd5':1813, 'd6':2031, 'd7':2536, 'd8':1179}
@@ -383,7 +394,7 @@ def Tillering_data_Tremie12_2011_2012():
     axdyn = axis_dynamics(data)
     
     # compute ear_per_plant using data at date 6 and 7 and plot data of fertile tillers at date 4
-    eardata = pandas.DataFrame(axdyn).ix[:,('Date', 'FT')].dropna()
+    eardata = pandas.DataFrame(axdyn).loc[:,('Date', 'FT')].dropna()
     pdata = Plot_data_Tremie_2011_2012()
     ftd4 = 1.*numpy.array(pdata['fertile_axis_density']['2012-05-09'])  / numpy.array(pdata['plant_density']['2012-05-09']) - 1 #remove main stem to get FT count 
     # ear per plante at date 7 very strange (twice the value at other dates and non-existence of unfertile tillers): ears_per_plant taken as mean of counting at date 4 and 6
@@ -415,7 +426,7 @@ def Tillering_data_Tremie13_2012_2013():
     - data from date 3 are to be included
     """
     
-    fn = str(shared_data(alinea.echap)/'architectural_measurements'/'Tremie13_Tillering_data.csv')
+    fn = str(share_dir/'architectural_measurements'/'Tremie13_Tillering_data.csv')
     data = pandas.read_csv(fn,decimal=',',sep='\t')
     date_code = {'d1':'2013-02-13', 'd2':'2013-03-29', 'd3': '2012-04-19'}
     TT_code = {'d1':566, 'd2':739, 'd3':915}
@@ -472,7 +483,7 @@ def treated_symptom_tagged_data(variety = 'Tremie12'):
     
 def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
     filename = variety+'_scan_sampled_plants_'+''.join([d[-2:] for d in date.split('/')])+'.txt'
-    file_path = filepath = str(shared_data(alinea.echap)/'architectural_measurements'/filename)
+    file_path = filepath = str(share_dir/'architectural_measurements'/filename)
     return pandas.read_csv(file_path, sep = "\t")
 
 
@@ -480,13 +491,13 @@ def scan_dimensions_single_date(variety = 'Tremie12', date = '09/05/2012'):
     
 def Dim_data():
     def read_dim_data(source = 'sampled'):
-        filepath = shared_data(alinea.echap,
-                    'architectural_measurements/Compil_Dim_treated_archi_'+source+'.csv')
+
+        filepath = share_dir/'architectural_measurements'/'Compil_Dim_treated_archi_'+source+'.csv'
         df = pandas.read_csv(filepath, na_values=('NA'), sep=',')
         df['Source'] = source
         return df
     sources = ['sampled', 'tagged']
-    return pandas.concat(map(lambda source: read_dim_data(source), sources))
+    return pandas.concat([read_dim_data(source) for source in sources])
     
 # blade dimension data from Corinne/Tino scans in 2009/2010
 
@@ -520,10 +531,10 @@ def scan_dep_Tremie12():
         - Manip 'archi/silhouette': Scan des feuilles aux dates 09/03/2012 (HS 7.4)
                                                      11/04/2012 (HS 10.5)
                                                      09/05/2013 (HS 13.06)
-                                files : C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
-                                C:\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
+                                files : C:\\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D3_11.04.2012\Scanne_11042012\
+                                C:\\Users\echap\Desktop\data_mariem\manipeEchap\Manipe_Boigneville20112012\1.Essai_Tremie\1.MesuresINRA\0.DatesBrute\D4_09.05.2012\scannes_09.05.2012\
                                 Avec fichier de notations associe
-                                C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
+                                C:\\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi pour publi\Tremie 2012\2. Longueur-largeur-surface 2N et DFE_ 2012.xlsx
             stat = 1 : feuille entiere et en bon etat
             stat = 2 : longueur correcte mais surface affectee
             stat = 3 : feuille abimee OU en croissance
@@ -555,7 +566,7 @@ def scan_dep_Tremie12():
 def scan_dep_Tremie13():
     '''
     Scan des feuilles non depouillees pour le 22/04/2012 et le 03/05/2012
-    C:\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
+    C:\\Users\echap\Desktop\ECHAP_ARVALIS\Architecture\Archi Anne_2012-2013\Analyse Scan LAI\
     '''
     data_file = shared_data(alinea.echap, 'architectural_measurements/Tremie13_scan_sampled_plants_220413.txt')
     df = pandas.read_csv(data_file, sep='\t')
@@ -570,9 +581,9 @@ def scan_dep_Tremie13():
 
 def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all'
 
-    if name is 'Tremie12':
+    if name == 'Tremie12':
         df = scan_dep_Tremie12()
-    elif name is 'Tremie13':
+    elif name == 'Tremie13':
         df = scan_dep_Tremie13()
 
     # on prend maintenant tjrs stat 1, 2 ou 3, plus besoin du parametre stat='all'
@@ -601,7 +612,7 @@ def treatment_scan(name='Tremie13'): #Tremie13, pas de colonne stat => stat='all
             A_bl.append(data['A_bl'][cpt])
             cpt += 1
             
-    surfSet = zip(dater,moy_feuille,ntop,A_bl)
+    surfSet = list(zip(dater,moy_feuille,ntop,A_bl))
     df_fin = pandas.DataFrame(data = surfSet, columns=['HS', 'moyenne id_Feuille', 'ntop_cur', 'Area A_bl'])
     return df_fin    
     
@@ -646,8 +657,8 @@ def surface_data():
 
 def mean_nff():
     def _nff(ms_nff_probas):
-        return sum([int(k)*v for k,v in ms_nff_probas.iteritems()])
-    return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().iteritems()}
+        return sum([int(k)*v for k,v in ms_nff_probas.items()])
+    return {k:_nff(v['nff_probabilities']) for k,v in Tillering_data().items()}
    
 def sr_data():
         
@@ -655,10 +666,10 @@ def sr_data():
         header_row_srdb = ['rankclass','s','r']
         return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
     
-    srdb = {'Mercia': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Rht3': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Tremie12': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv'),
-            'Tremie13': shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')}
+    srdb = {'Mercia': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Rht3': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Tremie12': share_dir / 'srdb_GrignonMercia2010.csv',
+            'Tremie13': share_dir / 'srdb_GrignonMercia2010.csv'}
 
     return {k: sr_reader(srdb[k]) for k in srdb}
 
@@ -672,7 +683,7 @@ def leaf_curvature_data(name='Mercia'):
         header_row_srdb = ['rankclass','s','r']
         return pandas.read_csv(file, names=header_row_srdb, sep=',', index_col=False, skiprows=1, decimal='.')
         
-    if name is 'Mercia':
+    if name == 'Mercia':
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
@@ -683,7 +694,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR
         dfsr = sr_reader(data_file_srdb)
 
-    if name is 'Rht3':
+    if name == 'Rht3':
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv') 
         # XY
@@ -693,7 +704,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR : use same as Mercia ???
         dfsr = sr_reader(data_file_srdb)
         
-    if name is 'Tremie12':
+    if name == 'Tremie12':
         # fichier angle non dispo encore, on prend mercia en attendant
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
@@ -704,7 +715,7 @@ def leaf_curvature_data(name='Mercia'):
         # SR
         dfsr = sr_reader(data_file_srdb)
         
-    if name is 'Tremie13':
+    if name == 'Tremie13':
         # fichier angle non dispo encore, on prend mercia en attendant
         data_file_xydb = shared_data(alinea.echap, 'architectural_measurements/xydb_Grignon2010.csv') 
         data_file_srdb = shared_data(alinea.echap, 'srdb_GrignonMercia2010.csv')
@@ -741,8 +752,8 @@ def read_trajectories(fn):
     agemed = (numage[1:]  + numage[:-1]) / 2.0
     bins = [numage[0] - 1.0] + agemed.tolist() + [numage[-1] + 1.0]
     dat['age_class'] = pandas.cut(dat['age'], bins,labels=False)
-    grouped = dat.groupby(('lindex','age_class'))   
-    trajs = {k:[{a:grouped.get_group((k,a)).ix[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
+    grouped = dat.groupby(['lindex','age_class'])   
+    trajs = {k:[{a:grouped.get_group((k,a)).loc[:,['x','y']] for a in set(dat['age_class'])}] for k in set(dat['lindex'])}
     return trajs, bins
 
 def median_leaf_trajectories():
@@ -756,9 +767,9 @@ def median_leaf_trajectories():
              'Soissons':'Soissons_Grignon2010',
              'Tremie12':'Tremie12',
              'Tremie13':'Tremie13',
-             'Mercia11':'Mercia11',
-              'Rht311':'Rht311'}
-    fn = {k:shared_data(alinea.echap, 'architectural_measurements/median_leaf_trajectories_' + trajs[k] + '.csv') for k in trajs}
+             'Mercia11':'MerciaRht_Grignon2010',
+              'Rht311':'MerciaRht_Grignon2010'}
+    fn = {k:share_dir/ 'architectural_measurements' / 'median_leaf_trajectories_' + trajs[k] + '.csv' for k in trajs}
     return {k:read_trajectories(fn[k]) for k in trajs}
     
 #
@@ -794,7 +805,7 @@ def axe_density_aggregated():
 
     df = pandas.concat([dfplot, dft])
     tt = TT_lin()
-    dfa = aggregate(df, ('label', 'daydate', 'source', 'tag_event'))
+    dfa = aggregate(df, ['label', 'daydate', 'source', 'tag_event'])
 
     return dfa.merge(tt)
 
@@ -826,7 +837,7 @@ def PlantDensity():
             TT.append(pdata['TT_date'][pdata['code_date'][w]])
         # add survival data
         for i,d in enumerate(tdata['plant_survival']['Date']):
-            lab = 'd%d'%(d+1)
+            lab = 'd%d'%(d)
             events.append(lab)
             date.append(tdata['date_code'][lab])
             TT.append(tdata['TT_code'][lab])
@@ -918,12 +929,12 @@ def tillers_per_plant():
     pdata = Plot_data_Tremie_2011_2012()
     axd = pdata['axe_density']
     faxd = pdata['fertile_axis_density']
-    dfp= pandas.DataFrame({'date' : axd.keys(), 
+    dfp= pandas.DataFrame({'date' : list(axd.keys()), 
                 'TT': [pdata['TT_date'][k] for k in axd],
                 'TPS': [numpy.mean(axd[k]) / numpy.mean(pdata['plant_density'][k]) - 1 for k in axd]})
     dfp['FT'] = numpy.nan
-    d = faxd.keys()[0]
-    dfp.ix[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
+    d = list(faxd.keys())[0]
+    dfp.loc[dfp['date']==d,'FT'] = numpy.mean(faxd[d])  / numpy.mean(pdata['plant_density'][d]) - 1
     df = pandas.concat([df, dfp])
     df = _add_ghs(df, 'Tremie12')
     ld.append(df)
@@ -947,7 +958,7 @@ def emission_probabilities_table():
     emdb['Tremie12'] = Tillering_data_Tremie12_2011_2012()['emission_probabilities']
     emdb['Tremie13'] = Tillering_data_Tremie13_2012_2013()['emission_probabilities']
 
-    dfs = [pandas.DataFrame({'variety':var, 'tiller':probas.keys(), 'probability': probas.values()}) for  var,probas in emdb.iteritems()]
+    dfs = [pandas.DataFrame({'variety':var, 'tiller':list(probas.keys()), 'probability': list(probas.values())}) for  var,probas in emdb.items()]
     return pandas.concat(dfs)
 
 
@@ -972,16 +983,15 @@ def haun_stage_aggregated():
                                   aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'HS_conf')], axis=1)
     
     # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
-    (df_HS_tagged_global, df_HS_sampled_global) = map(lambda x: pandas.concat(
+    (df_HS_tagged_global, df_HS_sampled_global) = [pandas.concat(
                                                   [aggregate(x, ['TT', 'label'], numpy.mean, 'HS_mean'),
                                                    aggregate(x, ['TT', 'label'], numpy.nanstd, 'HS_std'),
-                                                   aggregate(x, ['TT', 'label'], conf_int, 'HS_conf')], axis=1),
-                                                   (tagged, sampled))
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'HS_conf')], axis=1) for x in (tagged, sampled)]
     df_HS_tagged_global['source'] = 'tagged'
     df_HS_sampled_global['source'] = 'sampled'
     df_HS_global = pandas.concat([df_HS_tagged_global, df_HS_sampled_global])
     
-    (df_HS_tagged, df_HS_global) = map(lambda x: x.reset_index(), (df_HS_tagged, df_HS_global))
+    (df_HS_tagged, df_HS_global) = [x.reset_index() for x in (df_HS_tagged, df_HS_global)]
     return df_HS_tagged, df_HS_global
 
 def ssi_aggregated():
@@ -1005,16 +1015,15 @@ def ssi_aggregated():
                                   aggregate(tagged, ['TT', 'label', 'nff'], conf_int, 'SSI_conf')], axis=1)
     
     # Get mean, standard error and confidence interval for all NFFs for tagged plants and sampled plants
-    (df_SSI_tagged_global, df_SSI_sampled_global) = map(lambda x: pandas.concat(
+    (df_SSI_tagged_global, df_SSI_sampled_global) = [pandas.concat(
                                                   [aggregate(x, ['TT', 'label'], numpy.mean, 'SSI_mean'),
                                                    aggregate(x, ['TT', 'label'], numpy.nanstd, 'SSI_std'),
-                                                   aggregate(x, ['TT', 'label'], conf_int, 'SSI_conf')], axis=1),
-                                                   (tagged, sampled))
+                                                   aggregate(x, ['TT', 'label'], conf_int, 'SSI_conf')], axis=1) for x in (tagged, sampled)]
     df_SSI_tagged_global['source'] = 'tagged'
     df_SSI_sampled_global['source'] = 'sampled'
     df_SSI_global = pandas.concat([df_SSI_tagged_global, df_SSI_sampled_global])
     
-    (df_SSI_tagged, df_SSI_global) = map(lambda x: x.reset_index(), (df_SSI_tagged, df_SSI_global))
+    (df_SSI_tagged, df_SSI_global) = [x.reset_index() for x in (df_SSI_tagged, df_SSI_global)]
     return df_SSI_tagged, df_SSI_global
     
 
@@ -1131,16 +1140,15 @@ def green_leaves_estimated(HS_fit):
     symptom_est_ap = symptom_est_ap.rename(columns = {'GLap':'GL', 'SSIap':'SSI'})
     
     # Get mean, standard error and confidence interval of estimated GL for plants with known nff
-    (tagged_est_nff, symptom_est) = map(lambda x: estimate_GL(x), (tagged_est_nff, symptom_est))
+    (tagged_est_nff, symptom_est) = [estimate_GL(x) for x in (tagged_est_nff, symptom_est)]
     sources = {'tagged':tagged_est_nff, 'symptom':symptom_est}
     df_GL_est_nff = pandas.concat([aggregate_GLsource(sources[k], ['TT', 'label', 'nff'], k) for k in sources])
     df_GL_est_nff = df_GL_est_nff.reset_index()
     # Get mean, standard error and confidence interval of estimated GL for all NFFs for 
     # tagged plants, sampled plants and symptom plants
     (tagged_est_global, sampled_est_global, 
-    symptom_est, symptom_est_ap) = map(lambda x: estimate_GL(x), 
-                                        (tagged_est_global, sampled_est_global,
-                                        symptom_est, symptom_est_ap))
+    symptom_est, symptom_est_ap) = [estimate_GL(x) for x in (tagged_est_global, sampled_est_global,
+                                        symptom_est, symptom_est_ap)]
     sources = {'tagged':tagged_est_global, 'sampled':sampled_est_global, 'symptom':symptom_est, 'symptom_ap':symptom_est_ap}
     df_GL_est_global = pandas.concat([aggregate_GLsource(sources[k], ['TT', 'label'], k) for k in sources])
     df_GL_est_global = df_GL_est_global.reset_index()
@@ -1160,7 +1168,7 @@ def dimensions_aggregated(df_dim = Dim_data(), along = 'rank'):
     def get_aggregate(data, group = ['label', 'Source', along]):
         funcs = {'mean':numpy.mean, 'std':numpy.std, 'conf':conf_int}
         df_ag = None
-        for name, func in funcs.iteritems():
+        for name, func in funcs.items():
             if df_ag is None:
                 df_ag = _aggregate(data, group=group, func=func, column_name=name)
             else:
@@ -1188,11 +1196,11 @@ class ReconstructionData(object):
         self.sr_data = sr_data()
         
     def save(self, filename):
-        with open(filename, 'w') as output:
+        with open(filename, 'wb') as output:
             pickle.dump(self, output)
  
 def reconstruction_data(reset=False):
-    filename = str(shared_data(alinea.echap)/'architectural_ReconstructionData.pckl')
+    filename = str(share_dir/'architectural_ReconstructionData.pckl')
     if not reset:
         try:
             with open(filename) as input:
@@ -1225,7 +1233,7 @@ class ValidationData(object):
         
     
 def validation_data(reset=False, HS_fit=None):
-    filename = str(shared_data(alinea.echap)/'architectural_ValidationData.pckl')
+    filename = str(share_dir/'architectural_ValidationData.pckl')
     Data = None
     if not reset:
         try:

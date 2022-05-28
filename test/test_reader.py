@@ -1,3 +1,4 @@
+
 from alinea.echap.interception_leaf import pesticide_applications
 
 data = """date,dose, product_name

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 
@@ -21,7 +21,7 @@ from alinea.echap.hs_tt import tt_hs_tag
 
 
 from alinea.echap.cache_simulation import (cache_analysis_path, get_canopy,
-                                           build_canopies)
+                                           build_canopies, get_reconstruction)
 from alinea.echap.cache_light_simmulation import illuminate_canopies, get_light, tag_to_zenith, lambda0
 from alinea.echap.canopy_data import lai_pai_scan, pai57, ground_cover_data, transmittance_data
 from alinea.echap.interception_data import petri_data
@@ -29,24 +29,24 @@ from alinea.echap.interception_data import petri_data
 from alinea.echap.plot_evaluation_canopy import plot_mean
 
 
-def aggregate_lai(g, axstat):
+def aggregate_lai(adel, g, axstat):
     colnames = ['aire du plot', 'Nbr.plant.perplot', 'Nbr.axe.tot.m2', 'ThermalTime', 'LAI_tot', 'LAI_vert',
                  'PAI_tot', 'PAI_vert']
-    pstat = AdelWheat.plot_statistics(g,axstat)
+    pstat = adel.plot_statistics(g,axstat)
     if pstat is None:
         return pandas.DataFrame([numpy.nan] * len(colnames), columns = colnames)
     else:
         return pstat.loc[:, colnames]
 
 
-def get_lai_properties(g):
-    df_axstat = AdelWheat.axis_statistics(g)
-    df_lai_tot = aggregate_lai(g, df_axstat)
-    df_lai_MS = aggregate_lai(g, df_axstat[df_axstat['axe_id'] == 'MS'])
+def get_lai_properties(adel, g):
+    df_axstat = adel.axis_statistics(g)
+    df_lai_tot = aggregate_lai(adel, g, df_axstat)
+    df_lai_MS = aggregate_lai(adel, g, df_axstat[df_axstat['axe_id'] == 'MS'])
     df_lai_MS.rename(columns={col: col + '_MS' for col in
                               ['LAI_tot', 'LAI_vert', 'PAI_tot', 'PAI_vert',
                                'Nbr.axe.tot.m2']}, inplace=True)
-    df_lai_ferti = aggregate_lai(g, df_axstat[df_axstat['has_ear']])
+    df_lai_ferti = aggregate_lai(adel, g, df_axstat[df_axstat['has_ear']])
     df_lai_ferti.rename(columns={col: col + '_ferti' for col in
                                  ['LAI_tot', 'LAI_vert', 'PAI_tot', 'PAI_vert',
                                   'Nbr.axe.tot.m2']}, inplace=True)
@@ -77,7 +77,7 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
             df = pandas.read_csv(filename)
             try:
                 df = df.set_index('rep').loc[rep,:].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     return df.loc[df['daydate'].isin(dd_range), :]
                 else:
                     missing = [d for d in dd_range if
@@ -88,10 +88,12 @@ def simulate_lai(variety='Tremie12', nplants=30, tag='reference', rep=1,
             pass
     new = []
     for d in missing:
-        print d
+        print(d)
+        adel = get_reconstruction(variety=variety, nplants=nplants, tag=tag,
+                                  rep=rep)
         g = get_canopy(daydate=d, variety=variety, nplants=nplants, tag=tag,
                        rep=rep, load_geom=False)
-        df_lai = get_lai_properties(g)
+        df_lai = get_lai_properties(adel, g)
         df_lai['variety'] = variety
         df_lai['daydate'] = d
         df_lai['rep'] = rep
@@ -156,7 +158,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
                 df[sim_tag] = [numpy.nan] * len(df)
             try:
                 df = df.set_index('rep').loc[rep, :].reset_index()
-                if all(map(lambda x: x in df['daydate'].values, dd_range)):
+                if all([x in df['daydate'].values for x in dd_range]):
                     done = df.loc[df['daydate'].isin(dd_range), :]
                     missing = []
                 else:
@@ -178,7 +180,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
 
     new = []
     for d in missing + redo:
-        print d
+        print(d)
         raw, aggregated, soil = get_light(variety=variety, nplants=nplants,
                                           daydate=d, tag=tag, rep=rep,
                                           light_tag=light_tag, z_soil=0)
@@ -206,7 +208,7 @@ def simulate_po_light(light_tag='zenith', z_soil=0, variety='Tremie12',
         df['lai_' + light_tag + '_z' + str(z_soil)] = - numpy.log(
             df[sim_tag]) / g_miller
         rings = ['lai_lai2000r' + str(i) + '_z0' for i in range(1, 6)]
-        if all(map(lambda x: x in df.columns.values, rings)):
+        if all([x in df.columns.values for x in rings]):
             w = 0.034, 0.104, 0.16, 0.218, 0.494
             df['lai_lai2000'] = 0
             for i, ring in enumerate(rings):
@@ -326,7 +328,7 @@ def check_lai57(variety='Tremie12', nplants=30, tag='reference', rep=1,
     df = df.merge(po)
     fig, ax = plt.subplots()
 
-    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(list(range(7)), list(range(7)), color='b', linestyle='--')
     ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
     ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
     ax.plot(df['LAI_tot'], df['lai_57.5_z0'], marker='d',markersize=7,color='m')
@@ -350,7 +352,7 @@ def check_lai2000(variety='Tremie12', nplants=30, tag='reference', rep=1,
     df = df.merge(po)
     fig, ax = plt.subplots()
 
-    ax.plot(range(7), range(7), color='b', linestyle='--')
+    ax.plot(list(range(7)), list(range(7)), color='b', linestyle='--')
     ax.plot(df['LAI_tot'], df['LAI_vert'], color='g', linestyle='--')
     ax.plot(df['LAI_tot'], df['PAI_tot'], color='m', linestyle='--')
     ax.plot(df['LAI_tot'], df['lai_lai2000'], marker='d',markersize=7,color='b')

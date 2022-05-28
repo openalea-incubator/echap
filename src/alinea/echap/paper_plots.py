@@ -53,8 +53,8 @@ def axe_density_plot(what='primary_axe_density'):
 
         start, end = hs[variety]([0, 2500])
         pd = plant_density[variety]['density_table']
-        pd.ix[0, 'HS'] = start
-        pd.ix[len(pd) - 1, 'HS'] = end
+        pd.loc[0, 'HS'] = start
+        pd.loc[len(pd) - 1, 'HS'] = end
         pd_fun = interp1d(pd['HS'], pd['density'])
         sim = axepop[variety].axis_dynamics(pd_fun, start=start, end=end)
         sim['TT'] = hs[variety].TT(sim['HS'])
@@ -94,7 +94,7 @@ def _dim_plot(ax, what, data,model, along='rank', legend=True, xlab='', ylab='')
     
     proxys = []
     labels = []
-    for variety, col in cols.iteritems():
+    for variety, col in cols.items():
         proxys += [plt.Line2D((0,1),(0,0), linestyle='', color = col,
                     markerfacecolor=col, markeredgecolor=col, marker = markers[src])]
         labels += [variety]
@@ -146,12 +146,12 @@ def pheno_plot():
         ranks = numpy.arange(0, hsfit.HSflag(),0.1)
         
         nffs = fit.axepop_fits[variety].sorted_nff()[:2]
-        ranks_nff = map(lambda x: numpy.arange(0,x+0.1,0.1), nffs)
-        top_ranks_nff = map(lambda x: max(x) - x + 1, ranks_nff)
+        ranks_nff = [numpy.arange(0,x+0.1,0.1) for x in nffs]
+        top_ranks_nff = [max(x) - x + 1 for x in ranks_nff]
         for i in range(2):
             ranks_nff[i] = ranks_nff[i][numpy.where(top_ranks_nff[i] <= min(nffs))]
             top_ranks_nff[i] = top_ranks_nff[i][numpy.where(top_ranks_nff[i] <= min(nffs))]
-        TThs_nff = map(lambda x: hsfit.TTem(hsfit.TT(ranks_nff[x], nff=nffs[x])), range(2))
+        TThs_nff = [hsfit.TTem(hsfit.TT(ranks_nff[x], nff=nffs[x])) for x in range(2)]
         
         color = vcols[variety]
         ax.plot(max(ranks) - ranks + 1, hsfit.TTem(hsfit.TT(ranks)), color=color)
@@ -188,14 +188,14 @@ def pheno_plot():
         TTem = hsfit.TTemleaf(ranks)
         
         nffs = fit.axepop_fits[variety].sorted_nff()[:2]
-        ranks_nff = map(lambda x: numpy.arange(0,x+0.1,0.1), nffs)
-        top_ranks_nff = map(lambda x: max(x) - x + 1, ranks_nff)
+        ranks_nff = [numpy.arange(0,x+0.1,0.1) for x in nffs]
+        top_ranks_nff = [max(x) - x + 1 for x in ranks_nff]
         for i in range(2):
             ranks_nff[i] = ranks_nff[i][numpy.where(top_ranks_nff[i] <= min(nffs))]
             top_ranks_nff[i] = top_ranks_nff[i][numpy.where(top_ranks_nff[i] <= min(nffs))]
         
-        TTsen_nff = map(lambda x: gl.TTsen(nff=nffs[x])(ranks_nff[x]), range(2))
-        TTem_nff = map(lambda x: hsfit.TTemleaf(ranks_nff[x], nff=nffs[x]), range(2))
+        TTsen_nff = [gl.TTsen(nff=nffs[x])(ranks_nff[x]) for x in range(2)]
+        TTem_nff = [hsfit.TTemleaf(ranks_nff[x], nff=nffs[x]) for x in range(2)]
         
         color = vcols[variety]
         ax.plot(max(ranks) - ranks + 1, TTsen - TTem, color = color)    

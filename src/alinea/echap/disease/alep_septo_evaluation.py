@@ -54,9 +54,9 @@ def organize_fnl(df_sim):
             for pl in set(df['num_plant']):
                 fnls_tmp[pl] = np.unique(df[df['num_plant']==pl]['fnl'])[0]
             
-            for k, v in fnls.iteritems():
+            for k, v in fnls.items():
                 new_num = None
-                it = fnls_tmp.iteritems()
+                it = iter(fnls_tmp.items())
                 while new_num is None:
                     kk, vv = next(it)
                     if vv == v:
@@ -109,7 +109,7 @@ def get_mean_one_leaf_sim(df, variable = 'severity', xaxis = 'degree_days',
         df_mean.index -= df_dates.loc[num_leaf, xaxis]
         return df_mean
 
-def get_df_mean_sim(data_sim, variable = 'severity', xaxis = 'degree_days', leaves = range(1,14)):
+def get_df_mean_sim(data_sim, variable = 'severity', xaxis = 'degree_days', leaves = list(range(1,14))):
     """ Get average for given variable over xaxis for all given leaves """
     dfs = []
     for lf in leaves:
@@ -141,7 +141,7 @@ def plot_one_leaf_sim(data_sim, variable = 'severity', xaxis = 'degree_days',
     if return_df_mean == True:
         return df_mean_sim
 
-def plot_mean_by_leaf_sim(data_sim, variable = 'severity', leaves = range(1,14), 
+def plot_mean_by_leaf_sim(data_sim, variable = 'severity', leaves = list(range(1,14)), 
                           xaxis = 'degree_days', ax = None, xlims = None,
                           ylims = None, ylabel = 'Severity', xlabel = 'Degree Days',
                           fig_size = (8,6), grid = True):
@@ -169,7 +169,7 @@ def plot_mean_by_leaf_sim(data_sim, variable = 'severity', leaves = range(1,14),
 def plot_comparison_confidence_and_boxplot_sim_obs(data_obs, data_sim,
                                                     weather, variable='severity', 
                                                     xaxis = 'degree_days', 
-                                                    leaves = range(1,7), 
+                                                    leaves = list(range(1,7)), 
                                                     xlims = [1100, 2500], 
                                                     display_rmse = False):
     df_mean_obs, df_low, df_high, fig, axs = plot_confidence_and_boxplot(data_obs, weather, leaves = leaves,
