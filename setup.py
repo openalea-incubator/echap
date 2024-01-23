@@ -3,7 +3,7 @@ __revision__ = "$Id: $"
 
 import os,sys
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 from openalea.deploy.metainfo import read_metainfo
 
 
@@ -29,13 +29,6 @@ for key,value in metadata.items():
 # (The version number is used by deploy to detect UPDATES)
 
 
-# Packages list, namespace and root directory of packages
-
-pkg_root_dir = 'src'
-pkgs = [ pkg for pkg in find_packages(pkg_root_dir)]
-top_pkgs = [pkg for pkg in pkgs if  len(pkg.split('.')) < 2]
-packages = pkgs
-package_dir = dict( [('',pkg_root_dir)] + [(namespace + "." + pkg, pkg_root_dir + "/" + pkg) for pkg in top_pkgs] )
 
 # Define global variables 
 has_scons = False
@@ -79,12 +72,10 @@ setup(
     py_modules = [],	
 
     # package installation 
-    packages= packages,	
-    package_dir=package_dir,
+    packages= find_namespace_packages(where='src', 
+                                      include=['alinea.*', 'alinea']),	
+    package_dir={'': 'src'},
 
-    # Namespace packages creation by deploy
-    namespace_packages = ['alinea'],
-    #create_namespaces = False,
     zip_safe= False,
 
     # Dependencies
